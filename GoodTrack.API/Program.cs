@@ -49,6 +49,20 @@ builder.Services.AddSingleton(sp =>
 {
     var env = sp.GetRequiredService<IWebHostEnvironment>();
     
+    // Check if credentials JSON is provided via environment variable (recommended for cloud deploys)
+    var envJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
+    if (!string.IsNullOrEmpty(envJson))
+    {
+        Console.WriteLine("Initializing Firestore with credentials from environment variable...");
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(envJson));
+        var credential = Google.Apis.Auth.OAuth2.CredentialFactory.FromStream<Google.Apis.Auth.OAuth2.ServiceAccountCredential>(stream).ToGoogleCredential();
+        return new FirestoreDbBuilder
+        {
+            ProjectId = projectId,
+            Credential = credential
+        }.Build();
+    }
+
     // Resolve credentials path
     var fullCredentialPath = Path.IsPathRooted(credentialPath) 
         ? credentialPath 
