@@ -1,4 +1,11 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+let rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
+if (rawBaseUrl.startsWith('http')) {
+  rawBaseUrl = rawBaseUrl.replace(/\/$/, ''); // Remove trailing slash
+  if (!rawBaseUrl.endsWith('/api')) {
+    rawBaseUrl += '/api';
+  }
+}
+const BASE_URL = rawBaseUrl;
 
 export interface User {
   token: string;

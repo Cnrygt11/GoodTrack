@@ -19,7 +19,13 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Build the Hub connection
-    const rawApiUrl = import.meta.env.VITE_API_URL || '';
+    let rawApiUrl = import.meta.env.VITE_API_URL || '';
+    if (rawApiUrl.startsWith('http')) {
+      rawApiUrl = rawApiUrl.replace(/\/$/, '');
+      if (!rawApiUrl.endsWith('/api')) {
+        rawApiUrl += '/api';
+      }
+    }
     const hubBaseUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl;
     const hubUrl = `${hubBaseUrl}/hubs/tracking`;
 
