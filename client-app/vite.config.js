@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: process.env.VERCEL ? 'dist' : '../GoodTrack.API/wwwroot',
+    outDir: (process.env.VERCEL || process.env.RENDER || process.env.NETLIFY) ? 'dist' : '../GoodTrack.API/wwwroot',
     emptyOutDir: true, // clear directory before building
   },
   server: {
