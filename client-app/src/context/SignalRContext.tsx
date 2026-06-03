@@ -19,8 +19,12 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Build the Hub connection
+    const rawApiUrl = import.meta.env.VITE_API_URL || '';
+    const hubBaseUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl;
+    const hubUrl = `${hubBaseUrl}/hubs/tracking`;
+
     const newConnection = new HubConnectionBuilder()
-      .withUrl('/hubs/tracking', {
+      .withUrl(hubUrl, {
         accessTokenFactory: () => user.token
       })
       .configureLogging(LogLevel.Information)
