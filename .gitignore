@@ -1,0 +1,31 @@
+# --- Node.js / Frontend ---
+node_modules/
+client-app/node_modules/
+client-app/dist/
+.eslintcache
+
+# --- .NET / C# Backend ---
+bin/
+obj/
+GoodTrack.API/bin/
+GoodTrack.API/obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# --- IDEs and OS ---
+.vs/
+.idea/
+.vscode/
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- SENSITIVE DATA (CRITICAL) ---
+GoodTrack.API/firebase-key.json
+firebase-key.json
+appsettings.json
+appsettings.Development.json
+*.pem
+*.key

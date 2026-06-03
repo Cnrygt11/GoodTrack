@@ -1,0 +1,6 @@
+@GoodTrack.API_HostAddress = http://localhost:5244
+
+GET {{GoodTrack.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
