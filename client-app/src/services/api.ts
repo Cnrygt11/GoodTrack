@@ -82,6 +82,7 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('role');
+    localStorage.removeItem('userId');
     window.dispatchEvent(new Event('auth-unauthorized'));
     throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
   }
@@ -89,204 +90,167 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
   return response;
 }
 
+async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const res = await apiFetch(endpoint, options);
+  
+  if (!res.ok) {
+    let errorMessage = `İstek başarısız oldu (Hata Kodu: ${res.status})`;
+    try {
+      const errData = await res.json();
+      if (errData && errData.message) {
+        errorMessage = errData.message;
+      }
+    } catch {
+      // Body is not JSON (e.g. 502 Bad Gateway HTML, 404, etc.)
+      if (res.status === 502) {
+        errorMessage = 'Sunucu şu anda başlatılıyor olabilir (Render ücretsiz sunucuları kullanılmadığında uyku moduna geçer). Lütfen 30 saniye sonra tekrar deneyin.';
+      } else if (res.status === 404) {
+        errorMessage = `API adresi bulunamadı (404). Lütfen VITE_API_URL adresini doğru girdiğinizden emin olun. (Giden İstek: ${res.url})`;
+      } else if (res.status === 500) {
+        errorMessage = 'Sunucu tarafında dahili bir hata oluştu (500). Lütfen sunucu loglarını kontrol edin.';
+      }
+    }
+    throw new Error(errorMessage);
+  }
+  
+  try {
+    return await res.json() as T;
+  } catch {
+    throw new Error('Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu).');
+  }
+}
+
 export const api = {
   // Auth
-  async login(username: string, password: string): Promise<User> {
-    const res = await apiFetch('/auth/login', {
+  login(username: string, password: string): Promise<User> {
+    return apiCall<User>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Giriş başarısız.');
-    return data;
   },
 
-  async register(registrationData: any): Promise<{ message: string }> {
-    const res = await apiFetch('/auth/register', {
+  register(registrationData: any): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(registrationData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Kayıt başarısız.');
-    return data;
   },
 
   // Connections
-  async getConnections(): Promise<ConnectionUser[]> {
-    const res = await apiFetch('/auth/connections');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Bağlantılar listelenemedi.');
-    return data;
+  getConnections(): Promise<ConnectionUser[]> {
+    return apiCall<ConnectionUser[]>('/auth/connections');
   },
 
-  async sendConnectionRequest(username: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/auth/connections/send-request?username=${encodeURIComponent(username)}`, {
+  sendConnectionRequest(username: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/auth/connections/send-request?username=${encodeURIComponent(username)}`, {
       method: 'POST',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Bağlantı isteği gönderilemedi.');
-    return data;
   },
 
-  async getIncomingRequests(): Promise<ConnectionRequest[]> {
-    const res = await apiFetch('/auth/connections/requests/incoming');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gelen istekler listelenemedi.');
-    return data;
+  getIncomingRequests(): Promise<ConnectionRequest[]> {
+    return apiCall<ConnectionRequest[]>('/auth/connections/requests/incoming');
   },
 
-  async getSentRequests(): Promise<ConnectionRequest[]> {
-    const res = await apiFetch('/auth/connections/requests/sent');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Gönderilen istekler listelenemedi.');
-    return data;
+  getSentRequests(): Promise<ConnectionRequest[]> {
+    return apiCall<ConnectionRequest[]>('/auth/connections/requests/sent');
   },
 
-  async acceptRequest(requestId: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/auth/connections/requests/${requestId}/accept`, {
+  acceptRequest(requestId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}/accept`, {
       method: 'POST',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'İstek kabul edilemedi.');
-    return data;
   },
 
-  async rejectRequest(requestId: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/auth/connections/requests/${requestId}/reject`, {
+  rejectRequest(requestId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}/reject`, {
       method: 'POST',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'İstek reddedilemedi.');
-    return data;
   },
 
-  async deleteSentRequest(requestId: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/auth/connections/requests/${requestId}`, {
+  deleteSentRequest(requestId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}`, {
       method: 'DELETE',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'İstek silinemedi.');
-    return data;
   },
 
-  async removeConnection(targetId: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/auth/connections/${targetId}`, {
+  removeConnection(targetId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/auth/connections/${targetId}`, {
       method: 'DELETE',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Bağlantı kaldırılamadı.');
-    return data;
   },
 
   // Products
-  async getProducts(): Promise<Product[]> {
-    const res = await apiFetch('/products');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Siparişler listelenemedi.');
-    return data;
+  getProducts(): Promise<Product[]> {
+    return apiCall<Product[]>('/products');
   },
 
-  async createProduct(productData: any): Promise<{ product: Product; message: string }> {
-    const res = await apiFetch('/products', {
+  createProduct(productData: any): Promise<{ product: Product; message: string }> {
+    return apiCall<{ product: Product; message: string }>('/products', {
       method: 'POST',
       body: JSON.stringify(productData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Sipariş oluşturulamadı.');
-    return data;
   },
 
-  async toggleProductComplete(productId: string, completed: boolean): Promise<{ message: string }> {
-    const res = await apiFetch(`/products/${productId}/complete`, {
+  toggleProductComplete(productId: string, completed: boolean): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/complete`, {
       method: 'PUT',
       body: JSON.stringify({ completed }),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Sipariş durumu güncellenemedi.');
-    return data;
   },
 
-  async updateProduct(productId: string, productData: any): Promise<{ product: Product; message: string }> {
-    const res = await apiFetch(`/products/${productId}`, {
+  updateProduct(productId: string, productData: any): Promise<{ product: Product; message: string }> {
+    return apiCall<{ product: Product; message: string }>(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Sipariş güncellenemedi.');
-    return data;
   },
 
-  async deleteProduct(productId: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/products/${productId}`, {
+  deleteProduct(productId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}`, {
       method: 'DELETE',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Sipariş silinemedi.');
-    return data;
   },
 
   // Catalog
-  async getCatalog(): Promise<CatalogProduct[]> {
-    const res = await apiFetch('/catalog');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Katalog listelenemedi.');
-    return data;
+  getCatalog(): Promise<CatalogProduct[]> {
+    return apiCall<CatalogProduct[]>('/catalog');
   },
 
-  async addCatalogProduct(catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
-    const res = await apiFetch('/catalog', {
+  addCatalogProduct(catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
+    return apiCall<{ product: CatalogProduct; message: string }>('/catalog', {
       method: 'POST',
       body: JSON.stringify(catalogData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Kataloğa eklenemedi.');
-    return data;
   },
 
-  async updateCatalogProduct(id: string, catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
-    const res = await apiFetch(`/catalog/${id}`, {
+  updateCatalogProduct(id: string, catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
+    return apiCall<{ product: CatalogProduct; message: string }>(`/catalog/${id}`, {
       method: 'PUT',
       body: JSON.stringify(catalogData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Katalog ürünü güncellenemedi.');
-    return data;
   },
 
-  async deleteCatalogProduct(id: string): Promise<{ message: string }> {
-
-    const res = await apiFetch(`/catalog/${id}`, {
+  deleteCatalogProduct(id: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/catalog/${id}`, {
       method: 'DELETE',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Katalog ürünü silinemedi.');
-    return data;
   },
 
   // Fields
-  async getFields(): Promise<ExtraFieldDef[]> {
-    const res = await apiFetch('/fields');
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Özellikler listelenemedi.');
-    return data;
+  getFields(): Promise<ExtraFieldDef[]> {
+    return apiCall<ExtraFieldDef[]>('/fields');
   },
 
-  async createField(fieldData: any): Promise<{ field: ExtraFieldDef; message: string }> {
-    const res = await apiFetch('/fields', {
+  createField(fieldData: any): Promise<{ field: ExtraFieldDef; message: string }> {
+    return apiCall<{ field: ExtraFieldDef; message: string }>('/fields', {
       method: 'POST',
       body: JSON.stringify(fieldData),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Özellik oluşturulamadı.');
-    return data;
   },
 
-  async deleteField(id: string): Promise<{ message: string }> {
-    const res = await apiFetch(`/fields/${id}`, {
+  deleteField(id: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/fields/${id}`, {
       method: 'DELETE',
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || 'Özellik silinemedi.');
-    return data;
   }
 };
