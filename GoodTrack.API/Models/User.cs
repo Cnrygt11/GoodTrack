@@ -35,9 +35,9 @@ public class User
     [FirestoreProperty("isActive")]
     public bool IsActive { get; set; } = true;
 
-    [FirestoreProperty("verificationCode")]
-    public string VerificationCode { get; set; } = string.Empty;
+    [FirestoreProperty("verificationToken")]
+    public string VerificationToken { get; set; } = string.Empty;
 
-    [FirestoreProperty("verificationCodeExpiresAt")]
-    public string VerificationCodeExpiresAt { get; set; } = string.Empty;
+    [FirestoreProperty("verificationTokenExpiresAt")]
+    public string VerificationTokenExpiresAt { get; set; } = string.Empty;
 }

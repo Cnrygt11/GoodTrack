@@ -19,7 +19,7 @@ public class EmailService : IEmailService
         _logger = logger;
     }
 
-    public async Task SendVerificationEmailAsync(string email, string code)
+    public async Task SendVerificationEmailAsync(string email, string verificationLink)
     {
         var smtpServer = _configuration["EmailSettings:SmtpServer"];
         var portStr = _configuration["EmailSettings:Port"];
@@ -31,17 +31,27 @@ public class EmailService : IEmailService
                                 !string.IsNullOrWhiteSpace(senderEmail) &&
                                 !string.IsNullOrWhiteSpace(senderPassword);
 
-        string subject = "GoodTrack E-posta Doğrulama Kodu / Email Verification Code";
+        string subject = "GoodTrack Hesap Doğrulama / Account Verification";
         string body = $@"
-            <h3>GoodTrack E-posta Doğrulaması</h3>
-            <p>Sisteme kayıt olduğunuz için teşekkürler. Hesabınızı aktive etmek için aşağıdaki 6 haneli kodu kullanın:</p>
-            <h2 style='color:#f5a623; font-size:28px; letter-spacing:4px;'>{code}</h2>
-            <p>Bu kod 15 dakika geçerlidir.</p>
-            <hr />
-            <h3>GoodTrack Email Verification</h3>
-            <p>Thank you for registering. Please use the following 6-digit code to activate your account:</p>
-            <h2 style='color:#06b6d4; font-size:28px; letter-spacing:4px;'>{code}</h2>
-            <p>This code is valid for 15 minutes.</p>";
+            <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;'>
+                <h2 style='color: #06b6d4; text-align: center;'>GoodTrack Hesap Aktivasyonu</h2>
+                <p>Sisteme kayıt olduğunuz için teşekkürler. Hesabınızı aktive etmek için lütfen aşağıdaki doğrulama bağlantısına tıklayın:</p>
+                <div style='text-align: center; margin: 24px 0;'>
+                    <a href='{verificationLink}' style='background-color: #06b6d4; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;'>Hesabımı Doğrula</a>
+                </div>
+                <p style='font-size: 13px; color: #64748b; text-align: center;'>Bu bağlantı 15 dakika geçerlidir.</p>
+                <hr style='border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;' />
+                <h2 style='color: #0f172a; text-align: center;'>GoodTrack Account Activation</h2>
+                <p>Thank you for registering. Please click the button below to verify and activate your account:</p>
+                <div style='text-align: center; margin: 24px 0;'>
+                    <a href='{verificationLink}' style='background-color: #0f172a; color: #fff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;'>Verify My Account</a>
+                </div>
+                <p style='font-size: 13px; color: #64748b; text-align: center;'>This link is valid for 15 minutes.</p>
+                <p style='font-size: 11px; color: #94a3b8; text-align: center; margin-top: 20px;'>
+                    Bağlantı çalışmıyorsa aşağıdaki linki kopyalayıp tarayıcınıza yapıştırabilirsiniz:<br/>
+                    <a href='{verificationLink}' style='color: #06b6d4;'>{verificationLink}</a>
+                </p>
+            </div>";
 
         if (isSmtpConfigured)
         {
@@ -85,8 +95,8 @@ public class EmailService : IEmailService
             "\n==================================================\n" +
             "[EMAIL SIMULATOR] To: {Email}\n" +
             "[EMAIL SIMULATOR] Subject: {Subject}\n" +
-            "[EMAIL SIMULATOR] VERIFICATION CODE: {Code}\n" +
+            "[EMAIL SIMULATOR] VERIFICATION LINK: {Link}\n" +
             "==================================================",
-            email, subject, code);
+            email, subject, verificationLink);
     }
 }

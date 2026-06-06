@@ -31,20 +31,27 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Kayıt istek verisi eksik." });
         }
         _logger.LogInformation("Processing register request for username: {Username}", request.Username);
-        await _authService.RegisterAsync(request);
+        string baseUrl = $"{Request.Scheme}://{Request.Host}";
+        await _authService.RegisterAsync(request, baseUrl);
         return Ok(new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
     }
 
-    [HttpPost("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    [HttpGet("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromQuery] string username, [FromQuery] string token)
     {
-        if (request == null)
+        _logger.LogInformation("Processing email verification link for username: {Username}", username);
+        try
         {
-            return BadRequest(new { message = "E-posta doğrulama istek verisi eksik." });
+            await _authService.VerifyEmailAsync(username, token);
+            string successHtml = GetVerificationResultHtml(true, "Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.", "Account verified successfully! You can now log in.");
+            return Content(successHtml, "text/html", System.Text.Encoding.UTF8);
         }
-        _logger.LogInformation("Processing email verification for username: {Username}", request.Username);
-        await _authService.VerifyEmailAsync(request.Username, request.Code);
-        return Ok(new { message = "E-posta başarıyla doğrulandı. Hesabınız aktif edildi." });
+        catch (Exception ex)
+        {
+            _logger.LogWarning("Email verification link failed for {Username}: {Message}", username, ex.Message);
+            string errorHtml = GetVerificationResultHtml(false, ex.Message, "Verification link is invalid or expired.");
+            return Content(errorHtml, "text/html", System.Text.Encoding.UTF8);
+        }
     }
 
 
@@ -189,5 +196,166 @@ public class AuthController : ControllerBase
         _logger.LogInformation("Fetching list of all registered manufacturer accounts");
         var manufacturers = await _authService.GetAvailableManufacturersAsync();
         return Ok(manufacturers);
+    }
+
+    private string GetVerificationResultHtml(bool isSuccess, string messageTr, string messageEn)
+    {
+        string iconClass = isSuccess ? "icon-success" : "icon-error";
+        string iconSymbol = isSuccess ? "✓" : "✗";
+        string title = isSuccess ? "Doğrulama Başarılı / Verification Successful" : "Doğrulama Başarısız / Verification Failed";
+        string redirectMeta = isSuccess ? "<meta http-equiv=\"refresh\" content=\"4;url=/\" />" : "";
+        string infoText = isSuccess 
+            ? "4 saniye içinde otomatik olarak giriş sayfasına yönlendiriliyorsunuz..." 
+            : "Lütfen kayıt sayfasına dönerek yeni bir doğrulama bağlantısı talep edin.";
+
+        return $@"<!DOCTYPE html>
+<html lang=""tr"">
+<head>
+    <meta charset=""UTF-8"">
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+    {redirectMeta}
+    <title>GoodTrack - E-posta Doğrulama</title>
+    <link href=""https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap"" rel=""stylesheet"">
+    <style>
+        :root {{
+            --bg: #0b0f19;
+            --surface: rgba(23, 28, 41, 0.6);
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --primary: #06b6d4;
+            --primary-glow: rgba(6, 182, 212, 0.15);
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: rgba(255, 255, 255, 0.08);
+        }}
+        body {{
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            font-family: 'Outfit', sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }}
+        body::before {{
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary-glow);
+            border-radius: 50%;
+            filter: blur(100px);
+            top: 20%;
+            left: 10%;
+            z-index: 1;
+        }}
+        body::after {{
+            content: '';
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 50%;
+            filter: blur(100px);
+            bottom: 20%;
+            right: 10%;
+            z-index: 1;
+        }}
+        .container {{
+            position: relative;
+            z-index: 10;
+            background: var(--surface);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 40px;
+            width: 90%;
+            max-width: 440px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            animation: fadeIn 0.8s ease-out;
+        }}
+        @keyframes fadeIn {{
+            from {{ opacity: 0; transform: translateY(20px); }}
+            to {{ opacity: 1; transform: translateY(0); }}
+        }}
+        .icon-container {{
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            margin: 0 auto 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: bold;
+        }}
+        .icon-success {{
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }}
+        .icon-error {{
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+        }}
+        h2 {{
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0 0 16px;
+            letter-spacing: -0.5px;
+        }}
+        p {{
+            font-size: 14px;
+            color: var(--text-sub);
+            line-height: 1.6;
+            margin: 0 0 24px;
+        }}
+        .btn {{
+            display: inline-block;
+            background: var(--primary);
+            color: #0b0f19;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25);
+            border: none;
+            cursor: pointer;
+        }}
+        .btn:hover {{
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4);
+        }}
+        .redirect-text {{
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 16px;
+        }}
+    </style>
+</head>
+<body>
+    <div class=""container"">
+        <div class=""icon-container {iconClass}"">{iconSymbol}</div>
+        <h2>{title}</h2>
+        <p style=""color: var(--text-main); font-weight: 500;"">{messageTr}</p>
+        <p style=""font-size: 13px;"">{messageEn}</p>
+        <div style=""margin-top: 24px;"">
+            <a href=""/"" class=""btn"">Giriş Yap / Sign In</a>
+        </div>
+        <div class=""redirect-text"">{infoText}</div>
+    </div>
+</body>
+</html>";
     }
 }

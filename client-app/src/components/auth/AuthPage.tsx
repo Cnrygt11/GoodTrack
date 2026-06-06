@@ -27,7 +27,6 @@ export default function AuthPage() {
   // Email verification state
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationUsername, setVerificationUsername] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
 
   // Real-time validations
   const [usernameValid, setUsernameValid] = useState({ valid: true, dirty: false });
@@ -125,7 +124,7 @@ export default function AuthPage() {
         role: regRole,
       });
 
-      showToast(data.message || (language === 'tr' ? 'Kayıt başarılı! Lütfen e-postanıza gönderilen kodu girin.' : 'Registration successful! Please enter the code sent to your email.'));
+      showToast(data.message || (language === 'tr' ? 'Kayıt başarılı! Lütfen doğrulama e-postasını kontrol edin.' : 'Registration successful! Please check your verification email.'));
       setVerificationUsername(regUsername.trim());
       setVerificationPending(true);
       
@@ -137,20 +136,6 @@ export default function AuthPage() {
       setRegPassword('');
       setRegConfirm('');
       setRegRole('seller');
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  const handleVerifySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const data = await api.verifyEmail(verificationUsername, verificationCode.trim());
-      showToast(data.message || (language === 'tr' ? 'Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.' : 'Account verified successfully! You can now log in.'));
-      setVerificationPending(false);
-      setVerificationCode('');
-      setLoginUsername(verificationUsername);
-      setActiveTab('login');
     } catch (err: any) {
       alert(err.message);
     }
@@ -208,43 +193,42 @@ export default function AuthPage() {
 
       <div className="auth-card">
         {verificationPending ? (
-          <div>
-            <h3 style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--text-main)' }}>
-              {language === 'tr' ? 'E-posta Doğrulama' : 'Email Verification'}
+          <div style={{ textAlign: 'center', padding: '10px 0' }}>
+            <div style={{ 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '50%', 
+              background: 'rgba(6, 182, 212, 0.1)', 
+              color: 'var(--primary)', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              margin: '0 auto 20px', 
+              fontSize: '28px',
+              border: '1px solid rgba(6, 182, 212, 0.2)',
+              boxShadow: '0 0 16px rgba(6, 182, 212, 0.1)'
+            }}>
+              ✉️
+            </div>
+            <h3 style={{ marginBottom: '12px', color: 'var(--text-main)', fontSize: '20px', fontWeight: 600 }}>
+              {language === 'tr' ? 'Doğrulama E-postası Gönderildi' : 'Verification Email Sent'}
             </h3>
-            <p style={{ fontSize: '13px', textAlign: 'center', color: 'var(--text-sub)', marginBottom: '20px' }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--text-sub)', lineHeight: '1.6', marginBottom: '24px' }}>
               {language === 'tr' 
-                ? `Lütfen ${verificationUsername} kullanıcısı için e-postanıza gönderilen 6 haneli doğrulama kodunu girin.`
-                : `Please enter the 6-digit verification code sent to your email for user ${verificationUsername}.`}
+                ? `Lütfen ${verificationUsername} hesabı için e-posta kutunuzu kontrol edin ve size gönderdiğimiz doğrulama linkine tıklayın. Hesabınız aktif edildiğinde giriş yapabilirsiniz.`
+                : `Please check your inbox for user ${verificationUsername} and click the verification link we sent you. You can log in once your account is activated.`}
             </p>
-            <form onSubmit={handleVerifySubmit}>
-              <div className="form-group" style={{ marginBottom: '20px' }}>
-                <label>{language === 'tr' ? 'Doğrulama Kodu' : 'Verification Code'}</label>
-                <input 
-                  type="text" 
-                  required 
-                  maxLength={6}
-                  placeholder="------" 
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                  style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', fontWeight: 'bold' }}
-                />
-              </div>
-              <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '10px' }}>
-                {language === 'tr' ? 'Kodu Onayla' : 'Verify Code'}
-              </button>
-              <button 
-                type="button" 
-                className="btn-secondary" 
-                style={{ width: '100%' }}
-                onClick={() => {
-                  setVerificationPending(false);
-                  setVerificationCode('');
-                }}
-              >
-                {language === 'tr' ? 'İptal Et / Geri Dön' : 'Cancel / Go Back'}
-              </button>
-            </form>
+            <button 
+              type="button" 
+              className="btn-primary" 
+              style={{ width: '100%' }}
+              onClick={() => {
+                setVerificationPending(false);
+                setActiveTab('login');
+              }}
+            >
+              {language === 'tr' ? 'Giriş Sayfasına Dön' : 'Back to Login'}
+            </button>
           </div>
         ) : (
           <>

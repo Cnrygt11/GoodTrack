@@ -143,13 +143,6 @@ export const api = {
     });
   },
 
-  verifyEmail(username: string, code: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>('/auth/verify-email', {
-      method: 'POST',
-      body: JSON.stringify({ username, code }),
-    });
-  },
-
   // Connections
   getConnections(): Promise<ConnectionUser[]> {
     return apiCall<ConnectionUser[]>('/auth/connections');

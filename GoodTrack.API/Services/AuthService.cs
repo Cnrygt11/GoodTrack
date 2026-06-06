@@ -83,7 +83,7 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task RegisterAsync(RegisterRequest request)
+    public async Task RegisterAsync(RegisterRequest request, string baseUrl)
     {
         if (request == null || 
             string.IsNullOrWhiteSpace(request.Username) || 
@@ -142,7 +142,7 @@ public class AuthService : IAuthService
             throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
         }
 
-        var verificationCode = new Random().Next(100000, 999999).ToString();
+        var verificationToken = Guid.NewGuid().ToString("N");
 
         var user = new User
         {
@@ -153,20 +153,23 @@ public class AuthService : IAuthService
             Role = request.Role,
             CreatedAt = DateTime.UtcNow.ToString("o"),
             IsActive = false,
-            VerificationCode = verificationCode,
-            VerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(15).ToString("o")
+            VerificationToken = verificationToken,
+            VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15).ToString("o")
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         await _userRepository.SaveAsync(user);
 
+        // Generate dynamic verification link
+        var verificationLink = $"{baseUrl.TrimEnd('/')}/api/auth/verify-email?username={Uri.EscapeDataString(user.Username)}&token={Uri.EscapeDataString(verificationToken)}";
+
         // Send Email asynchronously in background so registration is fast
         _ = Task.Run(async () =>
         {
             try
             {
-                await _emailService.SendVerificationEmailAsync(user.Email, verificationCode);
+                await _emailService.SendVerificationEmailAsync(user.Email, verificationLink);
             }
             catch (Exception ex)
             {
@@ -175,11 +178,11 @@ public class AuthService : IAuthService
         });
     }
 
-    public async Task VerifyEmailAsync(string username, string code)
+    public async Task VerifyEmailAsync(string username, string token)
     {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(code))
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(token))
         {
-            throw new ArgumentException("Kullanıcı adı ve doğrulama kodu zorunludur!");
+            throw new ArgumentException("Kullanıcı adı ve doğrulama bağlantısı geçersiz!");
         }
 
         var usernameClean = username.Trim().ToLower();
@@ -194,20 +197,20 @@ public class AuthService : IAuthService
             return; // Already active, no further action needed
         }
 
-        if (user.VerificationCode != code.Trim())
+        if (user.VerificationToken != token.Trim())
         {
-            throw new ArgumentException("Geçersiz doğrulama kodu! / Invalid verification code!");
+            throw new ArgumentException("Doğrulama bağlantısı geçersiz veya hatalı!");
         }
 
-        if (string.IsNullOrEmpty(user.VerificationCodeExpiresAt) || 
-            DateTime.Parse(user.VerificationCodeExpiresAt) < DateTime.UtcNow)
+        if (string.IsNullOrEmpty(user.VerificationTokenExpiresAt) || 
+            DateTime.Parse(user.VerificationTokenExpiresAt) < DateTime.UtcNow)
         {
-            throw new ArgumentException("Doğrulama kodunun süresi dolmuş! / Verification code has expired!");
+            throw new ArgumentException("Doğrulama bağlantısının süresi dolmuş!");
         }
 
         user.IsActive = true;
-        user.VerificationCode = string.Empty;
-        user.VerificationCodeExpiresAt = string.Empty;
+        user.VerificationToken = string.Empty;
+        user.VerificationTokenExpiresAt = string.Empty;
 
         await _userRepository.SaveAsync(user);
     }

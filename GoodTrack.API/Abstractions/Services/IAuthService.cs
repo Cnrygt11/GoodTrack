@@ -5,8 +5,8 @@ namespace GoodTrack.API.Abstractions.Services;
 public interface IAuthService
 {
     Task<LoginResponse> LoginAsync(LoginRequest request);
-    Task RegisterAsync(RegisterRequest request);
-    Task VerifyEmailAsync(string username, string code);
+    Task RegisterAsync(RegisterRequest request, string baseUrl);
+    Task VerifyEmailAsync(string username, string token);
     Task<List<UserDto>> GetConnectionsAsync(string userId);
     Task RemoveConnectionAsync(string userId, string targetId);
     Task<List<UserDto>> GetAvailableManufacturersAsync();
