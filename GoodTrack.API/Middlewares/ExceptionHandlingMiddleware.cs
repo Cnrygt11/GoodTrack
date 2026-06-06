@@ -28,7 +28,14 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception occurred during request to {Path}", context.Request.Path);
+            if (ex is UnauthorizedAccessException || ex is ArgumentException || ex is KeyNotFoundException)
+            {
+                _logger.LogWarning("Client request error at {Path}: {Message}", context.Request.Path, ex.Message);
+            }
+            else
+            {
+                _logger.LogError(ex, "Unhandled exception occurred during request to {Path}", context.Request.Path);
+            }
             await HandleExceptionAsync(context, ex);
         }
     }
