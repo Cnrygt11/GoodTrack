@@ -83,24 +83,9 @@ public class ProductsController : ControllerBase
             return Unauthorized();
         }
 
-        try
-        {
-            _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
-            var updated = await _productService.UpdateProductAsync(userId, id, product);
-            return Ok(new { product = updated, message = "Sipariş başarıyla güncellendi." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
+        _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
+        var updated = await _productService.UpdateProductAsync(userId, id, product);
+        return Ok(new { product = updated, message = "Sipariş başarıyla güncellendi." });
     }
 
     [HttpDelete("{id}")]
@@ -113,19 +98,8 @@ public class ProductsController : ControllerBase
             return Unauthorized();
         }
 
-        try
-        {
-            _logger.LogInformation("Seller user {UserId} is deleting production order: {Id}", userId, id);
-            await _productService.DeleteProductAsync(userId, id);
-            return Ok(new { message = "Sipariş başarıyla silindi." });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
+        _logger.LogInformation("Seller user {UserId} is deleting production order: {Id}", userId, id);
+        await _productService.DeleteProductAsync(userId, id);
+        return Ok(new { message = "Sipariş başarıyla silindi." });
     }
 }

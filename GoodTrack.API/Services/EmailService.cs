@@ -81,10 +81,12 @@ public class EmailService : IEmailService
         }
 
         // Fallback: print to console for development/test convenience
-        Console.WriteLine("\n==================================================");
-        Console.WriteLine($"[EMAIL SIMULATOR] To: {email}");
-        Console.WriteLine($"[EMAIL SIMULATOR] Subject: {subject}");
-        Console.WriteLine($"[EMAIL SIMULATOR] VERIFICATION CODE: {code}");
-        Console.WriteLine("==================================================\n");
+        _logger.LogWarning(
+            "\n==================================================\n" +
+            "[EMAIL SIMULATOR] To: {Email}\n" +
+            "[EMAIL SIMULATOR] Subject: {Subject}\n" +
+            "[EMAIL SIMULATOR] VERIFICATION CODE: {Code}\n" +
+            "==================================================",
+            email, subject, code);
     }
 }

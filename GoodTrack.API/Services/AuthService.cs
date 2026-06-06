@@ -26,6 +26,7 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly IHubContext<TrackingHub> _hubContext;
     private readonly IEmailService _emailService;
+    private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUserRepository userRepository,
@@ -33,7 +34,8 @@ public class AuthService : IAuthService
         IPasswordHasher<User> passwordHasher,
         IConfiguration configuration,
         IHubContext<TrackingHub> hubContext,
-        IEmailService emailService)
+        IEmailService emailService,
+        ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
@@ -41,6 +43,7 @@ public class AuthService : IAuthService
         _configuration = configuration;
         _hubContext = hubContext;
         _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -167,7 +170,7 @@ public class AuthService : IAuthService
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[Email Error] Failed to send verification email: {ex.Message}");
+                _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
             }
         });
     }
