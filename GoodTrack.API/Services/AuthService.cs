@@ -25,19 +25,22 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     private readonly IHubContext<TrackingHub> _hubContext;
+    private readonly IEmailService _emailService;
 
     public AuthService(
         IUserRepository userRepository,
         IConnectionRequestRepository connectionRequestRepository,
         IPasswordHasher<User> passwordHasher,
         IConfiguration configuration,
-        IHubContext<TrackingHub> hubContext)
+        IHubContext<TrackingHub> hubContext,
+        IEmailService emailService)
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
         _passwordHasher = passwordHasher;
         _configuration = configuration;
         _hubContext = hubContext;
+        _emailService = emailService;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -52,6 +55,12 @@ public class AuthService : IAuthService
         if (user == null)
         {
             throw new UnauthorizedAccessException("Geçersiz kullanıcı adı veya şifre!");
+        }
+
+        // Email Verification Check
+        if (!user.IsActive)
+        {
+            throw new UnauthorizedAccessException("Lütfen e-posta adresinizi doğrulayın! / Please verify your email!");
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
@@ -130,6 +139,8 @@ public class AuthService : IAuthService
             throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
         }
 
+        var verificationCode = new Random().Next(100000, 999999).ToString();
+
         var user = new User
         {
             Username = usernameClean,
@@ -137,10 +148,63 @@ public class AuthService : IAuthService
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Role = request.Role,
-            CreatedAt = DateTime.UtcNow.ToString("o")
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            IsActive = false,
+            VerificationCode = verificationCode,
+            VerificationCodeExpiresAt = DateTime.UtcNow.AddMinutes(15).ToString("o")
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+
+        await _userRepository.SaveAsync(user);
+
+        // Send Email asynchronously in background so registration is fast
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await _emailService.SendVerificationEmailAsync(user.Email, verificationCode);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Email Error] Failed to send verification email: {ex.Message}");
+            }
+        });
+    }
+
+    public async Task VerifyEmailAsync(string username, string code)
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(code))
+        {
+            throw new ArgumentException("Kullanıcı adı ve doğrulama kodu zorunludur!");
+        }
+
+        var usernameClean = username.Trim().ToLower();
+        var user = await _userRepository.GetByUsernameAsync(usernameClean);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        if (user.IsActive)
+        {
+            return; // Already active, no further action needed
+        }
+
+        if (user.VerificationCode != code.Trim())
+        {
+            throw new ArgumentException("Geçersiz doğrulama kodu! / Invalid verification code!");
+        }
+
+        if (string.IsNullOrEmpty(user.VerificationCodeExpiresAt) || 
+            DateTime.Parse(user.VerificationCodeExpiresAt) < DateTime.UtcNow)
+        {
+            throw new ArgumentException("Doğrulama kodunun süresi dolmuş! / Verification code has expired!");
+        }
+
+        user.IsActive = true;
+        user.VerificationCode = string.Empty;
+        user.VerificationCodeExpiresAt = string.Empty;
 
         await _userRepository.SaveAsync(user);
     }

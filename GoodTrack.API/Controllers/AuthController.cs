@@ -35,6 +35,19 @@ public class AuthController : ControllerBase
         return Ok(new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
     }
 
+    [HttpPost("verify-email")]
+    public async Task<IActionResult> VerifyEmail([FromBody] VerifyEmailRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new { message = "E-posta doğrulama istek verisi eksik." });
+        }
+        _logger.LogInformation("Processing email verification for username: {Username}", request.Username);
+        await _authService.VerifyEmailAsync(request.Username, request.Code);
+        return Ok(new { message = "E-posta başarıyla doğrulandı. Hesabınız aktif edildi." });
+    }
+
+
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {

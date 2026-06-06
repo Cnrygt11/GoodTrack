@@ -31,4 +31,13 @@ public class User
 
     [FirestoreProperty("associatedUserIds")]
     public List<string> AssociatedUserIds { get; set; } = new();
+
+    [FirestoreProperty("isActive")]
+    public bool IsActive { get; set; } = true;
+
+    [FirestoreProperty("verificationCode")]
+    public string VerificationCode { get; set; } = string.Empty;
+
+    [FirestoreProperty("verificationCodeExpiresAt")]
+    public string VerificationCodeExpiresAt { get; set; } = string.Empty;
 }

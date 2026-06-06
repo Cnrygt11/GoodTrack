@@ -6,6 +6,7 @@ public interface IAuthService
 {
     Task<LoginResponse> LoginAsync(LoginRequest request);
     Task RegisterAsync(RegisterRequest request);
+    Task VerifyEmailAsync(string username, string code);
     Task<List<UserDto>> GetConnectionsAsync(string userId);
     Task RemoveConnectionAsync(string userId, string targetId);
     Task<List<UserDto>> GetAvailableManufacturersAsync();

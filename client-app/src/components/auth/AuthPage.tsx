@@ -24,6 +24,11 @@ export default function AuthPage() {
   const [regConfirm, setRegConfirm] = useState('');
   const [regRole, setRegRole] = useState<'seller' | 'mfr'>('seller');
 
+  // Email verification state
+  const [verificationPending, setVerificationPending] = useState(false);
+  const [verificationUsername, setVerificationUsername] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+
   // Real-time validations
   const [usernameValid, setUsernameValid] = useState({ valid: true, dirty: false });
   const [emailValid, setEmailValid] = useState({ valid: true, dirty: false });
@@ -75,6 +80,10 @@ export default function AuthPage() {
       showToast(data.message || t('loginSuccess'));
       login(data.token, data.username, data.role, data.userId);
     } catch (err: any) {
+      if (err.message && (err.message.includes('doğrulayın') || err.message.includes('verify your email'))) {
+        setVerificationUsername(loginUsername.trim());
+        setVerificationPending(true);
+      }
       alert(err.message);
     }
   };
@@ -116,9 +125,9 @@ export default function AuthPage() {
         role: regRole,
       });
 
-      showToast(data.message || t('registerSuccess'));
-      setActiveTab('login');
-      setLoginUsername(regUsername.trim());
+      showToast(data.message || (language === 'tr' ? 'Kayıt başarılı! Lütfen e-postanıza gönderilen kodu girin.' : 'Registration successful! Please enter the code sent to your email.'));
+      setVerificationUsername(regUsername.trim());
+      setVerificationPending(true);
       
       // Clear inputs
       setFirstName('');
@@ -128,6 +137,20 @@ export default function AuthPage() {
       setRegPassword('');
       setRegConfirm('');
       setRegRole('seller');
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleVerifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const data = await api.verifyEmail(verificationUsername, verificationCode.trim());
+      showToast(data.message || (language === 'tr' ? 'Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.' : 'Account verified successfully! You can now log in.'));
+      setVerificationPending(false);
+      setVerificationCode('');
+      setLoginUsername(verificationUsername);
+      setActiveTab('login');
     } catch (err: any) {
       alert(err.message);
     }
@@ -184,159 +207,202 @@ export default function AuthPage() {
       </div>
 
       <div className="auth-card">
-        <div className="auth-tabs">
-          <button 
-            type="button"
-            className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`}
-            onClick={() => setActiveTab('login')}
-          >
-            {t('login')}
-          </button>
-          <button 
-            type="button"
-            className={`auth-tab ${activeTab === 'register' ? 'active register' : ''}`}
-            onClick={() => setActiveTab('register')}
-          >
-            {t('register')}
-          </button>
-        </div>
-
-        {activeTab === 'login' ? (
-          <form onSubmit={handleLoginSubmit}>
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label>{t('username')}</label>
-              <input 
-                type="text" 
-                required 
-                placeholder={t('username')} 
-                value={loginUsername}
-                onChange={(e) => setLoginUsername(e.target.value)}
-              />
-            </div>
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label>{t('password')}</label>
-              <input 
-                type="password" 
-                required 
-                placeholder={t('password')} 
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('login')}</button>
-          </form>
-        ) : (
-          <form onSubmit={handleRegisterSubmit}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-              <div className="form-group">
-                <label>{language === 'tr' ? 'İsim' : 'First Name'}</label>
+        {verificationPending ? (
+          <div>
+            <h3 style={{ textAlign: 'center', marginBottom: '10px', color: 'var(--text-main)' }}>
+              {language === 'tr' ? 'E-posta Doğrulama' : 'Email Verification'}
+            </h3>
+            <p style={{ fontSize: '13px', textAlign: 'center', color: 'var(--text-sub)', marginBottom: '20px' }}>
+              {language === 'tr' 
+                ? `Lütfen ${verificationUsername} kullanıcısı için e-postanıza gönderilen 6 haneli doğrulama kodunu girin.`
+                : `Please enter the 6-digit verification code sent to your email for user ${verificationUsername}.`}
+            </p>
+            <form onSubmit={handleVerifySubmit}>
+              <div className="form-group" style={{ marginBottom: '20px' }}>
+                <label>{language === 'tr' ? 'Doğrulama Kodu' : 'Verification Code'}</label>
                 <input 
                   type="text" 
                   required 
-                  placeholder={language === 'tr' ? 'İsminiz' : 'First Name'} 
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
+                  maxLength={6}
+                  placeholder="------" 
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
+                  style={{ textAlign: 'center', fontSize: '24px', letterSpacing: '8px', fontWeight: 'bold' }}
                 />
               </div>
-              <div className="form-group">
-                <label>{language === 'tr' ? 'Soyisim' : 'Last Name'}</label>
-                <input 
-                  type="text" 
-                  required 
-                  placeholder={language === 'tr' ? 'Soyisminiz' : 'Last Name'} 
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                />
-              </div>
-            </div>
-            
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label>{t('username')}</label>
-              <input 
-                type="text" 
-                required 
-                placeholder={t('username')} 
-                value={regUsername}
-                onChange={(e) => setRegUsername(e.target.value)}
-                style={getInputStyle(usernameValid)}
-              />
-              {usernameValid.dirty && !usernameValid.valid && (
-                <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
-                  {language === 'tr' 
-                    ? 'Kullanıcı adı 3-15 karakter olmalı, sadece küçük harf, rakam ve _ içermelidir!' 
-                    : 'Username must be 3-15 chars, containing only lowercase letters, numbers, and _!'}
-                </span>
-              )}
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label>{language === 'tr' ? 'E-posta Adresi' : 'Email Address'}</label>
-              <input 
-                type="email" 
-                required 
-                placeholder={language === 'tr' ? 'E-posta adresinizi girin' : 'Enter email address'} 
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                style={getInputStyle(emailValid)}
-              />
-              {emailValid.dirty && !emailValid.valid && (
-                <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
-                  {language === 'tr'
-                    ? 'Geçersiz veya şüpheli e-posta formatı! (Örn: ad.soyad@gmail.com)'
-                    : 'Invalid email format! (e.g., name@domain.com)'}
-                </span>
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
-              <div className="form-group">
-                <label>{t('password')}</label>
-                <input 
-                  type="password" 
-                  required 
-                  placeholder={t('password')} 
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  style={getInputStyle(passwordValid)}
-                />
-                {passwordValid.dirty && !passwordValid.valid && (
-                  <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '4px' }}>
-                    {language === 'tr' ? 'Şifre 6-20 karakter olmalı!' : 'Password must be 6-20 chars!'}
-                  </span>
-                )}
-              </div>
-              <div className="form-group">
-                <label>{t('confirmPassword')}</label>
-                <input 
-                  type="password" 
-                  required 
-                  placeholder={t('confirmPassword')} 
-                  value={regConfirm}
-                  onChange={(e) => setRegConfirm(e.target.value)}
-                  style={getInputStyle(confirmValid)}
-                />
-                {confirmValid.dirty && !confirmValid.valid && (
-                  <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '4px' }}>
-                    {t('passwordMismatch')}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '20px' }}>
-              <label>{t('selectRole')}</label>
-              <select 
-                value={regRole}
-                onChange={(e) => setRegRole(e.target.value as 'seller' | 'mfr')}
-                required
+              <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '10px' }}>
+                {language === 'tr' ? 'Kodu Onayla' : 'Verify Code'}
+              </button>
+              <button 
+                type="button" 
+                className="btn-secondary" 
+                style={{ width: '100%' }}
+                onClick={() => {
+                  setVerificationPending(false);
+                  setVerificationCode('');
+                }}
               >
-                <option value="seller">{t('seller')} {language === 'tr' ? '(🛍️ Sipariş Yönetimi)' : '(🛍️ Order Management)'}</option>
-                <option value="mfr">{t('mfr')} {language === 'tr' ? '(🏭 Sipariş Tamamlama)' : '(🏭 Order Fulfill)'}</option>
-              </select>
+                {language === 'tr' ? 'İptal Et / Geri Dön' : 'Cancel / Go Back'}
+              </button>
+            </form>
+          </div>
+        ) : (
+          <>
+            <div className="auth-tabs">
+              <button 
+                type="button"
+                className={`auth-tab ${activeTab === 'login' ? 'active' : ''}`}
+                onClick={() => setActiveTab('login')}
+              >
+                {t('login')}
+              </button>
+              <button 
+                type="button"
+                className={`auth-tab ${activeTab === 'register' ? 'active register' : ''}`}
+                onClick={() => setActiveTab('register')}
+              >
+                {t('register')}
+              </button>
             </div>
 
-            <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('register')}</button>
-          </form>
+            {activeTab === 'login' ? (
+              <form onSubmit={handleLoginSubmit}>
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>{t('username')}</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder={t('username')} 
+                    value={loginUsername}
+                    onChange={(e) => setLoginUsername(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label>{t('password')}</label>
+                  <input 
+                    type="password" 
+                    required 
+                    placeholder={t('password')} 
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                  />
+                </div>
+                <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('login')}</button>
+              </form>
+            ) : (
+              <form onSubmit={handleRegisterSubmit}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                  <div className="form-group">
+                    <label>{language === 'tr' ? 'İsim' : 'First Name'}</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder={language === 'tr' ? 'İsminiz' : 'First Name'} 
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{language === 'tr' ? 'Soyisim' : 'Last Name'}</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder={language === 'tr' ? 'Soyisminiz' : 'Last Name'} 
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>{t('username')}</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder={t('username')} 
+                    value={regUsername}
+                    onChange={(e) => setRegUsername(e.target.value)}
+                    style={getInputStyle(usernameValid)}
+                  />
+                  {usernameValid.dirty && !usernameValid.valid && (
+                    <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
+                      {language === 'tr' 
+                        ? 'Kullanıcı adı 3-15 karakter olmalı, sadece küçük harf, rakam ve _ içermelidir!' 
+                        : 'Username must be 3-15 chars, containing only lowercase letters, numbers, and _!'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>{language === 'tr' ? 'E-posta Adresi' : 'Email Address'}</label>
+                  <input 
+                    type="email" 
+                    required 
+                    placeholder={language === 'tr' ? 'E-posta adresinizi girin' : 'Enter email address'} 
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    style={getInputStyle(emailValid)}
+                  />
+                  {emailValid.dirty && !emailValid.valid && (
+                    <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
+                      {language === 'tr'
+                        ? 'Geçersiz veya şüpheli e-posta formatı! (Örn: ad.soyad@gmail.com)'
+                        : 'Invalid email format! (e.g., name@domain.com)'}
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                  <div className="form-group">
+                    <label>{t('password')}</label>
+                    <input 
+                      type="password" 
+                      required 
+                      placeholder={t('password')} 
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      style={getInputStyle(passwordValid)}
+                    />
+                    {passwordValid.dirty && !passwordValid.valid && (
+                      <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '4px' }}>
+                        {language === 'tr' ? 'Şifre 6-20 karakter olmalı!' : 'Password must be 6-20 chars!'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label>{t('confirmPassword')}</label>
+                    <input 
+                      type="password" 
+                      required 
+                      placeholder={t('confirmPassword')} 
+                      value={regConfirm}
+                      onChange={(e) => setRegConfirm(e.target.value)}
+                      style={getInputStyle(confirmValid)}
+                    />
+                    {confirmValid.dirty && !confirmValid.valid && (
+                      <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '4px' }}>
+                        {t('passwordMismatch')}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '20px' }}>
+                  <label>{t('selectRole')}</label>
+                  <select 
+                    value={regRole}
+                    onChange={(e) => setRegRole(e.target.value as 'seller' | 'mfr')}
+                    required
+                  >
+                    <option value="seller">{t('seller')} {language === 'tr' ? '(🛍️ Sipariş Yönetimi)' : '(🛍️ Order Management)'}</option>
+                    <option value="mfr">{t('mfr')} {language === 'tr' ? '(🏭 Sipariş Tamamlama)' : '(🏭 Order Fulfill)'}</option>
+                  </select>
+                </div>
+
+                <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('register')}</button>
+              </form>
+            )}
+          </>
         )}
       </div>
     </div>
