@@ -124,9 +124,9 @@ export default function AuthPage() {
         role: regRole,
       });
 
-      showToast(data.message || (language === 'tr' ? 'Kayıt başarılı! Lütfen doğrulama e-postasını kontrol edin.' : 'Registration successful! Please check your verification email.'));
-      setVerificationUsername(regUsername.trim());
-      setVerificationPending(true);
+      showToast(data.message || t('registerSuccess'));
+      setActiveTab('login');
+      setLoginUsername(regUsername.trim());
       
       // Clear inputs
       setFirstName('');

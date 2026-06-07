@@ -142,8 +142,6 @@ public class AuthService : IAuthService
             throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
         }
 
-        var verificationToken = Guid.NewGuid().ToString("N");
-
         var user = new User
         {
             Username = usernameClean,
@@ -152,30 +150,12 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            IsActive = false,
-            VerificationToken = verificationToken,
-            VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15).ToString("o")
+            IsActive = true
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         await _userRepository.SaveAsync(user);
-
-        // Generate dynamic verification link
-        var verificationLink = $"{baseUrl.TrimEnd('/')}/api/auth/verify-email?username={Uri.EscapeDataString(user.Username)}&token={Uri.EscapeDataString(verificationToken)}";
-
-        // Send Email asynchronously in background so registration is fast
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await _emailService.SendVerificationEmailAsync(user.Email, verificationLink);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to send verification email to {Email}", user.Email);
-            }
-        });
     }
 
     public async Task VerifyEmailAsync(string username, string token)
