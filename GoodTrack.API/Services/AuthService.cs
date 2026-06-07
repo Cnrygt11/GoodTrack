@@ -547,15 +547,15 @@ public class AuthService : IAuthService
             }
             user.Keywords = dto.Keywords ?? new List<string>();
 
-            // Product showcase image count checks (5 to 10 images)
+            // Product showcase image count checks (3 to 10 images)
             int imgCount = dto.ProductImages?.Count ?? 0;
-            if (imgCount > 0 && (imgCount < 5 || imgCount > 10))
+            if (imgCount > 0 && (imgCount < 3 || imgCount > 10))
             {
-                throw new ArgumentException("Ürün tanıtımı için en az 5, en fazla 10 görsel yüklemelisiniz!");
+                throw new ArgumentException("Ürün tanıtımı için en az 3, en fazla 10 görsel yüklemelisiniz!");
             }
-            if (dto.IsVisibleToSellers && imgCount < 5)
+            if (dto.IsVisibleToSellers && imgCount < 3)
             {
-                throw new ArgumentException("Mağazanızı satıcılara göstermek için en az 5 ürün görseli yüklemelisiniz!");
+                throw new ArgumentException("Mağazanızı satıcılara göstermek için en az 3 ürün görseli yüklemelisiniz!");
             }
 
             // Process product images using _imageStorageService.StoreImageAsync

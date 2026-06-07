@@ -364,11 +364,11 @@ export default function MyAccountPage() {
                   </div>
                 </div>
 
-                {/* Product Showcase Images (5 to 10) */}
+                {/* Product Showcase Images (3 to 10) */}
                 <div className="form-group">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <label>{t('productImagesLabel')}</label>
-                    <span style={{ fontSize: '11px', color: (productImages.length < 5 || productImages.length > 10) ? 'var(--danger)' : 'var(--success)' }}>
+                    <span style={{ fontSize: '11px', color: (productImages.length < 3 || productImages.length > 10) ? 'var(--danger)' : 'var(--success)' }}>
                       {productImages.length} / 10
                     </span>
                   </div>
@@ -483,12 +483,12 @@ export default function MyAccountPage() {
                     style={{ display: 'none' }}
                   />
 
-                  {productImages.length < 5 && (
+                  {productImages.length < 3 && (
                     <div style={{ marginTop: '8px', color: 'var(--danger)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <ImageIcon size={14} />
                       {language === 'tr' 
-                        ? 'Uyarı: Üretici arama dizininde çıkmak için en az 5 tanıtım görseli yüklemelisiniz.' 
-                        : 'Warning: You must upload at least 5 presentation images to appear in the search directory.'}
+                        ? 'Uyarı: Üretici arama dizininde çıkmak için en az 3 tanıtım görseli yüklemelisiniz.' 
+                        : 'Warning: You must upload at least 3 presentation images to appear in the search directory.'}
                     </div>
                   )}
                 </div>

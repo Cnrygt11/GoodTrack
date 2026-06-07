@@ -222,11 +222,11 @@ export default function useProfile() {
         showToast(t('bioLimitError'));
         return;
       }
-      if (productImages.length > 0 && (productImages.length < 5 || productImages.length > 10)) {
+      if (productImages.length > 0 && (productImages.length < 3 || productImages.length > 10)) {
         showToast(t('imageLimitError'));
         return;
       }
-      if (isVisibleToSellers && productImages.length < 5) {
+      if (isVisibleToSellers && productImages.length < 3) {
         showToast(t('imageLimitError'));
         return;
       }
