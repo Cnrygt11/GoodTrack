@@ -49,20 +49,13 @@ export default function MfrPage() {
       <div className="list-header">
         <h2 style={{ margin: 0 }}>{titleMap[activeTab]}</h2>
 
-        <div className="auth-tabs list-tabs">
+        <div className="segmented-control">
           {tabs.map(tab => (
             <button
               key={tab.key}
               type="button"
-              className={`auth-tab ${activeTab === tab.key ? 'active' : ''}`}
+              className={`segmented-btn ${activeTab === tab.key ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.key)}
-              style={{
-                position: 'relative',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                ...(activeTab === tab.key ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {})
-              }}
             >
               {tab.label}
               {badgeCounts[tab.key] > 0 && (

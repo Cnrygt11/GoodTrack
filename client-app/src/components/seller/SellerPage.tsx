@@ -100,11 +100,11 @@ export default function SellerPage() {
               )}
             </h2>
 
-            <div className="auth-tabs list-tabs">
-              <FilterTab filter="pending" label={language === 'tr' ? 'Bekleyenler' : 'Pending'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.pending} accentVar="var(--accent-seller)" />
-              <FilterTab filter="completed" label={language === 'tr' ? 'Tamamlananlar' : 'Completed'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.completed} accentVar="var(--accent-seller)" />
-              <FilterTab filter="defective" label={t('btnDefectiveOrders')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.defective} accentVar="var(--accent-seller)" />
-              <FilterTab filter="approval" label={t('btnPendingApprovalOrders')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.approval} accentVar="var(--accent-seller)" />
+            <div className="segmented-control">
+              <FilterTab filter="pending" label={language === 'tr' ? 'Bekleyenler' : 'Pending'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.pending} />
+              <FilterTab filter="completed" label={language === 'tr' ? 'Tamamlananlar' : 'Completed'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.completed} />
+              <FilterTab filter="defective" label={t('btnDefectiveOrders')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.defective} />
+              <FilterTab filter="approval" label={t('btnPendingApprovalOrders')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.approval} />
             </div>
           </div>
 
@@ -230,20 +230,15 @@ interface FilterTabProps {
   current: ListFilter;
   onChange: (f: ListFilter) => void;
   badgeCount: number;
-  accentVar: string;
 }
 
-function FilterTab({ filter, label, current, onChange, badgeCount, accentVar }: FilterTabProps) {
+function FilterTab({ filter, label, current, onChange, badgeCount }: FilterTabProps) {
   const isActive = current === filter;
   return (
     <button
       type="button"
-      className={`auth-tab ${isActive ? 'active' : ''}`}
+      className={`segmented-btn ${isActive ? 'active' : ''}`}
       onClick={() => onChange(filter)}
-      style={{
-        position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px',
-        ...(isActive ? { borderBottomColor: accentVar, color: 'var(--text)' } : {})
-      }}
     >
       {label}
       {badgeCount > 0 && (

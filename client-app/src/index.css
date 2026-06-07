@@ -776,12 +776,53 @@ h2 span.mfr-accent {
   width: 100%;
 }
 
-.list-tabs {
-  margin: 0;
-  width: 560px;
-  max-width: 100%;
+.segmented-control {
   display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 6px;
+  border-radius: 12px;
+  gap: 6px;
+  width: 580px;
+  max-width: 100%;
+}
+
+.segmented-btn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+}
+
+.segmented-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.seller-theme .segmented-btn.active {
+  background: var(--accent-seller);
+  color: #09090b;
+  box-shadow: 0 4px 12px var(--accent-seller-glow);
+}
+
+.mfr-theme .segmented-btn.active {
+  background: var(--accent-mfr);
+  color: #09090b;
+  box-shadow: 0 4px 12px var(--accent-mfr-glow);
 }
 
 .topbar-actions {
@@ -810,6 +851,23 @@ h2 span.mfr-accent {
 }
 
 @media (max-width: 768px) {
+  /* Scrollable segmented control buttons on mobile */
+  .segmented-control {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+  }
+  .segmented-control::-webkit-scrollbar {
+    display: none;
+  }
+  .segmented-btn {
+    flex: 0 0 auto;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
   /* Scrollable tabs on mobile instead of wrapping/squeezing */
   .auth-tabs {
     overflow-x: auto;
