@@ -21,6 +21,8 @@ export default function AuthPage() {
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPhone, setRegPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+90');
+  const [phoneBody, setPhoneBody] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
   const [regRole, setRegRole] = useState<'seller' | 'mfr'>('seller');
@@ -45,6 +47,12 @@ export default function AuthPage() {
     const regex = /^\+?[0-9\s\-()]{10,20}$/;
     setPhoneValid({ valid: regex.test(regPhone), dirty: true });
   }, [regPhone]);
+
+  // Combine countryCode and phoneBody to update regPhone
+  useEffect(() => {
+    const cleanBody = phoneBody.replace(/\s+/g, '');
+    setRegPhone(cleanBody ? `${countryCode}${cleanBody}` : '');
+  }, [countryCode, phoneBody]);
 
   // Validate Username
   useEffect(() => {
@@ -152,6 +160,8 @@ export default function AuthPage() {
       setLastName('');
       setRegUsername('');
       setRegEmail('');
+      setCountryCode('+90');
+      setPhoneBody('');
       setRegPhone('');
       setRegPassword('');
       setRegConfirm('');
@@ -358,14 +368,30 @@ export default function AuthPage() {
 
                 <div className="form-group" style={{ marginBottom: '14px' }}>
                   <label>{t('phone')}</label>
-                  <input 
-                    type="text" 
-                    required 
-                    placeholder={language === 'tr' ? 'Telefon numaranızı girin (Örn: 05551234567)' : 'Enter phone number (e.g., +905551234567)'} 
-                    value={regPhone}
-                    onChange={(e) => setRegPhone(e.target.value)}
-                    style={getInputStyle(phoneValid)}
-                  />
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <select
+                      value={countryCode}
+                      onChange={(e) => setCountryCode(e.target.value)}
+                      style={{ width: '120px', flexShrink: 0 }}
+                    >
+                      <option value="+90">🇹🇷 +90</option>
+                      <option value="+1">🇺🇸 +1</option>
+                      <option value="+44">🇬🇧 +44</option>
+                      <option value="+49">🇩🇪 +49</option>
+                      <option value="+33">🇫🇷 +33</option>
+                      <option value="+39">🇮🇹 +39</option>
+                      <option value="+34">🇪🇸 +34</option>
+                      <option value="+994">🇦🇿 +994</option>
+                    </select>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder={language === 'tr' ? '555 123 4567' : '555 123 4567'} 
+                      value={phoneBody}
+                      onChange={(e) => setPhoneBody(e.target.value)}
+                      style={{ ...getInputStyle(phoneValid), flexGrow: 1 }}
+                    />
+                  </div>
                   {phoneValid.dirty && !phoneValid.valid && (
                     <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
                       {t('phoneRequired')}
