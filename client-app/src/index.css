@@ -770,7 +770,7 @@ h2 span.mfr-accent {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 16px;
   margin-bottom: 24px;
   width: 100%;
@@ -800,11 +800,12 @@ h2 span.mfr-accent {
 }
 
 /* ===== RESPONSIVE STYLES ===== */
-@media (max-width: 991px) {
+@media (max-width: 1060px) {
   .list-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 16px;
+    gap: 12px;
+    flex-wrap: wrap;
   }
 }
 
