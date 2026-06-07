@@ -39,6 +39,9 @@ public class Product
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
 
+    [FirestoreProperty("completedAt")]
+    public string? CompletedAt { get; set; }
+
     [FirestoreProperty("sellerId")]
     public string SellerId { get; set; } = string.Empty;
 

@@ -88,10 +88,15 @@ public class ProductService : IProductService
         if (completed)
         {
             product.IsDefective = false; // Reset defective status if fixed/completed again
+            product.CompletedAt = DateTime.UtcNow.ToString("o");
             string? oldDefectImage = product.DefectImage;
             product.DefectNote = null;
             product.DefectImage = null;
             await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
+        }
+        else
+        {
+            product.CompletedAt = null;
         }
         await _productRepository.SaveAsync(product);
 

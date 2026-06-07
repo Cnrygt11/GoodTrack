@@ -152,6 +152,17 @@ export default function MfrPage() {
                   </div>
                 </div>
 
+                <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
+                  {p.completed ? (
+                    <>
+                      <span><strong>{t('sentDateLabel')}:</strong> {p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—'}</span>
+                      <span style={{ marginTop: '2px', color: 'var(--success)' }}><strong>{t('completedDateLabel')}:</strong> {p.completedAt ? new Date(p.completedAt).toLocaleString('tr-TR') : '—'}</span>
+                    </>
+                  ) : (
+                    <span><strong>{t('sentDateLabel')}:</strong> {dateStr}</span>
+                  )}
+                </div>
+
                 <div className="complete-checkbox" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <input 
                     type="checkbox" 

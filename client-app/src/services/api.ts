@@ -76,6 +76,7 @@ export interface Product {
   sellerId?: string;
   sellerName?: string;
   createdAt?: string;
+  completedAt?: string;
 }
 
 async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {

@@ -822,22 +822,30 @@ export default function SellerPage() {
 
                     <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
                       {p.isDefective ? (
-                        <span style={{ color: 'var(--danger)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--danger)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           <X size={12} />
                           {language === 'tr' ? 'Hatalı Sipariş' : 'Defective Order'}
                         </span>
                       ) : p.completed ? (
-                        <span style={{ color: 'var(--success)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--success)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           <CheckCircle2 size={12} />
                           {t('statusCompleted')}
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--accent-seller)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ color: 'var(--accent-seller)', display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           <Clock size={12} />
                           {t('statusInProduction')}
                         </span>
                       )}
-                      <span style={{ marginTop: '4px' }}>{dateStr}</span>
+                      
+                      {p.completed ? (
+                        <>
+                          <span><strong>{t('sentDateLabel')}:</strong> {p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—'}</span>
+                          <span style={{ marginTop: '2px', color: 'var(--success)' }}><strong>{t('completedDateLabel')}:</strong> {p.completedAt ? new Date(p.completedAt).toLocaleString('tr-TR') : '—'}</span>
+                        </>
+                      ) : (
+                        <span><strong>{t('sentDateLabel')}:</strong> {dateStr}</span>
+                      )}
                     </div>
                   </div>
                 );

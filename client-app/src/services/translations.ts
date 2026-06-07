@@ -156,6 +156,8 @@ export const translations = {
     btnReportDefect: 'Hatalı İşaretle',
     noDefectImage: 'Hata görseli yüklenmedi.',
     btnReport: 'Bildir',
+    sentDateLabel: 'Gönderim Tarihi',
+    completedDateLabel: 'Tamamlanma Tarihi',
   },
   en: {
     // Auth Page
@@ -314,6 +316,8 @@ export const translations = {
     btnReportDefect: 'Mark Defective',
     noDefectImage: 'No defect image uploaded.',
     btnReport: 'Report',
+    sentDateLabel: 'Sent Date',
+    completedDateLabel: 'Completed Date',
   }
 } as const;
 
