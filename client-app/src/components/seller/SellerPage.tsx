@@ -1,5 +1,5 @@
-import React from 'react';
-import { ClipboardList, PlusCircle, Package } from 'lucide-react';
+import React, { useCallback } from 'react';
+import { ClipboardList, PlusCircle, Package, Clock, AlertTriangle, CheckCircle2, XCircle, Send, Archive, Ban } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
@@ -11,6 +11,31 @@ import { TranslationKey } from '../../services/translations';
 import { Product } from '../../services/api';
 
 type ListFilter = 'awaiting' | 'broken' | 'production' | 'completed' | 'delivered' | 'defective' | 'to_ship' | 'shipped';
+
+function getTabIcon(tab: ListFilter, active: boolean) {
+  const size = 20;
+  const color = active ? 'var(--accent-seller)' : 'var(--muted)';
+  switch (tab) {
+    case 'awaiting':
+      return <Clock size={size} style={{ color }} />;
+    case 'broken':
+      return <AlertTriangle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
+    case 'production':
+      return <Clock size={size} style={{ color }} />;
+    case 'completed':
+      return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
+    case 'delivered':
+      return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
+    case 'defective':
+      return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
+    case 'to_ship':
+      return <Send size={size} style={{ color: active ? '#9c27b0' : 'var(--muted)' }} />;
+    case 'shipped':
+      return <Archive size={size} style={{ color }} />;
+    default:
+      return <Package size={size} style={{ color }} />;
+  }
+}
 
 export default function SellerPage() {
   const {
@@ -34,6 +59,17 @@ export default function SellerPage() {
 
   const { setProducts } = useData();
   const { showToast } = useToast();
+
+  const tabs = [
+    { key: 'awaiting' as const, label: t('tabAwaiting') },
+    { key: 'broken' as const, label: t('tabBroken') },
+    { key: 'production' as const, label: t('tabProduction') },
+    { key: 'completed' as const, label: t('tabCompleted') },
+    { key: 'delivered' as const, label: t('tabDelivered') },
+    { key: 'defective' as const, label: t('tabReportedIssues') },
+    { key: 'to_ship' as const, label: t('tabToShip') },
+    { key: 'shipped' as const, label: t('tabShipped') }
+  ];
 
   return (
     <div id="seller-screen">
@@ -90,53 +126,107 @@ export default function SellerPage() {
         />
       ) : (
         <>
-          {/* Orders List Header */}
-          <div className="list-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ margin: 0 }}>
-                {listFilter === 'awaiting' ? (
-                  language === 'tr' ? <>ONAY <span>BEKLEYENLER</span></> : <>AWAITING <span>APPROVAL</span></>
-                ) : listFilter === 'broken' ? (
-                  language === 'tr' ? <>BOZUK <span>SİPARİŞLER</span></> : <>BROKEN <span>ORDERS</span></>
-                ) : listFilter === 'production' ? (
-                  language === 'tr' ? <>ÜRETİMDEKİ <span>SİPARİŞLER</span></> : <>ORDERS <span>IN PRODUCTION</span></>
-                ) : listFilter === 'completed' ? (
-                  language === 'tr' ? <>ÜRETİMİ <span>TAMAMLANANLAR</span></> : <>COMPLETED <span>PRODUCTION</span></>
-                ) : listFilter === 'delivered' ? (
-                  language === 'tr' ? <>TESLİM <span>EDİLENLER</span></> : <>DELIVERED <span>ORDERS</span></>
-                ) : listFilter === 'defective' ? (
-                  language === 'tr' ? <>SORUN <span>BİLDİRDİKLERİM</span></> : <>REPORTED <span>ISSUES</span></>
-                ) : listFilter === 'to_ship' ? (
-                  language === 'tr' ? <>KARGOLANACAK <span>SİPARİŞLER</span></> : <>ORDERS <span>TO SHIP</span></>
-                ) : (
-                  language === 'tr' ? <>KARGOLANANLAR <span>(ARŞİV)</span></> : <>SHIPPED <span>(ARCHIVE)</span></>
-                )}
-              </h2>
+          {/* Dashboard Title */}
+          <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
+            {language === 'tr' ? <>SİPARİŞ <span>PANELİ</span></> : <>ORDER <span>DASHBOARD</span></>}
+          </h2>
 
-              {/* Sort Selector */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
-                <select
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-                  style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+          {/* Dashboard Cards Grid */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+            gap: '12px',
+            marginBottom: '28px'
+          }}>
+            {tabs.map(tab => {
+              const isActive = listFilter === tab.key;
+              const count = badgeCounts[tab.key] || 0;
+              return (
+                <button
+                  key={tab.key}
+                  onClick={() => setListFilter(tab.key)}
+                  style={{
+                    background: isActive ? 'var(--accent-seller-glow)' : 'var(--surface)',
+                    border: isActive ? '2px solid var(--accent-seller)' : '1px solid var(--border)',
+                    borderRadius: '12px',
+                    padding: '16px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isActive ? '0 8px 20px var(--accent-seller-glow)' : 'none',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.borderColor = 'var(--accent-seller)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.borderColor = 'var(--border)';
+                    }
+                  }}
                 >
-                  <option value="desc">{t('newestFirst')}</option>
-                  <option value="asc">{t('oldestFirst')}</option>
-                </select>
-              </div>
-            </div>
+                  <div style={{
+                    color: isActive ? 'var(--accent-seller)' : 'var(--muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {getTabIcon(tab.key, isActive)}
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: isActive ? 700 : 500,
+                    color: isActive ? 'var(--text)' : 'var(--muted)',
+                    textAlign: 'center'
+                  }}>
+                    {tab.label}
+                  </span>
+                  {count > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '8px',
+                      right: '8px',
+                      background: 'var(--danger)',
+                      color: 'white',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                    }}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
 
-            {/* 8 B2B Workflow Tabs */}
-            <div className="segmented-control" style={{ overflowX: 'auto', paddingBottom: '6px', display: 'flex', gap: '8px', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
-              <FilterTab filter="awaiting" label={t('tabAwaiting')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.awaiting} />
-              <FilterTab filter="broken" label={t('tabBroken')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.broken} />
-              <FilterTab filter="production" label={t('tabProduction')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.production} />
-              <FilterTab filter="completed" label={t('tabCompleted')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.completed} />
-              <FilterTab filter="delivered" label={t('tabDelivered')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.delivered} />
-              <FilterTab filter="defective" label={t('tabReportedIssues')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.defective} />
-              <FilterTab filter="to_ship" label={t('tabToShip')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.to_ship} />
-              <FilterTab filter="shipped" label={t('tabShipped')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.shipped} />
+          {/* Orders List Header */}
+          <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {language === 'tr' ? 'Sipariş Listesi:' : 'Order List:'}{' '}
+              <span style={{ color: 'var(--accent-seller)', fontWeight: 600 }}>{tabs.find(t => t.key === listFilter)?.label}</span>
+            </h3>
+
+            {/* Sort Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
+                style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+              >
+                <option value="desc">{t('newestFirst')}</option>
+                <option value="asc">{t('oldestFirst')}</option>
+              </select>
             </div>
           </div>
 
@@ -244,38 +334,6 @@ function TabButton({ active, onClick, icon, label }: TabButtonProps) {
     >
       {icon}
       {label}
-    </button>
-  );
-}
-
-interface FilterTabProps {
-  filter: ListFilter;
-  label: string;
-  current: ListFilter;
-  onChange: (f: ListFilter) => void;
-  badgeCount: number;
-}
-
-function FilterTab({ filter, label, current, onChange, badgeCount }: FilterTabProps) {
-  const isActive = current === filter;
-  return (
-    <button
-      type="button"
-      className={`segmented-btn ${isActive ? 'active' : ''}`}
-      onClick={() => onChange(filter)}
-      style={{ whiteSpace: 'nowrap' }}
-    >
-      {label}
-      {badgeCount > 0 && (
-        <span style={{
-          background: 'var(--danger)', color: 'white', fontSize: '10px', fontWeight: 700,
-          padding: '2px 6px', borderRadius: '10px', display: 'inline-flex',
-          alignItems: 'center', justifyContent: 'center', minWidth: '16px',
-          height: '16px', lineHeight: 1, boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
-        }}>
-          {badgeCount}
-        </span>
-      )}
     </button>
   );
 }

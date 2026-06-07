@@ -1,10 +1,33 @@
 import React from 'react';
-import { Factory, Package, Info } from 'lucide-react';
+import { Factory, Package, Info, Clock, AlertTriangle, CheckCircle2, XCircle, Archive, Play } from 'lucide-react';
 import useMfrOrders, { MfrTab } from '../../hooks/useMfrOrders';
 import MfrOrderCard from './MfrOrderCard';
 import DefectDetailsModal from './DefectDetailsModal';
 import { TranslationKey } from '../../services/translations';
 import { Product } from '../../services/api';
+
+function getTabIcon(tab: MfrTab, active: boolean) {
+  const size = 20;
+  const color = active ? 'var(--accent-mfr)' : 'var(--muted)';
+  switch (tab) {
+    case 'awaiting':
+      return <Clock size={size} style={{ color }} />;
+    case 'corrected':
+      return <CheckCircle2 size={size} style={{ color: active ? '#00bcd4' : 'var(--muted)' }} />;
+    case 'production':
+      return <Play size={size} style={{ color }} />;
+    case 'completed':
+      return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
+    case 'delivered':
+      return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
+    case 'defective':
+      return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
+    case 'shipped':
+      return <Archive size={size} style={{ color }} />;
+    default:
+      return <Package size={size} style={{ color }} />;
+  }
+}
 
 export default function MfrPage() {
   const {
@@ -51,56 +74,108 @@ export default function MfrPage() {
 
   return (
     <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div className="list-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ margin: 0 }}>{titleMap[activeTab]}</h2>
+      
+      {/* Dashboard Title */}
+      <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
+        {language === 'tr' ? <>ÜRETİM <span>PANELİ</span></> : <>PRODUCTION <span>DASHBOARD</span></>}
+      </h2>
 
-          {/* Sort Selector */}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
-            <select
-              value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-              style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
-            >
-              <option value="desc">{t('newestFirst')}</option>
-              <option value="asc">{t('oldestFirst')}</option>
-            </select>
-          </div>
-        </div>
-
-        {/* 7 Mfr Tabs */}
-        <div className="segmented-control" style={{ overflowX: 'auto', paddingBottom: '6px', display: 'flex', gap: '8px', maxWidth: '100%', WebkitOverflowScrolling: 'touch' }}>
-          {tabs.map(tab => (
+      {/* Dashboard Cards Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+        gap: '12px',
+        marginBottom: '28px'
+      }}>
+        {tabs.map(tab => {
+          const isActive = activeTab === tab.key;
+          const count = badgeCounts[tab.key] || 0;
+          return (
             <button
               key={tab.key}
-              type="button"
-              className={`segmented-btn ${activeTab === tab.key ? 'active' : ''}`}
               onClick={() => setActiveTab(tab.key)}
-              style={{ whiteSpace: 'nowrap' }}
+              style={{
+                background: isActive ? 'var(--accent-mfr-glow)' : 'var(--surface)',
+                border: isActive ? '2px solid var(--accent-mfr)' : '1px solid var(--border)',
+                borderRadius: '12px',
+                padding: '16px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: isActive ? '0 8px 20px var(--accent-mfr-glow)' : 'none',
+                position: 'relative'
+              }}
+              onMouseEnter={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.borderColor = 'var(--accent-mfr)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isActive) {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                }
+              }}
             >
-              {tab.label}
-              {badgeCounts[tab.key] > 0 && (
+              <div style={{
+                color: isActive ? 'var(--accent-mfr)' : 'var(--muted)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                {getTabIcon(tab.key, isActive)}
+              </div>
+              <span style={{
+                fontSize: '12px',
+                fontWeight: isActive ? 700 : 500,
+                color: isActive ? 'var(--text)' : 'var(--muted)',
+                textAlign: 'center'
+              }}>
+                {tab.label}
+              </span>
+              {count > 0 && (
                 <span style={{
+                  position: 'absolute',
+                  top: '8px',
+                  right: '8px',
                   background: 'var(--danger)',
                   color: 'white',
                   fontSize: '10px',
                   fontWeight: 700,
                   padding: '2px 6px',
                   borderRadius: '10px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minWidth: '16px',
-                  height: '16px',
-                  lineHeight: 1,
                   boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
                 }}>
-                  {badgeCounts[tab.key]}
+                  {count}
                 </span>
               )}
             </button>
-          ))}
+          );
+        })}
+      </div>
+
+      {/* Orders List Header */}
+      <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
+        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {language === 'tr' ? 'Sipariş Listesi:' : 'Order List:'}{' '}
+          <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>{tabs.find(t => t.key === activeTab)?.label}</span>
+        </h3>
+
+        {/* Sort Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
+          <select
+            value={sortOrder}
+            onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
+            style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+          >
+            <option value="desc">{t('newestFirst')}</option>
+            <option value="asc">{t('oldestFirst')}</option>
+          </select>
         </div>
       </div>
 
