@@ -141,6 +141,9 @@ export const translations = {
     mfrCompletedTitle: 'TAMAMLANAN SİPARİŞLER',
     noPendingOrders: 'Bekleyen sipariş bulunmamaktadır.',
     noCompletedOrders: 'Tamamlanmış sipariş bulunmamaktadır.',
+    sortByDate: 'Tarihe Göre Sırala',
+    newestFirst: 'Önce En Yeni',
+    oldestFirst: 'Önce En Eski',
   },
   en: {
     // Auth Page
@@ -284,6 +287,9 @@ export const translations = {
     mfrCompletedTitle: 'COMPLETED ORDERS',
     noPendingOrders: 'No pending orders.',
     noCompletedOrders: 'No completed orders.',
+    sortByDate: 'Sort by Date',
+    newestFirst: 'Newest First',
+    oldestFirst: 'Oldest First',
   }
 } as const;
 

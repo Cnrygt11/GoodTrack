@@ -45,6 +45,7 @@ export default function SellerPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [listFilter, setListFilter] = useState<'pending' | 'completed'>('pending');
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -264,7 +265,11 @@ export default function SellerPage() {
     }
   };
 
-  const sortedProducts = [...products].reverse();
+  const sortedProducts = [...products].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+  });
   const isCompletedView = listFilter === 'completed';
   const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
 
@@ -524,6 +529,18 @@ export default function SellerPage() {
                 {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
               </button>
             </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px', margin: '-8px 0 4px' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
+            <select 
+              value={sortOrder} 
+              onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
+              style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+            >
+              <option value="desc">{t('newestFirst')}</option>
+              <option value="asc">{t('oldestFirst')}</option>
+            </select>
           </div>
 
           <div className="product-list">
