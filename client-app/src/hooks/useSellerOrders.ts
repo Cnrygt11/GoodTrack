@@ -6,7 +6,7 @@ import { api, Product, ExtraFieldValue, CreateProductPayload } from '../services
 import { TranslationKey } from '../services/translations';
 import { compressImage } from '../utils/imageHelper';
 
-type ListFilter = 'pending' | 'completed' | 'defective' | 'approval';
+type ListFilter = 'awaiting' | 'broken' | 'production' | 'completed' | 'delivered' | 'defective' | 'to_ship' | 'shipped';
 type TabId = 'list' | 'create';
 
 interface UseSellerOrdersReturn {
@@ -53,10 +53,19 @@ interface UseSellerOrdersReturn {
 
   // Defect modal state
   isDefectModalOpen: boolean;
+  setIsDefectModalOpen: (v: boolean) => void;
+  defectType: 'defective' | 'missing';
+  setDefectType: (v: 'defective' | 'missing') => void;
   defectNote: string;
   setDefectNote: (v: string) => void;
   defectImage: string | null;
   defectImageFileName: string;
+
+  // Timeline modal state
+  selectedTimelineProduct: Product | null;
+  isTimelineModalOpen: boolean;
+  openTimeline: (p: Product) => void;
+  closeTimeline: () => void;
 
   // Dropdown state
   activeDropdownId: string | null;
@@ -78,7 +87,10 @@ interface UseSellerOrdersReturn {
   handleAddFieldSubmit: (e: React.FormEvent) => Promise<void>;
   handleRemoveField: (id: string) => Promise<void>;
   handleDeleteClick: (product: Product) => Promise<void>;
-  handleDefectClick: (product: Product) => void;
+  handleCancelOrder: (productId: string) => Promise<void>;
+  handleVerifyOrder: (productId: string, action: 'correct' | 'defective' | 'missing', note?: string | null, image?: string | null) => Promise<void>;
+  handleShipOrder: (productId: string) => Promise<void>;
+  handleDefectClick: (product: Product, type: 'defective' | 'missing') => void;
   handleDefectImageChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   handleDefectReportSubmit: (e: React.FormEvent) => Promise<void>;
   handleMarkSingleAsSeen: (productId: string, tab: ListFilter) => void;
@@ -99,7 +111,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
   // --- Tab & Filter State ---
   const [activeTab, setActiveTab] = useState<TabId>('list');
-  const [listFilter, setListFilter] = useState<ListFilter>('pending');
+  const [listFilter, setListFilter] = useState<ListFilter>('awaiting');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // --- Form State ---
@@ -121,10 +133,25 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
   // --- Defect Modal State ---
   const [isDefectModalOpen, setIsDefectModalOpen] = useState(false);
+  const [defectType, setDefectType] = useState<'defective' | 'missing'>('defective');
   const [defectProductId, setDefectProductId] = useState<string | null>(null);
   const [defectNote, setDefectNote] = useState('');
   const [defectImage, setDefectImage] = useState<string | null>(null);
   const [defectImageFileName, setDefectImageFileName] = useState('');
+
+  // --- Timeline Modal State ---
+  const [selectedTimelineProduct, setSelectedTimelineProduct] = useState<Product | null>(null);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+
+  const openTimeline = useCallback((p: Product) => {
+    setSelectedTimelineProduct(p);
+    setIsTimelineModalOpen(true);
+  }, []);
+
+  const closeTimeline = useCallback(() => {
+    setSelectedTimelineProduct(null);
+    setIsTimelineModalOpen(false);
+  }, []);
 
   // --- Dropdown State ---
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
@@ -135,10 +162,10 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
   // --- Notification State ---
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
-    pending: [], completed: [], defective: [], approval: []
+    awaiting: [], broken: [], production: [], completed: [], delivered: [], defective: [], to_ship: [], shipped: []
   });
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({
-    pending: 0, completed: 0, defective: 0, approval: 0
+    awaiting: 0, broken: 0, production: 0, completed: 0, delivered: 0, defective: 0, to_ship: 0, shipped: 0
   });
 
   // --- Effects ---
@@ -153,16 +180,24 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
   // Badge / unseen notification calculation
   useEffect(() => {
     const groupedIds: Record<string, string[]> = {
-      pending: products.filter(p => !p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
-      completed: products.filter(p => !!p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
-      defective: products.filter(p => !!p.isDefective && !p.isPendingApproval).map(p => p.id),
-      approval: products.filter(p => !!p.isPendingApproval).map(p => p.id)
+      awaiting: products.filter(p => p.status === 'awaiting' || p.status === 'corrected').map(p => p.id),
+      broken: products.filter(p => p.status === 'broken').map(p => p.id),
+      production: products.filter(p => p.status === 'production').map(p => p.id),
+      completed: products.filter(p => p.status === 'completed').map(p => p.id),
+      delivered: products.filter(p => p.status === 'delivered').map(p => p.id),
+      defective: products.filter(p => p.status === 'defective' || p.status === 'missing').map(p => p.id),
+      to_ship: products.filter(p => p.status === 'to_ship').map(p => p.id),
+      shipped: products.filter(p => p.status === 'shipped' || p.status === 'cancelled').map(p => p.id)
     };
 
-    const nextUnseen: Record<string, string[]> = { pending: [], completed: [], defective: [], approval: [] };
-    const nextBadgeCounts: Record<string, number> = { pending: 0, completed: 0, defective: 0, approval: 0 };
+    const nextUnseen: Record<string, string[]> = {
+      awaiting: [], broken: [], production: [], completed: [], delivered: [], defective: [], to_ship: [], shipped: []
+    };
+    const nextBadgeCounts: Record<string, number> = {
+      awaiting: 0, broken: 0, production: 0, completed: 0, delivered: 0, defective: 0, to_ship: 0, shipped: 0
+    };
 
-    const tabs: ListFilter[] = ['pending', 'completed', 'defective', 'approval'];
+    const tabs: ListFilter[] = ['awaiting', 'broken', 'production', 'completed', 'delivered', 'defective', 'to_ship', 'shipped'];
 
     tabs.forEach(tab => {
       const storageKey = `seen_seller_${tab}`;
@@ -170,13 +205,13 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
       let seen: string[] = [];
       if (seenRaw === null) {
-        seen = groupedIds[tab];
+        seen = groupedIds[tab] || [];
         localStorage.setItem(storageKey, JSON.stringify(seen));
       } else {
         seen = JSON.parse(seenRaw) as string[];
       }
 
-      const unseen = groupedIds[tab].filter(id => !seen.includes(id));
+      const unseen = (groupedIds[tab] || []).filter(id => !seen.includes(id));
       nextUnseen[tab] = unseen;
 
       if (listFilter !== tab) {
@@ -406,7 +441,59 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     }
   }, [language, editingProduct, setProducts, showToast, t, handleClearForm]);
 
-  const handleDefectClick = useCallback((product: Product) => {
+  const handleCancelOrder = useCallback(async (productId: string) => {
+    if (!confirm(language === 'tr' ? 'Siparişi iptal etmek istediğinize emin misiniz?' : 'Are you sure you want to cancel this order?')) return;
+    try {
+      setActionLoading(true);
+      const data = await api.updateOrderStatus(productId, 'cancelled');
+      showToast(data.message || t('statusUpdatedSuccess'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [language, showToast, t]);
+
+  const handleVerifyOrder = useCallback(async (productId: string, action: 'correct' | 'defective' | 'missing', note?: string | null, image?: string | null) => {
+    if (action === 'correct') {
+      if (!confirm(language === 'tr' ? 'Bu siparişi DOĞRU olarak onaylamak istediğinize emin misiniz?' : 'Are you sure you want to approve this order as CORRECT?')) return;
+      try {
+        setActionLoading(true);
+        const data = await api.updateOrderStatus(productId, 'to_ship');
+        showToast(data.message || t('statusUpdatedSuccess'));
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        alert(errorMessage);
+      } finally {
+        setActionLoading(false);
+      }
+    } else {
+      setDefectType(action === 'defective' ? 'defective' : 'missing');
+      setDefectProductId(productId);
+      setDefectNote(note || '');
+      setDefectImage(image || null);
+      setDefectImageFileName(image ? 'Mevcut Görsel' : '');
+      setIsDefectModalOpen(true);
+    }
+  }, [language, showToast, t]);
+
+  const handleShipOrder = useCallback(async (productId: string) => {
+    if (!confirm(language === 'tr' ? 'Siparişi kargolandı olarak işaretlemek istediğinize emin misiniz?' : 'Are you sure you want to mark this order as shipped?')) return;
+    try {
+      setActionLoading(true);
+      const data = await api.updateOrderStatus(productId, 'shipped');
+      showToast(data.message || t('statusUpdatedSuccess'));
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [language, showToast, t]);
+
+  const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
+    setDefectType(type);
     setDefectProductId(product.id);
     setDefectNote('');
     setDefectImage(null);
@@ -434,15 +521,9 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     try {
       isActionLoading.current = true;
       setActionLoading(true);
-      const data = await api.toggleProductDefective(defectProductId, true, defectNote, defectImage);
+      const targetStatus = defectType;
+      const data = await api.updateOrderStatus(defectProductId, targetStatus, defectNote, defectImage);
       showToast(data.message || t('statusUpdatedSuccess'));
-      setProducts((prev: Product[]) => prev.map(item => item.id === defectProductId ? {
-        ...item,
-        isDefective: true,
-        completed: false,
-        defectNote,
-        defectImage: defectImage ? (defectImage.startsWith('data:image') ? defectImage : item.defectImage) : null
-      } : item));
       setIsDefectModalOpen(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -451,7 +532,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [defectProductId, defectNote, defectImage, setProducts, showToast, t]);
+  }, [defectProductId, defectType, defectNote, defectImage, showToast, t]);
 
   const handleMarkSingleAsSeen = useCallback((productId: string, tab: ListFilter) => {
     setUnseenIds(prev => ({
@@ -473,10 +554,15 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
   });
 
   const filteredProducts = sortedProducts.filter(p => {
-    if (listFilter === 'pending') return !p.completed && !p.isDefective && !p.isPendingApproval;
-    if (listFilter === 'completed') return p.completed && !p.isDefective && !p.isPendingApproval;
-    if (listFilter === 'defective') return !!p.isDefective && !p.isPendingApproval;
-    if (listFilter === 'approval') return !!p.isPendingApproval;
+    const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
+    if (listFilter === 'awaiting') return status === 'awaiting' || status === 'corrected';
+    if (listFilter === 'broken') return status === 'broken';
+    if (listFilter === 'production') return status === 'production';
+    if (listFilter === 'completed') return status === 'completed';
+    if (listFilter === 'delivered') return status === 'delivered';
+    if (listFilter === 'defective') return status === 'defective' || status === 'missing';
+    if (listFilter === 'to_ship') return status === 'to_ship';
+    if (listFilter === 'shipped') return status === 'shipped' || status === 'cancelled';
     return true;
   });
 
@@ -488,11 +574,13 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     editingProduct, actionLoading,
     isFieldModalOpen, setIsFieldModalOpen, newFieldName, setNewFieldName,
     newFieldType, setNewFieldType, newFieldOptions, setNewFieldOptions,
-    isDefectModalOpen, defectNote, setDefectNote, defectImage, defectImageFileName,
+    isDefectModalOpen, setIsDefectModalOpen, defectType, setDefectType, defectNote, setDefectNote, defectImage, defectImageFileName,
+    selectedTimelineProduct, isTimelineModalOpen, openTimeline, closeTimeline,
     activeDropdownId, setActiveDropdownId,
     unseenIds, badgeCounts, filteredProducts,
     handleImageChange, handleClearForm, handleEditClick, handleExtraValueChange,
     handleSubmit, handleAddFieldSubmit, handleRemoveField, handleDeleteClick,
+    handleCancelOrder, handleVerifyOrder, handleShipOrder,
     handleDefectClick, handleDefectImageChange, handleDefectReportSubmit,
     handleMarkSingleAsSeen
   };

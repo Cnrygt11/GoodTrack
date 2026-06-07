@@ -110,6 +110,43 @@ public class ProductsController : ControllerBase
         return Ok(new { id, isPendingApproval = request.IsPendingApproval, message = "Sipariş onay durumu güncellendi." });
     }
 
+    [HttpPut("{id}/status")]
+    public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        {
+            return Unauthorized();
+        }
+
+        if (request == null || string.IsNullOrWhiteSpace(request.Status))
+        {
+            return BadRequest(new { message = "Hedef durum bilgisi eksik." });
+        }
+
+        _logger.LogInformation("User {UserId} with role {Role} is changing status of order {Id} to: {Status}", userId, role, id, request.Status);
+
+        try
+        {
+            await _productService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
+            return Ok(new { id, status = request.Status, message = "Sipariş durumu başarıyla güncellendi." });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Forbid(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     [HttpPut("{id}")]
     [Authorize(Roles = "seller")]
     public async Task<IActionResult> Update(string id, [FromBody] Product product)

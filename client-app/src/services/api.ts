@@ -67,6 +67,14 @@ export interface ExtraFieldValue {
   value: string;
 }
 
+export interface OrderLog {
+  timestamp: string;
+  status: string;
+  message: string;
+  userId: string;
+  userName: string;
+}
+
 export interface Product {
   id: string;
   code: string;
@@ -79,6 +87,8 @@ export interface Product {
   defectNote?: string;
   defectImage?: string | null;
   isPendingApproval?: boolean;
+  status?: string;
+  logs?: OrderLog[];
   mfrId: string;
   mfrName: string;
   sellerId?: string;
@@ -279,6 +289,13 @@ export const api = {
     return apiCall<{ message: string }>(`/products/${productId}/approval`, {
       method: 'PUT',
       body: JSON.stringify({ isPendingApproval }),
+    });
+  },
+
+  updateOrderStatus(productId: string, status: string, defectNote?: string | null, defectImage?: string | null): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, defectNote, defectImage }),
     });
   },
 

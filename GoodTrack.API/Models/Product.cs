@@ -38,6 +38,11 @@ public class Product
     [FirestoreProperty("defectImage")]
     public string? DefectImage { get; set; }
 
+    [FirestoreProperty("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [FirestoreProperty("logs")]
+    public List<OrderLog> Logs { get; set; } = new();
 
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;

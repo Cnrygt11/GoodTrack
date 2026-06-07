@@ -4,45 +4,75 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/api';
 
-type MfrTab = 'pending' | 'completed' | 'defective' | 'approval';
+export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
 export default function useMfrOrders() {
   const { products, setProducts } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
-  const [activeTab, setActiveTab] = useState<MfrTab>('pending');
+  const [activeTab, setActiveTab] = useState<MfrTab>('awaiting');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedDefectProduct, setSelectedDefectProduct] = useState<Product | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Timeline modal state
+  const [selectedTimelineProduct, setSelectedTimelineProduct] = useState<Product | null>(null);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+
+  // Action loading state
+  const [actionLoading, setActionLoading] = useState(false);
+
+  const openTimeline = useCallback((p: Product) => {
+    setSelectedTimelineProduct(p);
+    setIsTimelineModalOpen(true);
+  }, []);
+
+  const closeTimeline = useCallback(() => {
+    setSelectedTimelineProduct(null);
+    setIsTimelineModalOpen(false);
+  }, []);
+
   // Unseen orders notification states for each list filter tab
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
-    pending: [],
+    awaiting: [],
+    corrected: [],
+    production: [],
     completed: [],
+    delivered: [],
     defective: [],
-    approval: []
+    shipped: []
   });
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({
-    pending: 0,
+    awaiting: 0,
+    corrected: 0,
+    production: 0,
     completed: 0,
+    delivered: 0,
     defective: 0,
-    approval: 0
+    shipped: 0
   });
 
   useEffect(() => {
     // Group products by status
     const groupedIds: Record<string, string[]> = {
-      pending: products.filter(p => !p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
-      completed: products.filter(p => !!p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
-      defective: products.filter(p => !!p.isDefective && !p.isPendingApproval).map(p => p.id),
-      approval: products.filter(p => !!p.isPendingApproval).map(p => p.id)
+      awaiting: products.filter(p => p.status === 'awaiting').map(p => p.id),
+      corrected: products.filter(p => p.status === 'corrected').map(p => p.id),
+      production: products.filter(p => p.status === 'production').map(p => p.id),
+      completed: products.filter(p => p.status === 'completed').map(p => p.id),
+      delivered: products.filter(p => p.status === 'delivered').map(p => p.id),
+      defective: products.filter(p => p.status === 'defective' || p.status === 'missing').map(p => p.id),
+      shipped: products.filter(p => p.status === 'shipped' || p.status === 'cancelled').map(p => p.id)
     };
 
-    const nextUnseen: Record<string, string[]> = { pending: [], completed: [], defective: [], approval: [] };
-    const nextBadgeCounts: Record<string, number> = { pending: 0, completed: 0, defective: 0, approval: 0 };
+    const nextUnseen: Record<string, string[]> = {
+      awaiting: [], corrected: [], production: [], completed: [], delivered: [], defective: [], shipped: []
+    };
+    const nextBadgeCounts: Record<string, number> = {
+      awaiting: 0, corrected: 0, production: 0, completed: 0, delivered: 0, defective: 0, shipped: 0
+    };
 
-    const tabs: MfrTab[] = ['pending', 'completed', 'defective', 'approval'];
+    const tabs: MfrTab[] = ['awaiting', 'corrected', 'production', 'completed', 'delivered', 'defective', 'shipped'];
 
     tabs.forEach(tab => {
       const storageKey = `seen_mfr_${tab}`;
@@ -50,14 +80,13 @@ export default function useMfrOrders() {
 
       let seen: string[] = [];
       if (seenRaw === null) {
-        // First run: mark existing as seen so we only notify on new changes
-        seen = groupedIds[tab];
+        seen = groupedIds[tab] || [];
         localStorage.setItem(storageKey, JSON.stringify(seen));
       } else {
         seen = JSON.parse(seenRaw) as string[];
       }
 
-      const unseen = groupedIds[tab].filter(id => !seen.includes(id));
+      const unseen = (groupedIds[tab] || []).filter(id => !seen.includes(id));
       nextUnseen[tab] = unseen;
 
       if (activeTab !== tab) {
@@ -87,36 +116,18 @@ export default function useMfrOrders() {
     }
   }, []);
 
-  const handleToggleComplete = useCallback(async (productId: string, checked: boolean) => {
+  const handleUpdateStatus = useCallback(async (productId: string, status: string) => {
     try {
-      const data = await api.toggleProductComplete(productId, checked);
+      setActionLoading(true);
+      const data = await api.updateOrderStatus(productId, status);
       showToast(data.message || t('statusUpdatedSuccess'));
-
-      // Update local state
-      setProducts((prev: Product[]) => prev.map(p => {
-        if (p.id === productId) {
-          return { ...p, completed: checked };
-        }
-        return p;
-      }));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       alert(errorMessage);
+    } finally {
+      setActionLoading(false);
     }
-  }, [showToast, t, setProducts]);
-
-  const handleToggleApproval = useCallback(async (productId: string, isPendingApproval: boolean) => {
-    try {
-      const data = await api.toggleProductApproval(productId, isPendingApproval);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      setProducts((prev: Product[]) => prev.map(item =>
-        item.id === productId ? { ...item, isPendingApproval } : item
-      ));
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
-    }
-  }, [showToast, t, setProducts]);
+  }, [showToast, t]);
 
   const openDefectDetails = useCallback((product: Product) => {
     setSelectedDefectProduct(product);
@@ -136,36 +147,37 @@ export default function useMfrOrders() {
 
   // Computed: filtered products based on active tab
   const filteredProducts = sortedProducts.filter(p => {
-    if (activeTab === 'pending') return !p.completed && !p.isDefective && !p.isPendingApproval;
-    if (activeTab === 'completed') return p.completed && !p.isDefective && !p.isPendingApproval;
-    if (activeTab === 'defective') return !!p.isDefective && !p.isPendingApproval;
-    if (activeTab === 'approval') return !!p.isPendingApproval;
+    const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
+    if (activeTab === 'awaiting') return status === 'awaiting';
+    if (activeTab === 'corrected') return status === 'corrected';
+    if (activeTab === 'production') return status === 'production';
+    if (activeTab === 'completed') return status === 'completed';
+    if (activeTab === 'delivered') return status === 'delivered';
+    if (activeTab === 'defective') return status === 'defective' || status === 'missing';
+    if (activeTab === 'shipped') return status === 'shipped' || status === 'cancelled';
     return true;
   });
 
   return {
-    // Context values
     language,
     t,
-
-    // State
     activeTab,
     setActiveTab,
     sortOrder,
     setSortOrder,
     selectedDefectProduct,
     isDetailsModalOpen,
+    selectedTimelineProduct,
+    isTimelineModalOpen,
+    actionLoading,
     unseenIds,
     badgeCounts,
-
-    // Handlers
-    handleToggleComplete,
-    handleToggleApproval,
+    openTimeline,
+    closeTimeline,
+    handleUpdateStatus,
     handleMarkSingleAsSeen,
     openDefectDetails,
     closeDefectDetails,
-
-    // Derived data
     filteredProducts
   };
 }

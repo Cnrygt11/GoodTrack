@@ -11,5 +11,6 @@ public interface IProductService
     Task DeleteProductAsync(string sellerId, string orderId);
     Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective, string? defectNote, string? defectImage);
     Task ToggleOrderApprovalAsync(string userId, string role, string orderId, bool isPendingApproval);
+    Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null);
 }
 
