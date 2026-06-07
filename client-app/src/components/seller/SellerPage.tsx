@@ -44,6 +44,7 @@ export default function SellerPage() {
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const [listFilter, setListFilter] = useState<'pending' | 'completed'>('pending');
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -264,6 +265,8 @@ export default function SellerPage() {
   };
 
   const sortedProducts = [...products].reverse();
+  const isCompletedView = listFilter === 'completed';
+  const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
 
   return (
     <div id="seller-screen">
@@ -494,17 +497,47 @@ export default function SellerPage() {
       ) : (
         <>
           {/* Dynamic Orders list */}
-          <h2 style={{ marginTop: 0 }}>{language === 'tr' ? <>GÖNDERİLEN <span>SİPARİŞLER</span></> : <>SENT <span>ORDERS</span></>}</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+            <h2 style={{ margin: 0 }}>
+              {isCompletedView ? (
+                language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
+              ) : (
+                language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
+              )}
+            </h2>
+            
+            <div className="auth-tabs" style={{ margin: 0, width: '300px' }}>
+              <button 
+                type="button"
+                className={`auth-tab ${listFilter === 'pending' ? 'active' : ''}`}
+                onClick={() => setListFilter('pending')}
+                style={listFilter === 'pending' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+              >
+                {language === 'tr' ? 'Bekleyenler' : 'Pending'}
+              </button>
+              <button 
+                type="button"
+                className={`auth-tab ${listFilter === 'completed' ? 'active' : ''}`}
+                onClick={() => setListFilter('completed')}
+                style={listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+              >
+                {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
+              </button>
+            </div>
+          </div>
+
           <div className="product-list">
-            {sortedProducts.length === 0 ? (
+            {filteredProducts.length === 0 ? (
               <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '40px 0' }}>
                 <div className="empty-icon">
                   <Package size={36} style={{ color: 'var(--muted)' }} />
                 </div>
-                <p style={{ margin: 0, color: 'var(--muted)' }}>{t('noSentOrders')}</p>
+                <p style={{ margin: 0, color: 'var(--muted)' }}>
+                  {isCompletedView ? t('noCompletedOrders') : t('noPendingOrders')}
+                </p>
               </div>
             ) : (
-              sortedProducts.map(p => {
+              filteredProducts.map(p => {
                 const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
                 return (
                   <div key={p.id} className={`product-card ${p.completed ? 'completed' : ''}`}>
