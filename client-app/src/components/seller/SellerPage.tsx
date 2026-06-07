@@ -87,7 +87,7 @@ export default function SellerPage() {
       ) : (
         <>
           {/* Orders List Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+          <div className="list-header">
             <h2 style={{ margin: 0 }}>
               {listFilter === 'completed' ? (
                 language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
@@ -100,7 +100,7 @@ export default function SellerPage() {
               )}
             </h2>
 
-            <div className="auth-tabs" style={{ margin: 0, width: '560px', maxWidth: '100%', display: 'flex', gap: '8px' }}>
+            <div className="auth-tabs list-tabs">
               <FilterTab filter="pending" label={language === 'tr' ? 'Bekleyenler' : 'Pending'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.pending} accentVar="var(--accent-seller)" />
               <FilterTab filter="completed" label={language === 'tr' ? 'Tamamlananlar' : 'Completed'} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.completed} accentVar="var(--accent-seller)" />
               <FilterTab filter="defective" label={t('btnDefectiveOrders')} current={listFilter} onChange={setListFilter} badgeCount={badgeCounts.defective} accentVar="var(--accent-seller)" />

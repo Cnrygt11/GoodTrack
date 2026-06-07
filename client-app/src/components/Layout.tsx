@@ -39,9 +39,9 @@ export default function Layout({ children }: LayoutProps) {
           </span>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <div className="topbar-actions">
           {/* Theme & Language Switchers */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid var(--border)', paddingRight: '16px' }}>
+          <div className="topbar-switchers">
             {/* Theme Toggle */}
             <button
               type="button"

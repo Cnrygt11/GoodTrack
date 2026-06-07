@@ -139,7 +139,7 @@ export default function SellerOrderCard({
       </div>
 
       {/* Status & Dates */}
-      <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
+      <div className="product-status-dates" style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
         {p.isPendingApproval ? (
           <span style={{ color: 'var(--accent-mfr)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
             <Clock size={12} />

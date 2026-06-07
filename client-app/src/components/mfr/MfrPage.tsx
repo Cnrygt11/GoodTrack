@@ -46,10 +46,10 @@ export default function MfrPage() {
 
   return (
     <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+      <div className="list-header">
         <h2 style={{ margin: 0 }}>{titleMap[activeTab]}</h2>
 
-        <div className="auth-tabs" style={{ margin: 0, width: '560px', maxWidth: '100%', display: 'flex', gap: '8px' }}>
+        <div className="auth-tabs list-tabs">
           {tabs.map(tab => (
             <button
               key={tab.key}

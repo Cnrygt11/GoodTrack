@@ -765,7 +765,148 @@ h2 span.mfr-accent {
   to { transform: translateY(0); opacity: 1; }
 }
 
-/* Responsive grid layouts */
+/* ===== LIST HEADER AND TABS ===== */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+  width: 100%;
+}
+
+.list-tabs {
+  margin: 0;
+  width: 560px;
+  max-width: 100%;
+  display: flex;
+  gap: 8px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.topbar-switchers {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-right: 1px solid var(--border);
+  padding-right: 16px;
+}
+
+/* ===== RESPONSIVE STYLES ===== */
+@media (max-width: 991px) {
+  .list-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  /* Scrollable tabs on mobile instead of wrapping/squeezing */
+  .auth-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none; /* Firefox */
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+  }
+  
+  .auth-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+  
+  .auth-tab {
+    flex: 0 0 auto;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  /* Product Card Mobile Layout */
+  .product-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 18px;
+  }
+  
+  .product-thumb {
+    width: 100% !important;
+    height: 140px !important;
+  }
+  
+  .product-status-dates {
+    align-items: flex-start !important;
+    text-align: left !important;
+    margin-right: 0 !important;
+    border-top: 1px solid var(--border);
+    padding-top: 10px !important;
+    width: 100%;
+  }
+  
+  .complete-checkbox {
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    width: 100%;
+    border-top: 1px solid var(--border);
+    padding-top: 10px !important;
+    margin-left: 0 !important;
+    align-items: center !important;
+  }
+  
+  .complete-checkbox label {
+    font-size: 12px !important;
+  }
+  
+  /* Topbar Mobile Layout */
+  .topbar {
+    padding: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    position: static; /* Let topbar scroll with content on mobile */
+  }
+  
+  .topbar-actions {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+  
+  .topbar-switchers {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    padding-right: 0;
+    padding-bottom: 10px;
+    justify-content: center;
+  }
+  
+  .topbar-title {
+    text-align: center;
+  }
+  
+  .btn-secondary, .btn-primary, .btn-back {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .topbar-actions > span {
+    text-align: center;
+    padding: 4px 0;
+  }
+
+  .topbar-actions .badge-role {
+    text-align: center;
+    align-self: center;
+  }
+}
+
 @media (max-width: 600px) {
   .form-grid {
     grid-template-columns: 1fr;
@@ -776,11 +917,6 @@ h2 span.mfr-accent {
   }
   .extra-field-row .field-input {
     width: 100%;
-  }
-  .topbar {
-    padding: 14px 16px;
-    flex-direction: column;
-    gap: 12px;
   }
 }
 
