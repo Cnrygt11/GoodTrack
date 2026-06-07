@@ -14,6 +14,15 @@ export interface User {
   userId: string;
 }
 
+export interface UserProfile {
+  username: string;
+  email: string;
+  phoneNumber: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
 export interface ConnectionUser {
   id: string;
   username: string;
@@ -258,6 +267,24 @@ export const api = {
   deleteField(id: string): Promise<{ message: string }> {
     return apiCall<{ message: string }>(`/fields/${id}`, {
       method: 'DELETE',
+    });
+  },
+
+  getProfile(): Promise<UserProfile> {
+    return apiCall<UserProfile>('/auth/profile');
+  },
+
+  verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
+    return apiCall<{ success: boolean; message: string }>('/auth/verify-password', {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    });
+  },
+
+  changePassword(oldPassword: string, newPassword: string, confirmNewPassword: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ oldPassword, newPassword, confirmNewPassword })
     });
   }
 };

@@ -89,6 +89,7 @@ public class AuthService : IAuthService
             string.IsNullOrWhiteSpace(request.Username) || 
             string.IsNullOrWhiteSpace(request.Password) ||
             string.IsNullOrWhiteSpace(request.Email) ||
+            string.IsNullOrWhiteSpace(request.PhoneNumber) ||
             string.IsNullOrWhiteSpace(request.FirstName) ||
             string.IsNullOrWhiteSpace(request.LastName))
         {
@@ -110,6 +111,14 @@ public class AuthService : IAuthService
         if (!emailRegex.IsMatch(emailClean))
         {
             throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+        }
+
+        // 2.5 Phone Number Validation
+        var phoneClean = request.PhoneNumber.Trim();
+        var phoneRegex = new Regex(@"^\+?[0-9\s\-()]{10,20}$");
+        if (!phoneRegex.IsMatch(phoneClean))
+        {
+            throw new ArgumentException("Geçersiz telefon numarası formatı! (En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir)");
         }
 
         // 3. Password Length (6-20 chars)
@@ -146,6 +155,7 @@ public class AuthService : IAuthService
         {
             Username = usernameClean,
             Email = emailClean,
+            PhoneNumber = phoneClean,
             FirstName = request.FirstName.Trim(),
             LastName = request.LastName.Trim(),
             Role = request.Role,
@@ -450,5 +460,69 @@ public class AuthService : IAuthService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    public async Task<UserProfileDto> GetProfileAsync(string userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        return new UserProfileDto
+        {
+            Username = user.Username,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role
+        };
+    }
+
+    public async Task<bool> VerifyPasswordAsync(string userId, string password)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+        return verificationResult != PasswordVerificationResult.Failed;
+    }
+
+    public async Task ChangePasswordAsync(string userId, string oldPassword, string newPassword, string confirmNewPassword)
+    {
+        if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmNewPassword))
+        {
+            throw new ArgumentException("Tüm alanlar doldurulmalıdır!");
+        }
+
+        if (newPassword.Length < 6 || newPassword.Length > 20)
+        {
+            throw new ArgumentException("Yeni şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!");
+        }
+
+        if (newPassword != confirmNewPassword)
+        {
+            throw new ArgumentException("Yeni şifreler uyuşmuyor!");
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, oldPassword);
+        if (verificationResult == PasswordVerificationResult.Failed)
+        {
+            throw new ArgumentException("Mevcut şifreniz hatalı!");
+        }
+
+        user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+        await _userRepository.SaveAsync(user);
     }
 }

@@ -26,6 +26,10 @@ public class User
     [FirestoreProperty("email")]
     public string Email { get; set; } = string.Empty;
 
+    [FirestoreProperty("phoneNumber")]
+    public string PhoneNumber { get; set; } = string.Empty;
+
+
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
 

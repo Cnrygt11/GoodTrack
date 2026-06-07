@@ -16,4 +16,8 @@ public interface IAuthService
     Task AcceptConnectionRequestAsync(string receiverId, string requestId);
     Task RejectConnectionRequestAsync(string receiverId, string requestId);
     Task DeleteConnectionRequestAsync(string userId, string requestId);
+    Task<UserProfileDto> GetProfileAsync(string userId);
+    Task<bool> VerifyPasswordAsync(string userId, string password);
+    Task ChangePasswordAsync(string userId, string oldPassword, string newPassword, string confirmNewPassword);
 }
+

@@ -11,6 +11,7 @@ import CatalogPage from './components/catalog/CatalogPage';
 import MfrPage from './components/mfr/MfrPage';
 import ConnectionsModal from './components/connections/ConnectionsModal';
 import Toast from './components/ui/Toast';
+import MyAccountPage from './components/profile/MyAccountPage';
 
 function AppContent() {
   const { user, activeScreen } = useAuth();
@@ -26,7 +27,9 @@ function AppContent() {
 
   return (
     <Layout>
-      {user.role === 'seller' ? (
+      {activeScreen === 'profile' ? (
+        <MyAccountPage />
+      ) : user.role === 'seller' ? (
         activeScreen === 'catalog' ? <CatalogPage /> : <SellerPage />
       ) : (
         <MfrPage />

@@ -20,6 +20,7 @@ export default function AuthPage() {
   const [lastName, setLastName] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regEmail, setRegEmail] = useState('');
+  const [regPhone, setRegPhone] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
   const [regRole, setRegRole] = useState<'seller' | 'mfr'>('seller');
@@ -31,8 +32,19 @@ export default function AuthPage() {
   // Real-time validations
   const [usernameValid, setUsernameValid] = useState({ valid: true, dirty: false });
   const [emailValid, setEmailValid] = useState({ valid: true, dirty: false });
+  const [phoneValid, setPhoneValid] = useState({ valid: true, dirty: false });
   const [passwordValid, setPasswordValid] = useState({ valid: true, dirty: false });
   const [confirmValid, setConfirmValid] = useState({ valid: true, dirty: false });
+
+  // Validate Phone Number
+  useEffect(() => {
+    if (!regPhone) {
+      setPhoneValid({ valid: true, dirty: false });
+      return;
+    }
+    const regex = /^\+?[0-9\s\-()]{10,20}$/;
+    setPhoneValid({ valid: regex.test(regPhone), dirty: true });
+  }, [regPhone]);
 
   // Validate Username
   useEffect(() => {
@@ -103,6 +115,12 @@ export default function AuthPage() {
       return;
     }
 
+    const phoneRegex = /^\+?[0-9\s\-()]{10,20}$/;
+    if (!phoneRegex.test(regPhone)) {
+      alert(t('phoneRequired'));
+      return;
+    }
+
     if (regPassword.length < 6 || regPassword.length > 20) {
       alert(language === 'tr' ? 'Şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!' : 'Password must be between 6 and 20 characters long!');
       return;
@@ -119,6 +137,7 @@ export default function AuthPage() {
         lastname: lastName.trim(),
         username: regUsername.trim(),
         email: regEmail.trim(),
+        phoneNumber: regPhone.trim(),
         password: regPassword,
         confirmpassword: regConfirm,
         role: regRole,
@@ -133,6 +152,7 @@ export default function AuthPage() {
       setLastName('');
       setRegUsername('');
       setRegEmail('');
+      setRegPhone('');
       setRegPassword('');
       setRegConfirm('');
       setRegRole('seller');
@@ -332,6 +352,23 @@ export default function AuthPage() {
                       {language === 'tr'
                         ? 'Geçersiz veya şüpheli e-posta formatı! (Örn: ad.soyad@gmail.com)'
                         : 'Invalid email format! (e.g., name@domain.com)'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '14px' }}>
+                  <label>{t('phone')}</label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder={language === 'tr' ? 'Telefon numaranızı girin (Örn: 05551234567)' : 'Enter phone number (e.g., +905551234567)'} 
+                    value={regPhone}
+                    onChange={(e) => setRegPhone(e.target.value)}
+                    style={getInputStyle(phoneValid)}
+                  />
+                  {phoneValid.dirty && !phoneValid.valid && (
+                    <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px' }}>
+                      {t('phoneRequired')}
                     </span>
                   )}
                 </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { Package, Users, LogOut, Sun, Moon } from 'lucide-react';
+import { Package, Users, LogOut, Sun, Moon, User } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -21,10 +21,14 @@ export default function Layout({ children }: LayoutProps) {
     }
   };
 
+  const handleLogoClick = () => {
+    setActiveScreen(user.role === 'mfr' ? 'mfr' : 'seller');
+  };
+
   return (
     <div className={user.role === 'mfr' ? 'mfr-theme' : 'seller-theme'}>
       <header className="topbar">
-        <div className="topbar-title">
+        <div className="topbar-title" onClick={handleLogoClick} style={{ cursor: 'pointer', userSelect: 'none' }}>
           {t('appTitle')}{' '}
           <span 
             style={{ 
@@ -71,11 +75,40 @@ export default function Layout({ children }: LayoutProps) {
             {user.role === 'seller' ? t('roleSeller') : t('roleMfr')}
           </span>
           
+          {user.role === 'mfr' && (
+            <button 
+              className="btn-secondary" 
+              onClick={() => setActiveScreen('mfr')}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                padding: '6px 14px', 
+                fontSize: '13px', 
+                borderRadius: '6px',
+                borderColor: activeScreen === 'mfr' ? 'var(--accent-mfr)' : 'var(--border)',
+                background: activeScreen === 'mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+              }}
+            >
+              <Package size={14} />
+              {t('btnOrderScreen')}
+            </button>
+          )}
+
           {user.role === 'seller' && (
             <button 
               className="btn-secondary" 
               onClick={handleCatalogToggle}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '13px', borderRadius: '6px' }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                padding: '6px 14px', 
+                fontSize: '13px', 
+                borderRadius: '6px',
+                borderColor: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller)' : 'var(--border)',
+                background: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+              }}
             >
               <Package size={14} />
               {activeScreen === 'catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
@@ -89,6 +122,24 @@ export default function Layout({ children }: LayoutProps) {
           >
             <Users size={14} />
             {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}
+          </button>
+
+          <button 
+            className="btn-secondary" 
+            onClick={() => setActiveScreen('profile')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '6px 14px', 
+              fontSize: '13px', 
+              borderRadius: '6px',
+              borderColor: activeScreen === 'profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: activeScreen === 'profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+            }}
+          >
+            <User size={14} />
+            {t('btnMyAccount')}
           </button>
           
           <button 

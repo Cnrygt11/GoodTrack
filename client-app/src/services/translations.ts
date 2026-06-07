@@ -119,6 +119,22 @@ export const translations = {
     featureDelConfirm: 'Bu özelliği silmek istediğinize emin misiniz?',
     featureNameRequired: 'Lütfen özellik adı girin.',
     featureOptionsRequired: 'Lütfen seçenekleri girin.',
+
+    // My Account & Password Change (TR)
+    phone: 'Telefon Numarası',
+    oldPassword: 'Mevcut Şifre',
+    newPassword: 'Yeni Şifre',
+    confirmNewPassword: 'Yeni Şifre Tekrar',
+    changePasswordBtn: 'Şifre Değiştir',
+    verifyOldPasswordBtn: 'Eski Şifreyi Doğrula',
+    btnMyAccount: 'Hesabım',
+    profileTitle: 'HESAP BİLGİLERİ',
+    passwordChangeTitle: 'ŞİFRE DEĞİŞTİRME',
+    passwordChangeSuccess: 'Şifreniz başarıyla güncellendi.',
+    enterOldPassword: 'Lütfen şifrenizi değiştirmek için önce mevcut şifrenizi girerek onaylayın.',
+    enterNewPassword: 'Lütfen yeni şifrenizi belirleyin.',
+    btnBackToProfile: 'Hesap Bilgilerine Dön',
+    phoneRequired: 'Telefon numarası formatı geçersiz! En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir.',
   },
   en: {
     // Auth Page
@@ -240,6 +256,22 @@ export const translations = {
     featureDelConfirm: 'Are you sure you want to delete this feature template?',
     featureNameRequired: 'Please enter feature name.',
     featureOptionsRequired: 'Please enter options.',
+
+    // My Account & Password Change (EN)
+    phone: 'Phone Number',
+    oldPassword: 'Current Password',
+    newPassword: 'New Password',
+    confirmNewPassword: 'Confirm New Password',
+    changePasswordBtn: 'Change Password',
+    verifyOldPasswordBtn: 'Verify Current Password',
+    btnMyAccount: 'My Account',
+    profileTitle: 'ACCOUNT INFORMATION',
+    passwordChangeTitle: 'CHANGE PASSWORD',
+    passwordChangeSuccess: 'Password updated successfully.',
+    enterOldPassword: 'Please enter and confirm your current password to change your password.',
+    enterNewPassword: 'Please set your new password.',
+    btnBackToProfile: 'Back to Account Details',
+    phoneRequired: 'Phone number format is invalid! Must be at least 10 chars, containing only digits, space, +, -, ().',
   }
 } as const;
 

@@ -198,7 +198,83 @@ public class AuthController : ControllerBase
         return Ok(manufacturers);
     }
 
+    [Authorize]
+    [HttpGet("profile")]
+    public async Task<IActionResult> GetProfile()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            var profile = await _authService.GetProfileAsync(userId);
+            return Ok(profile);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
+    [HttpPost("verify-password")]
+    public async Task<IActionResult> VerifyPassword([FromBody] VerifyPasswordRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (request == null || string.IsNullOrWhiteSpace(request.Password))
+        {
+            return BadRequest(new { message = "Şifre alanı boş olamaz!" });
+        }
+
+        var isValid = await _authService.VerifyPasswordAsync(userId, request.Password);
+        if (!isValid)
+        {
+            return BadRequest(new { message = "Eski şifre hatalı!" });
+        }
+
+        return Ok(new { success = true, message = "Şifre doğrulandı." });
+    }
+
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (request == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        try
+        {
+            await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
+            return Ok(new { message = "Şifreniz başarıyla güncellendi." });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
     private string GetVerificationResultHtml(bool isSuccess, string messageTr, string messageEn)
+
     {
         string iconClass = isSuccess ? "icon-success" : "icon-error";
         string iconSymbol = isSuccess ? "✓" : "✗";
