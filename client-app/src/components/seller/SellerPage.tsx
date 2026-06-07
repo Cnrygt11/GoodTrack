@@ -49,6 +49,13 @@ export default function SellerPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const isActionLoading = useRef(false);
 
+  // Defect report modal state
+  const [isDefectModalOpen, setIsDefectModalOpen] = useState(false);
+  const [defectProductId, setDefectProductId] = useState<string | null>(null);
+  const [defectNote, setDefectNote] = useState('');
+  const [defectImage, setDefectImage] = useState<string | null>(null);
+  const [defectImageFileName, setDefectImageFileName] = useState('');
+
   useEffect(() => {
     const handleOutsideClick = () => {
       setActiveDropdownId(null);
@@ -276,6 +283,53 @@ export default function SellerPage() {
       }
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  const handleDefectClick = (product: Product) => {
+    setDefectProductId(product.id);
+    setDefectNote('');
+    setDefectImage(null);
+    setDefectImageFileName('');
+    setIsDefectModalOpen(true);
+  };
+
+  const handleDefectImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setDefectImageFileName(file.name);
+    try {
+      const compressed = await compressImage(file);
+      setDefectImage(compressed);
+    } catch (err: any) {
+      console.error(err);
+      showToast(language === 'tr' ? 'Resim sıkıştırılırken hata oluştu!' : 'Error compressing image!');
+    }
+  };
+
+  const handleDefectReportSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!defectProductId || isActionLoading.current) return;
+
+    try {
+      isActionLoading.current = true;
+      setActionLoading(true);
+      const data = await api.toggleProductDefective(defectProductId, true, defectNote, defectImage);
+      showToast(data.message || t('statusUpdatedSuccess'));
+      setProducts((prev: Product[]) => prev.map(item => item.id === defectProductId ? { 
+        ...item, 
+        isDefective: true, 
+        completed: false,
+        defectNote,
+        defectImage: defectImage ? (defectImage.startsWith('data:image') ? defectImage : item.defectImage) : null
+      } : item));
+      setIsDefectModalOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      isActionLoading.current = false;
+      setActionLoading(false);
     }
   };
 
@@ -587,7 +641,7 @@ export default function SellerPage() {
               filteredProducts.map(p => {
                 const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
                 return (
-                  <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`}>
+                  <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`} style={{ zIndex: activeDropdownId === p.id ? 50 : 1 }}>
                     {/* Three-dot dropdown menu */}
                     <div 
                       style={{ position: 'absolute', top: '14px', right: '14px', zIndex: 10 }}
@@ -668,16 +722,10 @@ export default function SellerPage() {
                           {p.completed && !p.isDefective && (
                             <button
                               type="button"
-                              onClick={async (e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 setActiveDropdownId(null);
-                                try {
-                                  const data = await api.toggleProductDefective(p.id, true);
-                                  showToast(data.message || t('statusUpdatedSuccess'));
-                                  setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isDefective: true, completed: false } : item));
-                                } catch (err: any) {
-                                  alert(err.message);
-                                }
+                                handleDefectClick(p);
                               }}
                               style={{
                                 padding: '8px 14px',
@@ -854,6 +902,101 @@ export default function SellerPage() {
             >
               {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}
               {t('addBtn')}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Defect details report modal */}
+      <Modal isOpen={isDefectModalOpen} onClose={() => setIsDefectModalOpen(false)}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+          <h3 style={{ margin: 0, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <X size={20} />
+            {t('defectReportTitle')}
+          </h3>
+          <button 
+            onClick={() => setIsDefectModalOpen(false)}
+            style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
+          >
+            <X size={18} />
+          </button>
+        </div>
+        <form onSubmit={handleDefectReportSubmit}>
+          <div className="form-group" style={{ marginBottom: '14px' }}>
+            <label>{t('defectNoteLabel')}</label>
+            <textarea
+              placeholder={t('defectNotePlaceholder')}
+              value={defectNote}
+              onChange={(e) => setDefectNote(e.target.value)}
+              required
+              rows={4}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid var(--border)',
+                background: 'var(--surface)',
+                color: 'var(--text)',
+                fontSize: '13.5px',
+                lineHeight: 1.5,
+                resize: 'vertical',
+                outline: 'none',
+                transition: 'border-color 0.2s'
+              }}
+              onFocus={(e) => e.target.style.borderColor = 'var(--danger)'}
+              onBlur={(e) => e.target.style.borderColor = 'var(--border)'}
+            />
+          </div>
+          <div className="form-group" style={{ marginBottom: '20px' }}>
+            <label>{t('defectImageLabel')}</label>
+            <div className="image-upload-area" style={{ borderStyle: 'dashed', borderColor: 'var(--border)' }}>
+              <input 
+                type="file" 
+                accept="image/*" 
+                id="defect-image-input" 
+                onChange={handleDefectImageChange}
+              />
+              {!defectImage ? (
+                <>
+                  <div className="upload-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                    <Camera size={24} style={{ color: 'var(--muted)' }} />
+                  </div>
+                  <div className="upload-text">{t('clickToUpload')}</div>
+                </>
+              ) : (
+                <>
+                  <img className="image-preview" src={defectImage} alt="preview" style={{ display: 'block', maxHeight: '150px', objectFit: 'contain' }} />
+                  <span style={{ fontSize: '10px', color: 'var(--success)', marginTop: '4px' }}>
+                    {defectImageFileName.substring(0, 20)}...
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+          <div className="modal-actions">
+            <button type="button" className="btn-secondary" onClick={() => setIsDefectModalOpen(false)} disabled={actionLoading}>{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+            <button 
+              type="submit" 
+              className="btn-danger"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'var(--danger)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '10px 16px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'opacity 0.2s'
+              }}
+              disabled={actionLoading}
+              onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+              onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+            >
+              {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <X size={16} />}
+              {t('btnReport')}
             </button>
           </div>
         </form>

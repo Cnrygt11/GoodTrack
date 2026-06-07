@@ -147,6 +147,15 @@ export const translations = {
     sortByDate: 'Tarihe Göre Sırala',
     newestFirst: 'Önce En Yeni',
     oldestFirst: 'Önce En Eski',
+    defectReportTitle: 'Hatalı Sipariş Raporu',
+    defectNoteLabel: 'Hata Açıklaması',
+    defectNotePlaceholder: 'Lütfen ürün hatasıyla ilgili detayları giriniz...',
+    defectImageLabel: 'Hata Görseli (İsteğe bağlı)',
+    defectDetailsTitle: 'Hata Detayları',
+    btnDetails: 'Detaylar',
+    btnReportDefect: 'Hatalı İşaretle',
+    noDefectImage: 'Hata görseli yüklenmedi.',
+    btnReport: 'Bildir',
   },
   en: {
     // Auth Page
@@ -296,6 +305,15 @@ export const translations = {
     sortByDate: 'Sort by Date',
     newestFirst: 'Newest First',
     oldestFirst: 'Oldest First',
+    defectReportTitle: 'Report Defective Order',
+    defectNoteLabel: 'Defect Description',
+    defectNotePlaceholder: 'Please enter details about the product defect...',
+    defectImageLabel: 'Defect Image (Optional)',
+    defectDetailsTitle: 'Defect Details',
+    btnDetails: 'Details',
+    btnReportDefect: 'Mark Defective',
+    noDefectImage: 'No defect image uploaded.',
+    btnReport: 'Report',
   }
 } as const;
 

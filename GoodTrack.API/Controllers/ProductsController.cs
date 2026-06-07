@@ -89,7 +89,7 @@ public class ProductsController : ControllerBase
         }
 
         _logger.LogInformation("Seller user {UserId} is toggling defective status for order {Id} to: {IsDefective}", userId, id, request.IsDefective);
-        await _productService.ToggleOrderDefectiveAsync(userId, id, request.IsDefective);
+        await _productService.ToggleOrderDefectiveAsync(userId, id, request.IsDefective, request.DefectNote, request.DefectImage);
         return Ok(new { id, isDefective = request.IsDefective, message = request.IsDefective ? "Sipariş hatalı olarak işaretlendi." : "Sipariş hata durumu kaldırıldı." });
     }
 

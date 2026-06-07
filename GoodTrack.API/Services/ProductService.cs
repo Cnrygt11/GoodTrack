@@ -88,6 +88,10 @@ public class ProductService : IProductService
         if (completed)
         {
             product.IsDefective = false; // Reset defective status if fixed/completed again
+            string? oldDefectImage = product.DefectImage;
+            product.DefectNote = null;
+            product.DefectImage = null;
+            await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
         }
         await _productRepository.SaveAsync(product);
 
@@ -183,12 +187,14 @@ public class ProductService : IProductService
 
         string mfrId = existing.MfrId;
         string? image = existing.Image;
+        string? defectImage = existing.DefectImage;
 
         // Delete Firestore document
         await _productRepository.DeleteAsync(orderId);
 
         // Delete image file safely if not used elsewhere
         await TryDeleteImageAsync(image, sellerId, orderId);
+        await TryDeleteDefectImageAsync(defectImage, sellerId, orderId);
 
         // Real-time notification
         await _hubContext.Clients.Users(mfrId, sellerId).SendAsync("ReceiveOrderUpdate");
@@ -212,7 +218,28 @@ public class ProductService : IProductService
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
-    public async Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective)
+    private async Task TryDeleteDefectImageAsync(string? imageUrl, string sellerId, string currentProductId)
+    {
+        if (string.IsNullOrWhiteSpace(imageUrl)) return;
+
+        // Check if any other products of this user use this defect image
+        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
+        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.DefectImage == imageUrl);
+        if (isUsedInOthers) return;
+
+        // Also check main images just in case (though highly unlikely)
+        bool isUsedAsMain = otherProducts.Exists(p => p.Image == imageUrl);
+        if (isUsedAsMain) return;
+
+        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
+        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
+        if (isUsedInCatalog) return;
+
+        // Safe to delete from disk
+        await _imageStorageService.DeleteImageAsync(imageUrl);
+    }
+
+    public async Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective, string? defectNote, string? defectImage)
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
@@ -229,6 +256,38 @@ public class ProductService : IProductService
         if (isDefective)
         {
             product.Completed = false; // Set completed to false so manufacturer must fix it
+            product.DefectNote = defectNote;
+
+            // Handle base64 defect image upload
+            if (defectImage != product.DefectImage)
+            {
+                string? oldDefectImage = product.DefectImage;
+                if (!string.IsNullOrEmpty(defectImage) && defectImage.StartsWith("data:image"))
+                {
+                    product.DefectImage = await _imageStorageService.StoreImageAsync(defectImage);
+                    await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
+                }
+                else if (string.IsNullOrEmpty(defectImage))
+                {
+                    product.DefectImage = null;
+                    await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
+                }
+                else
+                {
+                    product.DefectImage = defectImage;
+                    if (oldDefectImage != defectImage)
+                    {
+                        await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
+                    }
+                }
+            }
+        }
+        else
+        {
+            string? oldDefectImage = product.DefectImage;
+            product.DefectNote = null;
+            product.DefectImage = null;
+            await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
         }
 
         await _productRepository.SaveAsync(product);

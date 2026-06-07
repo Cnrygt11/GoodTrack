@@ -69,6 +69,8 @@ export interface Product {
   extras: { [fieldId: string]: ExtraFieldValue };
   completed: boolean;
   isDefective?: boolean;
+  defectNote?: string;
+  defectImage?: string | null;
   mfrId: string;
   mfrName: string;
   sellerId?: string;
@@ -215,10 +217,10 @@ export const api = {
     });
   },
 
-  toggleProductDefective(productId: string, isDefective: boolean): Promise<{ message: string }> {
+  toggleProductDefective(productId: string, isDefective: boolean, defectNote?: string, defectImage?: string | null): Promise<{ message: string }> {
     return apiCall<{ message: string }>(`/products/${productId}/defective`, {
       method: 'PUT',
-      body: JSON.stringify({ isDefective }),
+      body: JSON.stringify({ isDefective, defectNote, defectImage }),
     });
   },
 

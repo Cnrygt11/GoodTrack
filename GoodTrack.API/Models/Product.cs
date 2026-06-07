@@ -29,6 +29,12 @@ public class Product
     [FirestoreProperty("isDefective")]
     public bool IsDefective { get; set; }
 
+    [FirestoreProperty("defectNote")]
+    public string? DefectNote { get; set; }
+
+    [FirestoreProperty("defectImage")]
+    public string? DefectImage { get; set; }
+
 
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
