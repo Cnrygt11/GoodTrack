@@ -1,7 +1,7 @@
 import React from 'react';
 import { Product } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
-import { Package, Clock, CheckCircle2, X, MoreVertical, Edit2, Trash2, Send } from 'lucide-react';
+import { Package, Clock, CheckCircle2, X, MoreVertical, Edit2, Trash2 } from 'lucide-react';
 import { api } from '../../services/api';
 
 type ListFilter = 'pending' | 'completed' | 'defective' | 'approval';
@@ -29,17 +29,6 @@ export default function SellerOrderCard({
   showToast, setProducts
 }: SellerOrderCardProps) {
   const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
-
-  const handleResendToProduction = async () => {
-    try {
-      const data = await api.toggleProductApproval(p.id, false);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isPendingApproval: false } : item));
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
-    }
-  };
 
   return (
     <div
@@ -90,14 +79,6 @@ export default function SellerOrderCard({
               color="var(--text)"
               onClick={() => { onEdit(p); onDropdownToggle(null); }}
             />
-            {p.isPendingApproval && (
-              <DropdownItem
-                icon={<Send size={13} style={{ color: 'var(--success)' }} />}
-                label={t('btnResendToProduction')}
-                color="var(--success)"
-                onClick={() => { onDropdownToggle(null); handleResendToProduction(); }}
-              />
-            )}
             {p.completed && !p.isDefective && (
               <DropdownItem
                 icon={<X size={13} style={{ color: 'var(--danger)' }} />}

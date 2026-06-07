@@ -327,11 +327,7 @@ public class ProductService : IProductService
         }
         else if (role == "seller")
         {
-            if (product.SellerId != userId)
-            {
-                throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
-            }
-            product.IsPendingApproval = isPendingApproval;
+            throw new UnauthorizedAccessException("Satıcıların onay bekleyen siparişlerin onay durumunu değiştirme veya üretime alma yetkisi yoktur!");
         }
         else
         {
