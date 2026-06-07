@@ -1,133 +1,32 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
-import { useData } from '../../context/DataContext';
-import { useToast } from '../../context/ToastContext';
-import { useSettings } from '../../context/SettingsContext';
-import { api, ConnectionRequest } from '../../services/api';
+import React from 'react';
+import useConnections from '../../hooks/useConnections';
 import Modal from '../ui/Modal';
-import { X, UserPlus, Check, Trash2, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { X, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2 } from 'lucide-react';
+import { ConnectionRequest } from '../../services/api';
 
 export default function ConnectionsModal() {
   const {
     user,
     isConnectionsModalOpen,
-    setIsConnectionsModalOpen
-  } = useAuth();
-
-  const {
+    setIsConnectionsModalOpen,
     connections,
     incomingRequests,
     sentRequests,
-    refreshConnections,
-    loadIncomingRequests,
-    loadSentRequests,
-    loadProducts
-  } = useData();
-
-  const { showToast } = useToast();
-  const { language, t } = useSettings();
-
-  const [addUsername, setAddUsername] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-  const isActionLoading = useRef(false);
-
-  // Fetch data automatically when the modal is opened
-  useEffect(() => {
-    if (isConnectionsModalOpen && user) {
-      refreshConnections();
-      loadIncomingRequests();
-      loadSentRequests();
-    }
-  }, [isConnectionsModalOpen, user, refreshConnections, loadIncomingRequests, loadSentRequests]);
+    language,
+    t,
+    addUsername,
+    setAddUsername,
+    actionLoading,
+    handleAddSubmit,
+    handleAccept,
+    handleReject,
+    handleDeleteSent,
+    handleRemoveConnection
+  } = useConnections();
 
   if (!user) return null;
 
-
   const isSeller = user.role === 'seller';
-
-  const handleAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isActionLoading.current) return;
-    const username = addUsername.trim();
-    if (!username) {
-      alert(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
-      return;
-    }
-
-    try {
-      isActionLoading.current = true;
-      setActionLoading(true);
-      const data = await api.sendConnectionRequest(username);
-      showToast(data.message || t('connReqSuccess'));
-      setAddUsername('');
-      await loadIncomingRequests();
-      await loadSentRequests();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      isActionLoading.current = false;
-      setActionLoading(false);
-    }
-  };
-
-  const handleAccept = async (requestId: string) => {
-    if (isActionLoading.current) return;
-    try {
-      isActionLoading.current = true;
-      setActionLoading(true);
-      const data = await api.acceptRequest(requestId);
-      showToast(data.message || t('connReqAccepted'));
-      await refreshConnections();
-      await loadIncomingRequests();
-      await loadSentRequests();
-      await loadProducts();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      isActionLoading.current = false;
-      setActionLoading(false);
-    }
-  };
-
-  const handleReject = async (requestId: string) => {
-    if (isActionLoading.current) return;
-    if (!confirm(language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?')) return;
-    try {
-      isActionLoading.current = true;
-      setActionLoading(true);
-      const data = await api.rejectRequest(requestId);
-      showToast(data.message || t('connReqRejected'));
-      await loadIncomingRequests();
-      await loadSentRequests();
-    } catch (err: any) {
-      alert(err.message);
-    } finally {
-      isActionLoading.current = false;
-      setActionLoading(false);
-    }
-  };
-
-  const handleDeleteSent = async (requestId: string) => {
-    try {
-      const data = await api.deleteSentRequest(requestId);
-      showToast(data.message || t('connReqDeleted'));
-      await loadSentRequests();
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
-
-  const handleRemoveConnection = async (targetId: string) => {
-    if (!confirm(language === 'tr' ? 'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)' : 'Are you sure you want to disconnect? (Current orders will be kept)')) return;
-    try {
-      const data = await api.removeConnection(targetId);
-      showToast(data.message || t('connRemoved'));
-      await refreshConnections();
-      await loadProducts();
-    } catch (err: any) {
-      alert(err.message);
-    }
-  };
 
   const getStatusBadge = (status: ConnectionRequest['status']) => {
     let text = language === 'tr' ? 'Beklemede' : 'Pending';
@@ -171,7 +70,9 @@ export default function ConnectionsModal() {
       style={{ width: '420px' }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0 }}>{isSeller ? t('btnMyManufacturers').toUpperCase() : t('btnMySellers').toUpperCase()}</h3>
+        <h3 style={{ margin: 0 }}>
+          {isSeller ? t('btnMyManufacturers').toUpperCase() : t('btnMySellers').toUpperCase()}
+        </h3>
         <button 
           onClick={() => setIsConnectionsModalOpen(false)}
           style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
@@ -183,12 +84,16 @@ export default function ConnectionsModal() {
       {/* Add Request Form */}
       <form onSubmit={handleAddSubmit} style={{ marginBottom: '20px' }}>
         <label style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--muted)', letterSpacing: '1px', display: 'block', marginBottom: '6px' }}>
-          {isSeller ? (language === 'tr' ? 'Kullanıcı Adı ile Üretici Ekle' : 'Add Manufacturer by Username') : (language === 'tr' ? 'Kullanıcı Adı ile Satıcı Ekle' : 'Add Seller by Username')}
+          {isSeller 
+            ? (language === 'tr' ? 'Kullanıcı Adı ile Üretici Ekle' : 'Add Manufacturer by Username') 
+            : (language === 'tr' ? 'Kullanıcı Adı ile Satıcı Ekle' : 'Add Seller by Username')}
         </label>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input 
             type="text" 
-            placeholder={isSeller ? (language === 'tr' ? 'Üretici kullanıcı adını yazın' : 'Enter manufacturer username') : (language === 'tr' ? 'Satıcı kullanıcı adını yazın' : 'Enter seller username')}
+            placeholder={isSeller 
+              ? (language === 'tr' ? 'Üretici kullanıcı adını yazın' : 'Enter manufacturer username') 
+              : (language === 'tr' ? 'Satıcı kullanıcı adını yazın' : 'Enter seller username')}
             value={addUsername}
             onChange={(e) => setAddUsername(e.target.value)}
             style={{ 
@@ -321,9 +226,10 @@ export default function ConnectionsModal() {
       </div>
 
       <div className="modal-actions">
-        <button className="btn-secondary" onClick={() => setIsConnectionsModalOpen(false)}>{language === 'tr' ? 'Kapat' : 'Close'}</button>
+        <button className="btn-secondary" onClick={() => setIsConnectionsModalOpen(false)}>
+          {language === 'tr' ? 'Kapat' : 'Close'}
+        </button>
       </div>
     </Modal>
   );
 }
-

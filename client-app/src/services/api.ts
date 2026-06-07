@@ -117,7 +117,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   if (!res.ok) {
     let errorMessage = `İstek başarısız oldu (Hata Kodu: ${res.status})`;
     try {
-      const errData = await res.json();
+      const errData = await res.json() as { message?: string } | null;
       if (errData && errData.message) {
         errorMessage = errData.message;
       }
@@ -141,6 +141,48 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+export interface RegisterPayload {
+  firstname: string;
+  lastname: string;
+  username: string;
+  email: string;
+  phoneNumber: string;
+  password: string;
+  confirmpassword: string;
+  role: 'seller' | 'mfr';
+}
+
+export interface CreateProductPayload {
+  code: string;
+  image: string | null;
+  text?: string;
+  length?: string;
+  extras?: Record<string, ExtraFieldValue>;
+  completed: boolean;
+  mfrId: string;
+  mfrName: string;
+}
+
+export interface CreateCatalogProductPayload {
+  productCode: string;
+  image: string;
+  mfrId: string;
+  mfrName: string;
+}
+
+export interface UpdateCatalogProductPayload {
+  productCode: string;
+  image: string;
+  mfrId: string;
+  mfrName: string;
+}
+
+export interface CreateFieldPayload {
+  name: string;
+  type: string;
+  options: string[];
+}
+
 export const api = {
   // Auth
   login(username: string, password: string): Promise<User> {
@@ -150,7 +192,7 @@ export const api = {
     });
   },
 
-  register(registrationData: any): Promise<{ message: string }> {
+  register(registrationData: RegisterPayload): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(registrationData),
@@ -205,7 +247,7 @@ export const api = {
     return apiCall<Product[]>('/products');
   },
 
-  createProduct(productData: any): Promise<{ product: Product; message: string }> {
+  createProduct(productData: CreateProductPayload): Promise<{ product: Product; message: string }> {
     return apiCall<{ product: Product; message: string }>('/products', {
       method: 'POST',
       body: JSON.stringify(productData),
@@ -233,7 +275,7 @@ export const api = {
     });
   },
 
-  updateProduct(productId: string, productData: any): Promise<{ product: Product; message: string }> {
+  updateProduct(productId: string, productData: Product): Promise<{ product: Product; message: string }> {
     return apiCall<{ product: Product; message: string }>(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
@@ -251,14 +293,14 @@ export const api = {
     return apiCall<CatalogProduct[]>('/catalog');
   },
 
-  addCatalogProduct(catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
+  addCatalogProduct(catalogData: CreateCatalogProductPayload): Promise<{ product: CatalogProduct; message: string }> {
     return apiCall<{ product: CatalogProduct; message: string }>('/catalog', {
       method: 'POST',
       body: JSON.stringify(catalogData),
     });
   },
 
-  updateCatalogProduct(id: string, catalogData: any): Promise<{ product: CatalogProduct; message: string }> {
+  updateCatalogProduct(id: string, catalogData: UpdateCatalogProductPayload): Promise<{ product: CatalogProduct; message: string }> {
     return apiCall<{ product: CatalogProduct; message: string }>(`/catalog/${id}`, {
       method: 'PUT',
       body: JSON.stringify(catalogData),
@@ -276,7 +318,7 @@ export const api = {
     return apiCall<ExtraFieldDef[]>('/fields');
   },
 
-  createField(fieldData: any): Promise<{ field: ExtraFieldDef; message: string }> {
+  createField(fieldData: CreateFieldPayload): Promise<{ field: ExtraFieldDef; message: string }> {
     return apiCall<{ field: ExtraFieldDef; message: string }>('/fields', {
       method: 'POST',
       body: JSON.stringify(fieldData),
