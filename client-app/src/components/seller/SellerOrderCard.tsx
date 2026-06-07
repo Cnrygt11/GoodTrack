@@ -213,8 +213,8 @@ export default function SellerOrderCard({
             })}
           </div>
 
-          {/* Dates */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '2px' }}>
+          {/* Dates + Timeline link */}
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginTop: '2px' }}>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--muted)' }}>
               <Calendar size={11} style={{ color: 'var(--muted)', opacity: 0.7 }} />
               {t('sentDateLabel')}: <strong style={{ color: 'var(--text)' }}>{dateStr} {timeStr}</strong>
@@ -225,6 +225,21 @@ export default function SellerOrderCard({
                 {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
+            <button
+              type="button"
+              onClick={() => onViewTimeline(p)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: 'none', border: 'none', padding: '0',
+                color: '#60a5fa', fontSize: '11.5px', cursor: 'pointer',
+                fontFamily: 'inherit', fontWeight: 500,
+                textDecoration: 'underline', textDecorationStyle: 'dotted',
+                textUnderlineOffset: '3px'
+              }}
+            >
+              <Info size={11} />
+              {t('btnViewTimeline')}
+            </button>
           </div>
         </div>
 
