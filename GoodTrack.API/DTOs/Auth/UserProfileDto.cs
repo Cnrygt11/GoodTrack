@@ -8,4 +8,11 @@ public class UserProfileDto
     public string FirstName { get; set; } = string.Empty;
     public string LastName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string ProfilePicture { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+    public string City { get; set; } = string.Empty;
+    public string Bio { get; set; } = string.Empty;
+    public List<string> ProductImages { get; set; } = new();
+    public List<string> Keywords { get; set; } = new();
+    public bool IsVisibleToSellers { get; set; }
 }

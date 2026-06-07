@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
-import { api } from '../services/api';
+import { api, UserProfile } from '../services/api';
 
 export default function useConnections() {
   const {
@@ -28,6 +28,15 @@ export default function useConnections() {
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const isActionLoading = useRef(false);
+
+  // Sub-tab state inside Connections Modal ('manage' vs 'search')
+  const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
+
+  // Search states for B2B directory
+  const [searchCity, setSearchCity] = useState('');
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   // Fetch data automatically when the modal is opened
   useEffect(() => {
@@ -127,6 +136,36 @@ export default function useConnections() {
     }
   }, [language, t, refreshConnections, loadProducts, showToast]);
 
+  // Handle B2B directory search
+  const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setSearchLoading(true);
+      const data = await api.searchManufacturers(searchCity, searchKeyword);
+      setSearchResults(data);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(errorMessage);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, [searchCity, searchKeyword]);
+
+  // Send B2B connection from search list
+  const handleSendConnectionFromSearch = useCallback(async (username: string) => {
+    try {
+      setActionLoading(true);
+      const data = await api.sendConnectionRequest(username);
+      showToast(data.message || t('connReqSuccess'));
+      await loadSentRequests();
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      alert(errorMessage);
+    } finally {
+      setActionLoading(false);
+    }
+  }, [t, loadSentRequests, showToast]);
+
   return {
     user,
     isConnectionsModalOpen,
@@ -143,6 +182,18 @@ export default function useConnections() {
     handleAccept,
     handleReject,
     handleDeleteSent,
-    handleRemoveConnection
+    handleRemoveConnection,
+
+    // B2B search exports
+    activeTab,
+    setActiveTab,
+    searchCity,
+    setSearchCity,
+    searchKeyword,
+    setSearchKeyword,
+    searchResults,
+    searchLoading,
+    handleSearchSubmit,
+    handleSendConnectionFromSearch
   };
 }

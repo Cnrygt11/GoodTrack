@@ -29,6 +29,27 @@ public class User
     [FirestoreProperty("phoneNumber")]
     public string PhoneNumber { get; set; } = string.Empty;
 
+    [FirestoreProperty("profilePicture")]
+    public string ProfilePicture { get; set; } = string.Empty;
+
+    [FirestoreProperty("address")]
+    public string Address { get; set; } = string.Empty;
+
+    [FirestoreProperty("city")]
+    public string City { get; set; } = string.Empty;
+
+    [FirestoreProperty("bio")]
+    public string Bio { get; set; } = string.Empty;
+
+    [FirestoreProperty("productImages")]
+    public List<string> ProductImages { get; set; } = new();
+
+    [FirestoreProperty("keywords")]
+    public List<string> Keywords { get; set; } = new();
+
+    [FirestoreProperty("isVisibleToSellers")]
+    public bool IsVisibleToSellers { get; set; } = false;
+
 
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;

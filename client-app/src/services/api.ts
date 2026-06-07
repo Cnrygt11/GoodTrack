@@ -21,6 +21,13 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
+  profilePicture?: string;
+  address?: string;
+  city?: string;
+  bio?: string;
+  productImages?: string[];
+  keywords?: string[];
+  isVisibleToSellers?: boolean;
 }
 
 export interface ConnectionUser {
@@ -347,5 +354,19 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ oldPassword, newPassword, confirmNewPassword })
     });
+  },
+
+  updateProfile(profileData: Partial<UserProfile>): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/auth/profile', {
+      method: 'PUT',
+      body: JSON.stringify(profileData)
+    });
+  },
+
+  searchManufacturers(city?: string, keyword?: string): Promise<UserProfile[]> {
+    const params = new URLSearchParams();
+    if (city) params.append('city', city);
+    if (keyword) params.append('keyword', keyword);
+    return apiCall<UserProfile[]>(`/auth/manufacturers/search?${params.toString()}`);
   }
 };

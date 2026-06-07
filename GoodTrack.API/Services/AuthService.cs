@@ -27,6 +27,7 @@ public class AuthService : IAuthService
     private readonly IHubContext<TrackingHub> _hubContext;
     private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
+    private readonly IImageStorageService _imageStorageService;
 
     public AuthService(
         IUserRepository userRepository,
@@ -35,7 +36,8 @@ public class AuthService : IAuthService
         IConfiguration configuration,
         IHubContext<TrackingHub> hubContext,
         IEmailService emailService,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IImageStorageService imageStorageService)
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
@@ -44,6 +46,7 @@ public class AuthService : IAuthService
         _hubContext = hubContext;
         _emailService = emailService;
         _logger = logger;
+        _imageStorageService = imageStorageService;
     }
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
@@ -477,8 +480,152 @@ public class AuthService : IAuthService
             PhoneNumber = user.PhoneNumber,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Role = user.Role
+            Role = user.Role,
+            ProfilePicture = user.ProfilePicture,
+            Address = user.Address,
+            City = user.City,
+            Bio = user.Bio,
+            ProductImages = user.ProductImages,
+            Keywords = user.Keywords,
+            IsVisibleToSellers = user.IsVisibleToSellers
         };
+    }
+
+    public async Task UpdateProfileAsync(string userId, UserProfileDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        // Basic fields
+        user.FirstName = dto.FirstName;
+        user.LastName = dto.LastName;
+        user.Email = dto.Email;
+        user.PhoneNumber = dto.PhoneNumber;
+
+        // Profile Picture
+        if (!string.IsNullOrEmpty(dto.ProfilePicture))
+        {
+            if (dto.ProfilePicture != user.ProfilePicture)
+            {
+                // Delete old profile picture if any
+                if (!string.IsNullOrEmpty(user.ProfilePicture))
+                {
+                    await _imageStorageService.DeleteImageAsync(user.ProfilePicture);
+                }
+                user.ProfilePicture = await _imageStorageService.StoreImageAsync(dto.ProfilePicture) ?? string.Empty;
+            }
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(user.ProfilePicture))
+            {
+                await _imageStorageService.DeleteImageAsync(user.ProfilePicture);
+            }
+            user.ProfilePicture = string.Empty;
+        }
+
+        // Manufacturer Specific fields
+        if (user.Role == "mfr")
+        {
+            // Bio limit validation (500 characters)
+            if (dto.Bio != null && dto.Bio.Length > 500)
+            {
+                throw new ArgumentException("Tanıtım metni en fazla 500 karakter olmalıdır!");
+            }
+            user.Bio = dto.Bio ?? string.Empty;
+            user.Address = dto.Address ?? string.Empty;
+            user.City = dto.City ?? string.Empty;
+            user.IsVisibleToSellers = dto.IsVisibleToSellers;
+
+            // Keywords selection (up to 3 keywords)
+            if (dto.Keywords != null && dto.Keywords.Count > 3)
+            {
+                throw new ArgumentException("En fazla 3 kategori/anahtar kelime seçebilirsiniz!");
+            }
+            user.Keywords = dto.Keywords ?? new List<string>();
+
+            // Product showcase image count checks (5 to 10 images)
+            int imgCount = dto.ProductImages?.Count ?? 0;
+            if (imgCount > 0 && (imgCount < 5 || imgCount > 10))
+            {
+                throw new ArgumentException("Ürün tanıtımı için en az 5, en fazla 10 görsel yüklemelisiniz!");
+            }
+            if (dto.IsVisibleToSellers && imgCount < 5)
+            {
+                throw new ArgumentException("Mağazanızı satıcılara göstermek için en az 5 ürün görseli yüklemelisiniz!");
+            }
+
+            // Process product images using _imageStorageService.StoreImageAsync
+            var processedImages = new List<string>();
+            if (dto.ProductImages != null)
+            {
+                foreach (var img in dto.ProductImages)
+                {
+                    var url = await _imageStorageService.StoreImageAsync(img);
+                    if (!string.IsNullOrEmpty(url))
+                    {
+                        processedImages.Add(url);
+                    }
+                }
+            }
+
+            // Clean up deleted images
+            if (user.ProductImages != null)
+            {
+                foreach (var oldImg in user.ProductImages)
+                {
+                    if (!processedImages.Contains(oldImg))
+                    {
+                        await _imageStorageService.DeleteImageAsync(oldImg);
+                    }
+                }
+            }
+            user.ProductImages = processedImages;
+        }
+
+        await _userRepository.SaveAsync(user);
+    }
+
+    public async Task<List<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword)
+    {
+        var allMfrs = await _userRepository.GetManufacturersAsync();
+        
+        // Filter: only show visible ones
+        var query = allMfrs.Where(u => u.IsVisibleToSellers);
+
+        // Filter by city (case-insensitive)
+        if (!string.IsNullOrEmpty(city))
+        {
+            var cityClean = city.Trim().ToLowerInvariant();
+            query = query.Where(u => u.City != null && u.City.Trim().ToLowerInvariant().Contains(cityClean));
+        }
+
+        // Filter by category keyword (exact match or list contains it)
+        if (!string.IsNullOrEmpty(keyword))
+        {
+            var keywordClean = keyword.Trim().ToLowerInvariant();
+            query = query.Where(u => u.Keywords != null && u.Keywords.Any(k => k.Trim().ToLowerInvariant() == keywordClean));
+        }
+
+        return query.Select(u => new UserProfileDto
+        {
+            Username = u.Username,
+            Email = u.Email,
+            PhoneNumber = u.PhoneNumber,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Role = u.Role,
+            ProfilePicture = u.ProfilePicture,
+            Address = u.Address,
+            City = u.City,
+            Bio = u.Bio,
+            ProductImages = u.ProductImages ?? new List<string>(),
+            Keywords = u.Keywords ?? new List<string>(),
+            IsVisibleToSellers = u.IsVisibleToSellers
+        }).ToList();
     }
 
     public async Task<bool> VerifyPasswordAsync(string userId, string password)
