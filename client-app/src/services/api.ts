@@ -68,6 +68,7 @@ export interface Product {
   length: string;
   extras: { [fieldId: string]: ExtraFieldValue };
   completed: boolean;
+  isDefective?: boolean;
   mfrId: string;
   mfrName: string;
   sellerId?: string;
@@ -211,6 +212,13 @@ export const api = {
     return apiCall<{ message: string }>(`/products/${productId}/complete`, {
       method: 'PUT',
       body: JSON.stringify({ completed }),
+    });
+  },
+
+  toggleProductDefective(productId: string, isDefective: boolean): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/defective`, {
+      method: 'PUT',
+      body: JSON.stringify({ isDefective }),
     });
   },
 

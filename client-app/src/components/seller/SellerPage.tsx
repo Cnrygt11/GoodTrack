@@ -44,7 +44,7 @@ export default function SellerPage() {
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [listFilter, setListFilter] = useState<'pending' | 'completed'>('pending');
+  const [listFilter, setListFilter] = useState<'pending' | 'completed' | 'defective'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   useEffect(() => {
@@ -270,8 +270,12 @@ export default function SellerPage() {
     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
-  const isCompletedView = listFilter === 'completed';
-  const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
+  const filteredProducts = sortedProducts.filter(p => {
+    if (listFilter === 'pending') return !p.completed && !p.isDefective;
+    if (listFilter === 'completed') return p.completed && !p.isDefective;
+    if (listFilter === 'defective') return !!p.isDefective;
+    return true;
+  });
 
   return (
     <div id="seller-screen">
@@ -504,14 +508,16 @@ export default function SellerPage() {
           {/* Dynamic Orders list */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
             <h2 style={{ margin: 0 }}>
-              {isCompletedView ? (
+              {listFilter === 'completed' ? (
                 language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
+              ) : listFilter === 'defective' ? (
+                language === 'tr' ? <>HATALI <span>SİPARİŞLER</span></> : <>DEFECTIVE <span>ORDERS</span></>
               ) : (
                 language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
               )}
             </h2>
             
-            <div className="auth-tabs" style={{ margin: 0, width: '300px' }}>
+            <div className="auth-tabs" style={{ margin: 0, width: '420px', maxWidth: '100%' }}>
               <button 
                 type="button"
                 className={`auth-tab ${listFilter === 'pending' ? 'active' : ''}`}
@@ -527,6 +533,14 @@ export default function SellerPage() {
                 style={listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
               >
                 {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
+              </button>
+              <button 
+                type="button"
+                className={`auth-tab ${listFilter === 'defective' ? 'active' : ''}`}
+                onClick={() => setListFilter('defective')}
+                style={listFilter === 'defective' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+              >
+                {t('btnDefectiveOrders')}
               </button>
             </div>
           </div>
@@ -550,14 +564,14 @@ export default function SellerPage() {
                   <Package size={36} style={{ color: 'var(--muted)' }} />
                 </div>
                 <p style={{ margin: 0, color: 'var(--muted)' }}>
-                  {isCompletedView ? t('noCompletedOrders') : t('noPendingOrders')}
+                  {listFilter === 'completed' ? t('noCompletedOrders') : listFilter === 'defective' ? t('noDefectiveOrders') : t('noPendingOrders')}
                 </p>
               </div>
             ) : (
               filteredProducts.map(p => {
                 const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
                 return (
-                  <div key={p.id} className={`product-card ${p.completed ? 'completed' : ''}`}>
+                  <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`}>
                     {/* Three-dot dropdown menu */}
                     <div 
                       style={{ position: 'absolute', top: '14px', right: '14px', zIndex: 10 }}
@@ -635,6 +649,42 @@ export default function SellerPage() {
                             <Edit2 size={13} style={{ color: 'var(--accent-seller)' }} />
                             {language === 'tr' ? 'Düzenle' : 'Edit'}
                           </button>
+                          {p.completed && !p.isDefective && (
+                            <button
+                              type="button"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setActiveDropdownId(null);
+                                try {
+                                  const data = await api.toggleProductDefective(p.id, true);
+                                  showToast(data.message || t('statusUpdatedSuccess'));
+                                  setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isDefective: true, completed: false } : item));
+                                } catch (err: any) {
+                                  alert(err.message);
+                                }
+                              }}
+                              style={{
+                                padding: '8px 14px',
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--danger)',
+                                textAlign: 'left',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                fontWeight: 500,
+                                transition: 'background 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface2)'}
+                              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                            >
+                              <X size={13} style={{ color: 'var(--danger)' }} />
+                              {t('markDefective')}
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
@@ -707,7 +757,12 @@ export default function SellerPage() {
                     </div>
 
                     <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
-                      {p.completed ? (
+                      {p.isDefective ? (
+                        <span style={{ color: 'var(--danger)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <X size={12} />
+                          {language === 'tr' ? 'Hatalı Sipariş' : 'Defective Order'}
+                        </span>
+                      ) : p.completed ? (
                         <span style={{ color: 'var(--success)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                           <CheckCircle2 size={12} />
                           {t('statusCompleted')}

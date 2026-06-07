@@ -84,7 +84,12 @@ public class ProductService : IProductService
             throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
         }
 
-        await _productRepository.UpdateStatusAsync(orderId, completed);
+        product.Completed = completed;
+        if (completed)
+        {
+            product.IsDefective = false; // Reset defective status if fixed/completed again
+        }
+        await _productRepository.SaveAsync(product);
 
         // Real-time notification: order status toggled (notify manufacturer and seller)
         await _hubContext.Clients.Users(mfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
@@ -205,5 +210,30 @@ public class ProductService : IProductService
 
         // Safe to delete from disk
         await _imageStorageService.DeleteImageAsync(imageUrl);
+    }
+
+    public async Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null)
+        {
+            throw new KeyNotFoundException("Sipariş bulunamadı!");
+        }
+
+        if (product.SellerId != sellerId)
+        {
+            throw new UnauthorizedAccessException("Bu siparişin hata durumunu değiştirme yetkiniz yok!");
+        }
+
+        product.IsDefective = isDefective;
+        if (isDefective)
+        {
+            product.Completed = false; // Set completed to false so manufacturer must fix it
+        }
+
+        await _productRepository.SaveAsync(product);
+
+        // Real-time notification: order defective status toggled (notify seller and assigned manufacturer)
+        await _hubContext.Clients.Users(product.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
     }
 }

@@ -528,6 +528,11 @@ h2 span.mfr-accent {
   background: var(--success-glow);
 }
 
+.product-card.defective {
+  border-color: var(--danger);
+  background: var(--danger-glow);
+}
+
 .product-thumb {
   width: 64px;
   height: 64px;

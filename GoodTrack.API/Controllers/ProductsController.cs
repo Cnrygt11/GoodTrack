@@ -73,6 +73,27 @@ public class ProductsController : ControllerBase
         return Ok(new { id, completed = request.Completed, message = "Sipariş durumu başarıyla güncellendi." });
     }
 
+    [HttpPut("{id}/defective")]
+    [Authorize(Roles = "seller")]
+    public async Task<IActionResult> ToggleDefective(string id, [FromBody] ToggleDefectiveRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (request == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        _logger.LogInformation("Seller user {UserId} is toggling defective status for order {Id} to: {IsDefective}", userId, id, request.IsDefective);
+        await _productService.ToggleOrderDefectiveAsync(userId, id, request.IsDefective);
+        return Ok(new { id, isDefective = request.IsDefective, message = request.IsDefective ? "Sipariş hatalı olarak işaretlendi." : "Sipariş hata durumu kaldırıldı." });
+    }
+
+
     [HttpPut("{id}")]
     [Authorize(Roles = "seller")]
     public async Task<IActionResult> Update(string id, [FromBody] Product product)

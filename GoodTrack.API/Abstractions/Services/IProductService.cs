@@ -9,4 +9,6 @@ public interface IProductService
     Task ToggleOrderCompletionAsync(string mfrId, string orderId, bool completed);
     Task<Product> UpdateProductAsync(string sellerId, string orderId, Product updatedOrder);
     Task DeleteProductAsync(string sellerId, string orderId);
+    Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective);
 }
+

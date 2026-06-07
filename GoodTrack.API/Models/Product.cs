@@ -26,6 +26,10 @@ public class Product
     [FirestoreProperty("completed")]
     public bool Completed { get; set; }
 
+    [FirestoreProperty("isDefective")]
+    public bool IsDefective { get; set; }
+
+
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
 

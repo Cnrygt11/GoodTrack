@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, Product } from '../../services/api';
-import { Factory, Package, CheckCircle2, Circle } from 'lucide-react';
+import { Factory, Package, CheckCircle2, Circle, X } from 'lucide-react';
 
 export default function MfrPage() {
   const { products, setProducts } = useData();
@@ -27,28 +27,34 @@ export default function MfrPage() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed' | 'defective'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
-  const isCompletedView = activeTab === 'completed';
   const sortedProducts = [...products].sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
-  const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
+  const filteredProducts = sortedProducts.filter(p => {
+    if (activeTab === 'pending') return !p.completed && !p.isDefective;
+    if (activeTab === 'completed') return p.completed && !p.isDefective;
+    if (activeTab === 'defective') return !!p.isDefective;
+    return true;
+  });
 
   return (
     <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <h2 style={{ margin: 0 }}>
-          {isCompletedView ? (
+          {activeTab === 'completed' ? (
             language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
+          ) : activeTab === 'defective' ? (
+            language === 'tr' ? <>HATALI <span>SİPARİŞLER</span></> : <>DEFECTIVE <span>ORDERS</span></>
           ) : (
             language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
           )}
         </h2>
         
-        <div className="auth-tabs" style={{ margin: 0, width: '300px' }}>
+        <div className="auth-tabs" style={{ margin: 0, width: '420px', maxWidth: '100%' }}>
           <button 
             type="button"
             className={`auth-tab ${activeTab === 'pending' ? 'active' : ''}`}
@@ -64,6 +70,14 @@ export default function MfrPage() {
             style={activeTab === 'completed' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
           >
             {t('btnCompletedOrders')}
+          </button>
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === 'defective' ? 'active' : ''}`}
+            onClick={() => setActiveTab('defective')}
+            style={activeTab === 'defective' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+          >
+            {t('btnDefectiveOrders')}
           </button>
         </div>
       </div>
@@ -87,14 +101,14 @@ export default function MfrPage() {
               <Factory size={36} style={{ color: 'var(--muted)' }} />
             </div>
             <p style={{ margin: 0, color: 'var(--muted)' }}>
-              {isCompletedView ? t('noCompletedOrders') : t('noPendingOrders')}
+              {activeTab === 'completed' ? t('noCompletedOrders') : activeTab === 'defective' ? t('noDefectiveOrders') : t('noPendingOrders')}
             </p>
           </div>
         ) : (
           filteredProducts.map(p => {
             const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
             return (
-              <div key={p.id} className={`product-card ${p.completed ? 'completed' : ''}`}>
+              <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`}>
                 {p.image ? (
                   <div className="product-thumb">
                     <img src={p.image} alt="ürün" />
@@ -143,7 +157,12 @@ export default function MfrPage() {
                     style={{ cursor: 'pointer' }}
                   />
                   <label htmlFor={`cb-${p.id}`} style={{ cursor: 'pointer', fontSize: '13px' }}>{t('statusCompleted')}</label>
-                  {p.completed && (
+                  {p.isDefective ? (
+                    <span className="defective-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+                      <X size={12} />
+                      {language === 'tr' ? 'Hatalı' : 'Defective'}
+                    </span>
+                  ) : p.completed && (
                     <span className="completed-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(46, 204, 113, 0.15)', color: 'var(--success)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
                       <CheckCircle2 size={12} />
                       {t('statusCompleted')}
