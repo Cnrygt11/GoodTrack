@@ -298,6 +298,8 @@ public class ProductService : IProductService
             await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
         }
 
+        await _productRepository.SaveAsync(product);
+
         // Real-time notification: order defective status toggled (notify seller and assigned manufacturer)
         await _hubContext.Clients.Users(product.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
     }
