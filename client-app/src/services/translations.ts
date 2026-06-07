@@ -135,6 +135,12 @@ export const translations = {
     enterNewPassword: 'Lütfen yeni şifrenizi belirleyin.',
     btnBackToProfile: 'Hesap Bilgilerine Dön',
     phoneRequired: 'Telefon numarası formatı geçersiz! En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir.',
+    btnPendingOrders: 'Bekleyen Siparişler',
+    btnCompletedOrders: 'Tamamlanan Siparişler',
+    mfrPendingTitle: 'BEKLEYEN SİPARİŞLER',
+    mfrCompletedTitle: 'TAMAMLANAN SİPARİŞLER',
+    noPendingOrders: 'Bekleyen sipariş bulunmamaktadır.',
+    noCompletedOrders: 'Tamamlanmış sipariş bulunmamaktadır.',
   },
   en: {
     // Auth Page
@@ -272,6 +278,12 @@ export const translations = {
     enterNewPassword: 'Please set your new password.',
     btnBackToProfile: 'Back to Account Details',
     phoneRequired: 'Phone number format is invalid! Must be at least 10 chars, containing only digits, space, +, -, ().',
+    btnPendingOrders: 'Pending Orders',
+    btnCompletedOrders: 'Completed Orders',
+    mfrPendingTitle: 'PENDING ORDERS',
+    mfrCompletedTitle: 'COMPLETED ORDERS',
+    noPendingOrders: 'No pending orders.',
+    noCompletedOrders: 'No completed orders.',
   }
 } as const;
 

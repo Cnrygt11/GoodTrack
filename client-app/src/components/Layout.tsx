@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { Package, Users, LogOut, Sun, Moon, User } from 'lucide-react';
+import { Package, Users, LogOut, Sun, Moon, User, CheckCircle2 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -76,23 +76,43 @@ export default function Layout({ children }: LayoutProps) {
           </span>
           
           {user.role === 'mfr' && (
-            <button 
-              className="btn-secondary" 
-              onClick={() => setActiveScreen('mfr')}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 14px', 
-                fontSize: '13px', 
-                borderRadius: '6px',
-                borderColor: activeScreen === 'mfr' ? 'var(--accent-mfr)' : 'var(--border)',
-                background: activeScreen === 'mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
-              }}
-            >
-              <Package size={14} />
-              {t('btnOrderScreen')}
-            </button>
+            <>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setActiveScreen('mfr')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  borderRadius: '6px',
+                  borderColor: activeScreen === 'mfr' ? 'var(--accent-mfr)' : 'var(--border)',
+                  background: activeScreen === 'mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+                }}
+              >
+                <Package size={14} />
+                {t('btnPendingOrders')}
+              </button>
+
+              <button 
+                className="btn-secondary" 
+                onClick={() => setActiveScreen('mfr-completed')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  borderRadius: '6px',
+                  borderColor: activeScreen === 'mfr-completed' ? 'var(--accent-mfr)' : 'var(--border)',
+                  background: activeScreen === 'mfr-completed' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+                }}
+              >
+                <CheckCircle2 size={14} />
+                {t('btnCompletedOrders')}
+              </button>
+            </>
           )}
 
           {user.role === 'seller' && (

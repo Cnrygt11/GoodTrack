@@ -2,6 +2,7 @@ import React from 'react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
+import { useAuth } from '../../context/AuthContext';
 import { api, Product } from '../../services/api';
 import { Factory, Package, CheckCircle2, Circle } from 'lucide-react';
 
@@ -27,21 +28,32 @@ export default function MfrPage() {
     }
   };
 
+  const { activeScreen } = useAuth();
+  const isCompletedView = activeScreen === 'mfr-completed';
   const sortedProducts = [...products].reverse();
+  const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
 
   return (
     <div id="mfr-screen" className="mfr-theme">
-      <h2>{language === 'tr' ? <>GELEN <span>SİPARİŞLER</span></> : <>INCOMING <span>ORDERS</span></>}</h2>
+      <h2>
+        {isCompletedView ? (
+          language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
+        ) : (
+          language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
+        )}
+      </h2>
       <div className="product-list">
-        {sortedProducts.length === 0 ? (
+        {filteredProducts.length === 0 ? (
           <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '40px 0' }}>
             <div className="empty-icon">
               <Factory size={36} style={{ color: 'var(--muted)' }} />
             </div>
-            <p style={{ margin: 0, color: 'var(--muted)' }}>{t('noOrdersMfr')}</p>
+            <p style={{ margin: 0, color: 'var(--muted)' }}>
+              {isCompletedView ? t('noCompletedOrders') : t('noPendingOrders')}
+            </p>
           </div>
         ) : (
-          sortedProducts.map(p => {
+          filteredProducts.map(p => {
             const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
             return (
               <div key={p.id} className={`product-card ${p.completed ? 'completed' : ''}`}>
