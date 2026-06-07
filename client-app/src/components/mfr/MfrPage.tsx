@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
-import { useAuth } from '../../context/AuthContext';
 import { api, Product } from '../../services/api';
 import { Factory, Package, CheckCircle2, Circle } from 'lucide-react';
 
@@ -28,20 +27,42 @@ export default function MfrPage() {
     }
   };
 
-  const { activeScreen } = useAuth();
-  const isCompletedView = activeScreen === 'mfr-completed';
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+  const isCompletedView = activeTab === 'completed';
   const sortedProducts = [...products].reverse();
   const filteredProducts = sortedProducts.filter(p => p.completed === isCompletedView);
 
   return (
-    <div id="mfr-screen" className="mfr-theme">
-      <h2>
-        {isCompletedView ? (
-          language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
-        ) : (
-          language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
-        )}
-      </h2>
+    <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <h2 style={{ margin: 0 }}>
+          {isCompletedView ? (
+            language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
+          ) : (
+            language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
+          )}
+        </h2>
+        
+        <div className="auth-tabs" style={{ margin: 0, width: '300px' }}>
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === 'pending' ? 'active' : ''}`}
+            onClick={() => setActiveTab('pending')}
+            style={activeTab === 'pending' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+          >
+            {t('btnPendingOrders')}
+          </button>
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === 'completed' ? 'active' : ''}`}
+            onClick={() => setActiveTab('completed')}
+            style={activeTab === 'completed' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+          >
+            {t('btnCompletedOrders')}
+          </button>
+        </div>
+      </div>
+
       <div className="product-list">
         {filteredProducts.length === 0 ? (
           <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '40px 0' }}>
