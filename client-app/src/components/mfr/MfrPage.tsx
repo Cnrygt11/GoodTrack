@@ -14,6 +14,77 @@ export default function MfrPage() {
   const [selectedDefectProduct, setSelectedDefectProduct] = useState<Product | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  // Unseen orders notification states for each list filter tab
+  const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
+    pending: [],
+    completed: [],
+    defective: [],
+    approval: []
+  });
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({
+    pending: 0,
+    completed: 0,
+    defective: 0,
+    approval: 0
+  });
+
+  useEffect(() => {
+    // Group products by status
+    const groupedIds: Record<string, string[]> = {
+      pending: products.filter(p => !p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
+      completed: products.filter(p => !!p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
+      defective: products.filter(p => !!p.isDefective && !p.isPendingApproval).map(p => p.id),
+      approval: products.filter(p => !!p.isPendingApproval).map(p => p.id)
+    };
+
+    const nextUnseen: Record<string, string[]> = { pending: [], completed: [], defective: [], approval: [] };
+    const nextBadgeCounts: Record<string, number> = { pending: 0, completed: 0, defective: 0, approval: 0 };
+
+    const tabs: ('pending' | 'completed' | 'defective' | 'approval')[] = ['pending', 'completed', 'defective', 'approval'];
+
+    tabs.forEach(tab => {
+      const storageKey = `seen_mfr_${tab}`;
+      const seenRaw = localStorage.getItem(storageKey);
+      
+      let seen: string[] = [];
+      if (seenRaw === null) {
+        // First run: mark existing as seen so we only notify on new changes
+        seen = groupedIds[tab];
+        localStorage.setItem(storageKey, JSON.stringify(seen));
+      } else {
+        seen = JSON.parse(seenRaw);
+      }
+
+      const unseen = groupedIds[tab].filter(id => !seen.includes(id));
+      nextUnseen[tab] = unseen;
+
+      if (activeTab !== tab) {
+        nextBadgeCounts[tab] = unseen.length;
+      } else {
+        nextBadgeCounts[tab] = 0;
+        if (unseen.length > 0) {
+          const newSeen = Array.from(new Set([...seen, ...unseen]));
+          localStorage.setItem(storageKey, JSON.stringify(newSeen));
+        }
+      }
+    });
+
+    setUnseenIds(nextUnseen);
+    setBadgeCounts(nextBadgeCounts);
+  }, [products, activeTab]);
+
+  const handleMarkSingleAsSeen = (productId: string, tab: 'pending' | 'completed' | 'defective' | 'approval') => {
+    setUnseenIds(prev => ({
+      ...prev,
+      [tab]: prev[tab].filter(id => id !== productId)
+    }));
+    const storageKey = `seen_mfr_${tab}`;
+    const seen = JSON.parse(localStorage.getItem(storageKey) || '[]');
+    if (!seen.includes(productId)) {
+      localStorage.setItem(storageKey, JSON.stringify([...seen, productId]));
+    }
+  };
+
   const handleToggleComplete = async (productId: string, checked: boolean) => {
     try {
       const data = await api.toggleProductComplete(productId, checked);
@@ -66,33 +137,133 @@ export default function MfrPage() {
             type="button"
             className={`auth-tab ${activeTab === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveTab('pending')}
-            style={activeTab === 'pending' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              ...(activeTab === 'pending' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {})
+            }}
           >
             {t('btnPendingOrders')}
+            {badgeCounts.pending > 0 && (
+              <span style={{
+                background: 'var(--danger)',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '16px',
+                height: '16px',
+                lineHeight: 1,
+                boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+              }}>
+                {badgeCounts.pending}
+              </span>
+            )}
           </button>
           <button 
             type="button"
             className={`auth-tab ${activeTab === 'completed' ? 'active' : ''}`}
             onClick={() => setActiveTab('completed')}
-            style={activeTab === 'completed' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              ...(activeTab === 'completed' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {})
+            }}
           >
             {t('btnCompletedOrders')}
+            {badgeCounts.completed > 0 && (
+              <span style={{
+                background: 'var(--danger)',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '16px',
+                height: '16px',
+                lineHeight: 1,
+                boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+              }}>
+                {badgeCounts.completed}
+              </span>
+            )}
           </button>
           <button 
             type="button"
             className={`auth-tab ${activeTab === 'defective' ? 'active' : ''}`}
             onClick={() => setActiveTab('defective')}
-            style={activeTab === 'defective' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              ...(activeTab === 'defective' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {})
+            }}
           >
             {t('btnDefectiveOrders')}
+            {badgeCounts.defective > 0 && (
+              <span style={{
+                background: 'var(--danger)',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '16px',
+                height: '16px',
+                lineHeight: 1,
+                boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+              }}>
+                {badgeCounts.defective}
+              </span>
+            )}
           </button>
           <button 
             type="button"
             className={`auth-tab ${activeTab === 'approval' ? 'active' : ''}`}
             onClick={() => setActiveTab('approval')}
-            style={activeTab === 'approval' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+            style={{
+              position: 'relative',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              ...(activeTab === 'approval' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {})
+            }}
           >
             {t('btnPendingApprovalOrders')}
+            {badgeCounts.approval > 0 && (
+              <span style={{
+                background: 'var(--danger)',
+                color: 'white',
+                fontSize: '10px',
+                fontWeight: 700,
+                padding: '2px 6px',
+                borderRadius: '10px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '16px',
+                height: '16px',
+                lineHeight: 1,
+                boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+              }}>
+                {badgeCounts.approval}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -130,6 +301,20 @@ export default function MfrPage() {
             const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
             return (
               <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`}>
+                {unseenIds[activeTab]?.includes(p.id) && (
+                  <div 
+                    className="new-completed-dot"
+                    style={activeTab === 'defective' ? { backgroundColor: 'var(--danger)', boxShadow: '0 0 8px var(--danger)' } : activeTab === 'approval' ? { backgroundColor: 'var(--accent-mfr)', boxShadow: '0 0 8px var(--accent-mfr)' } : {}}
+                    title={language === 'tr' ? 'Yeni Sipariş/Durum! Okundu olarak işaretlemek için tıklayın.' : 'New Order/Status! Click to mark as read.'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleMarkSingleAsSeen(p.id, activeTab);
+                    }}
+                    onMouseEnter={() => {
+                      setTimeout(() => handleMarkSingleAsSeen(p.id, activeTab), 1500);
+                    }}
+                  />
+                )}
                 {p.image ? (
                   <div className="product-thumb">
                     <img src={p.image} alt="ürün" />

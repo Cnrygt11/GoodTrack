@@ -56,9 +56,19 @@ export default function SellerPage() {
   const [defectImage, setDefectImage] = useState<string | null>(null);
   const [defectImageFileName, setDefectImageFileName] = useState('');
 
-  // Unseen completed orders notification states
-  const [unseenIds, setUnseenIds] = useState<string[]>([]);
-  const [badgeCount, setBadgeCount] = useState(0);
+  // Unseen orders notification states for each list filter tab
+  const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
+    pending: [],
+    completed: [],
+    defective: [],
+    approval: []
+  });
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({
+    pending: 0,
+    completed: 0,
+    defective: 0,
+    approval: 0
+  });
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -69,37 +79,59 @@ export default function SellerPage() {
   }, []);
 
   useEffect(() => {
-    const completed = products.filter(p => p.completed && !p.isDefective).map(p => p.id);
-    const seenRaw = localStorage.getItem('seenCompletedIds');
-    
-    let seen: string[] = [];
-    if (seenRaw === null) {
-      // First run: mark all currently completed products as seen so they don't flood the UI as "new"
-      seen = completed;
-      localStorage.setItem('seenCompletedIds', JSON.stringify(seen));
-    } else {
-      seen = JSON.parse(seenRaw);
-    }
-    
-    const unseen = completed.filter(id => !seen.includes(id));
-    setUnseenIds(unseen);
-    
-    if (listFilter !== 'completed') {
-      setBadgeCount(unseen.length);
-    } else {
-      setBadgeCount(0);
-      if (unseen.length > 0) {
-        const newSeen = Array.from(new Set([...seen, ...unseen]));
-        localStorage.setItem('seenCompletedIds', JSON.stringify(newSeen));
+    // Group products by status
+    const groupedIds: Record<string, string[]> = {
+      pending: products.filter(p => !p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
+      completed: products.filter(p => !!p.completed && !p.isDefective && !p.isPendingApproval).map(p => p.id),
+      defective: products.filter(p => !!p.isDefective && !p.isPendingApproval).map(p => p.id),
+      approval: products.filter(p => !!p.isPendingApproval).map(p => p.id)
+    };
+
+    const nextUnseen: Record<string, string[]> = { pending: [], completed: [], defective: [], approval: [] };
+    const nextBadgeCounts: Record<string, number> = { pending: 0, completed: 0, defective: 0, approval: 0 };
+
+    const tabs: ('pending' | 'completed' | 'defective' | 'approval')[] = ['pending', 'completed', 'defective', 'approval'];
+
+    tabs.forEach(tab => {
+      const storageKey = `seen_seller_${tab}`;
+      const seenRaw = localStorage.getItem(storageKey);
+      
+      let seen: string[] = [];
+      if (seenRaw === null) {
+        // First run: mark existing as seen so we only notify on new changes
+        seen = groupedIds[tab];
+        localStorage.setItem(storageKey, JSON.stringify(seen));
+      } else {
+        seen = JSON.parse(seenRaw);
       }
-    }
+
+      const unseen = groupedIds[tab].filter(id => !seen.includes(id));
+      nextUnseen[tab] = unseen;
+
+      if (listFilter !== tab) {
+        nextBadgeCounts[tab] = unseen.length;
+      } else {
+        nextBadgeCounts[tab] = 0;
+        if (unseen.length > 0) {
+          const newSeen = Array.from(new Set([...seen, ...unseen]));
+          localStorage.setItem(storageKey, JSON.stringify(newSeen));
+        }
+      }
+    });
+
+    setUnseenIds(nextUnseen);
+    setBadgeCounts(nextBadgeCounts);
   }, [products, listFilter]);
 
-  const handleMarkSingleAsSeen = (productId: string) => {
-    setUnseenIds(prev => prev.filter(id => id !== productId));
-    const seen = JSON.parse(localStorage.getItem('seenCompletedIds') || '[]');
+  const handleMarkSingleAsSeen = (productId: string, tab: 'pending' | 'completed' | 'defective' | 'approval') => {
+    setUnseenIds(prev => ({
+      ...prev,
+      [tab]: prev[tab].filter(id => id !== productId)
+    }));
+    const storageKey = `seen_seller_${tab}`;
+    const seen = JSON.parse(localStorage.getItem(storageKey) || '[]');
     if (!seen.includes(productId)) {
-      localStorage.setItem('seenCompletedIds', JSON.stringify([...seen, productId]));
+      localStorage.setItem(storageKey, JSON.stringify([...seen, productId]));
     }
   };
 
@@ -634,24 +666,16 @@ export default function SellerPage() {
                 type="button"
                 className={`auth-tab ${listFilter === 'pending' ? 'active' : ''}`}
                 onClick={() => setListFilter('pending')}
-                style={listFilter === 'pending' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
-              >
-                {language === 'tr' ? 'Bekleyenler' : 'Pending'}
-              </button>
-              <button 
-                type="button"
-                className={`auth-tab ${listFilter === 'completed' ? 'active' : ''}`}
-                onClick={() => setListFilter('completed')}
                 style={{
                   position: 'relative',
                   display: 'inline-flex',
                   alignItems: 'center',
                   gap: '6px',
-                  ...(listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
+                  ...(listFilter === 'pending' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
                 }}
               >
-                {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
-                {badgeCount > 0 && (
+                {language === 'tr' ? 'Bekleyenler' : 'Pending'}
+                {badgeCounts.pending > 0 && (
                   <span style={{
                     background: 'var(--danger)',
                     color: 'white',
@@ -667,7 +691,40 @@ export default function SellerPage() {
                     lineHeight: 1,
                     boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
                   }}>
-                    {badgeCount}
+                    {badgeCounts.pending}
+                  </span>
+                )}
+              </button>
+              <button 
+                type="button"
+                className={`auth-tab ${listFilter === 'completed' ? 'active' : ''}`}
+                onClick={() => setListFilter('completed')}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  ...(listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
+                }}
+              >
+                {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
+                {badgeCounts.completed > 0 && (
+                  <span style={{
+                    background: 'var(--danger)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '16px',
+                    height: '16px',
+                    lineHeight: 1,
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                  }}>
+                    {badgeCounts.completed}
                   </span>
                 )}
               </button>
@@ -675,17 +732,67 @@ export default function SellerPage() {
                 type="button"
                 className={`auth-tab ${listFilter === 'defective' ? 'active' : ''}`}
                 onClick={() => setListFilter('defective')}
-                style={listFilter === 'defective' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  ...(listFilter === 'defective' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
+                }}
               >
                 {t('btnDefectiveOrders')}
+                {badgeCounts.defective > 0 && (
+                  <span style={{
+                    background: 'var(--danger)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '16px',
+                    height: '16px',
+                    lineHeight: 1,
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                  }}>
+                    {badgeCounts.defective}
+                  </span>
+                )}
               </button>
               <button 
                 type="button"
                 className={`auth-tab ${listFilter === 'approval' ? 'active' : ''}`}
                 onClick={() => setListFilter('approval')}
-                style={listFilter === 'approval' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  ...(listFilter === 'approval' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
+                }}
               >
                 {t('btnPendingApprovalOrders')}
+                {badgeCounts.approval > 0 && (
+                  <span style={{
+                    background: 'var(--danger)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '16px',
+                    height: '16px',
+                    lineHeight: 1,
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                  }}>
+                    {badgeCounts.approval}
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -723,17 +830,17 @@ export default function SellerPage() {
                 const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
                 return (
                   <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`} style={{ zIndex: activeDropdownId === p.id ? 50 : 1 }}>
-                    {unseenIds.includes(p.id) && (
+                    {unseenIds[listFilter]?.includes(p.id) && (
                       <div 
                         className="new-completed-dot"
-                        title={language === 'tr' ? 'Yeni Tamamlandı! Okundu olarak işaretlemek için tıklayın.' : 'Newly Completed! Click to mark as read.'}
+                        style={listFilter === 'defective' ? { backgroundColor: 'var(--danger)', boxShadow: '0 0 8px var(--danger)' } : listFilter === 'approval' ? { backgroundColor: 'var(--accent-mfr)', boxShadow: '0 0 8px var(--accent-mfr)' } : {}}
+                        title={language === 'tr' ? 'Yeni Durum! Okundu olarak işaretlemek için tıklayın.' : 'New Status! Click to mark as read.'}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleMarkSingleAsSeen(p.id);
+                          handleMarkSingleAsSeen(p.id, listFilter);
                         }}
                         onMouseEnter={() => {
-                          // Dismiss after 1.5 seconds of hovering
-                          setTimeout(() => handleMarkSingleAsSeen(p.id), 1500);
+                          setTimeout(() => handleMarkSingleAsSeen(p.id, listFilter), 1500);
                         }}
                       />
                     )}
