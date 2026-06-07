@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -31,6 +31,7 @@ export default function AuthPage() {
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationUsername, setVerificationUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const isSubmitting = useRef(false);
 
   // Real-time validations
   const [usernameValid, setUsernameValid] = useState({ valid: true, dirty: false });
@@ -95,8 +96,9 @@ export default function AuthPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
+    if (isSubmitting.current) return;
     try {
+      isSubmitting.current = true;
       setSubmitting(true);
       const data = await api.login(loginUsername.trim(), loginPassword);
       showToast(data.message || t('loginSuccess'));
@@ -108,13 +110,14 @@ export default function AuthPage() {
       }
       alert(err.message);
     } finally {
+      isSubmitting.current = false;
       setSubmitting(false);
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitting) return;
+    if (isSubmitting.current) return;
 
     // Final checks
     const usernameRegex = /^[a-z0-9_]{3,15}$/;
@@ -146,6 +149,7 @@ export default function AuthPage() {
     }
 
     try {
+      isSubmitting.current = true;
       setSubmitting(true);
       const data = await api.register({
         firstname: firstName.trim(),
@@ -176,6 +180,7 @@ export default function AuthPage() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isSubmitting.current = false;
       setSubmitting(false);
     }
   };

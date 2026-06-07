@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -47,6 +47,7 @@ export default function SellerPage() {
   const [listFilter, setListFilter] = useState<'pending' | 'completed' | 'defective'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [actionLoading, setActionLoading] = useState(false);
+  const isActionLoading = useRef(false);
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -132,7 +133,7 @@ export default function SellerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     const code = productCode.trim();
     if (!code) {
       alert(t('productCodeRequired'));
@@ -158,6 +159,7 @@ export default function SellerPage() {
     });
 
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       if (editingProduct) {
         const productPayload = {
@@ -195,6 +197,7 @@ export default function SellerPage() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };
@@ -202,7 +205,7 @@ export default function SellerPage() {
   // Add Dynamic Feature definition
   const handleAddFieldSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     const name = newFieldName.trim();
     if (!name) {
       alert(t('featureNameRequired'));
@@ -219,6 +222,7 @@ export default function SellerPage() {
       : [];
 
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.createField({ name, type: newFieldType, options });
       showToast(data.message || t('featureAddSuccess'));
@@ -232,6 +236,7 @@ export default function SellerPage() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };

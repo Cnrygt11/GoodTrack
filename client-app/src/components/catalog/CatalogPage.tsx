@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
@@ -26,6 +26,7 @@ export default function CatalogPage() {
   const [catalogImage, setCatalogImage] = useState<string | null>(null); // base64 string
   const [imageFileName, setImageFileName] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const isActionLoading = useRef(false);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +69,7 @@ export default function CatalogPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     const code = productCode.trim();
     if (!code) {
       alert(t('productCodeRequired'));
@@ -89,6 +90,7 @@ export default function CatalogPage() {
     const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
 
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       if (editingProduct) {
         // Edit mode
@@ -121,6 +123,7 @@ export default function CatalogPage() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };

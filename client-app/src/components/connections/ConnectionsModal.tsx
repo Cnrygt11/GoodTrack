@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
@@ -29,6 +29,7 @@ export default function ConnectionsModal() {
 
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const isActionLoading = useRef(false);
 
   // Fetch data automatically when the modal is opened
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function ConnectionsModal() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     const username = addUsername.trim();
     if (!username) {
       alert(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
@@ -54,6 +55,7 @@ export default function ConnectionsModal() {
     }
 
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
@@ -63,13 +65,15 @@ export default function ConnectionsModal() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };
 
   const handleAccept = async (requestId: string) => {
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.acceptRequest(requestId);
       showToast(data.message || t('connReqAccepted'));
@@ -80,14 +84,16 @@ export default function ConnectionsModal() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };
 
   const handleReject = async (requestId: string) => {
-    if (actionLoading) return;
+    if (isActionLoading.current) return;
     if (!confirm(language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?')) return;
     try {
+      isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.rejectRequest(requestId);
       showToast(data.message || t('connReqRejected'));
@@ -96,6 +102,7 @@ export default function ConnectionsModal() {
     } catch (err: any) {
       alert(err.message);
     } finally {
+      isActionLoading.current = false;
       setActionLoading(false);
     }
   };
