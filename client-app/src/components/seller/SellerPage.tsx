@@ -56,6 +56,10 @@ export default function SellerPage() {
   const [defectImage, setDefectImage] = useState<string | null>(null);
   const [defectImageFileName, setDefectImageFileName] = useState('');
 
+  // Unseen completed orders notification states
+  const [unseenIds, setUnseenIds] = useState<string[]>([]);
+  const [badgeCount, setBadgeCount] = useState(0);
+
   useEffect(() => {
     const handleOutsideClick = () => {
       setActiveDropdownId(null);
@@ -63,6 +67,41 @@ export default function SellerPage() {
     document.addEventListener('click', handleOutsideClick);
     return () => document.removeEventListener('click', handleOutsideClick);
   }, []);
+
+  useEffect(() => {
+    const completed = products.filter(p => p.completed && !p.isDefective).map(p => p.id);
+    const seenRaw = localStorage.getItem('seenCompletedIds');
+    
+    let seen: string[] = [];
+    if (seenRaw === null) {
+      // First run: mark all currently completed products as seen so they don't flood the UI as "new"
+      seen = completed;
+      localStorage.setItem('seenCompletedIds', JSON.stringify(seen));
+    } else {
+      seen = JSON.parse(seenRaw);
+    }
+    
+    const unseen = completed.filter(id => !seen.includes(id));
+    setUnseenIds(unseen);
+    
+    if (listFilter !== 'completed') {
+      setBadgeCount(unseen.length);
+    } else {
+      setBadgeCount(0);
+      if (unseen.length > 0) {
+        const newSeen = Array.from(new Set([...seen, ...unseen]));
+        localStorage.setItem('seenCompletedIds', JSON.stringify(newSeen));
+      }
+    }
+  }, [products, listFilter]);
+
+  const handleMarkSingleAsSeen = (productId: string) => {
+    setUnseenIds(prev => prev.filter(id => id !== productId));
+    const seen = JSON.parse(localStorage.getItem('seenCompletedIds') || '[]');
+    if (!seen.includes(productId)) {
+      localStorage.setItem('seenCompletedIds', JSON.stringify([...seen, productId]));
+    }
+  };
 
   // Handle auto-fill logic when typing product code
   useEffect(() => {
@@ -600,9 +639,34 @@ export default function SellerPage() {
                 type="button"
                 className={`auth-tab ${listFilter === 'completed' ? 'active' : ''}`}
                 onClick={() => setListFilter('completed')}
-                style={listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+                style={{
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  ...(listFilter === 'completed' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {})
+                }}
               >
                 {language === 'tr' ? 'Tamamlananlar' : 'Completed'}
+                {badgeCount > 0 && (
+                  <span style={{
+                    background: 'var(--danger)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 700,
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '16px',
+                    height: '16px',
+                    lineHeight: 1,
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
+                  }}>
+                    {badgeCount}
+                  </span>
+                )}
               </button>
               <button 
                 type="button"
@@ -642,6 +706,20 @@ export default function SellerPage() {
                 const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleString('tr-TR') : '—';
                 return (
                   <div key={p.id} className={`product-card ${p.isDefective ? 'defective' : p.completed ? 'completed' : ''}`} style={{ zIndex: activeDropdownId === p.id ? 50 : 1 }}>
+                    {unseenIds.includes(p.id) && (
+                      <div 
+                        className="new-completed-dot"
+                        title={language === 'tr' ? 'Yeni Tamamlandı! Okundu olarak işaretlemek için tıklayın.' : 'Newly Completed! Click to mark as read.'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleMarkSingleAsSeen(p.id);
+                        }}
+                        onMouseEnter={() => {
+                          // Dismiss after 1.5 seconds of hovering
+                          setTimeout(() => handleMarkSingleAsSeen(p.id), 1500);
+                        }}
+                      />
+                    )}
                     {/* Three-dot dropdown menu */}
                     <div 
                       style={{ position: 'absolute', top: '14px', right: '14px', zIndex: 10 }}

@@ -783,3 +783,43 @@ h2 span.mfr-accent {
     gap: 12px;
   }
 }
+
+/* Newly completed order dot notification */
+.new-completed-dot {
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background-color: var(--success);
+  border: 2px solid var(--background);
+  box-shadow: 0 0 8px var(--success);
+  cursor: pointer;
+  z-index: 10;
+  animation: pulse-dot 1.8s infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.new-completed-dot::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: white;
+}
+
+@keyframes pulse-dot {
+  0% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(46, 204, 113, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
