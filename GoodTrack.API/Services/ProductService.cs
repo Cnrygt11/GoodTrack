@@ -88,6 +88,7 @@ public class ProductService : IProductService
         if (completed)
         {
             product.IsDefective = false; // Reset defective status if fixed/completed again
+            product.IsPendingApproval = false; // Reset approval status if completed
             product.CompletedAt = DateTime.UtcNow.ToString("o");
             string? oldDefectImage = product.DefectImage;
             product.DefectNote = null;
@@ -163,6 +164,7 @@ public class ProductService : IProductService
         existing.Extras = updatedOrder.Extras;
         existing.MfrId = newMfrId;
         existing.MfrName = updatedOrder.MfrName;
+        existing.IsPendingApproval = false; // Reset approval status if updated by seller
 
         await _productRepository.SaveAsync(existing);
 
@@ -261,6 +263,7 @@ public class ProductService : IProductService
         if (isDefective)
         {
             product.Completed = false; // Set completed to false so manufacturer must fix it
+            product.IsPendingApproval = false; // Reset pending approval if defective
             product.DefectNote = defectNote;
 
             // Handle base64 defect image upload
@@ -295,9 +298,45 @@ public class ProductService : IProductService
             await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
         }
 
-        await _productRepository.SaveAsync(product);
-
         // Real-time notification: order defective status toggled (notify seller and assigned manufacturer)
         await _hubContext.Clients.Users(product.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
+    }
+
+    public async Task ToggleOrderApprovalAsync(string userId, string role, string orderId, bool isPendingApproval)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null)
+        {
+            throw new KeyNotFoundException("Sipariş bulunamadı!");
+        }
+
+        if (role == "mfr")
+        {
+            if (product.MfrId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
+            }
+            product.IsPendingApproval = isPendingApproval;
+            if (isPendingApproval)
+            {
+                product.Completed = false;
+                product.IsDefective = false; // Reset defective status if sent to awaiting approval
+            }
+        }
+        else if (role == "seller")
+        {
+            if (product.SellerId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
+            }
+            product.IsPendingApproval = isPendingApproval;
+        }
+        else
+        {
+            throw new UnauthorizedAccessException("Yetkisiz işlem!");
+        }
+
+        await _productRepository.SaveAsync(product);
+        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
 }

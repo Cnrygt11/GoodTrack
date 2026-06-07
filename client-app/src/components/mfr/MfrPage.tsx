@@ -3,7 +3,7 @@ import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, Product } from '../../services/api';
-import { Factory, Package, CheckCircle2, Circle, X, Info } from 'lucide-react';
+import { Factory, Package, CheckCircle2, Circle, X, Info, Clock } from 'lucide-react';
 import Modal from '../ui/Modal';
 
 export default function MfrPage() {
@@ -31,7 +31,7 @@ export default function MfrPage() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'pending' | 'completed' | 'defective'>('pending');
+  const [activeTab, setActiveTab] = useState<'pending' | 'completed' | 'defective' | 'approval'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const sortedProducts = [...products].sort((a, b) => {
     const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -39,9 +39,10 @@ export default function MfrPage() {
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
   const filteredProducts = sortedProducts.filter(p => {
-    if (activeTab === 'pending') return !p.completed && !p.isDefective;
-    if (activeTab === 'completed') return p.completed && !p.isDefective;
-    if (activeTab === 'defective') return !!p.isDefective;
+    if (activeTab === 'pending') return !p.completed && !p.isDefective && !p.isPendingApproval;
+    if (activeTab === 'completed') return p.completed && !p.isDefective && !p.isPendingApproval;
+    if (activeTab === 'defective') return !!p.isDefective && !p.isPendingApproval;
+    if (activeTab === 'approval') return !!p.isPendingApproval;
     return true;
   });
 
@@ -53,12 +54,14 @@ export default function MfrPage() {
             language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
           ) : activeTab === 'defective' ? (
             language === 'tr' ? <>HATALI <span>SİPARİŞLER</span></> : <>DEFECTIVE <span>ORDERS</span></>
+          ) : activeTab === 'approval' ? (
+            language === 'tr' ? <>ONAY <span>BEKLEYENLER</span></> : <>AWAITING <span>APPROVAL</span></>
           ) : (
             language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
           )}
         </h2>
         
-        <div className="auth-tabs" style={{ margin: 0, width: '420px', maxWidth: '100%' }}>
+        <div className="auth-tabs" style={{ margin: 0, width: '560px', maxWidth: '100%', display: 'flex', gap: '8px' }}>
           <button 
             type="button"
             className={`auth-tab ${activeTab === 'pending' ? 'active' : ''}`}
@@ -83,6 +86,14 @@ export default function MfrPage() {
           >
             {t('btnDefectiveOrders')}
           </button>
+          <button 
+            type="button"
+            className={`auth-tab ${activeTab === 'approval' ? 'active' : ''}`}
+            onClick={() => setActiveTab('approval')}
+            style={activeTab === 'approval' ? { borderBottomColor: 'var(--accent-mfr)', color: 'var(--text)' } : {}}
+          >
+            {t('btnPendingApprovalOrders')}
+          </button>
         </div>
       </div>
 
@@ -105,7 +116,13 @@ export default function MfrPage() {
               <Factory size={36} style={{ color: 'var(--muted)' }} />
             </div>
             <p style={{ margin: 0, color: 'var(--muted)' }}>
-              {activeTab === 'completed' ? t('noCompletedOrders') : activeTab === 'defective' ? t('noDefectiveOrders') : t('noPendingOrders')}
+              {activeTab === 'completed' 
+                ? t('noCompletedOrders') 
+                : activeTab === 'defective' 
+                ? t('noDefectiveOrders') 
+                : activeTab === 'approval' 
+                ? t('noPendingApprovalOrders') 
+                : t('noPendingOrders')}
             </p>
           </div>
         ) : (
@@ -172,7 +189,44 @@ export default function MfrPage() {
                     style={{ cursor: 'pointer' }}
                   />
                   <label htmlFor={`cb-${p.id}`} style={{ cursor: 'pointer', fontSize: '13px' }}>{t('statusCompleted')}</label>
-                  {p.isDefective ? (
+                  {p.isPendingApproval ? (
+                    <>
+                      <span className="pending-approval-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(230, 126, 34, 0.15)', color: 'var(--accent-mfr)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
+                        <Clock size={12} style={{ color: 'var(--accent-mfr)' }} />
+                        {t('statusPendingApproval')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const data = await api.toggleProductApproval(p.id, false);
+                            showToast(data.message || t('statusUpdatedSuccess'));
+                            setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isPendingApproval: false } : item));
+                          } catch (err: any) {
+                            alert(err.message);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          background: 'rgba(52, 152, 219, 0.15)',
+                          border: '1px solid rgba(52, 152, 219, 0.3)',
+                          color: 'var(--accent-mfr)',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          transition: 'background 0.2s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(52, 152, 219, 0.25)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(52, 152, 219, 0.15)'}
+                      >
+                        {language === 'tr' ? 'Üretime Al' : 'Put to Production'}
+                      </button>
+                    </>
+                  ) : p.isDefective ? (
                     <>
                       <span className="defective-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.15)', color: 'var(--danger)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
                         <X size={12} />
@@ -205,11 +259,44 @@ export default function MfrPage() {
                         {t('btnDetails')}
                       </button>
                     </>
-                  ) : p.completed && (
+                  ) : p.completed ? (
                     <span className="completed-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(46, 204, 113, 0.15)', color: 'var(--success)', padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 600 }}>
                       <CheckCircle2 size={12} />
                       {t('statusCompleted')}
                     </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const data = await api.toggleProductApproval(p.id, true);
+                          showToast(data.message || t('statusUpdatedSuccess'));
+                          setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isPendingApproval: true } : item));
+                        } catch (err: any) {
+                          alert(err.message);
+                        }
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        background: 'rgba(230, 126, 34, 0.15)',
+                        border: '1px solid rgba(230, 126, 34, 0.3)',
+                        color: 'var(--accent-mfr)',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        transition: 'background 0.2s',
+                        marginLeft: '8px'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(230, 126, 34, 0.25)'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(230, 126, 34, 0.15)'}
+                    >
+                      <Info size={11} />
+                      {t('btnSendToApproval')}
+                    </button>
                   )}
                 </div>
               </div>

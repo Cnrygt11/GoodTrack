@@ -44,7 +44,7 @@ export default function SellerPage() {
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [listFilter, setListFilter] = useState<'pending' | 'completed' | 'defective'>('pending');
+  const [listFilter, setListFilter] = useState<'pending' | 'completed' | 'defective' | 'approval'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [actionLoading, setActionLoading] = useState(false);
   const isActionLoading = useRef(false);
@@ -378,9 +378,10 @@ export default function SellerPage() {
     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
   });
   const filteredProducts = sortedProducts.filter(p => {
-    if (listFilter === 'pending') return !p.completed && !p.isDefective;
-    if (listFilter === 'completed') return p.completed && !p.isDefective;
-    if (listFilter === 'defective') return !!p.isDefective;
+    if (listFilter === 'pending') return !p.completed && !p.isDefective && !p.isPendingApproval;
+    if (listFilter === 'completed') return p.completed && !p.isDefective && !p.isPendingApproval;
+    if (listFilter === 'defective') return !!p.isDefective && !p.isPendingApproval;
+    if (listFilter === 'approval') return !!p.isPendingApproval;
     return true;
   });
 
@@ -621,12 +622,14 @@ export default function SellerPage() {
                 language === 'tr' ? <>TAMAMLANMIŞ <span>SİPARİŞLER</span></> : <>COMPLETED <span>ORDERS</span></>
               ) : listFilter === 'defective' ? (
                 language === 'tr' ? <>HATALI <span>SİPARİŞLER</span></> : <>DEFECTIVE <span>ORDERS</span></>
+              ) : listFilter === 'approval' ? (
+                language === 'tr' ? <>ONAY <span>BEKLEYENLER</span></> : <>AWAITING <span>APPROVAL</span></>
               ) : (
                 language === 'tr' ? <>BEKLEYEN <span>SİPARİŞLER</span></> : <>PENDING <span>ORDERS</span></>
               )}
             </h2>
             
-            <div className="auth-tabs" style={{ margin: 0, width: '420px', maxWidth: '100%' }}>
+            <div className="auth-tabs" style={{ margin: 0, width: '560px', maxWidth: '100%', display: 'flex', gap: '8px' }}>
               <button 
                 type="button"
                 className={`auth-tab ${listFilter === 'pending' ? 'active' : ''}`}
@@ -676,6 +679,14 @@ export default function SellerPage() {
               >
                 {t('btnDefectiveOrders')}
               </button>
+              <button 
+                type="button"
+                className={`auth-tab ${listFilter === 'approval' ? 'active' : ''}`}
+                onClick={() => setListFilter('approval')}
+                style={listFilter === 'approval' ? { borderBottomColor: 'var(--accent-seller)', color: 'var(--text)' } : {}}
+              >
+                {t('btnPendingApprovalOrders')}
+              </button>
             </div>
           </div>
 
@@ -698,7 +709,13 @@ export default function SellerPage() {
                   <Package size={36} style={{ color: 'var(--muted)' }} />
                 </div>
                 <p style={{ margin: 0, color: 'var(--muted)' }}>
-                  {listFilter === 'completed' ? t('noCompletedOrders') : listFilter === 'defective' ? t('noDefectiveOrders') : t('noPendingOrders')}
+                  {listFilter === 'completed' 
+                    ? t('noCompletedOrders') 
+                    : listFilter === 'defective' 
+                    ? t('noDefectiveOrders') 
+                    : listFilter === 'approval' 
+                    ? t('noPendingApprovalOrders') 
+                    : t('noPendingOrders')}
                 </p>
               </div>
             ) : (
@@ -797,7 +814,43 @@ export default function SellerPage() {
                             <Edit2 size={13} style={{ color: 'var(--accent-seller)' }} />
                             {language === 'tr' ? 'Düzenle' : 'Edit'}
                           </button>
-                          {p.completed && !p.isDefective && (
+                          {p.isPendingApproval && (
+                             <button
+                               type="button"
+                               onClick={async (e) => {
+                                 e.stopPropagation();
+                                 setActiveDropdownId(null);
+                                 try {
+                                   const data = await api.toggleProductApproval(p.id, false);
+                                   showToast(data.message || t('statusUpdatedSuccess'));
+                                   setProducts((prev: Product[]) => prev.map(item => item.id === p.id ? { ...item, isPendingApproval: false } : item));
+                                 } catch (err: any) {
+                                   alert(err.message);
+                                 }
+                               }}
+                               style={{
+                                 padding: '8px 14px',
+                                 background: 'none',
+                                 border: 'none',
+                                 color: 'var(--success)',
+                                 textAlign: 'left',
+                                 cursor: 'pointer',
+                                 fontSize: '13px',
+                                 display: 'flex',
+                                 alignItems: 'center',
+                                 gap: '8px',
+                                 width: '100%',
+                                 fontWeight: 500,
+                                 transition: 'background 0.2s'
+                               }}
+                               onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface2)'}
+                               onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                             >
+                               <Send size={13} style={{ color: 'var(--success)' }} />
+                               {t('btnResendToProduction')}
+                             </button>
+                           )}
+                           {p.completed && !p.isDefective && (
                             <button
                               type="button"
                               onClick={(e) => {
@@ -899,7 +952,12 @@ export default function SellerPage() {
                     </div>
 
                     <div style={{ fontSize: '11px', color: 'var(--muted)', textAlign: 'right', padding: '4px 0', lineHeight: 1.6, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'center', marginRight: '24px' }}>
-                      {p.isDefective ? (
+                      {p.isPendingApproval ? (
+                        <span style={{ color: 'var(--accent-mfr)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                          <Clock size={12} />
+                          {t('statusPendingApproval')}
+                        </span>
+                      ) : p.isDefective ? (
                         <span style={{ color: 'var(--danger)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
                           <X size={12} />
                           {language === 'tr' ? 'Hatalı Sipariş' : 'Defective Order'}

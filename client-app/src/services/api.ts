@@ -71,6 +71,7 @@ export interface Product {
   isDefective?: boolean;
   defectNote?: string;
   defectImage?: string | null;
+  isPendingApproval?: boolean;
   mfrId: string;
   mfrName: string;
   sellerId?: string;
@@ -222,6 +223,13 @@ export const api = {
     return apiCall<{ message: string }>(`/products/${productId}/defective`, {
       method: 'PUT',
       body: JSON.stringify({ isDefective, defectNote, defectImage }),
+    });
+  },
+
+  toggleProductApproval(productId: string, isPendingApproval: boolean): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/approval`, {
+      method: 'PUT',
+      body: JSON.stringify({ isPendingApproval }),
     });
   },
 

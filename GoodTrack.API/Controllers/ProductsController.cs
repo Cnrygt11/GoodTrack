@@ -94,6 +94,22 @@ public class ProductsController : ControllerBase
     }
 
 
+    [HttpPut("{id}/approval")]
+    public async Task<IActionResult> ToggleApproval(string id, [FromBody] ToggleApprovalRequest request)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        {
+            return Unauthorized();
+        }
+
+        _logger.LogInformation("User {UserId} with role {Role} is toggling approval status for order {Id} to: {IsPendingApproval}", userId, role, id, request.IsPendingApproval);
+        await _productService.ToggleOrderApprovalAsync(userId, role, id, request.IsPendingApproval);
+        return Ok(new { id, isPendingApproval = request.IsPendingApproval, message = "Sipariş onay durumu güncellendi." });
+    }
+
     [HttpPut("{id}")]
     [Authorize(Roles = "seller")]
     public async Task<IActionResult> Update(string id, [FromBody] Product product)
