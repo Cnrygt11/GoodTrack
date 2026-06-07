@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { Package, Users, LogOut, Sun, Moon, User } from 'lucide-react';
+import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -96,23 +96,43 @@ export default function Layout({ children }: LayoutProps) {
           )}
 
           {user.role === 'seller' && (
-            <button 
-              className="btn-secondary" 
-              onClick={handleCatalogToggle}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 14px', 
-                fontSize: '13px', 
-                borderRadius: '6px',
-                borderColor: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller)' : 'var(--border)',
-                background: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
-              }}
-            >
-              <Package size={14} />
-              {activeScreen === 'catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
-            </button>
+            <>
+              <button 
+                className="btn-secondary" 
+                onClick={() => setActiveScreen(activeScreen === 'search-mfr' ? 'seller' : 'search-mfr')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  borderRadius: '6px',
+                  borderColor: activeScreen === 'search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: activeScreen === 'search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                }}
+              >
+                <Search size={14} />
+                {t('findMfrTab')}
+              </button>
+
+              <button 
+                className="btn-secondary" 
+                onClick={handleCatalogToggle}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  borderRadius: '6px',
+                  borderColor: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                }}
+              >
+                <Package size={14} />
+                {activeScreen === 'catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
+              </button>
+            </>
           )}
           
           <button 

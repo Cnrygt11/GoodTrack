@@ -185,6 +185,16 @@ export const translations = {
     imageLimitError: 'Ürün tanıtımı için en az 3, en fazla 10 görsel yüklemelisiniz!',
     bioLimitError: 'Tanıtım metni en fazla 500 karakter olmalıdır!',
     keywordLimitError: 'En fazla 3 kategori seçebilirsiniz!',
+    b2bDirectoryTitle: 'B2B ÜRETİCİ REHBERİ',
+    b2bDirectorySubtitle: 'Kategori ve şehir filtrelerini kullanarak en uygun üretim ortaklarını bulun.',
+    filtersHeader: 'Arama Filtreleri',
+    filterByCity: 'Şehre Göre Filtrele (Kesin Eşleşme)',
+    filterByCategory: 'Kategoriye Göre Filtrele',
+    hasShowcaseFilter: 'Ürün görseli olanlar',
+    hasAvatarFilter: 'Profil resmi olanlar',
+    resetFiltersBtn: 'Filtreleri Temizle',
+    matchingCatCount: 'eşleşen kategori',
+    matchingCatsCount: 'eşleşen kategori',
   },
   en: {
     // Auth Page
@@ -372,6 +382,16 @@ export const translations = {
     imageLimitError: 'You must upload between 3 and 10 product images!',
     bioLimitError: 'Introduction must not exceed 500 characters!',
     keywordLimitError: 'You can select at most 3 categories!',
+    b2bDirectoryTitle: 'B2B MANUFACTURER DIRECTORY',
+    b2bDirectorySubtitle: 'Find the most suitable manufacturing partners using category and city filters.',
+    filtersHeader: 'Search Filters',
+    filterByCity: 'Filter by City (Absolute Match)',
+    filterByCategory: 'Filter by Category',
+    hasShowcaseFilter: 'Has showcase gallery',
+    hasAvatarFilter: 'Has profile picture',
+    resetFiltersBtn: 'Clear Filters',
+    matchingCatCount: 'matching category',
+    matchingCatsCount: 'matching categories',
   }
 } as const;
 

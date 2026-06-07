@@ -4,11 +4,11 @@ import { useToast } from './ToastContext';
 
 interface AuthContextType {
   user: User | null;
-  activeScreen: 'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile';
+  activeScreen: 'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile' | 'search-mfr';
   isConnectionsModalOpen: boolean;
   login: (token: string, username: string, role: 'seller' | 'mfr', userId: string) => void;
   logout: () => void;
-  setActiveScreen: (screen: 'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile') => void;
+  setActiveScreen: (screen: 'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile' | 'search-mfr') => void;
   setIsConnectionsModalOpen: (open: boolean) => void;
 }
 
@@ -25,7 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return token && username && role && userId ? { token, username, role, userId } : null;
   });
 
-  const [activeScreen, setActiveScreen] = useState<'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile'>(() => {
+  const [activeScreen, setActiveScreen] = useState<'seller' | 'catalog' | 'mfr' | 'mfr-completed' | 'profile' | 'search-mfr'>(() => {
     const role = localStorage.getItem('role');
     return role === 'mfr' ? 'mfr' : 'seller';
   });

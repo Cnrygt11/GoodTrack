@@ -12,6 +12,7 @@ import MfrPage from './components/mfr/MfrPage';
 import ConnectionsModal from './components/connections/ConnectionsModal';
 import Toast from './components/ui/Toast';
 import MyAccountPage from './components/profile/MyAccountPage';
+import SearchMfrPage from './components/seller/SearchMfrPage';
 
 function AppContent() {
   const { user, activeScreen } = useAuth();
@@ -29,6 +30,8 @@ function AppContent() {
     <Layout>
       {activeScreen === 'profile' ? (
         <MyAccountPage />
+      ) : activeScreen === 'search-mfr' ? (
+        <SearchMfrPage />
       ) : user.role === 'seller' ? (
         activeScreen === 'catalog' ? <CatalogPage /> : <SellerPage />
       ) : (
