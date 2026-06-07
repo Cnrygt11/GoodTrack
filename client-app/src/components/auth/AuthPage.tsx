@@ -30,6 +30,7 @@ export default function AuthPage() {
   // Email verification state
   const [verificationPending, setVerificationPending] = useState(false);
   const [verificationUsername, setVerificationUsername] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Real-time validations
   const [usernameValid, setUsernameValid] = useState({ valid: true, dirty: false });
@@ -94,7 +95,9 @@ export default function AuthPage() {
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     try {
+      setSubmitting(true);
       const data = await api.login(loginUsername.trim(), loginPassword);
       showToast(data.message || t('loginSuccess'));
       login(data.token, data.username, data.role, data.userId);
@@ -104,11 +107,14 @@ export default function AuthPage() {
         setVerificationPending(true);
       }
       alert(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
 
     // Final checks
     const usernameRegex = /^[a-z0-9_]{3,15}$/;
@@ -140,6 +146,7 @@ export default function AuthPage() {
     }
 
     try {
+      setSubmitting(true);
       const data = await api.register({
         firstname: firstName.trim(),
         lastname: lastName.trim(),
@@ -168,6 +175,8 @@ export default function AuthPage() {
       setRegRole('seller');
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -301,7 +310,9 @@ export default function AuthPage() {
                     onChange={(e) => setLoginPassword(e.target.value)}
                   />
                 </div>
-                <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('login')}</button>
+                <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={submitting}>
+                  {submitting ? (language === 'tr' ? 'Giriş yapılıyor...' : 'Logging in...') : t('login')}
+                </button>
               </form>
             ) : (
               <form onSubmit={handleRegisterSubmit}>
@@ -446,7 +457,9 @@ export default function AuthPage() {
                   </select>
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%' }}>{t('register')}</button>
+                <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={submitting}>
+                  {submitting ? (language === 'tr' ? 'Kayıt yapılıyor...' : 'Registering...') : t('register')}
+                </button>
               </form>
             )}
           </>

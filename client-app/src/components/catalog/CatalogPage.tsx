@@ -4,7 +4,7 @@ import { useData } from '../../context/DataContext';
 import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, CatalogProduct } from '../../services/api';
-import { ArrowLeft, Camera, Package, Trash2, Plus, Edit2, Save } from 'lucide-react';
+import { ArrowLeft, Camera, Package, Trash2, Plus, Edit2, Save, Loader2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageHelper';
 
 export default function CatalogPage() {
@@ -25,6 +25,7 @@ export default function CatalogPage() {
   const [mfrId, setMfrId] = useState('');
   const [catalogImage, setCatalogImage] = useState<string | null>(null); // base64 string
   const [imageFileName, setImageFileName] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,6 +68,7 @@ export default function CatalogPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLoading) return;
     const code = productCode.trim();
     if (!code) {
       alert(t('productCodeRequired'));
@@ -87,6 +89,7 @@ export default function CatalogPage() {
     const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
 
     try {
+      setActionLoading(true);
       if (editingProduct) {
         // Edit mode
         const data = await api.updateCatalogProduct(editingProduct.id, {
@@ -108,6 +111,7 @@ export default function CatalogPage() {
           image: catalogImage,
           mfrId,
           mfrName,
+          
         });
 
         showToast(data.message || t('catalogAddSuccess'));
@@ -116,6 +120,8 @@ export default function CatalogPage() {
       }
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -206,15 +212,16 @@ export default function CatalogPage() {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={handleClearForm}>
+            <button type="button" className="btn-secondary" onClick={handleClearForm} disabled={actionLoading}>
               {editingProduct ? t('cancelBtn') : t('clearBtn')}
             </button>
             <button 
               type="submit" 
               className="btn-primary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              disabled={actionLoading}
             >
-              {editingProduct ? <Save size={16} /> : <Plus size={16} />}
+              {actionLoading ? <Loader2 className="animate-spin" size={16} /> : (editingProduct ? <Save size={16} /> : <Plus size={16} />)}
               {editingProduct ? t('saveChanges') : (language === 'tr' ? 'Kataloğa Ekle' : 'Add to Catalog')}
             </button>
           </div>

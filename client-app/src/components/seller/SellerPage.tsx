@@ -4,7 +4,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, Product, ExtraFieldValue } from '../../services/api';
 import Modal from '../ui/Modal';
-import { Camera, Package, Plus, Send, Clock, CheckCircle2, X, PlusCircle, ClipboardList, MoreVertical, Edit2, Trash2 } from 'lucide-react';
+import { Camera, Package, Plus, Send, Clock, CheckCircle2, X, PlusCircle, ClipboardList, MoreVertical, Edit2, Trash2, Loader2 } from 'lucide-react';
 import { compressImage } from '../../utils/imageHelper';
 
 export default function SellerPage() {
@@ -46,6 +46,7 @@ export default function SellerPage() {
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [listFilter, setListFilter] = useState<'pending' | 'completed' | 'defective'>('pending');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     const handleOutsideClick = () => {
@@ -131,6 +132,7 @@ export default function SellerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLoading) return;
     const code = productCode.trim();
     if (!code) {
       alert(t('productCodeRequired'));
@@ -156,6 +158,7 @@ export default function SellerPage() {
     });
 
     try {
+      setActionLoading(true);
       if (editingProduct) {
         const productPayload = {
           ...editingProduct,
@@ -191,12 +194,15 @@ export default function SellerPage() {
       }
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   // Add Dynamic Feature definition
   const handleAddFieldSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLoading) return;
     const name = newFieldName.trim();
     if (!name) {
       alert(t('featureNameRequired'));
@@ -213,6 +219,7 @@ export default function SellerPage() {
       : [];
 
     try {
+      setActionLoading(true);
       const data = await api.createField({ name, type: newFieldType, options });
       showToast(data.message || t('featureAddSuccess'));
       setExtraFieldDefs(prev => [...prev, data.field]);
@@ -224,6 +231,8 @@ export default function SellerPage() {
       setNewFieldOptions('');
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -488,6 +497,7 @@ export default function SellerPage() {
                       setActiveTab('list');
                     }
                   }}
+                  disabled={actionLoading}
                 >
                   {editingProduct ? t('cancelBtn') : t('clearBtn')}
                 </button>
@@ -495,8 +505,9 @@ export default function SellerPage() {
                   type="submit" 
                   className="btn-primary"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  disabled={actionLoading}
                 >
-                  {editingProduct ? <CheckCircle2 size={16} /> : <Send size={16} />}
+                  {actionLoading ? <Loader2 className="animate-spin" size={16} /> : (editingProduct ? <CheckCircle2 size={16} /> : <Send size={16} />)}
                   {editingProduct ? t('saveChanges') : t('sendToProduction')}
                 </button>
               </div>
@@ -829,13 +840,14 @@ export default function SellerPage() {
             </div>
           )}
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={() => setIsFieldModalOpen(false)}>{language === 'tr' ? 'İptal' : 'Cancel'}</button>
+            <button type="button" className="btn-secondary" onClick={() => setIsFieldModalOpen(false)} disabled={actionLoading}>{language === 'tr' ? 'İptal' : 'Cancel'}</button>
             <button 
               type="submit" 
               className="btn-primary"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+              disabled={actionLoading}
             >
-              <PlusCircle size={16} />
+              {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}
               {t('addBtn')}
             </button>
           </div>

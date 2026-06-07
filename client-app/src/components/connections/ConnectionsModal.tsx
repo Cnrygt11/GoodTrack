@@ -5,7 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, ConnectionRequest } from '../../services/api';
 import Modal from '../ui/Modal';
-import { X, UserPlus, Check, Trash2, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { X, UserPlus, Check, Trash2, Clock, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export default function ConnectionsModal() {
   const {
@@ -28,6 +28,7 @@ export default function ConnectionsModal() {
   const { language, t } = useSettings();
 
   const [addUsername, setAddUsername] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Fetch data automatically when the modal is opened
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function ConnectionsModal() {
 
   const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLoading) return;
     const username = addUsername.trim();
     if (!username) {
       alert(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
@@ -52,6 +54,7 @@ export default function ConnectionsModal() {
     }
 
     try {
+      setActionLoading(true);
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
       setAddUsername('');
@@ -59,11 +62,15 @@ export default function ConnectionsModal() {
       await loadSentRequests();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleAccept = async (requestId: string) => {
+    if (actionLoading) return;
     try {
+      setActionLoading(true);
       const data = await api.acceptRequest(requestId);
       showToast(data.message || t('connReqAccepted'));
       await refreshConnections();
@@ -72,18 +79,24 @@ export default function ConnectionsModal() {
       await loadProducts();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleReject = async (requestId: string) => {
+    if (actionLoading) return;
     if (!confirm(language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?')) return;
     try {
+      setActionLoading(true);
       const data = await api.rejectRequest(requestId);
       showToast(data.message || t('connReqRejected'));
       await loadIncomingRequests();
       await loadSentRequests();
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -186,8 +199,9 @@ export default function ConnectionsModal() {
             type="submit" 
             className="btn-primary" 
             style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '8px 16px' }}
+            disabled={actionLoading}
           >
-            <UserPlus size={16} />
+            {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
             {t('addBtn')}
           </button>
         </div>
@@ -216,6 +230,7 @@ export default function ConnectionsModal() {
                     className="btn-primary" 
                     style={{ padding: '4px 10px', fontSize: '12px', background: 'var(--success)', color: '#111', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                     onClick={() => handleAccept(r.id)}
+                    disabled={actionLoading}
                   >
                     <Check size={12} />
                     {t('acceptBtn')}
@@ -224,6 +239,7 @@ export default function ConnectionsModal() {
                     className="btn-secondary" 
                     style={{ padding: '4px 10px', fontSize: '12px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'inline-flex', alignItems: 'center', gap: '2px' }}
                     onClick={() => handleReject(r.id)}
+                    disabled={actionLoading}
                   >
                     <X size={12} />
                     {t('rejectBtn')}
@@ -286,6 +302,7 @@ export default function ConnectionsModal() {
                   className="conn-remove" 
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', fontSize: '12px' }}
                   onClick={() => handleRemoveConnection(c.id)}
+                  disabled={actionLoading}
                 >
                   <Trash2 size={12} />
                   {t('disconnectBtn')}
