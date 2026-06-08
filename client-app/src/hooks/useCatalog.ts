@@ -70,17 +70,17 @@ export default function useCatalog() {
     if (isActionLoading.current) return;
     const code = productCode.trim();
     if (!code) {
-      alert(t('productCodeRequired'));
+      showToast(t('productCodeRequired'));
       return;
     }
 
     if (!mfrId) {
-      alert(language === 'tr' ? 'Lütfen atanacak üreticiyi seçin!' : 'Please select a manufacturer to assign!');
+      showToast(language === 'tr' ? 'Lütfen atanacak üreticiyi seçin!' : 'Please select a manufacturer to assign!');
       return;
     }
 
     if (!catalogImage) {
-      alert(language === 'tr' ? 'Lütfen ürün resmi yükleyin!' : 'Please upload a product image!');
+      showToast(language === 'tr' ? 'Lütfen ürün resmi yükleyin!' : 'Please upload a product image!');
       return;
     }
 
@@ -119,7 +119,7 @@ export default function useCatalog() {
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -138,7 +138,7 @@ export default function useCatalog() {
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     }
   }, [language, showToast, t, setCatalogProducts, editingProduct, handleClearForm]);
 

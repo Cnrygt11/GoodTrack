@@ -302,11 +302,11 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     if (isActionLoading.current) return;
     const code = productCode.trim();
     if (!code) {
-      alert(t('productCodeRequired'));
+      showToast(t('productCodeRequired'));
       return;
     }
     if (!mfrId) {
-      alert(t('selectMfrRequired'));
+      showToast(t('selectMfrRequired'));
       return;
     }
 
@@ -360,7 +360,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -372,11 +372,11 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     if (isActionLoading.current) return;
     const name = newFieldName.trim();
     if (!name) {
-      alert(t('featureNameRequired'));
+      showToast(t('featureNameRequired'));
       return;
     }
     if (newFieldType === 'select' && !newFieldOptions.trim()) {
-      alert(t('featureOptionsRequired'));
+      showToast(t('featureOptionsRequired'));
       return;
     }
 
@@ -396,7 +396,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setNewFieldOptions('');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -416,7 +416,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       });
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     }
   }, [setExtraFieldDefs, showToast, t]);
 
@@ -435,7 +435,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       }
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     }
   }, [language, editingProduct, setProducts, showToast, t, handleClearForm]);
 
@@ -447,7 +447,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       showToast(data.message || t('statusUpdatedSuccess'));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -462,7 +462,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
         showToast(data.message || t('statusUpdatedSuccess'));
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
-        alert(errorMessage);
+        showToast(errorMessage);
       } finally {
         setActionLoading(false);
       }
@@ -484,7 +484,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       showToast(data.message || t('statusUpdatedSuccess'));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }
@@ -525,7 +525,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setIsDefectModalOpen(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);

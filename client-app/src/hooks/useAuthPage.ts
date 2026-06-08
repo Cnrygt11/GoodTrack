@@ -93,6 +93,24 @@ export default function useAuthPage() {
     setConfirmValid({ valid: regPassword === regConfirm, dirty: true });
   }, [regConfirm, regPassword]);
 
+  // Read email verification query parameters from redirect
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verified = params.get('verified');
+    const verificationError = params.get('verificationError');
+
+    if (verified === 'true') {
+      showToast(language === 'tr' 
+        ? 'Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.' 
+        : 'Account verified successfully! You can now log in.');
+      // Clean query parameters from URL without page reload
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (verificationError) {
+      showToast(verificationError);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [language, showToast]);
+
   const handleLoginSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (isSubmitting.current) return;
@@ -108,7 +126,7 @@ export default function useAuthPage() {
         setVerificationUsername(loginUsername.trim());
         setVerificationPending(true);
       }
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isSubmitting.current = false;
       setSubmitting(false);
@@ -122,29 +140,29 @@ export default function useAuthPage() {
     // Final checks
     const usernameRegex = /^[a-z0-9_]{3,15}$/;
     if (!usernameRegex.test(regUsername)) {
-      alert(language === 'tr' ? 'Kullanıcı adı sadece İngilizce küçük harfler, rakamlar ve alt çizgi (_) içerebilir, 3-15 karakter uzunluğunda olmalıdır!' : 'Username can only contain English lowercase letters, numbers and underscore (_), and must be 3-15 characters long!');
+      showToast(language === 'tr' ? 'Kullanıcı adı sadece İngilizce küçük harfler, rakamlar ve alt çizgi (_) içerebilir, 3-15 karakter uzunluğunda olmalıdır!' : 'Username can only contain English lowercase letters, numbers and underscore (_), and must be 3-15 characters long!');
       return;
     }
 
     const emailRegex = /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
     if (!emailRegex.test(regEmail)) {
-      alert(language === 'tr' ? 'Geçersiz veya şüpheli e-posta formatı!' : 'Invalid or suspicious email format!');
+      showToast(language === 'tr' ? 'Geçersiz veya şüpheli e-posta formatı!' : 'Invalid or suspicious email format!');
       return;
     }
 
     const phoneRegex = /^\+?[0-9\s\-()]{10,20}$/;
     if (!phoneRegex.test(regPhone)) {
-      alert(t('phoneRequired'));
+      showToast(t('phoneRequired'));
       return;
     }
 
     if (regPassword.length < 6 || regPassword.length > 20) {
-      alert(language === 'tr' ? 'Şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!' : 'Password must be between 6 and 20 characters long!');
+      showToast(language === 'tr' ? 'Şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!' : 'Password must be between 6 and 20 characters long!');
       return;
     }
 
     if (regPassword !== regConfirm) {
-      alert(t('passwordMismatch'));
+      showToast(t('passwordMismatch'));
       return;
     }
 
@@ -179,7 +197,7 @@ export default function useAuthPage() {
       setRegRole('seller');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isSubmitting.current = false;
       setSubmitting(false);

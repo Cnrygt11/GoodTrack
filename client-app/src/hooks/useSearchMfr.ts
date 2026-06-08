@@ -144,7 +144,7 @@ export default function useSearchMfr() {
       await loadSentRequests();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }

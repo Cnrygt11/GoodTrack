@@ -220,21 +220,23 @@ export default function MfrOrderCard({
                 {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
-            <button
-              type="button"
-              onClick={() => onOpenTimeline(p)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                background: 'none', border: 'none', padding: '0',
-                color: '#60a5fa', fontSize: '11.5px', cursor: 'pointer',
-                fontFamily: 'inherit', fontWeight: 500,
-                textDecoration: 'underline', textDecorationStyle: 'dotted',
-                textUnderlineOffset: '3px'
-              }}
-            >
-              <Info size={11} />
-              {t('btnViewTimeline')}
-            </button>
+            {!(status === 'shipped' || status === 'cancelled') && (
+              <button
+                type="button"
+                onClick={() => onOpenTimeline(p)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  background: 'none', border: 'none', padding: '0',
+                  color: '#60a5fa', fontSize: '11.5px', cursor: 'pointer',
+                  fontFamily: 'inherit', fontWeight: 500,
+                  textDecoration: 'underline', textDecorationStyle: 'dotted',
+                  textUnderlineOffset: '3px'
+                }}
+              >
+                <Info size={11} />
+                {t('btnViewTimeline')}
+              </button>
+            )}
           </div>
         </div>
       </div>

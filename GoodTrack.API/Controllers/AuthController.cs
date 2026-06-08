@@ -16,11 +16,13 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
     private readonly ILogger<AuthController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IAuthService authService, ILogger<AuthController> logger)
+    public AuthController(IAuthService authService, ILogger<AuthController> logger, IConfiguration configuration)
     {
         _authService = authService;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost("register")]
@@ -40,17 +42,38 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> VerifyEmail([FromQuery] string username, [FromQuery] string token)
     {
         _logger.LogInformation("Processing email verification link for username: {Username}", username);
+        
+        // Resolve frontend URL
+        string frontendUrl = "http://localhost:5173";
+        var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+        if (!string.IsNullOrEmpty(envOrigins))
+        {
+            var split = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+            if (split.Length > 0)
+            {
+                frontendUrl = split[0];
+            }
+        }
+        else
+        {
+            var configOrigins = _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+            if (configOrigins != null && configOrigins.Length > 0)
+            {
+                frontendUrl = configOrigins[0];
+            }
+        }
+        
+        frontendUrl = frontendUrl.TrimEnd('/');
+
         try
         {
             await _authService.VerifyEmailAsync(username, token);
-            string successHtml = GetVerificationResultHtml(true, "Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.", "Account verified successfully! You can now log in.");
-            return Content(successHtml, "text/html", System.Text.Encoding.UTF8);
+            return Redirect($"{frontendUrl}/login?verified=true");
         }
         catch (Exception ex)
         {
             _logger.LogWarning("Email verification link failed for {Username}: {Message}", username, ex.Message);
-            string errorHtml = GetVerificationResultHtml(false, ex.Message, "Verification link is invalid or expired.");
-            return Content(errorHtml, "text/html", System.Text.Encoding.UTF8);
+            return Redirect($"{frontendUrl}/login?verificationError={Uri.EscapeDataString(ex.Message)}");
         }
     }
 

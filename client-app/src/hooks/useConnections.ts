@@ -52,7 +52,7 @@ export default function useConnections() {
     if (isActionLoading.current) return;
     const username = addUsername.trim();
     if (!username) {
-      alert(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
+      showToast(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
       return;
     }
 
@@ -66,7 +66,7 @@ export default function useConnections() {
       await loadSentRequests();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -86,7 +86,7 @@ export default function useConnections() {
       await loadProducts();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -105,7 +105,7 @@ export default function useConnections() {
       await loadSentRequests();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -119,7 +119,7 @@ export default function useConnections() {
       await loadSentRequests();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     }
   }, [t, loadSentRequests, showToast]);
 
@@ -132,7 +132,7 @@ export default function useConnections() {
       await loadProducts();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     }
   }, [language, t, refreshConnections, loadProducts, showToast]);
 
@@ -145,7 +145,7 @@ export default function useConnections() {
       setSearchResults(data);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       setSearchLoading(false);
     }
@@ -160,7 +160,7 @@ export default function useConnections() {
       await loadSentRequests();
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      alert(errorMessage);
+      showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }
