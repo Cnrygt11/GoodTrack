@@ -46,7 +46,13 @@ export default function AppRoutes() {
     <Routes>
       <Route
         path="/"
-        element={<LandingPage />}
+        element={
+          user ? (
+            <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller'} replace />
+          ) : (
+            <LandingPage />
+          )
+        }
       />
 
       <Route
