@@ -155,11 +155,19 @@ body {
   z-index: 100;
 }
 
+.light-theme .topbar {
+  background: rgba(255, 255, 255, 0.85);
+}
+
 .topbar-title {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 24px;
   letter-spacing: 4px;
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.light-theme .topbar-title {
+  text-shadow: none;
 }
 
 .badge-role {
