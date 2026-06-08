@@ -144,7 +144,22 @@ builder.Services.AddAuthorization();
 builder.Services.AddSignalR();
 
 // Configure CORS whitelisting
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var allowedOriginsList = new List<string>();
+
+var configOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+if (configOrigins != null)
+{
+    allowedOriginsList.AddRange(configOrigins);
+}
+
+var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+if (!string.IsNullOrEmpty(envOrigins))
+{
+    var split = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    allowedOriginsList.AddRange(split);
+}
+
+var allowedOrigins = allowedOriginsList.Distinct().ToArray();
 
 builder.Services.AddCors(options =>
 {
