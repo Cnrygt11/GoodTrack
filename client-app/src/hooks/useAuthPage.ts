@@ -1,14 +1,22 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api } from '../services/api';
 
-export default function useAuthPage() {
+export default function useAuthPage(initialMode?: 'login' | 'register') {
   const { login } = useAuth();
   const { showToast } = useToast();
   const { theme, language, toggleTheme, setLanguage, t } = useSettings();
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>(initialMode || 'login');
+
+  useEffect(() => {
+    if (initialMode) {
+      setActiveTab(initialMode);
+    }
+  }, [initialMode]);
 
   // Login inputs
   const [loginUsername, setLoginUsername] = useState('');
@@ -181,7 +189,7 @@ export default function useAuthPage() {
       });
 
       showToast(data.message || t('registerSuccess'));
-      setActiveTab('login');
+      navigate('/login');
       setLoginUsername(regUsername.trim());
       
       // Clear inputs
@@ -204,7 +212,7 @@ export default function useAuthPage() {
     }
   }, [
     regUsername, regEmail, regPhone, regPassword, regConfirm, firstName, lastName, regRole,
-    language, t, showToast
+    language, t, showToast, navigate
   ]);
 
   const getInputStyle = useCallback((validationState: { valid: boolean; dirty: boolean }) => {

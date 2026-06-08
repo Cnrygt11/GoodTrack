@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthPage from '../components/auth/AuthPage';
+import LandingPage from '../components/home/LandingPage';
 import SellerPage from '../components/seller/SellerPage';
 import CatalogPage from '../components/catalog/CatalogPage';
 import MfrPage from '../components/mfr/MfrPage';
@@ -44,22 +45,25 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route
+        path="/"
+        element={<LandingPage />}
+      />
+
+      <Route
         path="/login"
         element={
           <PublicRoute>
-            <AuthPage />
+            <AuthPage mode="login" />
           </PublicRoute>
         }
       />
-      
+
       <Route
-        path="/"
+        path="/register"
         element={
-          user ? (
-            <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller'} replace />
-          ) : (
-            <Navigate to="/login" replace />
-          )
+          <PublicRoute>
+            <AuthPage mode="register" />
+          </PublicRoute>
         }
       />
 
