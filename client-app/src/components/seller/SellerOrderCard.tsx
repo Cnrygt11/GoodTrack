@@ -92,9 +92,10 @@ export default function SellerOrderCard({
         background: 'var(--surface)',
         border: '1px solid var(--border)',
         borderRadius: '14px',
-        overflow: 'hidden',
+        overflow: isDropdownOpen ? 'visible' : 'hidden',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
         position: 'relative',
+        zIndex: isDropdownOpen ? 100 : 1,
         animation: 'slideUp 0.3s ease-out',
         display: 'flex',
         flexDirection: 'column',
@@ -278,7 +279,9 @@ export default function SellerOrderCard({
                 <>
                   <div style={{ height: '1px', background: 'var(--border)', margin: '4px 0' }} />
                   <DropdownItem icon={<Ban size={13} style={{ color: 'var(--danger)' }} />} label={t('btnCancelOrder')} color="var(--danger)" onClick={() => { onCancel(p.id); onDropdownToggle(null); }} />
-                  <DropdownItem icon={<Trash2 size={13} style={{ color: 'var(--danger)' }} />} label={language === 'tr' ? 'Sil' : 'Delete'} color="var(--danger)" onClick={() => { onDelete(p); onDropdownToggle(null); }} />
+                  {status === 'awaiting' && (
+                    <DropdownItem icon={<Trash2 size={13} style={{ color: 'var(--danger)' }} />} label={language === 'tr' ? 'Sil' : 'Delete'} color="var(--danger)" onClick={() => { onDelete(p); onDropdownToggle(null); }} />
+                  )}
                 </>
               )}
             </div>

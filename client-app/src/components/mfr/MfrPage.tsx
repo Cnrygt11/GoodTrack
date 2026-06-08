@@ -239,6 +239,10 @@ interface TimelineModalProps {
 function TimelineModal({ isOpen, onClose, product, language, t }: TimelineModalProps) {
   if (!isOpen || !product) return null;
 
+  const allLogs = product.logs || [];
+  const toShipIndex = allLogs.findIndex(log => log.status === 'to_ship');
+  const visibleLogs = toShipIndex !== -1 ? allLogs.slice(0, toShipIndex + 1) : allLogs;
+
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -291,9 +295,9 @@ function TimelineModal({ isOpen, onClose, product, language, t }: TimelineModalP
           {/* Vertical line indicator */}
           <div style={{ position: 'absolute', top: '8px', bottom: '8px', left: '11px', width: '2px', background: 'var(--border)', zIndex: 1 }} />
 
-          {(product.logs || []).map((log, index) => {
+          {visibleLogs.map((log, index) => {
             const dateStr = new Date(log.timestamp).toLocaleString('tr-TR');
-            const isActive = index === (product.logs || []).length - 1;
+            const isActive = index === visibleLogs.length - 1;
 
             return (
               <div key={index} style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 2 }}>
@@ -322,7 +326,7 @@ function TimelineModal({ isOpen, onClose, product, language, t }: TimelineModalP
             );
           })}
 
-          {(product.logs || []).length === 0 && (
+          {visibleLogs.length === 0 && (
             <p style={{ margin: 0, padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
               {language === 'tr' ? 'Hareket günlüğü bulunamadı.' : 'No timeline logs found.'}
             </p>

@@ -275,6 +275,11 @@ public class ProductService : IProductService
             throw new UnauthorizedAccessException("Bu siparişi silme yetkiniz yok!");
         }
 
+        if (existing.Status != "awaiting")
+        {
+            throw new InvalidOperationException("Sadece bekleyen listesindeki siparişleri silebilirsiniz!");
+        }
+
         string mfrId = existing.MfrId;
         string? image = existing.Image;
         string? defectImage = existing.DefectImage;
