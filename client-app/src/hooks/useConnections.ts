@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { api, UserProfile } from '../services/api';
 
 export default function useConnections() {
@@ -24,6 +25,7 @@ export default function useConnections() {
 
   const { showToast } = useToast();
   const { language, t } = useSettings();
+  const confirm = useConfirm();
 
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -95,7 +97,13 @@ export default function useConnections() {
 
   const handleReject = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
-    if (!confirm(language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?')) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'İsteği Reddet' : 'Reject Request',
+      message: language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?',
+      confirmText: language === 'tr' ? 'Reddet' : 'Reject',
+      isDestructive: true
+    });
+    if (!accepted) return;
     try {
       isActionLoading.current = true;
       setActionLoading(true);
@@ -124,7 +132,13 @@ export default function useConnections() {
   }, [t, loadSentRequests, showToast]);
 
   const handleRemoveConnection = useCallback(async (targetId: string) => {
-    if (!confirm(language === 'tr' ? 'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)' : 'Are you sure you want to disconnect? (Current orders will be kept)')) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Bağlantıyı Kaldır' : 'Remove Connection',
+      message: language === 'tr' ? 'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)' : 'Are you sure you want to disconnect? (Current orders will be kept)',
+      confirmText: language === 'tr' ? 'Bağlantıyı Kes' : 'Disconnect',
+      isDestructive: true
+    });
+    if (!accepted) return;
     try {
       const data = await api.removeConnection(targetId);
       showToast(data.message || t('connRemoved'));

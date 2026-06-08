@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { api, Product, ExtraFieldValue, CreateProductPayload } from '../services/api';
 import { TranslationKey } from '../services/translations';
 import { compressImage } from '../utils/imageHelper';
@@ -106,6 +107,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
   const { showToast } = useToast();
   const { language, t } = useSettings();
+  const confirm = useConfirm();
 
   // --- Tab & Filter State ---
   const [activeTab, setActiveTab] = useState<TabId>('list');
@@ -404,7 +406,13 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
   }, [newFieldName, newFieldType, newFieldOptions, setExtraFieldDefs, showToast, t]);
 
   const handleRemoveField = useCallback(async (id: string) => {
-    if (!confirm(t('featureDelConfirm'))) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Alanı Sil' : 'Delete Field',
+      message: t('featureDelConfirm'),
+      confirmText: language === 'tr' ? 'Sil' : 'Delete',
+      isDestructive: true
+    });
+    if (!accepted) return;
     try {
       const data = await api.deleteField(id);
       showToast(data.message || t('featureDelSuccess'));
@@ -418,13 +426,19 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
     }
-  }, [setExtraFieldDefs, showToast, t]);
+  }, [confirm, language, setExtraFieldDefs, showToast, t]);
 
   const handleDeleteClick = useCallback(async (product: Product) => {
     const confirmMessage = language === 'tr'
       ? `${product.code} ${t('deleteOrderConfirm')}`
       : `${t('deleteOrderConfirm')} ${product.code}?`;
-    if (!confirm(confirmMessage)) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Siparişi Sil' : 'Delete Order',
+      message: confirmMessage,
+      confirmText: language === 'tr' ? 'Sil' : 'Delete',
+      isDestructive: true
+    });
+    if (!accepted) return;
 
     try {
       const data = await api.deleteProduct(product.id);
@@ -437,10 +451,16 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
     }
-  }, [language, editingProduct, setProducts, showToast, t, handleClearForm]);
+  }, [confirm, language, editingProduct, setProducts, showToast, t, handleClearForm]);
 
   const handleCancelOrder = useCallback(async (productId: string) => {
-    if (!confirm(language === 'tr' ? 'Siparişi iptal etmek istediğinize emin misiniz?' : 'Are you sure you want to cancel this order?')) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Siparişi İptal Et' : 'Cancel Order',
+      message: language === 'tr' ? 'Siparişi iptal etmek istediğinize emin misiniz?' : 'Are you sure you want to cancel this order?',
+      confirmText: language === 'tr' ? 'İptal Et' : 'Cancel',
+      isDestructive: true
+    });
+    if (!accepted) return;
     try {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'cancelled');
@@ -451,11 +471,17 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     } finally {
       setActionLoading(false);
     }
-  }, [language, showToast, t]);
+  }, [confirm, language, showToast, t]);
 
   const handleVerifyOrder = useCallback(async (productId: string, action: 'correct' | 'defective' | 'missing', note?: string | null, image?: string | null) => {
     if (action === 'correct') {
-      if (!confirm(language === 'tr' ? 'Bu siparişi DOĞRU olarak onaylamak istediğinize emin misiniz?' : 'Are you sure you want to approve this order as CORRECT?')) return;
+      const accepted = await confirm({
+        title: language === 'tr' ? 'Siparişi Doğrula' : 'Verify Order',
+        message: language === 'tr' ? 'Bu siparişi DOĞRU olarak onaylamak istediğinize emin misiniz?' : 'Are you sure you want to approve this order as CORRECT?',
+        confirmText: language === 'tr' ? 'Onayla' : 'Approve',
+        isDestructive: false
+      });
+      if (!accepted) return;
       try {
         setActionLoading(true);
         const data = await api.updateOrderStatus(productId, 'to_ship');
@@ -474,10 +500,16 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setDefectImageFileName(image ? 'Mevcut Görsel' : '');
       setIsDefectModalOpen(true);
     }
-  }, [language, showToast, t]);
+  }, [confirm, language, showToast, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
-    if (!confirm(language === 'tr' ? 'Siparişi kargolandı olarak işaretlemek istediğinize emin misiniz?' : 'Are you sure you want to mark this order as shipped?')) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Kargoya Ver' : 'Ship Order',
+      message: language === 'tr' ? 'Siparişi kargolandı olarak işaretlemek istediğinize emin misiniz?' : 'Are you sure you want to mark this order as shipped?',
+      confirmText: language === 'tr' ? 'Kargolandı İşaretle' : 'Mark as Shipped',
+      isDestructive: false
+    });
+    if (!accepted) return;
     try {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'shipped');
@@ -488,7 +520,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     } finally {
       setActionLoading(false);
     }
-  }, [language, showToast, t]);
+  }, [confirm, language, showToast, t]);
 
   const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
     setDefectType(type);

@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { api, CatalogProduct } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 
@@ -14,6 +15,7 @@ export default function useCatalog() {
   } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
+  const confirm = useConfirm();
 
   // Editing state
   const [editingProduct, setEditingProduct] = useState<CatalogProduct | null>(null);
@@ -127,7 +129,13 @@ export default function useCatalog() {
   }, [productCode, mfrId, catalogImage, editingProduct, connections, setCatalogProducts, handleClearForm, showToast, t, language]);
 
   const handleDelete = useCallback(async (id: string) => {
-    if (!confirm(language === 'tr' ? 'Bu ürünü katalogdan silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this product from the catalog?')) return;
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Katalogdan Sil' : 'Delete from Catalog',
+      message: language === 'tr' ? 'Bu ürünü katalogdan silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this product from the catalog?',
+      confirmText: language === 'tr' ? 'Sil' : 'Delete',
+      isDestructive: true
+    });
+    if (!accepted) return;
     try {
       const data = await api.deleteCatalogProduct(id);
       showToast(data.message || t('catalogDeleteSuccess'));

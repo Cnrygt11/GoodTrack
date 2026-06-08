@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { SettingsProvider } from './context/SettingsContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
@@ -32,15 +33,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <SettingsProvider>
-        <ToastProvider>
-          <AuthProvider>
-            <DataProvider>
-              <SignalRProvider>
-                <AppContent />
-              </SignalRProvider>
-            </DataProvider>
-          </AuthProvider>
-        </ToastProvider>
+        <ConfirmProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <DataProvider>
+                <SignalRProvider>
+                  <AppContent />
+                </SignalRProvider>
+              </DataProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ConfirmProvider>
       </SettingsProvider>
     </BrowserRouter>
   );
