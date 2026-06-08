@@ -1,63 +1,47 @@
 import React from 'react';
+import { BrowserRouter } from 'react-router-dom';
 import { SettingsProvider } from './context/SettingsContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider } from './context/DataContext';
 import { SignalRProvider } from './context/SignalRContext';
 import Layout from './components/Layout';
-import AuthPage from './components/auth/AuthPage';
-import SellerPage from './components/seller/SellerPage';
-import CatalogPage from './components/catalog/CatalogPage';
-import MfrPage from './components/mfr/MfrPage';
+import AppRoutes from './routes/AppRoutes';
 import ConnectionsModal from './components/connections/ConnectionsModal';
 import Toast from './components/ui/Toast';
-import MyAccountPage from './components/profile/MyAccountPage';
-import SearchMfrPage from './components/seller/SearchMfrPage';
 
 function AppContent() {
-  const { user, activeScreen } = useAuth();
-
-  if (!user) {
-    return (
-      <>
-        <AuthPage />
-        <Toast />
-      </>
-    );
-  }
+  const { user } = useAuth();
 
   return (
-    <Layout>
-      {activeScreen === 'profile' ? (
-        <MyAccountPage />
-      ) : activeScreen === 'search-mfr' ? (
-        <SearchMfrPage />
-      ) : user.role === 'seller' ? (
-        activeScreen === 'catalog' ? <CatalogPage /> : <SellerPage />
+    <>
+      {user ? (
+        <Layout>
+          <AppRoutes />
+          <ConnectionsModal />
+        </Layout>
       ) : (
-        <MfrPage />
+        <AppRoutes />
       )}
-      
-      {/* Global overlays */}
-      <ConnectionsModal />
       <Toast />
-    </Layout>
+    </>
   );
 }
 
 export default function App() {
   return (
-    <SettingsProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <DataProvider>
-            <SignalRProvider>
-              <AppContent />
-            </SignalRProvider>
-          </DataProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </SettingsProvider>
+    <BrowserRouter>
+      <SettingsProvider>
+        <ToastProvider>
+          <AuthProvider>
+            <DataProvider>
+              <SignalRProvider>
+                <AppContent />
+              </SignalRProvider>
+            </DataProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </SettingsProvider>
+    </BrowserRouter>
   );
 }
-

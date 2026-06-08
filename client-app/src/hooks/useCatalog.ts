@@ -7,7 +7,6 @@ import { api, CatalogProduct } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 
 export default function useCatalog() {
-  const { setActiveScreen } = useAuth();
   const {
     connections,
     catalogProducts,
@@ -144,7 +143,6 @@ export default function useCatalog() {
   }, [language, showToast, t, setCatalogProducts, editingProduct, handleClearForm]);
 
   return {
-    setActiveScreen,
     connections,
     catalogProducts,
     language,

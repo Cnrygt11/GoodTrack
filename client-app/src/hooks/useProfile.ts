@@ -5,7 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { api, UserProfile } from '../services/api';
 
 export default function useProfile() {
-  const { user, setActiveScreen } = useAuth();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
@@ -280,7 +280,6 @@ export default function useProfile() {
 
   return {
     user,
-    setActiveScreen,
     profile,
     loading,
     error,

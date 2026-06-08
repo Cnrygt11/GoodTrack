@@ -1,13 +1,14 @@
 import React, { useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
 import { ShieldCheck, User, Mail, Phone, Key, ArrowLeft, Loader2, Eye, EyeOff, Camera, Trash2, Plus, Image as ImageIcon, MapPin, Building2, CheckCircle2 } from 'lucide-react';
 
 const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
 
 export default function MyAccountPage() {
+  const navigate = useNavigate();
   const {
     user,
-    setActiveScreen,
     profile,
     loading,
     error,
@@ -97,7 +98,7 @@ export default function MyAccountPage() {
       
       {/* Back to dashboard breadcrumb */}
       <button 
-        onClick={() => setActiveScreen(profile.role === 'mfr' ? 'mfr' : 'seller')}
+        onClick={() => navigate(profile.role === 'mfr' ? '/mfr' : '/seller')}
         className="btn-back" 
         style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
       >

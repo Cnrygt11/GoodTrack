@@ -176,4 +176,6 @@ app.MapControllers();
 // Map SignalR Connections Hub
 app.MapHub<GoodTrack.API.Hubs.TrackingHub>("/hubs/tracking");
 
+app.MapFallbackToFile("index.html");
+
 app.Run();

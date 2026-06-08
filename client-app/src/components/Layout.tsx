@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
@@ -8,21 +9,24 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, logout, activeScreen, setActiveScreen, setIsConnectionsModalOpen } = useAuth();
+  const { user, logout, setIsConnectionsModalOpen } = useAuth();
   const { theme, language, toggleTheme, setLanguage, t } = useSettings();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
   if (!user) return <>{children}</>;
 
   const handleCatalogToggle = () => {
-    if (activeScreen === 'catalog') {
-      setActiveScreen('seller');
+    if (currentPath === '/catalog') {
+      navigate('/seller');
     } else {
-      setActiveScreen('catalog');
+      navigate('/catalog');
     }
   };
 
   const handleLogoClick = () => {
-    setActiveScreen(user.role === 'mfr' ? 'mfr' : 'seller');
+    navigate(user.role === 'mfr' ? '/mfr' : '/seller');
   };
 
   return (
@@ -78,7 +82,7 @@ export default function Layout({ children }: LayoutProps) {
           {user.role === 'mfr' && (
             <button 
               className="btn-secondary" 
-              onClick={() => setActiveScreen('mfr')}
+              onClick={() => navigate('/mfr')}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -86,8 +90,8 @@ export default function Layout({ children }: LayoutProps) {
                 padding: '6px 14px', 
                 fontSize: '13px', 
                 borderRadius: '6px',
-                borderColor: activeScreen === 'mfr' ? 'var(--accent-mfr)' : 'var(--border)',
-                background: activeScreen === 'mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+                borderColor: currentPath === '/mfr' ? 'var(--accent-mfr)' : 'var(--border)',
+                background: currentPath === '/mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
               }}
             >
               <Package size={14} />
@@ -99,7 +103,7 @@ export default function Layout({ children }: LayoutProps) {
             <>
               <button 
                 className="btn-secondary" 
-                onClick={() => setActiveScreen(activeScreen === 'search-mfr' ? 'seller' : 'search-mfr')}
+                onClick={() => navigate(currentPath === '/search-mfr' ? '/seller' : '/search-mfr')}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -107,8 +111,8 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: activeScreen === 'search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: activeScreen === 'search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === '/search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === '/search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Search size={14} />
@@ -125,12 +129,12 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: activeScreen === 'catalog' || activeScreen === 'seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === '/catalog' || currentPath === '/seller' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === '/catalog' || currentPath === '/seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Package size={14} />
-                {activeScreen === 'catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
+                {currentPath === '/catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
               </button>
             </>
           )}
@@ -146,7 +150,7 @@ export default function Layout({ children }: LayoutProps) {
 
           <button 
             className="btn-secondary" 
-            onClick={() => setActiveScreen('profile')}
+            onClick={() => navigate('/profile')}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -154,8 +158,8 @@ export default function Layout({ children }: LayoutProps) {
               padding: '6px 14px', 
               fontSize: '13px', 
               borderRadius: '6px',
-              borderColor: activeScreen === 'profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: activeScreen === 'profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+              borderColor: currentPath === '/profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: currentPath === '/profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
             }}
           >
             <User size={14} />

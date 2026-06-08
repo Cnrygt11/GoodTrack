@@ -1,12 +1,13 @@
 import React from 'react';
 import { ArrowLeft, Package } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
 
 export default function CatalogPage() {
+  const navigate = useNavigate();
   const {
-    setActiveScreen,
     connections,
     catalogProducts,
     language,
@@ -38,7 +39,7 @@ export default function CatalogPage() {
         </h2>
         <button 
           className="btn-secondary" 
-          onClick={() => setActiveScreen('seller')}
+          onClick={() => navigate('/seller')}
           style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
           <ArrowLeft size={16} />
