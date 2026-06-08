@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext';
 import { useAuth } from '../../context/AuthContext';
-import { Sun, Moon, ArrowRight, Package, Clock, Settings, Layers, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Sun, Moon, ArrowRight, Package, Layers, CheckCircle } from 'lucide-react';
 
 export default function LandingPage() {
   const { language, setLanguage, theme, toggleTheme } = useSettings();
@@ -17,7 +17,8 @@ export default function LandingPage() {
       overflowY: 'auto', 
       padding: '40px 20px',
       justifyContent: 'flex-start',
-      gap: '0'
+      gap: '0',
+      boxSizing: 'border-box'
     }}>
       {/* Top Navbar */}
       <div style={{
@@ -27,7 +28,7 @@ export default function LandingPage() {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '12px 24px',
-        background: 'rgba(24, 24, 27, 0.7)',
+        background: theme === 'dark' ? 'rgba(24, 24, 27, 0.7)' : 'rgba(255, 255, 255, 0.7)',
         backdropFilter: 'blur(12px)',
         border: '1px solid var(--border)',
         borderRadius: '12px',
@@ -65,8 +66,8 @@ export default function LandingPage() {
             {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           </button>
 
-          {/* Action Button */}
-          {user ? (
+          {/* Dashboard Action Button (only if logged in) */}
+          {user && (
             <button
               onClick={() => navigate(user.role === 'mfr' ? '/mfr' : '/seller')}
               className="btn-primary"
@@ -83,21 +84,6 @@ export default function LandingPage() {
               {isTr ? 'Panelime Git' : 'Go to Panel'}
               <ArrowRight size={14} />
             </button>
-          ) : (
-            <Link
-              to="/login"
-              className="btn-primary"
-              style={{
-                padding: '8px 16px',
-                borderRadius: '8px',
-                fontSize: '13px',
-                textDecoration: 'none',
-                color: '#fff',
-                background: 'var(--accent-seller)'
-              }}
-            >
-              {isTr ? 'Giriş Yap' : 'Sign In'}
-            </Link>
           )}
         </div>
       </div>
@@ -180,17 +166,7 @@ export default function LandingPage() {
         marginBottom: '60px'
       }}>
         {/* For Sellers */}
-        <div style={{
-          background: 'rgba(24, 24, 27, 0.5)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--border)',
-          borderRadius: '16px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          transition: 'transform 0.3s, border-color 0.3s'
-        }} className="feature-card">
+        <div className="feature-card seller">
           <div style={{
             background: 'var(--accent-seller-glow)',
             color: 'var(--accent-seller)',
@@ -234,17 +210,7 @@ export default function LandingPage() {
         </div>
 
         {/* For Manufacturers */}
-        <div style={{
-          background: 'rgba(24, 24, 27, 0.5)',
-          backdropFilter: 'blur(10px)',
-          border: '1px solid var(--border)',
-          borderRadius: '16px',
-          padding: '32px',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          transition: 'transform 0.3s, border-color 0.3s'
-        }} className="feature-card">
+        <div className="feature-card mfr">
           <div style={{
             background: 'var(--accent-mfr-glow)',
             color: 'var(--accent-mfr)',
@@ -292,7 +258,7 @@ export default function LandingPage() {
       <div style={{
         marginTop: 'auto',
         textAlign: 'center',
-        color: '#4b5563',
+        color: 'var(--muted)',
         fontSize: '12px',
         letterSpacing: '1px'
       }}>
