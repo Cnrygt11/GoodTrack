@@ -7,6 +7,7 @@ import CatalogPage from '../components/catalog/CatalogPage';
 import MfrPage from '../components/mfr/MfrPage';
 import MyAccountPage from '../components/profile/MyAccountPage';
 import SearchMfrPage from '../components/seller/SearchMfrPage';
+import OrderDetailPage from '../components/orders/OrderDetailPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -101,6 +102,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <MyAccountPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/orders/:id"
+        element={
+          <ProtectedRoute>
+            <OrderDetailPage />
           </ProtectedRoute>
         }
       />

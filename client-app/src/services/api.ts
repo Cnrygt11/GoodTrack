@@ -264,6 +264,10 @@ export const api = {
     return apiCall<Product[]>('/products');
   },
 
+  getProductById(productId: string): Promise<Product> {
+    return apiCall<Product>(`/products/${productId}`);
+  },
+
   createProduct(productData: CreateProductPayload): Promise<{ product: Product; message: string }> {
     return apiCall<{ product: Product; message: string }>('/products', {
       method: 'POST',

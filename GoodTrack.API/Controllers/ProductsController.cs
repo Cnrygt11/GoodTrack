@@ -162,6 +162,27 @@ public class ProductsController : ControllerBase
         return Ok(new { product = updated, message = "Sipariş başarıyla güncellendi." });
     }
 
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(string id)
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        {
+            return Unauthorized();
+        }
+
+        _logger.LogInformation("User {UserId} is retrieving single production order details: {Id}", userId, id);
+        var product = await _productService.GetProductByIdAsync(userId, role, id);
+        if (product == null)
+        {
+            return NotFound(new { message = "Sipariş bulunamadı veya erişim yetkiniz yok." });
+        }
+
+        return Ok(product);
+    }
+
     [HttpDelete("{id}")]
     [Authorize(Roles = "seller")]
     public async Task<IActionResult> Delete(string id)

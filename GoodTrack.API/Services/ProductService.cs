@@ -666,4 +666,16 @@ public class ProductService : IProductService
         // Notify real-time
         await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
+
+    public async Task<Product?> GetProductByIdAsync(string userId, string role, string orderId)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null) return null;
+
+        // Verify ownership access
+        if (role == "seller" && product.SellerId != userId) return null;
+        if (role == "mfr" && product.MfrId != userId) return null;
+
+        return product;
+    }
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -62,10 +63,7 @@ interface UseSellerOrdersReturn {
   defectImageFileName: string;
 
   // Timeline modal state
-  selectedTimelineProduct: Product | null;
-  isTimelineModalOpen: boolean;
   openTimeline: (p: Product) => void;
-  closeTimeline: () => void;
 
   // Dropdown state
   activeDropdownId: string | null;
@@ -111,7 +109,14 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
 
   // --- Tab & Filter State ---
   const [activeTab, setActiveTab] = useState<TabId>('list');
-  const [listFilter, setListFilter] = useState<ListFilter>('awaiting');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const listFilter = (searchParams.get('tab') as ListFilter) || 'awaiting';
+  const setListFilter = useCallback((tab: ListFilter) => {
+    setSearchParams(prev => {
+      prev.set('tab', tab);
+      return prev;
+    });
+  }, [setSearchParams]);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
 
   // --- Form State ---
@@ -140,18 +145,11 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
   const [defectImageFileName, setDefectImageFileName] = useState('');
 
   // --- Timeline Modal State ---
-  const [selectedTimelineProduct, setSelectedTimelineProduct] = useState<Product | null>(null);
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const openTimeline = useCallback((p: Product) => {
-    setSelectedTimelineProduct(p);
-    setIsTimelineModalOpen(true);
-  }, []);
-
-  const closeTimeline = useCallback(() => {
-    setSelectedTimelineProduct(null);
-    setIsTimelineModalOpen(false);
-  }, []);
+    navigate(`/orders/${p.id}`);
+  }, [navigate]);
 
   // --- Dropdown State ---
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
@@ -575,7 +573,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
     isFieldModalOpen, setIsFieldModalOpen, newFieldName, setNewFieldName,
     newFieldType, setNewFieldType, newFieldOptions, setNewFieldOptions,
     isDefectModalOpen, setIsDefectModalOpen, defectType, setDefectType, defectNote, setDefectNote, defectImage, defectImageFileName,
-    selectedTimelineProduct, isTimelineModalOpen, openTimeline, closeTimeline,
+    openTimeline,
     activeDropdownId, setActiveDropdownId,
     unseenIds, badgeCounts, filteredProducts,
     handleImageChange, handleClearForm, handleEditClick, handleExtraValueChange,

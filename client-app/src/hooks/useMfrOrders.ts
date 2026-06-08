@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -11,27 +12,25 @@ export default function useMfrOrders() {
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
-  const [activeTab, setActiveTab] = useState<MfrTab>('awaiting');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = (searchParams.get('tab') as MfrTab) || 'awaiting';
+  const setActiveTab = useCallback((tab: MfrTab) => {
+    setSearchParams(prev => {
+      prev.set('tab', tab);
+      return prev;
+    });
+  }, [setSearchParams]);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [selectedDefectProduct, setSelectedDefectProduct] = useState<Product | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-
-  // Timeline modal state
-  const [selectedTimelineProduct, setSelectedTimelineProduct] = useState<Product | null>(null);
-  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
-
-  // Action loading state
   const [actionLoading, setActionLoading] = useState(false);
 
-  const openTimeline = useCallback((p: Product) => {
-    setSelectedTimelineProduct(p);
-    setIsTimelineModalOpen(true);
-  }, []);
+  // Timeline modal state
+  const navigate = useNavigate();
 
-  const closeTimeline = useCallback(() => {
-    setSelectedTimelineProduct(null);
-    setIsTimelineModalOpen(false);
-  }, []);
+  const openTimeline = useCallback((p: Product) => {
+    navigate(`/orders/${p.id}`);
+  }, [navigate]);
 
   // Unseen orders notification states for each list filter tab
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
@@ -167,13 +166,10 @@ export default function useMfrOrders() {
     setSortOrder,
     selectedDefectProduct,
     isDetailsModalOpen,
-    selectedTimelineProduct,
-    isTimelineModalOpen,
     actionLoading,
     unseenIds,
     badgeCounts,
     openTimeline,
-    closeTimeline,
     handleUpdateStatus,
     handleMarkSingleAsSeen,
     openDefectDetails,
