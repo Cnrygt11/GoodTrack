@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
+import { getHubUrl } from '../services/api';
 
 const SignalRContext = createContext<HubConnection | null>(null);
 
@@ -19,15 +20,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Build the Hub connection
-    let rawApiUrl = import.meta.env.VITE_API_URL || '';
-    if (rawApiUrl.startsWith('http')) {
-      rawApiUrl = rawApiUrl.replace(/\/$/, '');
-      if (!rawApiUrl.endsWith('/api')) {
-        rawApiUrl += '/api';
-      }
-    }
-    const hubBaseUrl = rawApiUrl.endsWith('/api') ? rawApiUrl.slice(0, -4) : rawApiUrl;
-    const hubUrl = `${hubBaseUrl}/hubs/tracking`;
+    const hubUrl = getHubUrl('/hubs/tracking');
 
     const newConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {

@@ -1,11 +1,28 @@
-let rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
+let rawBaseUrl = '/api';
+
+if (typeof window !== 'undefined') {
+  const hostname = window.location.hostname;
+  if (hostname === 'goodtrack-client.onrender.com') {
+    rawBaseUrl = 'https://goodtrack.onrender.com/api';
+  } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
+  } else {
+    rawBaseUrl = '/api';
+  }
+}
+
 if (rawBaseUrl.startsWith('http')) {
   rawBaseUrl = rawBaseUrl.replace(/\/$/, ''); // Remove trailing slash
   if (!rawBaseUrl.endsWith('/api')) {
     rawBaseUrl += '/api';
   }
 }
-const BASE_URL = rawBaseUrl;
+export const BASE_URL = rawBaseUrl;
+
+export function getHubUrl(hubPath: string) {
+  const hubBaseUrl = BASE_URL.endsWith('/api') ? BASE_URL.slice(0, -4) : BASE_URL;
+  return `${hubBaseUrl}${hubPath}`;
+}
 
 export interface User {
   token: string;
