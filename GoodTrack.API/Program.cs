@@ -95,6 +95,12 @@ if (string.IsNullOrEmpty(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
     throw new InvalidOperationException("FATAL: JWT signing key is not configured in appsettings.json. Please set 'Jwt:Key'.");
 }
 
+// Ensure default development key is not used in production
+if (builder.Environment.IsProduction() && jwtKey == "GoodTrackProductionTrackingSystemSuperSecretKey2026!")
+{
+    throw new InvalidOperationException("FATAL: Default JWT signing key cannot be used in a production environment. Please set a secure 'Jwt:Key' via environment variable.");
+}
+
 var jwtIssuer = jwtSection["Issuer"] ?? "GoodTrack.API";
 var jwtAudience = jwtSection["Audience"] ?? "GoodTrack.Client";
 
@@ -137,15 +143,35 @@ builder.Services.AddAuthorization();
 // Add SignalR Real-time communication services
 builder.Services.AddSignalR();
 
-// Configure CORS
+// Configure CORS whitelisting
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.SetIsOriginAllowed(origin => true)
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
+        if (allowedOrigins.Length > 0)
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyMethod()
+                  .AllowAnyHeader()
+                  .AllowCredentials();
+        }
+        else
+        {
+            // Fallback for development: only allow localhost/127.0.0.1 origins
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return uri.Host == "localhost" || uri.Host == "127.0.0.1";
+                }
+                return false;
+            })
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
+        }
     });
 });
 

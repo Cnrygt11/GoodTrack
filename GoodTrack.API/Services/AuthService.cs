@@ -455,7 +455,7 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role)
             }),
-            Expires = DateTime.UtcNow.AddDays(7),
+            Expires = DateTime.UtcNow.AddMinutes(60),
             Issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API",
             Audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client",
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
