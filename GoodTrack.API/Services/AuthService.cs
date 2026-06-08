@@ -163,10 +163,18 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            IsActive = true
+            IsActive = false,
+            VerificationToken = Guid.NewGuid().ToString("N"),
+            VerificationTokenExpiresAt = DateTime.UtcNow.AddMinutes(15).ToString("o")
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+
+        // Generate verification link
+        string verificationLink = $"{baseUrl}/api/auth/verify-email?username={Uri.EscapeDataString(user.Username)}&token={Uri.EscapeDataString(user.VerificationToken)}";
+
+        // Send activation email
+        await _emailService.SendVerificationEmailAsync(user.Email, verificationLink);
 
         await _userRepository.SaveAsync(user);
     }
