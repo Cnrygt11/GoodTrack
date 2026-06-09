@@ -15,6 +15,8 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
   useEffect(() => {
     if (initialMode) {
       setActiveTab(initialMode);
+      setFormErrors({});
+      setShowErrors(false);
     }
   }, [initialMode]);
 
@@ -33,6 +35,10 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
   const [regRole, setRegRole] = useState<'seller' | 'mfr'>('seller');
+
+  // Form error state
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [showErrors, setShowErrors] = useState(false);
 
   // Email verification state
   const [verificationPending, setVerificationPending] = useState(false);
@@ -111,7 +117,6 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       showToast(language === 'tr' 
         ? 'Hesabınız başarıyla doğrulandı! Giriş yapabilirsiniz.' 
         : 'Account verified successfully! You can now log in.');
-      // Clean query parameters from URL without page reload
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (verificationError) {
       showToast(verificationError);
@@ -121,6 +126,22 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
 
   const handleLoginSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    setShowErrors(true);
+
+    const errors: Record<string, string> = {};
+    if (!loginUsername.trim()) {
+      errors.loginUsername = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!loginPassword) {
+      errors.loginPassword = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      showToast(language === 'tr' ? 'Lütfen tüm alanları doldurun!' : 'Please fill out all fields!');
+      return;
+    }
+
     if (isSubmitting.current) return;
     try {
       isSubmitting.current = true;
@@ -139,38 +160,64 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       isSubmitting.current = false;
       setSubmitting(false);
     }
-  }, [loginUsername, loginPassword, t, login, showToast]);
+  }, [loginUsername, loginPassword, t, login, showToast, language]);
 
   const handleRegisterSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting.current) return;
+    setShowErrors(true);
 
-    // Final checks
+    const errors: Record<string, string> = {};
+    if (!firstName.trim()) {
+      errors.firstName = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!lastName.trim()) {
+      errors.lastName = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!regUsername.trim()) {
+      errors.regUsername = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!regEmail.trim()) {
+      errors.regEmail = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!phoneBody.trim()) {
+      errors.phoneBody = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!regPassword) {
+      errors.regPassword = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+    if (!regConfirm) {
+      errors.regConfirm = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+    }
+
+    // Regex / length / match checks
     const usernameRegex = /^[a-z0-9_]{3,15}$/;
-    if (!usernameRegex.test(regUsername)) {
-      showToast(language === 'tr' ? 'Kullanıcı adı sadece İngilizce küçük harfler, rakamlar ve alt çizgi (_) içerebilir, 3-15 karakter uzunluğunda olmalıdır!' : 'Username can only contain English lowercase letters, numbers and underscore (_), and must be 3-15 characters long!');
-      return;
+    if (regUsername.trim() && !usernameRegex.test(regUsername.trim())) {
+      errors.regUsername = language === 'tr' 
+        ? 'Kullanıcı adı sadece küçük harf, rakam ve _ içerebilir (3-15 kar.)' 
+        : 'Lowercase, digits, and _ only (3-15 chars).';
     }
 
     const emailRegex = /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(regEmail)) {
-      showToast(language === 'tr' ? 'Geçersiz veya şüpheli e-posta formatı!' : 'Invalid or suspicious email format!');
-      return;
+    if (regEmail.trim() && !emailRegex.test(regEmail.trim())) {
+      errors.regEmail = language === 'tr' ? 'Geçersiz e-posta formatı!' : 'Invalid email format!';
     }
 
     const phoneRegex = /^\+?[0-9\s\-()]{10,20}$/;
-    if (!phoneRegex.test(regPhone)) {
-      showToast(t('phoneRequired'));
-      return;
+    if (regPhone && !phoneRegex.test(regPhone)) {
+      errors.phoneBody = language === 'tr' ? 'Geçersiz telefon numarası!' : 'Invalid phone number!';
     }
 
-    if (regPassword.length < 6 || regPassword.length > 20) {
-      showToast(language === 'tr' ? 'Şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!' : 'Password must be between 6 and 20 characters long!');
-      return;
+    if (regPassword && (regPassword.length < 6 || regPassword.length > 20)) {
+      errors.regPassword = language === 'tr' ? 'Şifre 6-20 karakter olmalıdır!' : 'Password must be 6-20 characters!';
     }
 
-    if (regPassword !== regConfirm) {
-      showToast(t('passwordMismatch'));
+    if (regConfirm && regPassword !== regConfirm) {
+      errors.regConfirm = language === 'tr' ? 'Şifreler uyuşmuyor!' : 'Passwords do not match!';
+    }
+
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      showToast(language === 'tr' ? 'Lütfen formu eksiksiz ve doğru doldurun!' : 'Please fill out the form correctly!');
       return;
     }
 
@@ -203,6 +250,8 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       setRegPassword('');
       setRegConfirm('');
       setRegRole('seller');
+      setFormErrors({});
+      setShowErrors(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
@@ -211,7 +260,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       setSubmitting(false);
     }
   }, [
-    regUsername, regEmail, regPhone, regPassword, regConfirm, firstName, lastName, regRole,
+    regUsername, regEmail, regPhone, regPassword, regConfirm, firstName, lastName, regRole, phoneBody, countryCode,
     language, t, showToast, navigate
   ]);
 
@@ -263,6 +312,8 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
     confirmValid,
     handleLoginSubmit,
     handleRegisterSubmit,
-    getInputStyle
+    getInputStyle,
+    formErrors,
+    showErrors
   };
 }
