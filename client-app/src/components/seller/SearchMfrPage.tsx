@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSearchMfr from '../../hooks/useSearchMfr';
 import { MapPin, Search, Sparkles, Image as ImageIcon, CheckCircle2, Clock, Plus, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import Lightbox from '../ui/Lightbox';
 
 const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
 
 export default function SearchMfrPage() {
   const navigate = useNavigate();
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const {
     loading,
     error,
@@ -250,7 +252,16 @@ export default function SearchMfrPage() {
                           flexShrink: 0
                         }}>
                           {mfr.profilePicture ? (
-                            <img src={mfr.profilePicture} alt={mfr.username} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img 
+                              src={mfr.profilePicture} 
+                              alt={mfr.username} 
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setLightboxImage(mfr.profilePicture);
+                              }}
+                              title={language === 'tr' ? 'Resmi Büyüt' : 'Zoom Image'}
+                            />
                           ) : (
                             <span style={{ fontWeight: 600, color: 'var(--accent-mfr)', fontSize: '15px' }}>
                               {(mfr.firstName?.charAt(0) || '').toUpperCase()}{(mfr.lastName?.charAt(0) || '').toUpperCase()}
@@ -336,11 +347,9 @@ export default function SearchMfrPage() {
                           </span>
                           <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
                             {mfr.productImages.map((img, idx) => (
-                              <a 
+                              <div 
                                 key={idx} 
-                                href={img} 
-                                target="_blank" 
-                                rel="noreferrer"
+                                onClick={() => setLightboxImage(img)}
                                 style={{ 
                                   width: '48px', 
                                   height: '48px', 
@@ -348,11 +357,12 @@ export default function SearchMfrPage() {
                                   overflow: 'hidden', 
                                   border: '1px solid var(--border)', 
                                   flexShrink: 0, 
+                                  cursor: 'zoom-in',
                                   display: 'block' 
                                 }}
                               >
                                 <img src={img} alt="Product showcase" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              </a>
+                              </div>
                             ))}
                           </div>
                         </div>
@@ -431,6 +441,12 @@ export default function SearchMfrPage() {
 
       </div>
 
+      {lightboxImage && (
+        <Lightbox 
+          imageUrl={lightboxImage} 
+          onClose={() => setLightboxImage(null)} 
+        />
+      )}
     </div>
   );
 }
