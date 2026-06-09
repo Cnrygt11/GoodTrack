@@ -17,13 +17,6 @@ export default function Layout({ children }: LayoutProps) {
 
   if (!user) return <>{children}</>;
 
-  const handleCatalogToggle = () => {
-    if (currentPath === '/catalog') {
-      navigate('/seller');
-    } else {
-      navigate('/catalog');
-    }
-  };
 
   const handleLogoClick = () => {
     navigate(user.role === 'mfr' ? '/mfr' : '/seller');
@@ -119,23 +112,6 @@ export default function Layout({ children }: LayoutProps) {
                 {t('findMfrTab')}
               </button>
 
-              <button 
-                className="btn-secondary" 
-                onClick={handleCatalogToggle}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  padding: '6px 14px', 
-                  fontSize: '13px', 
-                  borderRadius: '6px',
-                  borderColor: currentPath === '/catalog' || currentPath === '/seller' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === '/catalog' || currentPath === '/seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
-                }}
-              >
-                <Package size={14} />
-                {currentPath === '/catalog' ? t('btnOrderScreen') : t('btnMyProducts')}
-              </button>
             </>
           )}
           
