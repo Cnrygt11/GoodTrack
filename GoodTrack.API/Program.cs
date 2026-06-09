@@ -31,7 +31,6 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IFieldService, FieldService>();
 builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
 
 
 

@@ -25,7 +25,6 @@ public class AuthService : IAuthService
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     private readonly IHubContext<TrackingHub> _hubContext;
-    private readonly IEmailService _emailService;
     private readonly ILogger<AuthService> _logger;
     private readonly IImageStorageService _imageStorageService;
 
@@ -35,7 +34,6 @@ public class AuthService : IAuthService
         IPasswordHasher<User> passwordHasher,
         IConfiguration configuration,
         IHubContext<TrackingHub> hubContext,
-        IEmailService emailService,
         ILogger<AuthService> logger,
         IImageStorageService imageStorageService)
     {
@@ -44,7 +42,6 @@ public class AuthService : IAuthService
         _passwordHasher = passwordHasher;
         _configuration = configuration;
         _hubContext = hubContext;
-        _emailService = emailService;
         _logger = logger;
         _imageStorageService = imageStorageService;
     }
@@ -443,10 +440,21 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
+        var jwtKey = _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException(
+                "JWT signing key is not configured. Set 'Jwt:Key' in appsettings or environment variables.");
+
+        var issuer = _configuration["Jwt:Issuer"]
+            ?? throw new InvalidOperationException(
+                "JWT issuer is not configured. Set 'Jwt:Issuer' in appsettings or environment variables.");
+
+        var audience = _configuration["Jwt:Audience"]
+            ?? throw new InvalidOperationException(
+                "JWT audience is not configured. Set 'Jwt:Audience' in appsettings or environment variables.");
+
         var tokenHandler = new JwtSecurityTokenHandler();
-        var jwtKey = _configuration["Jwt:Key"] ?? "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
         var key = Encoding.UTF8.GetBytes(jwtKey);
-        
+
         var tokenDescriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(new[]
@@ -456,9 +464,11 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Role, user.Role)
             }),
             Expires = DateTime.UtcNow.AddMinutes(60),
-            Issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API",
-            Audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client",
-            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            Issuer = issuer,
+            Audience = audience,
+            SigningCredentials = new SigningCredentials(
+                new SymmetricSecurityKey(key),
+                SecurityAlgorithms.HmacSha256Signature)
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
