@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import AuthPage from '../components/auth/AuthPage';
 import LandingPage from '../components/home/LandingPage';
 import SellerPage from '../components/seller/SellerPage';
-import CatalogPage from '../components/catalog/CatalogPage';
 import MfrPage from '../components/mfr/MfrPage';
 import MyAccountPage from '../components/profile/MyAccountPage';
 import SearchMfrPage from '../components/seller/SearchMfrPage';
@@ -23,7 +22,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />;
+    return <Navigate to={user.role === 'mfr' ? '/mfr/orders' : '/seller/orders'} replace />;
   }
 
   return <>{children}</>;
@@ -33,7 +32,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />;
+    return <Navigate to={user.role === 'mfr' ? '/mfr/orders' : '/seller/orders'} replace />;
   }
 
   return <>{children}</>;
@@ -47,6 +46,13 @@ function OrderDetailRedirect() {
   return <Navigate to={user.role === 'mfr' ? `/mfr/orders/${id}` : `/seller/orders/${id}`} replace />;
 }
 
+function ProfileRedirect() {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === 'mfr' ? '/mfr/profile' : '/seller/profile'} replace />;
+}
+
 export default function AppRoutes() {
   const { user } = useAuth();
 
@@ -56,7 +62,7 @@ export default function AppRoutes() {
         path="/"
         element={
           user ? (
-            <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />
+            <Navigate to={user.role === 'mfr' ? '/mfr/orders' : '/seller/orders'} replace />
           ) : (
             <LandingPage />
           )
@@ -81,6 +87,7 @@ export default function AppRoutes() {
         }
       />
 
+      {/* Seller Nested Routes */}
       <Route
         path="/seller"
         element={<Navigate to="/seller/orders" replace />}
@@ -101,13 +108,12 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/catalog"
-        element={<Navigate to="/seller/orders" replace />}
-      />
-
-      <Route
-        path="/search-mfr"
-        element={<Navigate to="/seller/search-mfr" replace />}
+        path="/seller/orders/:id"
+        element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <OrderDetailPage />
+          </ProtectedRoute>
+        }
       />
 
       <Route
@@ -120,28 +126,25 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/mfr"
+        path="/seller/profile"
         element={
-          <ProtectedRoute allowedRoles={['mfr']}>
-            <MfrPage />
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/profile"
-        element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['seller']}>
             <MyAccountPage />
           </ProtectedRoute>
         }
       />
 
+      {/* Manufacturer Nested Routes */}
       <Route
-        path="/seller/orders/:id"
+        path="/mfr"
+        element={<Navigate to="/mfr/orders" replace />}
+      />
+
+      <Route
+        path="/mfr/orders"
         element={
-          <ProtectedRoute allowedRoles={['seller']}>
-            <OrderDetailPage />
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <MfrPage />
           </ProtectedRoute>
         }
       />
@@ -153,6 +156,31 @@ export default function AppRoutes() {
             <OrderDetailPage />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path="/mfr/profile"
+        element={
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <MyAccountPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Legacy/General Fallback Routes */}
+      <Route
+        path="/catalog"
+        element={<Navigate to="/seller/orders" replace />}
+      />
+
+      <Route
+        path="/search-mfr"
+        element={<Navigate to="/seller/search-mfr" replace />}
+      />
+
+      <Route
+        path="/profile"
+        element={<ProfileRedirect />}
       />
 
       <Route

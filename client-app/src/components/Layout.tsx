@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
 
 
   const handleLogoClick = () => {
-    navigate(user.role === 'mfr' ? '/mfr' : '/seller/orders');
+    navigate(user.role === 'mfr' ? '/mfr/orders' : '/seller/orders');
   };
 
   return (
@@ -75,7 +75,7 @@ export default function Layout({ children }: LayoutProps) {
           {user.role === 'mfr' && (
             <button 
               className="btn-secondary" 
-              onClick={() => navigate('/mfr')}
+              onClick={() => navigate('/mfr/orders')}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -83,8 +83,8 @@ export default function Layout({ children }: LayoutProps) {
                 padding: '6px 14px', 
                 fontSize: '13px', 
                 borderRadius: '6px',
-                borderColor: currentPath === '/mfr' ? 'var(--accent-mfr)' : 'var(--border)',
-                background: currentPath === '/mfr' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+                borderColor: currentPath === '/mfr/orders' ? 'var(--accent-mfr)' : 'var(--border)',
+                background: currentPath === '/mfr/orders' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
               }}
             >
               <Package size={14} />
@@ -143,7 +143,7 @@ export default function Layout({ children }: LayoutProps) {
 
           <button 
             className="btn-secondary" 
-            onClick={() => navigate('/profile')}
+            onClick={() => navigate(user.role === 'mfr' ? '/mfr/profile' : '/seller/profile')}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -151,8 +151,8 @@ export default function Layout({ children }: LayoutProps) {
               padding: '6px 14px', 
               fontSize: '13px', 
               borderRadius: '6px',
-              borderColor: currentPath === '/profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: currentPath === '/profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+              borderColor: currentPath === '/seller/profile' || currentPath === '/mfr/profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: currentPath === '/seller/profile' || currentPath === '/mfr/profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
             }}
           >
             <User size={14} />
