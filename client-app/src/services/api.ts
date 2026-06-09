@@ -38,13 +38,13 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   role: string;
-  profilePicture?: string;
-  address?: string;
-  city?: string;
-  bio?: string;
-  productImages?: string[];
-  keywords?: string[];
-  isVisibleToSellers?: boolean;
+  profilePicture: string;   // Backend always sends empty string, never undefined
+  address: string;
+  city: string;
+  bio: string;
+  productImages: string[];
+  keywords: string[];
+  isVisibleToSellers: boolean;
 }
 
 export interface ConnectionUser {
@@ -108,8 +108,8 @@ export interface Product {
   logs?: OrderLog[];
   mfrId: string;
   mfrName: string;
-  sellerId?: string;
-  sellerName?: string;
+  sellerId: string;    // Backend always sends empty string, never undefined
+  sellerName: string;  // Backend always sends empty string, never undefined
   createdAt?: string;
   completedAt?: string;
 }
@@ -182,7 +182,7 @@ export interface RegisterPayload {
   email: string;
   phoneNumber: string;
   password: string;
-  confirmpassword: string;
+  confirmPassword: string;  // camelCase to match .NET JSON serialization
   role: 'seller' | 'mfr';
 }
 
@@ -289,13 +289,6 @@ export const api = {
     return apiCall<{ product: Product; message: string }>('/products', {
       method: 'POST',
       body: JSON.stringify(productData),
-    });
-  },
-
-  toggleProductComplete(productId: string, completed: boolean): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/products/${productId}/complete`, {
-      method: 'PUT',
-      body: JSON.stringify({ completed }),
     });
   },
 

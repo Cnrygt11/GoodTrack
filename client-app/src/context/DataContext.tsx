@@ -105,10 +105,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user) {
       loadProducts();
+      refreshConnections(); // Both roles need their connections list
       if (user.role === 'seller') {
         loadExtraFields();
         loadCatalog();
-        refreshConnections();
       }
     } else {
       setProducts([]);

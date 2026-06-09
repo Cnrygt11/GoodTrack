@@ -465,13 +465,18 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'cancelled');
       showToast(data.message || t('statusUpdatedSuccess'));
+      setProducts((prev: Product[]) => prev.map(p =>
+        p.id === productId
+          ? { ...p, status: 'cancelled', isPendingApproval: false, isDefective: false, completed: false }
+          : p
+      ));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }
-  }, [confirm, language, showToast, t]);
+  }, [confirm, language, setProducts, showToast, t]);
 
   const handleVerifyOrder = useCallback(async (productId: string, action: 'correct' | 'defective' | 'missing', note?: string | null, image?: string | null) => {
     if (action === 'correct') {
@@ -486,6 +491,11 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
         setActionLoading(true);
         const data = await api.updateOrderStatus(productId, 'to_ship');
         showToast(data.message || t('statusUpdatedSuccess'));
+        setProducts((prev: Product[]) => prev.map(p =>
+          p.id === productId
+            ? { ...p, status: 'to_ship', completed: true, isDefective: false }
+            : p
+        ));
       } catch (err: unknown) {
         const errorMessage = err instanceof Error ? err.message : String(err);
         showToast(errorMessage);
@@ -500,7 +510,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setDefectImageFileName(image ? 'Mevcut Görsel' : '');
       setIsDefectModalOpen(true);
     }
-  }, [confirm, language, showToast, t]);
+  }, [confirm, language, setProducts, showToast, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
     const accepted = await confirm({
@@ -514,13 +524,18 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'shipped');
       showToast(data.message || t('statusUpdatedSuccess'));
+      setProducts((prev: Product[]) => prev.map(p =>
+        p.id === productId
+          ? { ...p, status: 'shipped', completed: true, isDefective: false }
+          : p
+      ));
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
     } finally {
       setActionLoading(false);
     }
-  }, [confirm, language, showToast, t]);
+  }, [confirm, language, setProducts, showToast, t]);
 
   const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
     setDefectType(type);
@@ -554,6 +569,11 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       const targetStatus = defectType;
       const data = await api.updateOrderStatus(defectProductId, targetStatus, defectNote, defectImage);
       showToast(data.message || t('statusUpdatedSuccess'));
+      setProducts((prev: Product[]) => prev.map(p =>
+        p.id === defectProductId
+          ? { ...p, status: targetStatus, isDefective: true, completed: false, defectNote, defectImage }
+          : p
+      ));
       setIsDefectModalOpen(false);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -562,7 +582,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [defectProductId, defectType, defectNote, defectImage, showToast, t]);
+  }, [defectProductId, defectType, defectNote, defectImage, setProducts, showToast, t]);
 
   const handleMarkSingleAsSeen = useCallback((productId: string, tab: ListFilter) => {
     setUnseenIds(prev => ({

@@ -61,6 +61,10 @@ public class ExceptionHandlingMiddleware
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
                 break;
+            case InvalidOperationException:
+                statusCode = HttpStatusCode.BadRequest;
+                message = exception.Message;
+                break;
         }
 
         context.Response.StatusCode = (int)statusCode;

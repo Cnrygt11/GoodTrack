@@ -299,17 +299,23 @@ public class ProductService : IProductService
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return;
 
-        // Check other products/orders
+        // Base64 images are stored directly in Firestore — no physical file to delete.
+        // Skip expensive DB queries for duplicate-check since DeleteImageAsync is a no-op for Base64.
+        if (imageUrl.StartsWith("data:image"))
+        {
+            await _imageStorageService.DeleteImageAsync(imageUrl);
+            return;
+        }
+
+        // For URL-based images (future cloud storage), check if referenced elsewhere before deleting.
         var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
         bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.Image == imageUrl);
         if (isUsedInOthers) return;
 
-        // Check catalog
         var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
         bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
         if (isUsedInCatalog) return;
 
-        // Safe to delete from disk
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
@@ -317,12 +323,19 @@ public class ProductService : IProductService
     {
         if (string.IsNullOrWhiteSpace(imageUrl)) return;
 
-        // Check if any other products of this user use this defect image
+        // Base64 images are stored directly in Firestore — no physical file to delete.
+        // Skip expensive DB queries for duplicate-check since DeleteImageAsync is a no-op for Base64.
+        if (imageUrl.StartsWith("data:image"))
+        {
+            await _imageStorageService.DeleteImageAsync(imageUrl);
+            return;
+        }
+
+        // For URL-based images (future cloud storage), check if referenced elsewhere before deleting.
         var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
         bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.DefectImage == imageUrl);
         if (isUsedInOthers) return;
 
-        // Also check main images just in case (though highly unlikely)
         bool isUsedAsMain = otherProducts.Exists(p => p.Image == imageUrl);
         if (isUsedAsMain) return;
 
@@ -330,7 +343,6 @@ public class ProductService : IProductService
         bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
         if (isUsedInCatalog) return;
 
-        // Safe to delete from disk
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 

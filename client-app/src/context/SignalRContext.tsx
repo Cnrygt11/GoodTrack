@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
@@ -10,6 +10,18 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const { loadProducts, loadIncomingRequests, loadSentRequests, refreshConnections } = useData();
   const [connection, setConnection] = useState<HubConnection | null>(null);
+
+  // Store latest callbacks in refs so the effect doesn't re-run when they are recreated.
+  // This prevents unnecessary WebSocket disconnects/reconnects on every render.
+  const loadProductsRef = useRef(loadProducts);
+  const loadIncomingRequestsRef = useRef(loadIncomingRequests);
+  const loadSentRequestsRef = useRef(loadSentRequests);
+  const refreshConnectionsRef = useRef(refreshConnections);
+
+  useEffect(() => { loadProductsRef.current = loadProducts; }, [loadProducts]);
+  useEffect(() => { loadIncomingRequestsRef.current = loadIncomingRequests; }, [loadIncomingRequests]);
+  useEffect(() => { loadSentRequestsRef.current = loadSentRequests; }, [loadSentRequests]);
+  useEffect(() => { refreshConnectionsRef.current = refreshConnections; }, [refreshConnections]);
 
   useEffect(() => {
     if (!user) {
@@ -30,21 +42,21 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
       .withAutomaticReconnect()
       .build();
 
-    // Setup event listeners
+    // Setup event listeners — always call the latest version via ref
     newConnection.on('ReceiveOrderUpdate', () => {
       console.log('[SignalR] Received Order Update Notification.');
-      loadProducts();
+      loadProductsRef.current();
     });
 
     newConnection.on('ReceiveConnectionRequest', () => {
       console.log('[SignalR] Received Connection Request List Notification.');
-      loadIncomingRequests();
-      loadSentRequests();
+      loadIncomingRequestsRef.current();
+      loadSentRequestsRef.current();
     });
 
     newConnection.on('ReceiveConnectionUpdate', () => {
       console.log('[SignalR] Received Connection Listing Notification.');
-      refreshConnections();
+      refreshConnectionsRef.current();
     });
 
     // Start connection
@@ -62,7 +74,8 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
         console.log('[SignalR] Stopped Tracking Hub Connection.');
       });
     };
-  }, [user, loadProducts, loadIncomingRequests, loadSentRequests, refreshConnections]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Only re-run when user changes (login/logout), not when callbacks change
 
   return (
     <SignalRContext.Provider value={connection}>

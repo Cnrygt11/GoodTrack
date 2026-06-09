@@ -30,7 +30,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IFieldService, FieldService>();
-builder.Services.AddScoped<IImageStorageService, LocalImageStorageService>();
+builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 
 
@@ -89,10 +89,11 @@ builder.Services.AddSingleton(sp =>
 
 // Configure JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var jwtKey = jwtSection["Key"];
+// Prefer JWT_KEY env var for production security (Render.com env vars override appsettings)
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? jwtSection["Key"];
 if (string.IsNullOrEmpty(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
 {
-    throw new InvalidOperationException("FATAL: JWT signing key is not configured in appsettings.json. Please set 'Jwt:Key'.");
+    throw new InvalidOperationException("FATAL: JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
 }
 
 // Ensure default development key is not used in production

@@ -7,9 +7,9 @@ using GoodTrack.API.Abstractions.Services;
 
 namespace GoodTrack.API.Services;
 
-public class LocalImageStorageService : IImageStorageService
+public class Base64ImageStorageService : IImageStorageService
 {
-    public LocalImageStorageService(IWebHostEnvironment env)
+    public Base64ImageStorageService(IWebHostEnvironment env)
     {
     }
 

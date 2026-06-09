@@ -231,7 +231,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
         email: regEmail.trim(),
         phoneNumber: regPhone.trim(),
         password: regPassword,
-        confirmpassword: regConfirm,
+        confirmPassword: regConfirm,
         role: regRole,
       });
 
