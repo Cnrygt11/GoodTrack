@@ -442,241 +442,237 @@ public class ProductService : IProductService
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
-        {
             throw new KeyNotFoundException("Sipariş bulunamadı!");
-        }
 
-        // Check ownership
+        ValidateOwnership(product, userId, role);
+
+        string oldStatus = ResolveCurrentStatus(product);
+        string userName = role == "seller" ? product.SellerName : product.MfrName;
+        string logMsg = await ApplyStatusTransitionAsync(product, newStatus, oldStatus, role, defectNote, defectImage);
+
+        AppendLog(product, userId, userName, logMsg);
+        await _productRepository.SaveAsync(product);
+        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+    }
+
+    // --- Private helpers for UpdateOrderStatusAsync ---
+
+    private static void ValidateOwnership(Product product, string userId, string role)
+    {
         if (role == "seller")
         {
             if (product.SellerId != userId)
-            {
                 throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
-            }
         }
         else if (role == "mfr")
         {
             if (product.MfrId != userId)
-            {
                 throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
-            }
         }
         else
         {
             throw new UnauthorizedAccessException("Yetkisiz rol.");
         }
+    }
 
-        string oldStatus = product.Status;
-        if (string.IsNullOrEmpty(oldStatus))
+    private static string ResolveCurrentStatus(Product product)
+    {
+        if (!string.IsNullOrEmpty(product.Status)) return product.Status;
+        return product.IsDefective ? "defective"
+             : product.Completed ? "completed"
+             : product.IsPendingApproval ? "awaiting"
+             : "production";
+    }
+
+    private async Task<string> ApplyStatusTransitionAsync(
+        Product product, string newStatus, string oldStatus,
+        string role, string? defectNote, string? defectImage)
+    {
+        return newStatus switch
         {
-            oldStatus = product.IsDefective ? "defective" : (product.Completed ? "completed" : (product.IsPendingApproval ? "awaiting" : "production"));
+            "cancelled" => ApplyCancelled(product, oldStatus, role),
+            "production" => await ApplyProductionAsync(product, oldStatus, role),
+            "broken" => ApplyBroken(product, oldStatus, role),
+            "completed" => ApplyCompleted(product, oldStatus, role),
+            "delivered" => ApplyDelivered(product, oldStatus, role),
+            "to_ship" => ApplyToShip(product, oldStatus, role),
+            "defective" => await ApplyDefectiveAsync(product, oldStatus, role, defectNote, defectImage),
+            "missing" => await ApplyMissingAsync(product, oldStatus, role, defectNote, defectImage),
+            "shipped" => ApplyShipped(product, oldStatus, role),
+            _ => throw new ArgumentException("Geçersiz hedef durum!")
+        };
+    }
+
+    private static string ApplyCancelled(Product p, string oldStatus, string role)
+    {
+        if (role != "seller")
+            throw new UnauthorizedAccessException("Siparişi sadece satıcı iptal edebilir.");
+        if (oldStatus != "awaiting" && oldStatus != "corrected" && oldStatus != "broken")
+            throw new InvalidOperationException("Üretime başlanmış olan siparişler iptal edilemez.");
+
+        p.Status = "cancelled";
+        p.IsPendingApproval = false;
+        p.IsDefective = false;
+        p.Completed = false;
+        return "Sipariş satıcı tarafından iptal edildi.";
+    }
+
+    private async Task<string> ApplyProductionAsync(Product p, string oldStatus, string role)
+    {
+        if (role != "mfr")
+            throw new UnauthorizedAccessException("Siparişi sadece üretici üretime alabilir.");
+        if (oldStatus != "awaiting" && oldStatus != "corrected" && oldStatus != "defective" && oldStatus != "missing")
+            throw new InvalidOperationException("Bu sipariş üretime alınamaz.");
+
+        p.Status = "production";
+        p.Completed = false;
+        p.IsDefective = false;
+        p.IsPendingApproval = false;
+
+        string? oldDefectImage = p.DefectImage;
+        p.DefectNote = null;
+        p.DefectImage = null;
+        await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+
+        return (oldStatus == "awaiting" || oldStatus == "corrected")
+            ? "Sipariş üretici tarafından onaylandı ve üretime alındı."
+            : "Sorunlu sipariş üretici tarafından tekrar üretime alındı.";
+    }
+
+    private static string ApplyBroken(Product p, string oldStatus, string role)
+    {
+        if (role != "mfr")
+            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
+        if (oldStatus != "awaiting" && oldStatus != "corrected")
+            throw new InvalidOperationException("Sipariş bozuk olarak işaretlenemez.");
+
+        p.Status = "broken";
+        p.IsPendingApproval = false;
+        p.IsDefective = false;
+        p.Completed = false;
+        return "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.";
+    }
+
+    private static string ApplyCompleted(Product p, string oldStatus, string role)
+    {
+        if (role != "mfr")
+            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
+        if (oldStatus != "production")
+            throw new InvalidOperationException("Üretimi tamamlanacak sipariş önce üretimde olmalıdır.");
+
+        p.Status = "completed";
+        p.Completed = true;
+        p.CompletedAt = DateTime.UtcNow.ToString("o");
+        return "Üretici siparişin üretimini tamamladı.";
+    }
+
+    private static string ApplyDelivered(Product p, string oldStatus, string role)
+    {
+        if (role != "mfr")
+            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
+        if (oldStatus != "completed" && oldStatus != "defective" && oldStatus != "missing")
+            throw new InvalidOperationException("Bu sipariş teslim edilemez.");
+
+        p.Status = "delivered";
+        p.Completed = true;
+        p.IsDefective = false;
+
+        return oldStatus == "completed"
+            ? "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor."
+            : "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.";
+    }
+
+    private static string ApplyToShip(Product p, string oldStatus, string role)
+    {
+        if (role != "seller")
+            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
+        if (oldStatus != "delivered")
+            throw new InvalidOperationException("Sipariş teslim edilmeden onaylanamaz.");
+
+        p.Status = "to_ship";
+        p.Completed = true;
+        p.IsDefective = false;
+        return "Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.";
+    }
+
+    private async Task<string> ApplyDefectiveAsync(Product p, string oldStatus, string role, string? defectNote, string? defectImage)
+    {
+        if (role != "seller")
+            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
+        if (oldStatus != "delivered")
+            throw new InvalidOperationException("Sipariş teslim edilmeden hata bildirilemez.");
+
+        p.Status = "defective";
+        p.IsDefective = true;
+        p.Completed = false;
+        p.DefectNote = defectNote;
+        await UpdateDefectImageAsync(p, defectImage);
+        return $"Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama: {defectNote}";
+    }
+
+    private async Task<string> ApplyMissingAsync(Product p, string oldStatus, string role, string? defectNote, string? defectImage)
+    {
+        if (role != "seller")
+            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
+        if (oldStatus != "delivered")
+            throw new InvalidOperationException("Sipariş teslim edilmeden eksik bildirilemez.");
+
+        p.Status = "missing";
+        p.IsDefective = true;
+        p.Completed = false;
+        p.DefectNote = defectNote;
+        await UpdateDefectImageAsync(p, defectImage);
+        return $"Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama: {defectNote}";
+    }
+
+    private static string ApplyShipped(Product p, string oldStatus, string role)
+    {
+        if (role != "seller")
+            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
+        if (oldStatus != "to_ship")
+            throw new InvalidOperationException("Sipariş DOĞRU olarak onaylanmadan kargolanamaz.");
+
+        p.Status = "shipped";
+        p.Completed = true;
+        p.IsDefective = false;
+        return "Sipariş satıcı tarafından kargolandı.";
+    }
+
+    /// <summary>Handles base64 defect image upload/swap for defective and missing statuses.</summary>
+    private async Task UpdateDefectImageAsync(Product p, string? newDefectImage)
+    {
+        if (newDefectImage == p.DefectImage) return;
+
+        string? oldDefectImage = p.DefectImage;
+        if (!string.IsNullOrEmpty(newDefectImage) && newDefectImage.StartsWith("data:image"))
+        {
+            p.DefectImage = await _imageStorageService.StoreImageAsync(newDefectImage);
+            await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
         }
-
-        // Validate transitions and roles
-        string userName = role == "seller" ? product.SellerName : product.MfrName;
-        string logMsg = "";
-
-        if (newStatus == "cancelled")
+        else if (string.IsNullOrEmpty(newDefectImage))
         {
-            if (role != "seller")
-                throw new UnauthorizedAccessException("Siparişi sadece satıcı iptal edebilir.");
-            if (oldStatus != "awaiting" && oldStatus != "corrected" && oldStatus != "broken")
-                throw new InvalidOperationException("Üretime başlanmış olan siparişler iptal edilemez.");
-            
-            product.Status = "cancelled";
-            product.IsPendingApproval = false;
-            product.IsDefective = false;
-            product.Completed = false;
-            logMsg = "Sipariş satıcı tarafından iptal edildi.";
-        }
-        else if (newStatus == "production")
-        {
-            if (role != "mfr")
-                throw new UnauthorizedAccessException("Siparişi sadece üretici üretime alabilir.");
-            if (oldStatus != "awaiting" && oldStatus != "corrected" && oldStatus != "defective" && oldStatus != "missing")
-                throw new InvalidOperationException("Bu sipariş üretime alınamaz.");
-
-            product.Status = "production";
-            product.Completed = false;
-            product.IsDefective = false;
-            product.IsPendingApproval = false;
-
-            // Clear defect data if any
-            string? oldDefectImage = product.DefectImage;
-            product.DefectNote = null;
-            product.DefectImage = null;
-            await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-
-            if (oldStatus == "awaiting" || oldStatus == "corrected")
-                logMsg = "Sipariş üretici tarafından onaylandı ve üretime alındı.";
-            else
-                logMsg = "Sorunlu sipariş üretici tarafından tekrar üretime alındı.";
-        }
-        else if (newStatus == "broken")
-        {
-            if (role != "mfr")
-                throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-            if (oldStatus != "awaiting" && oldStatus != "corrected")
-                throw new InvalidOperationException("Sipariş bozuk olarak işaretlenemez.");
-
-            product.Status = "broken";
-            product.IsPendingApproval = false;
-            product.IsDefective = false;
-            product.Completed = false;
-            logMsg = "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.";
-        }
-        else if (newStatus == "completed")
-        {
-            if (role != "mfr")
-                throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-            if (oldStatus != "production")
-                throw new InvalidOperationException("Üretimi tamamlanacak sipariş önce üretimde olmalıdır.");
-
-            product.Status = "completed";
-            product.Completed = true;
-            product.CompletedAt = DateTime.UtcNow.ToString("o");
-            logMsg = "Üretici siparişin üretimini tamamladı.";
-        }
-        else if (newStatus == "delivered")
-        {
-            if (role != "mfr")
-                throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-            if (oldStatus != "completed" && oldStatus != "defective" && oldStatus != "missing")
-                throw new InvalidOperationException("Bu sipariş teslim edilemez.");
-
-            product.Status = "delivered";
-            product.Completed = true;
-            product.IsDefective = false;
-
-            if (oldStatus == "completed")
-                logMsg = "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.";
-            else
-                logMsg = "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.";
-        }
-        else if (newStatus == "to_ship")
-        {
-            if (role != "seller")
-                throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-            if (oldStatus != "delivered")
-                throw new InvalidOperationException("Sipariş teslim edilmeden onaylanamaz.");
-
-            product.Status = "to_ship";
-            product.Completed = true;
-            product.IsDefective = false;
-            logMsg = "Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.";
-        }
-        else if (newStatus == "defective")
-        {
-            if (role != "seller")
-                throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-            if (oldStatus != "delivered")
-                throw new InvalidOperationException("Sipariş teslim edilmeden hata bildirilemez.");
-
-            product.Status = "defective";
-            product.IsDefective = true;
-            product.Completed = false;
-            product.DefectNote = defectNote;
-
-            // Handle base64 defect image upload
-            if (defectImage != product.DefectImage)
-            {
-                string? oldDefectImage = product.DefectImage;
-                if (!string.IsNullOrEmpty(defectImage) && defectImage.StartsWith("data:image"))
-                {
-                    product.DefectImage = await _imageStorageService.StoreImageAsync(defectImage);
-                    await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                }
-                else if (string.IsNullOrEmpty(defectImage))
-                {
-                    product.DefectImage = null;
-                    await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                }
-                else
-                {
-                    product.DefectImage = defectImage;
-                    if (oldDefectImage != defectImage)
-                    {
-                        await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                    }
-                }
-            }
-
-            logMsg = $"Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama: {defectNote}";
-        }
-        else if (newStatus == "missing")
-        {
-            if (role != "seller")
-                throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-            if (oldStatus != "delivered")
-                throw new InvalidOperationException("Sipariş teslim edilmeden eksik bildirilemez.");
-
-            product.Status = "missing";
-            product.IsDefective = true;
-            product.Completed = false;
-            product.DefectNote = defectNote;
-
-            // Handle base64 defect image upload (just in case)
-            if (defectImage != product.DefectImage)
-            {
-                string? oldDefectImage = product.DefectImage;
-                if (!string.IsNullOrEmpty(defectImage) && defectImage.StartsWith("data:image"))
-                {
-                    product.DefectImage = await _imageStorageService.StoreImageAsync(defectImage);
-                    await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                }
-                else if (string.IsNullOrEmpty(defectImage))
-                {
-                    product.DefectImage = null;
-                    await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                }
-                else
-                {
-                    product.DefectImage = defectImage;
-                    if (oldDefectImage != defectImage)
-                    {
-                        await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-                    }
-                }
-            }
-
-            logMsg = $"Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama: {defectNote}";
-        }
-        else if (newStatus == "shipped")
-        {
-            if (role != "seller")
-                throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-            if (oldStatus != "to_ship")
-                throw new InvalidOperationException("Sipariş DOĞRU olarak onaylanmadan kargolanamaz.");
-
-            product.Status = "shipped";
-            product.Completed = true;
-            product.IsDefective = false;
-            logMsg = "Sipariş satıcı tarafından kargolandı.";
+            p.DefectImage = null;
+            await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
         }
         else
         {
-            throw new ArgumentException("Geçersiz hedef durum!");
+            p.DefectImage = newDefectImage;
+            if (oldDefectImage != newDefectImage)
+                await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
         }
+    }
 
-        // Add log entry
-        if (product.Logs == null)
-        {
-            product.Logs = new List<OrderLog>();
-        }
-
+    private static void AppendLog(Product product, string userId, string userName, string message)
+    {
+        product.Logs ??= new List<OrderLog>();
         product.Logs.Add(new OrderLog
         {
             Timestamp = DateTime.UtcNow.ToString("o"),
             Status = product.Status,
-            Message = logMsg,
+            Message = message,
             UserId = userId,
             UserName = userName
         });
-
-        await _productRepository.SaveAsync(product);
-
-        // Notify real-time
-        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
 
     public async Task<Product?> GetProductByIdAsync(string userId, string role, string orderId)

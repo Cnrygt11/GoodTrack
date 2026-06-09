@@ -2,9 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSearchMfr from '../../hooks/useSearchMfr';
 import { MapPin, Search, Sparkles, Image as ImageIcon, CheckCircle2, Clock, Plus, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 import Lightbox from '../ui/Lightbox';
-
-const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
 
 export default function SearchMfrPage() {
   const navigate = useNavigate();
@@ -73,7 +72,7 @@ export default function SearchMfrPage() {
       </div>
 
       {/* Main Grid Layout: Left Sidebar Filters, Right Results list */}
-      <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth < 850 ? '1fr' : '260px 1fr', gap: '24px' }}>
+      <div className="b2b-grid">
         
         {/* Filters Card */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -143,7 +142,7 @@ export default function SearchMfrPage() {
                 {t('filterByCategory')}
               </label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '4px', background: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--border)' }}>
-                {CATEGORIES.map((cat) => {
+                {MANUFACTURER_CATEGORIES.map((cat) => {
                   const isChecked = selectedCategories.includes(cat);
                   return (
                     <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', userSelect: 'none', padding: '4px 6px', borderRadius: '4px', background: isChecked ? 'var(--accent-seller-glow)' : 'transparent' }}>
@@ -205,7 +204,7 @@ export default function SearchMfrPage() {
                 const isPending = sentRequests.some(r => r.receiverUsername === mfr.username && r.status === 'pending');
 
                 // Category match count score
-                const matchCount = mfr.keywords?.filter((k) => selectedCategories.includes(k)).length ?? 0;
+                const matchCount = mfr.keywords?.filter((k) => MANUFACTURER_CATEGORIES.includes(k)).length ?? 0;
 
                 return (
                   <div 

@@ -2,17 +2,12 @@ import React, { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClipboardList, PlusCircle, Package, Clock, AlertTriangle, CheckCircle2, XCircle, Send, Archive, Ban } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
-import { useData } from '../../context/DataContext';
-import { useToast } from '../../context/ToastContext';
 import OrderForm from './OrderForm';
 import SellerOrderCard from './SellerOrderCard';
 import AddFieldModal from './AddFieldModal';
 import DefectReportModal from './DefectReportModal';
 import CatalogPage from '../catalog/CatalogPage';
-import { TranslationKey } from '../../services/translations';
-import { Product } from '../../services/api';
-
-type ListFilter = 'awaiting' | 'broken' | 'production' | 'completed' | 'delivered' | 'defective' | 'to_ship' | 'shipped';
+import { ListFilter, SellerTabId } from '../../types/orders';
 
 function getTabIcon(tab: ListFilter, active: boolean) {
   const size = 20;
@@ -60,8 +55,6 @@ export default function SellerPage() {
     handleMarkSingleAsSeen
   } = useSellerOrders();
 
-  const { setProducts } = useData();
-  const { showToast } = useToast();
 
   const tabs = [
     { key: 'awaiting' as const, label: t('tabAwaiting') },
@@ -257,8 +250,6 @@ export default function SellerPage() {
                 <SellerOrderCard
                   key={p.id}
                   product={p}
-                  language={language}
-                  t={t}
                   listFilter={listFilter}
                   isUnseen={unseenIds[listFilter]?.includes(p.id) ?? false}
                   isDropdownOpen={activeDropdownId === p.id}
@@ -270,7 +261,6 @@ export default function SellerPage() {
                   onShip={handleShipOrder}
                   onViewTimeline={openTimeline}
                   onMarkSeen={handleMarkSingleAsSeen}
-                  showToast={showToast}
                 />
               ))
             )}

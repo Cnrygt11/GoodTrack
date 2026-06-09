@@ -3,6 +3,7 @@ import { Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban, Info, Send, 
 import { Product } from '../../services/api';
 import { Language, TranslationKey } from '../../services/translations';
 import { MfrTab } from '../../hooks/useMfrOrders';
+import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
 import Lightbox from '../ui/Lightbox';
 
 interface MfrOrderCardProps {
@@ -17,50 +18,6 @@ interface MfrOrderCardProps {
   onOpenTimeline: (product: Product) => void;
 }
 
-type StatusConfig = {
-  color: string;
-  bg: string;
-  border: string;
-  icon: React.ReactNode;
-  label: string;
-};
-
-function getStatusConfig(status: string, t: (key: TranslationKey) => string): StatusConfig {
-  switch (status) {
-    case 'awaiting':
-      return { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: <Clock size={11} />, label: t('statusPendingApproval') };
-    case 'corrected':
-      return { color: '#00bcd4', bg: 'rgba(0,188,212,0.1)', border: 'rgba(0,188,212,0.3)', icon: <Clock size={11} />, label: t('statusCorrected') };
-    case 'broken':
-      return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: <AlertTriangle size={11} />, label: t('statusBroken') };
-    case 'production':
-      return { color: 'var(--accent-mfr)', bg: 'var(--accent-mfr-glow)', border: 'rgba(6,182,212,0.3)', icon: <Clock size={11} />, label: t('statusInProduction') };
-    case 'completed':
-      return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: <CheckCircle2 size={11} />, label: t('statusCompleted') };
-    case 'delivered':
-      return { color: '#8bc34a', bg: 'rgba(139,195,74,0.1)', border: 'rgba(139,195,74,0.3)', icon: <CheckCircle2 size={11} />, label: t('statusDelivered') };
-    case 'defective':
-      return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: <XCircle size={11} />, label: t('statusDefective') };
-    case 'missing':
-      return { color: '#ff5722', bg: 'rgba(255,87,34,0.1)', border: 'rgba(255,87,34,0.3)', icon: <AlertTriangle size={11} />, label: t('statusMissing') };
-    case 'to_ship':
-      return { color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)', icon: <Send size={11} />, label: t('statusToShip') };
-    case 'shipped':
-      return { color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)', icon: <Archive size={11} />, label: t('statusShipped') };
-    case 'cancelled':
-      return { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', icon: <Ban size={11} />, label: t('statusCancelled') };
-    default:
-      return { color: 'var(--muted)', bg: 'transparent', border: 'var(--border)', icon: <Package size={11} />, label: status };
-  }
-}
-
-function getCardAccentColor(status: string): string {
-  if (status === 'defective' || status === 'missing' || status === 'broken') return '#ef4444';
-  if (status === 'completed' || status === 'delivered') return '#22c55e';
-  if (status === 'to_ship') return '#a855f7';
-  if (status === 'shipped' || status === 'cancelled') return '#4b5563';
-  return 'var(--accent-mfr)';
-}
 
 export default function MfrOrderCard({
   product: p,
@@ -77,8 +34,8 @@ export default function MfrOrderCard({
   const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
   const timeStr = p.createdAt ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
   const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
-  const sc = getStatusConfig(status, t);
-  const accentColor = getCardAccentColor(status);
+  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr' });
+  const accentColor = getMfrCardAccentColor(status);
 
   const hasActionBar = ['awaiting', 'corrected', 'production', 'completed', 'defective', 'missing', 'shipped', 'cancelled'].includes(status);
 

@@ -52,12 +52,6 @@ public class FirestoreProductRepository : IProductRepository
         await docRef.SetAsync(product);
     }
 
-    public async Task UpdateStatusAsync(string id, bool completed)
-    {
-        var docRef = _firestoreDb.Collection(CollectionName).Document(id);
-        await docRef.UpdateAsync("completed", completed);
-    }
-
     public async Task DeleteAsync(string id)
     {
         var docRef = _firestoreDb.Collection(CollectionName).Document(id);

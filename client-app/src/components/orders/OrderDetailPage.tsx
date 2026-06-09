@@ -3,48 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, Product } from '../../services/api';
-import { TranslationKey } from '../../services/translations';
+import { getStatusConfig } from '../../utils/statusConfig';
 import {
   ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban,
   Calendar, Factory, Tag, Ruler, Send, Archive, Info, Loader2, User
 } from 'lucide-react';
 
-type StatusConfig = {
-  color: string;
-  bg: string;
-  border: string;
-  icon: React.ReactNode;
-  label: string;
-};
-
-function getStatusConfig(status: string, t: (key: TranslationKey) => string): StatusConfig {
-  switch (status) {
-    case 'awaiting':
-      return { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: <Clock size={12} />, label: t('statusPendingApproval') };
-    case 'corrected':
-      return { color: '#00bcd4', bg: 'rgba(0,188,212,0.1)', border: 'rgba(0,188,212,0.3)', icon: <Clock size={12} />, label: t('statusCorrected') };
-    case 'broken':
-      return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: <AlertTriangle size={12} />, label: t('statusBroken') };
-    case 'production':
-      return { color: 'var(--accent-seller)', bg: 'var(--accent-seller-glow)', border: 'rgba(245,166,35,0.3)', icon: <Clock size={12} />, label: t('statusInProduction') };
-    case 'completed':
-      return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: <CheckCircle2 size={12} />, label: t('statusCompleted') };
-    case 'delivered':
-      return { color: '#8bc34a', bg: 'rgba(139,195,74,0.1)', border: 'rgba(139,195,74,0.3)', icon: <CheckCircle2 size={12} />, label: t('statusDelivered') };
-    case 'defective':
-      return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: <XCircle size={12} />, label: t('statusDefective') };
-    case 'missing':
-      return { color: '#ff5722', bg: 'rgba(255,87,34,0.1)', border: 'rgba(255,87,34,0.3)', icon: <AlertTriangle size={12} />, label: t('statusMissing') };
-    case 'to_ship':
-      return { color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)', icon: <Send size={12} />, label: t('statusToShip') };
-    case 'shipped':
-      return { color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)', icon: <Archive size={12} />, label: t('statusShipped') };
-    case 'cancelled':
-      return { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', icon: <Ban size={12} />, label: t('statusCancelled') };
-    default:
-      return { color: 'var(--muted)', bg: 'transparent', border: 'var(--border)', icon: <Package size={12} />, label: status };
-  }
-}
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -109,7 +73,7 @@ export default function OrderDetailPage() {
   }
 
   const status = product.status || (product.isDefective ? 'defective' : (product.completed ? 'completed' : (product.isPendingApproval ? 'awaiting' : 'production')));
-  const sc = getStatusConfig(status, t);
+  const sc = getStatusConfig(status, t, { iconSize: 12, role: user?.role === 'mfr' ? 'mfr' : 'seller' });
 
   // Mfr timeline logs filtering: only show up to and including 'to_ship' status
   const allLogs = product.logs || [];
