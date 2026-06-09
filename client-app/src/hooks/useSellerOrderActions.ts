@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { api, Product } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { ListFilter } from '../types/orders';
 
 interface UseSellerOrderActionsReturn {
@@ -80,7 +81,7 @@ export default function useSellerOrderActions(
         ),
       );
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : String(err));
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
@@ -110,7 +111,7 @@ export default function useSellerOrderActions(
           ),
         );
       } catch (err: unknown) {
-        showToast(err instanceof Error ? err.message : String(err));
+        showToast(extractErrorMessage(err));
       } finally {
         setActionLoading(false);
       }
@@ -143,7 +144,7 @@ export default function useSellerOrderActions(
         ),
       );
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : String(err));
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
@@ -189,7 +190,7 @@ export default function useSellerOrderActions(
       );
       setIsDefectModalOpen(false);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : String(err));
+      showToast(extractErrorMessage(err));
     } finally {
       isLoading.current = false;
       setActionLoading(false);

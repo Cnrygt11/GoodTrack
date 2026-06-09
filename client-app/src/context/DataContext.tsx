@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef } from '../services/api';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 interface DataContextType {
   products: Product[];
@@ -41,8 +42,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getProducts();
       setProducts(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Sipariş yükleme hatası:', errorMessage);
+      console.error('Sipariş yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -52,8 +52,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getConnections();
       setConnections(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Bağlantı yükleme hatası:', errorMessage);
+      console.error('Bağlantı yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -63,8 +62,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getIncomingRequests();
       setIncomingRequests(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Gelen istek yükleme hatası:', errorMessage);
+      console.error('Gelen istek yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -74,8 +72,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getSentRequests();
       setSentRequests(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Gönderilen istek yükleme hatası:', errorMessage);
+      console.error('Gönderilen istek yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -85,8 +82,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getCatalog();
       setCatalogProducts(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Katalog yükleme hatası:', errorMessage);
+      console.error('Katalog yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -96,8 +92,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getFields();
       setExtraFieldDefs(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      console.error('Özellik yükleme hatası:', errorMessage);
+      console.error('Özellik yükleme hatası:', extractErrorMessage(err));
     }
   }, [user]);
 

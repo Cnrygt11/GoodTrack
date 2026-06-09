@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { api, CatalogProduct } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useCatalog() {
   const {
@@ -120,8 +121,7 @@ export default function useCatalog() {
         handleClearForm();
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -145,8 +145,7 @@ export default function useCatalog() {
         handleClearForm();
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [language, showToast, t, setCatalogProducts, editingProduct, handleClearForm]);
 

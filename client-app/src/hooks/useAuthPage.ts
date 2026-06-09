@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api } from '../services/api';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useAuthPage(initialMode?: 'login' | 'register') {
   const { login } = useAuth();
@@ -150,7 +151,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       showToast(t('loginSuccess'));
       login(data.token, data.username, data.role, data.userId);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMessage = extractErrorMessage(err);
       if (errorMessage.includes('doğrulayın') || errorMessage.includes('verify your email')) {
         setVerificationUsername(loginUsername.trim());
         setVerificationPending(true);
@@ -253,8 +254,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       setFormErrors({});
       setShowErrors(false);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       isSubmitting.current = false;
       setSubmitting(false);

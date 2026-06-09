@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, UserProfile } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useProfile() {
   const { user } = useAuth();
@@ -49,8 +50,7 @@ export default function useProfile() {
       const data = await api.getProfile();
       setProfile(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage || 'Profil yüklenemedi.');
+      setError(extractErrorMessage(err) || 'Profil yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -89,8 +89,7 @@ export default function useProfile() {
       setFlowStep('new-password');
       showToast(language === 'tr' ? 'Şifre doğrulandı, yeni şifre belirleyebilirsiniz.' : 'Password verified, you can now set your new password.');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
@@ -123,8 +122,7 @@ export default function useProfile() {
       setConfirmNewPassword('');
       setFlowStep('profile');
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
@@ -146,8 +144,7 @@ export default function useProfile() {
       const compressed = await compressImage(file);
       setProfilePicture(compressed);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [showToast]);
 
@@ -169,8 +166,7 @@ export default function useProfile() {
       );
       setProductImages((prev) => [...prev, ...compressedImages]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [productImages, showToast]);
 
@@ -190,8 +186,7 @@ export default function useProfile() {
         return next;
       });
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [showToast]);
 
@@ -255,8 +250,7 @@ export default function useProfile() {
       showToast(t('saveProfileSuccess'));
       await fetchProfile();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }

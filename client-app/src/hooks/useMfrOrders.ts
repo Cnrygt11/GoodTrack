@@ -4,6 +4,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/api';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
@@ -121,8 +122,7 @@ export default function useMfrOrders() {
       const data = await api.updateOrderStatus(productId, status);
       showToast(data.message || t('statusUpdatedSuccess'));
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }

@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { api, UserProfile } from '../services/api';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useConnections() {
   const {
@@ -66,8 +67,7 @@ export default function useConnections() {
       setAddUsername('');
       await Promise.all([loadIncomingRequests(), loadSentRequests()]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -88,8 +88,7 @@ export default function useConnections() {
         loadProducts()
       ]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -112,8 +111,7 @@ export default function useConnections() {
       showToast(data.message || t('connReqRejected'));
       await Promise.all([loadIncomingRequests(), loadSentRequests()]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoading.current = false;
       setActionLoading(false);
@@ -126,8 +124,7 @@ export default function useConnections() {
       showToast(data.message || t('connReqDeleted'));
       await loadSentRequests();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [t, loadSentRequests, showToast]);
 
@@ -144,8 +141,7 @@ export default function useConnections() {
       showToast(data.message || t('connRemoved'));
       await Promise.all([refreshConnections(), loadProducts()]);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     }
   }, [language, t, refreshConnections, loadProducts, showToast]);
 
@@ -157,8 +153,7 @@ export default function useConnections() {
       const data = await api.searchManufacturers(searchCity, searchKeyword);
       setSearchResults(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setSearchLoading(false);
     }
@@ -172,8 +167,7 @@ export default function useConnections() {
       showToast(data.message || t('connReqSuccess'));
       await loadSentRequests();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }

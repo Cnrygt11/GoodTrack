@@ -3,6 +3,7 @@ import { api, UserProfile } from '../services/api';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useSearchMfr() {
   const { connections, sentRequests, loadSentRequests } = useData();
@@ -31,8 +32,7 @@ export default function useSearchMfr() {
       const data = await api.searchManufacturers();
       setManufacturers(data);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage || 'Üreticiler yüklenemedi.');
+      setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
     } finally {
       setLoading(false);
     }
@@ -143,8 +143,7 @@ export default function useSearchMfr() {
       showToast(data.message || t('connReqSuccess'));
       await loadSentRequests();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      showToast(errorMessage);
+      showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }

@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, Product, ExtraFieldValue, CreateProductPayload } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
+import { extractErrorMessage } from '../utils/errorUtils';
 import { SellerTabId } from '../types/orders';
 
 interface UseSellerOrderFormReturn {
@@ -178,8 +179,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         setActiveTab('list');
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoadingRef.current = false;
       setActionLoading(false);
@@ -207,8 +207,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       setNewFieldType('text');
       setNewFieldOptions('');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg);
+      showToast(extractErrorMessage(err));
     } finally {
       isActionLoadingRef.current = false;
       setActionLoading(false);
@@ -226,8 +225,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       setExtraFieldDefs((prev) => prev.filter((d) => d.id !== id));
       setExtraValues((prev) => { const next = { ...prev }; delete next[id]; return next; });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg);
+      showToast(extractErrorMessage(err));
     }
   }, [setExtraFieldDefs, showToast, t]);
 
@@ -238,8 +236,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       setProducts((prev: Product[]) => prev.filter((p) => p.id !== product.id));
       if (editingProduct?.id === product.id) handleClearForm();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      showToast(msg);
+      showToast(extractErrorMessage(err));
     }
   }, [editingProduct, setProducts, showToast, t, handleClearForm]);
 
