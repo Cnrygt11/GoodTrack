@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
+import usePasswordChange from '../../hooks/usePasswordChange';
 import { ROUTES } from '../../constants/routes';
 import { ShieldCheck, User, Mail, Phone, Key, ArrowLeft, Loader2, Eye, EyeOff, Camera, Trash2, Plus, Image as ImageIcon, MapPin, Building2, CheckCircle2 } from 'lucide-react';
 
@@ -13,21 +14,7 @@ export default function MyAccountPage() {
     profile,
     loading,
     error,
-    flowStep,
-    setFlowStep,
-    oldPassword,
-    setOldPassword,
-    newPassword,
-    setNewPassword,
-    confirmNewPassword,
-    setConfirmNewPassword,
-    showOld,
-    setShowOld,
-    showNew,
-    setShowNew,
-    showConfirm,
-    setShowConfirm,
-    actionLoading,
+    actionLoading: profileLoading,
     language,
     t,
 
@@ -56,11 +43,29 @@ export default function MyAccountPage() {
     handleRemoveProductImage,
     handleReplaceProductImage,
     handleToggleKeyword,
-    handleSaveProfile,
+    handleSaveProfile
+  } = useProfile();
+
+  const {
+    flowStep,
+    setFlowStep,
+    oldPassword,
+    setOldPassword,
+    newPassword,
+    setNewPassword,
+    confirmNewPassword,
+    setConfirmNewPassword,
+    showOld,
+    setShowOld,
+    showNew,
+    setShowNew,
+    showConfirm,
+    setShowConfirm,
+    actionLoading: passwordLoading,
     handleVerifyPassword,
     handleChangePassword,
     handleCancelFlow
-  } = useProfile();
+  } = usePasswordChange();
 
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
@@ -576,9 +581,9 @@ export default function MyAccountPage() {
                 alignItems: 'center',
                 gap: '8px'
               }}
-              disabled={actionLoading}
+              disabled={profileLoading}
             >
-              {actionLoading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
+              {profileLoading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
               {t('saveProfileBtn')}
             </button>
           </div>
@@ -647,7 +652,7 @@ export default function MyAccountPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={actionLoading}>
+              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
                 {t('cancelBtn')}
               </button>
               <button 
@@ -661,9 +666,9 @@ export default function MyAccountPage() {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                disabled={actionLoading}
+                disabled={passwordLoading}
               >
-                {actionLoading && <Loader2 className="animate-spin" size={14} />}
+                {passwordLoading && <Loader2 className="animate-spin" size={14} />}
                 {t('verifyOldPasswordBtn')}
               </button>
             </div>
@@ -765,7 +770,7 @@ export default function MyAccountPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={actionLoading}>
+              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
                 {t('btnBackToProfile')}
               </button>
               <button 
@@ -779,9 +784,9 @@ export default function MyAccountPage() {
                   alignItems: 'center',
                   gap: '8px'
                 }}
-                disabled={actionLoading}
+                disabled={passwordLoading}
               >
-                {actionLoading && <Loader2 className="animate-spin" size={14} />}
+                {passwordLoading && <Loader2 className="animate-spin" size={14} />}
                 {language === 'tr' ? 'Şifreyi Güncelle' : 'Update Password'}
               </button>
             </div>
