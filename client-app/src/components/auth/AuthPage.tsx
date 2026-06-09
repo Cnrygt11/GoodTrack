@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import useAuthPage from '../../hooks/useAuthPage';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Loader2 } from 'lucide-react';
 
 interface AuthPageProps {
   mode?: 'login' | 'register';
@@ -172,8 +172,19 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                     style={{ height: '42px', boxSizing: 'border-box' }}
                   />
                 </div>
-                <button type="submit" className="btn-primary" style={{ width: '100%', height: '42px' }} disabled={submitting}>
-                  {submitting ? (language === 'tr' ? 'Giriş yapılıyor...' : 'Logging in...') : t('login')}
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  style={{ 
+                    width: '100%', 
+                    height: '42px', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center'
+                  }} 
+                  disabled={submitting}
+                >
+                  {submitting ? <Loader2 className="animate-spin" size={18} /> : t('login')}
                 </button>
 
                 <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>
@@ -339,8 +350,19 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                   </select>
                 </div>
 
-                <button type="submit" className="btn-primary" style={{ width: '100%', height: '42px' }} disabled={submitting}>
-                  {submitting ? (language === 'tr' ? 'Kayıt yapılıyor...' : 'Registering...') : t('register')}
+                <button 
+                  type="submit" 
+                  className="btn-primary" 
+                  style={{ 
+                    width: '100%', 
+                    height: '42px', 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center'
+                  }} 
+                  disabled={submitting}
+                >
+                  {submitting ? <Loader2 className="animate-spin" size={18} /> : t('register')}
                 </button>
 
                 <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>

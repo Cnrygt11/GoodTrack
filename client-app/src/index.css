@@ -770,6 +770,15 @@ h2 span.mfr-accent {
   50% { opacity: 0.5; transform: scale(1.35); }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
 /* ===== LIST HEADER AND TABS ===== */
 .list-header {
   display: flex;
