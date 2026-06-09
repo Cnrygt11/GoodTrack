@@ -1,10 +1,12 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import useSearchMfr from '../../hooks/useSearchMfr';
 import { MapPin, Search, Sparkles, Image as ImageIcon, CheckCircle2, Clock, Plus, Loader2, RefreshCw, XCircle } from 'lucide-react';
 
 const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
 
 export default function SearchMfrPage() {
+  const navigate = useNavigate();
   const {
     loading,
     error,
@@ -229,14 +231,18 @@ export default function SearchMfrPage() {
                   >
                     <div>
                       {/* Avatar & Title Row */}
-                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+                      <div 
+                        onClick={() => navigate(`/seller/profile/${mfr.username}`)}
+                        style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px', cursor: 'pointer' }}
+                        title={language === 'tr' ? 'Profili Görüntüle' : 'View Profile'}
+                      >
                         {/* Avatar */}
                         <div style={{ 
                           width: '46px', 
                           height: '46px', 
                           borderRadius: '50%', 
                           background: 'var(--surface3)', 
-                          border: `1px solid var(--border)`, 
+                          border: `1.5px solid var(--border)`, 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center',
@@ -255,7 +261,7 @@ export default function SearchMfrPage() {
                         {/* Name and Handle */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', flexDirection: 'column' }}>
-                            <strong style={{ fontSize: '14.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <strong style={{ fontSize: '14.5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--accent-seller)' }}>
                               {mfr.firstName} {mfr.lastName}
                             </strong>
                             <span style={{ fontSize: '12px', color: 'var(--muted)' }}>@{mfr.username}</span>

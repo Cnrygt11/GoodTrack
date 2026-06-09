@@ -134,8 +134,17 @@ export default function Layout({ children }: LayoutProps) {
           
           <button 
             className="btn-secondary" 
-            onClick={() => setIsConnectionsModalOpen(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', fontSize: '13px', borderRadius: '6px' }}
+            onClick={() => navigate(user.role === 'seller' ? '/seller/connections' : '/mfr/connections')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '6px 14px', 
+              fontSize: '13px', 
+              borderRadius: '6px',
+              borderColor: currentPath === '/seller/connections' || currentPath === '/mfr/connections' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: currentPath === '/seller/connections' || currentPath === '/mfr/connections' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+            }}
           >
             <Users size={14} />
             {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}

@@ -491,6 +491,37 @@ public class AuthService : IAuthService
         };
     }
 
+    public async Task<UserProfileDto> GetProfileByUsernameAsync(string username)
+    {
+        if (string.IsNullOrEmpty(username))
+        {
+            throw new ArgumentException("Kullanıcı adı boş olamaz.");
+        }
+
+        var user = await _userRepository.GetByUsernameAsync(username.Trim().ToLower());
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        return new UserProfileDto
+        {
+            Username = user.Username,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Role = user.Role,
+            ProfilePicture = user.ProfilePicture,
+            Address = user.Address,
+            City = user.City,
+            Bio = user.Bio,
+            ProductImages = user.ProductImages,
+            Keywords = user.Keywords,
+            IsVisibleToSellers = user.IsVisibleToSellers
+        };
+    }
+
     public async Task UpdateProfileAsync(string userId, UserProfileDto dto)
     {
         var user = await _userRepository.GetByIdAsync(userId);

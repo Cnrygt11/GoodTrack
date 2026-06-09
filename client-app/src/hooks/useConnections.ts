@@ -40,14 +40,14 @@ export default function useConnections() {
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Fetch data automatically when the modal is opened
+  // Fetch data automatically on mount
   useEffect(() => {
-    if (isConnectionsModalOpen && user) {
+    if (user) {
       refreshConnections();
       loadIncomingRequests();
       loadSentRequests();
     }
-  }, [isConnectionsModalOpen, user, refreshConnections, loadIncomingRequests, loadSentRequests]);
+  }, [user, refreshConnections, loadIncomingRequests, loadSentRequests]);
 
   const handleAddSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();

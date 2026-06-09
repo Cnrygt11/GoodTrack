@@ -8,6 +8,8 @@ import MfrPage from '../components/mfr/MfrPage';
 import MyAccountPage from '../components/profile/MyAccountPage';
 import SearchMfrPage from '../components/seller/SearchMfrPage';
 import OrderDetailPage from '../components/orders/OrderDetailPage';
+import ConnectionsPage from '../components/connections/ConnectionsPage';
+import UserProfileDetailPage from '../components/profile/UserProfileDetailPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -51,6 +53,13 @@ function ProfileRedirect() {
 
   if (!user) return <Navigate to="/login" replace />;
   return <Navigate to={user.role === 'mfr' ? '/mfr/profile' : '/seller/profile'} replace />;
+}
+
+function ConnectionsRedirect() {
+  const { user } = useAuth();
+
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === 'mfr' ? '/mfr/connections' : '/seller/connections'} replace />;
 }
 
 export default function AppRoutes() {
@@ -134,6 +143,24 @@ export default function AppRoutes() {
         }
       />
 
+      <Route
+        path="/seller/profile/:username"
+        element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <UserProfileDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/seller/connections"
+        element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <ConnectionsPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Manufacturer Nested Routes */}
       <Route
         path="/mfr"
@@ -167,6 +194,24 @@ export default function AppRoutes() {
         }
       />
 
+      <Route
+        path="/mfr/profile/:username"
+        element={
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <UserProfileDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/mfr/connections"
+        element={
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <ConnectionsPage />
+          </ProtectedRoute>
+        }
+      />
+
       {/* Legacy/General Fallback Routes */}
       <Route
         path="/catalog"
@@ -186,6 +231,11 @@ export default function AppRoutes() {
       <Route
         path="/orders/:id"
         element={<OrderDetailRedirect />}
+      />
+
+      <Route
+        path="/connections"
+        element={<ConnectionsRedirect />}
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />

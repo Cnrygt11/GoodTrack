@@ -8,7 +8,6 @@ import { DataProvider } from './context/DataContext';
 import { SignalRProvider } from './context/SignalRContext';
 import Layout from './components/Layout';
 import AppRoutes from './routes/AppRoutes';
-import ConnectionsModal from './components/connections/ConnectionsModal';
 import Toast from './components/ui/Toast';
 
 function AppContent() {
@@ -19,7 +18,6 @@ function AppContent() {
       {user ? (
         <Layout>
           <AppRoutes />
-          <ConnectionsModal />
         </Layout>
       ) : (
         <AppRoutes />

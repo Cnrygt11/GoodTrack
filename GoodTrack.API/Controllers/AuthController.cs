@@ -243,6 +243,25 @@ public class AuthController : ControllerBase
     }
 
     [Authorize]
+    [HttpGet("profile/{username}")]
+    public async Task<IActionResult> GetProfileByUsername(string username)
+    {
+        try
+        {
+            var profile = await _authService.GetProfileByUsernameAsync(username);
+            return Ok(profile);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [Authorize]
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
     {

@@ -380,6 +380,10 @@ export const api = {
     return apiCall<UserProfile>('/auth/profile');
   },
 
+  getProfileByUsername(username: string): Promise<UserProfile> {
+    return apiCall<UserProfile>(`/auth/profile/${encodeURIComponent(username)}`);
+  },
+
   verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
     return apiCall<{ success: boolean; message: string }>('/auth/verify-password', {
       method: 'POST',
