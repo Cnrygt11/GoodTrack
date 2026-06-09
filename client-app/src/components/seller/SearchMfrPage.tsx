@@ -258,7 +258,7 @@ export default function SearchMfrPage() {
                               style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'zoom-in' }} 
                               onClick={(e) => {
                                 e.stopPropagation();
-                                setLightboxImage(mfr.profilePicture);
+                                setLightboxImage(mfr.profilePicture || null);
                               }}
                               title={language === 'tr' ? 'Resmi Büyüt' : 'Zoom Image'}
                             />
@@ -443,7 +443,8 @@ export default function SearchMfrPage() {
 
       {lightboxImage && (
         <Lightbox 
-          imageUrl={lightboxImage} 
+          isOpen={!!lightboxImage} 
+          src={lightboxImage} 
           onClose={() => setLightboxImage(null)} 
         />
       )}

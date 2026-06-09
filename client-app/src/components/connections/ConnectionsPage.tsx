@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useConnections from '../../hooks/useConnections';
-import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, User } from 'lucide-react';
+import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, User, X } from 'lucide-react';
 import { ConnectionRequest } from '../../services/api';
 
 export default function ConnectionsPage() {

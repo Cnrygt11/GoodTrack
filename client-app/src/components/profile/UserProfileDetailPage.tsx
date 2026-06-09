@@ -255,7 +255,8 @@ export default function UserProfileDetailPage() {
       {/* Lightbox Overlay */}
       {lightboxImage && (
         <Lightbox 
-          imageUrl={lightboxImage} 
+          isOpen={!!lightboxImage} 
+          src={lightboxImage} 
           onClose={() => setLightboxImage(null)} 
         />
       )}
