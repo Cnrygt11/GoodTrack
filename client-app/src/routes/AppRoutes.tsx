@@ -23,7 +23,7 @@ function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/order-page'} replace />;
+    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />;
   }
 
   return <>{children}</>;
@@ -33,7 +33,7 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
 
   if (user) {
-    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/order-page'} replace />;
+    return <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />;
   }
 
   return <>{children}</>;
@@ -48,7 +48,7 @@ export default function AppRoutes() {
         path="/"
         element={
           user ? (
-            <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/order-page'} replace />
+            <Navigate to={user.role === 'mfr' ? '/mfr' : '/seller/orders'} replace />
           ) : (
             <LandingPage />
           )
@@ -75,11 +75,16 @@ export default function AppRoutes() {
 
       <Route
         path="/seller"
-        element={<Navigate to="/seller/order-page" replace />}
+        element={<Navigate to="/seller/orders" replace />}
       />
 
       <Route
         path="/seller/order-page"
+        element={<Navigate to="/seller/orders" replace />}
+      />
+
+      <Route
+        path="/seller/orders"
         element={
           <ProtectedRoute allowedRoles={['seller']}>
             <SellerPage />
@@ -89,7 +94,7 @@ export default function AppRoutes() {
 
       <Route
         path="/catalog"
-        element={<Navigate to="/seller/order-page" replace />}
+        element={<Navigate to="/seller/orders" replace />}
       />
 
       <Route

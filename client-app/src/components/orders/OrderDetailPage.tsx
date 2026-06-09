@@ -81,7 +81,7 @@ export default function OrderDetailPage() {
     if (window.history.length > 1) {
       navigate(-1);
     } else {
-      navigate(user?.role === 'mfr' ? '/mfr' : '/seller/order-page');
+      navigate(user?.role === 'mfr' ? '/mfr' : '/seller/orders');
     }
   };
 
