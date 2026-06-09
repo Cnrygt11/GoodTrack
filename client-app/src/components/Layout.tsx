@@ -96,6 +96,24 @@ export default function Layout({ children }: LayoutProps) {
             <>
               <button 
                 className="btn-secondary" 
+                onClick={() => navigate('/seller')}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '6px', 
+                  padding: '6px 14px', 
+                  fontSize: '13px', 
+                  borderRadius: '6px',
+                  borderColor: currentPath === '/seller' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === '/seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                }}
+              >
+                <Package size={14} />
+                {t('btnOrderScreen')}
+              </button>
+
+              <button 
+                className="btn-secondary" 
                 onClick={() => navigate(currentPath === '/search-mfr' ? '/seller' : '/search-mfr')}
                 style={{ 
                   display: 'flex', 
@@ -111,7 +129,6 @@ export default function Layout({ children }: LayoutProps) {
                 <Search size={14} />
                 {t('findMfrTab')}
               </button>
-
             </>
           )}
           
