@@ -228,7 +228,7 @@ export const translations = {
     btnMarkShipped: 'Kargolandı İşaretle',
     btnReproduce: 'Tekrar Üretime Al',
     btnDeliverFixed: 'Teslim Ettim (Düzeltildi)',
-    btnViewTimeline: 'Geçmişi Gör',
+    btnViewTimeline: 'Detaylar',
     timelineTitle: 'Sipariş Zaman Tabela Geçmişi',
   },
   en: {
@@ -460,7 +460,7 @@ export const translations = {
     btnMarkShipped: 'Mark Shipped',
     btnReproduce: 'Reproduce',
     btnDeliverFixed: 'Deliver Fixed',
-    btnViewTimeline: 'View Timeline',
+    btnViewTimeline: 'Details',
     timelineTitle: 'Order Timeline History',
   }
 } as const;
