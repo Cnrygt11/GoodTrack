@@ -8,6 +8,7 @@ import OrderForm from './OrderForm';
 import SellerOrderCard from './SellerOrderCard';
 import AddFieldModal from './AddFieldModal';
 import DefectReportModal from './DefectReportModal';
+import CatalogPage from '../catalog/CatalogPage';
 import { TranslationKey } from '../../services/translations';
 import { Product } from '../../services/api';
 
@@ -97,8 +98,8 @@ export default function SellerPage() {
           label={language === 'tr' ? 'Yeni Sipariş Oluştur' : 'Create New Order'}
         />
         <TabButton
-          active={false}
-          onClick={() => navigate('/catalog')}
+          active={activeTab === 'catalog'}
+          onClick={() => setActiveTab('catalog')}
           icon={<Package size={16} />}
           label={t('btnMyProducts')}
         />
@@ -132,6 +133,8 @@ export default function SellerPage() {
           onSetActiveTab={setActiveTab}
           onSubmit={handleSubmit}
         />
+      ) : activeTab === 'catalog' ? (
+        <CatalogPage />
       ) : (
         <>
           {/* Dashboard Title */}

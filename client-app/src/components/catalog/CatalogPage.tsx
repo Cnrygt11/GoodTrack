@@ -37,14 +37,6 @@ export default function CatalogPage() {
             <>PRODUCT <span>CATALOG</span></>
           )}
         </h2>
-        <button 
-          className="btn-secondary" 
-          onClick={() => navigate('/seller')}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          <ArrowLeft size={16} />
-          {language === 'tr' ? 'Sipariş Ekranına Dön' : 'Back to Orders'}
-        </button>
       </div>
 
       <CatalogForm

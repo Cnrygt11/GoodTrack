@@ -9,7 +9,7 @@ import { TranslationKey } from '../services/translations';
 import { compressImage } from '../utils/imageHelper';
 
 type ListFilter = 'awaiting' | 'broken' | 'production' | 'completed' | 'delivered' | 'defective' | 'to_ship' | 'shipped';
-type TabId = 'list' | 'create';
+type TabId = 'list' | 'create' | 'catalog';
 
 interface UseSellerOrdersReturn {
   // Contexts

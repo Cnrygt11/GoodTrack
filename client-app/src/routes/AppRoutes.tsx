@@ -83,11 +83,7 @@ export default function AppRoutes() {
       />
       <Route
         path="/catalog"
-        element={
-          <ProtectedRoute allowedRoles={['seller']}>
-            <CatalogPage />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/seller" replace />}
       />
       <Route
         path="/search-mfr"
