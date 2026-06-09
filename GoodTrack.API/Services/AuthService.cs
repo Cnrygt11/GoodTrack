@@ -319,31 +319,13 @@ public class AuthService : IAuthService
     public async Task<List<ConnectionRequestDto>> GetIncomingRequestsAsync(string receiverId)
     {
         var requests = await _connectionRequestRepository.GetIncomingPendingRequestsAsync(receiverId);
-        return requests.Select(r => new ConnectionRequestDto
-        {
-            Id = r.Id,
-            SenderId = r.SenderId,
-            SenderUsername = r.SenderUsername,
-            ReceiverId = r.ReceiverId,
-            ReceiverUsername = r.ReceiverUsername,
-            Status = r.Status,
-            CreatedAt = r.CreatedAt
-        }).ToList();
+        return requests.Select(MapToConnectionRequestDto).ToList();
     }
 
     public async Task<List<ConnectionRequestDto>> GetSentRequestsAsync(string senderId)
     {
         var requests = await _connectionRequestRepository.GetSentRequestsAsync(senderId);
-        return requests.Select(r => new ConnectionRequestDto
-        {
-            Id = r.Id,
-            SenderId = r.SenderId,
-            SenderUsername = r.SenderUsername,
-            ReceiverId = r.ReceiverId,
-            ReceiverUsername = r.ReceiverUsername,
-            Status = r.Status,
-            CreatedAt = r.CreatedAt
-        }).ToList();
+        return requests.Select(MapToConnectionRequestDto).ToList();
     }
 
     public async Task AcceptConnectionRequestAsync(string receiverId, string requestId)
@@ -476,6 +458,34 @@ public class AuthService : IAuthService
         return tokenHandler.WriteToken(token);
     }
 
+    private static ConnectionRequestDto MapToConnectionRequestDto(ConnectionRequest r) => new()
+    {
+        Id = r.Id,
+        SenderId = r.SenderId,
+        SenderUsername = r.SenderUsername,
+        ReceiverId = r.ReceiverId,
+        ReceiverUsername = r.ReceiverUsername,
+        Status = r.Status,
+        CreatedAt = r.CreatedAt
+    };
+
+    private static UserProfileDto MapToProfileDto(User user) => new()
+    {
+        Username = user.Username,
+        Email = user.Email,
+        PhoneNumber = user.PhoneNumber,
+        FirstName = user.FirstName,
+        LastName = user.LastName,
+        Role = user.Role,
+        ProfilePicture = user.ProfilePicture,
+        Address = user.Address,
+        City = user.City,
+        Bio = user.Bio,
+        ProductImages = user.ProductImages,
+        Keywords = user.Keywords,
+        IsVisibleToSellers = user.IsVisibleToSellers
+    };
+
     public async Task<UserProfileDto> GetProfileAsync(string userId)
     {
         var user = await _userRepository.GetByIdAsync(userId);
@@ -484,22 +494,7 @@ public class AuthService : IAuthService
             throw new KeyNotFoundException("Kullanıcı bulunamadı.");
         }
 
-        return new UserProfileDto
-        {
-            Username = user.Username,
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Role = user.Role,
-            ProfilePicture = user.ProfilePicture,
-            Address = user.Address,
-            City = user.City,
-            Bio = user.Bio,
-            ProductImages = user.ProductImages,
-            Keywords = user.Keywords,
-            IsVisibleToSellers = user.IsVisibleToSellers
-        };
+        return MapToProfileDto(user);
     }
 
     public async Task<UserProfileDto> GetProfileByUsernameAsync(string username)
@@ -515,22 +510,7 @@ public class AuthService : IAuthService
             throw new KeyNotFoundException("Kullanıcı bulunamadı.");
         }
 
-        return new UserProfileDto
-        {
-            Username = user.Username,
-            Email = user.Email,
-            PhoneNumber = user.PhoneNumber,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Role = user.Role,
-            ProfilePicture = user.ProfilePicture,
-            Address = user.Address,
-            City = user.City,
-            Bio = user.Bio,
-            ProductImages = user.ProductImages,
-            Keywords = user.Keywords,
-            IsVisibleToSellers = user.IsVisibleToSellers
-        };
+        return MapToProfileDto(user);
     }
 
     public async Task UpdateProfileAsync(string userId, UserProfileDto dto)
