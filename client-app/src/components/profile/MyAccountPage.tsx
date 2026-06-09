@@ -242,7 +242,7 @@ export default function MyAccountPage() {
             </div>
 
             {/* Email & Phone */}
-            <div style={{ display: 'flex', gap: '16px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
+            <div className="form-row-responsive">
               <div className="form-group" style={{ flex: 1 }}>
                 <label>E-posta</label>
                 <div style={{ position: 'relative' }}>
@@ -282,7 +282,7 @@ export default function MyAccountPage() {
                 </div>
 
                 {/* City & Address */}
-                <div style={{ display: 'flex', gap: '16px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
+                <div className="form-row-responsive">
                   <div className="form-group" style={{ flex: 1 }}>
                     <label>{t('cityLabel')}</label>
                     <div style={{ position: 'relative' }}>
