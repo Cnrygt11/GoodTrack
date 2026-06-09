@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ClipboardList, PlusCircle, Package, Clock, AlertTriangle, CheckCircle2, XCircle, Send, Archive, Ban } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
 import { useData } from '../../context/DataContext';
@@ -38,6 +39,7 @@ function getTabIcon(tab: ListFilter, active: boolean) {
 }
 
 export default function SellerPage() {
+  const navigate = useNavigate();
   const {
     language, t, connections, extraFieldDefs, catalogProducts,
     activeTab, setActiveTab, listFilter, setListFilter, sortOrder, setSortOrder,
@@ -93,6 +95,12 @@ export default function SellerPage() {
           onClick={() => setActiveTab('create')}
           icon={<PlusCircle size={16} />}
           label={language === 'tr' ? 'Yeni Sipariş Oluştur' : 'Create New Order'}
+        />
+        <TabButton
+          active={false}
+          onClick={() => navigate('/catalog')}
+          icon={<Package size={16} />}
+          label={t('btnMyProducts')}
         />
       </div>
 
