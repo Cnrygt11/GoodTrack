@@ -19,7 +19,7 @@ export default function Layout({ children }: LayoutProps) {
 
 
   const handleLogoClick = () => {
-    navigate(user.role === 'mfr' ? '/mfr' : '/seller');
+    navigate(user.role === 'mfr' ? '/mfr' : '/seller/order-page');
   };
 
   return (
@@ -96,7 +96,7 @@ export default function Layout({ children }: LayoutProps) {
             <>
               <button 
                 className="btn-secondary" 
-                onClick={() => navigate('/seller')}
+                onClick={() => navigate('/seller/order-page')}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -104,8 +104,8 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: currentPath === '/seller' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === '/seller' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === '/seller/order-page' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === '/seller/order-page' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Package size={14} />
@@ -114,7 +114,7 @@ export default function Layout({ children }: LayoutProps) {
 
               <button 
                 className="btn-secondary" 
-                onClick={() => navigate(currentPath === '/search-mfr' ? '/seller' : '/search-mfr')}
+                onClick={() => navigate(currentPath === '/seller/search-mfr' ? '/seller/order-page' : '/seller/search-mfr')}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -122,8 +122,8 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: currentPath === '/search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === '/search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === '/seller/search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === '/seller/search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Search size={14} />

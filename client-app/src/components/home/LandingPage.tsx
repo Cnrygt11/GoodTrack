@@ -69,7 +69,7 @@ export default function LandingPage() {
           {/* Dashboard Action Button (only if logged in) */}
           {user && (
             <button
-              onClick={() => navigate(user.role === 'mfr' ? '/mfr' : '/seller')}
+              onClick={() => navigate(user.role === 'mfr' ? '/mfr' : '/seller/order-page')}
               className="btn-primary"
               style={{
                 padding: '8px 16px',

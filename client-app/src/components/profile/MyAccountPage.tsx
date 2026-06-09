@@ -98,7 +98,7 @@ export default function MyAccountPage() {
       
       {/* Back to dashboard breadcrumb */}
       <button 
-        onClick={() => navigate(profile.role === 'mfr' ? '/mfr' : '/seller')}
+        onClick={() => navigate(profile.role === 'mfr' ? '/mfr' : '/seller/order-page')}
         className="btn-back" 
         style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
       >
