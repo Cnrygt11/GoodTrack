@@ -7,12 +7,13 @@ using System;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "seller")]
+[Authorize(Roles = Roles.Seller)]
 public class FieldsController : ControllerBase
 {
     private readonly IFieldService _fieldService;

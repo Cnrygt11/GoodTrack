@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
 using GoodTrack.API.DTOs.Product;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Controllers;
 
@@ -42,7 +43,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPost]
-    [Authorize(Roles = "seller")]
+    [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Create([FromBody] Product product)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -59,7 +60,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id}/complete")]
-    [Authorize(Roles = "mfr")]
+    [Authorize(Roles = Roles.Mfr)]
     public async Task<IActionResult> ToggleComplete(string id, [FromBody] ToggleCompleteRequest request)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -74,7 +75,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id}/defective")]
-    [Authorize(Roles = "seller")]
+    [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> ToggleDefective(string id, [FromBody] ToggleDefectiveRequest request)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -148,7 +149,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "seller")]
+    [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Update(string id, [FromBody] Product product)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -184,7 +185,7 @@ public class ProductsController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [Authorize(Roles = "seller")]
+    [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Delete(string id)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

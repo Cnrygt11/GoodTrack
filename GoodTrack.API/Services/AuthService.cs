@@ -15,6 +15,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
 using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Services;
 
@@ -132,7 +133,7 @@ public class AuthService : IAuthService
             throw new ArgumentException("Şifreler uyuşmuyor!");
         }
 
-        if (request.Role != "seller" && request.Role != "mfr")
+        if (request.Role != Roles.Seller && request.Role != Roles.Mfr)
         {
             throw new ArgumentException("Geçersiz rol! Sadece 'seller' veya 'mfr' olabilir.");
         }
@@ -277,7 +278,7 @@ public class AuthService : IAuthService
 
         if (receiver.Role == senderRole)
         {
-            var oppositeRoleText = (senderRole == "seller") ? "üretici" : "satıcı";
+            var oppositeRoleText = (senderRole == Roles.Seller) ? "üretici" : "satıcı";
             throw new ArgumentException($"Sadece {oppositeRoleText} ekleyebilirsiniz.");
         }
 
@@ -569,7 +570,7 @@ public class AuthService : IAuthService
         }
 
         // Manufacturer Specific fields
-        if (user.Role == "mfr")
+        if (user.Role == Roles.Mfr)
         {
             // Bio limit validation (500 characters)
             if (dto.Bio != null && dto.Bio.Length > 500)
