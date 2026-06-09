@@ -1,6 +1,7 @@
 import React from 'react';
 import { Product } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
+import Lightbox from '../ui/Lightbox';
 import {
   Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban,
   Info, MoreVertical, Edit2, Trash2, Send, Archive, Calendar,
@@ -77,6 +78,7 @@ export default function SellerOrderCard({
   isUnseen, isDropdownOpen,
   onDropdownToggle, onEdit, onDelete, onCancel, onVerify, onShip, onViewTimeline, onMarkSeen,
 }: SellerOrderCardProps) {
+  const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
   const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
   const timeStr = p.createdAt ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
   const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
@@ -135,11 +137,19 @@ export default function SellerOrderCard({
       <div style={{ display: 'flex', gap: '16px', padding: '16px 16px 16px 20px', flex: 1 }}>
 
         {/* Thumbnail */}
-        <div style={{
-          width: '80px', height: '80px', borderRadius: '10px', flexShrink: 0,
-          background: 'var(--surface2)', border: '1px solid var(--border)',
-          overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
+        <div 
+          onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
+          style={{
+            width: '80px', height: '80px', borderRadius: '10px', flexShrink: 0,
+            background: 'var(--surface2)', border: '1px solid var(--border)',
+            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: p.image ? 'pointer' : 'default',
+            transition: 'opacity 0.2s',
+          }}
+          onMouseEnter={(e) => { if (p.image) e.currentTarget.style.opacity = '0.85'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          title={p.image ? (language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details') : undefined}
+        >
           {p.image
             ? <img src={p.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
@@ -314,6 +324,14 @@ export default function SellerOrderCard({
             <ActionBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onViewTimeline(p)} fullWidth>{t('btnViewTimeline')}</ActionBtn>
           )}
         </div>
+      )}
+      {p.image && (
+        <Lightbox
+          isOpen={isLightboxOpen}
+          src={p.image}
+          onClose={() => setIsLightboxOpen(false)}
+          altText={p.code}
+        />
       )}
     </div>
   );

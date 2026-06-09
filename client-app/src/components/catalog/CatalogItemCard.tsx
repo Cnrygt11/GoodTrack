@@ -1,6 +1,7 @@
 import React from 'react';
 import { Package, Edit2, Trash2 } from 'lucide-react';
 import { CatalogProduct } from '../../services/api';
+import Lightbox from '../ui/Lightbox';
 
 interface CatalogItemCardProps {
   product: CatalogProduct;
@@ -15,11 +16,19 @@ export default function CatalogItemCard({
   onEdit,
   onDelete
 }: CatalogItemCardProps) {
+  const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
   return (
     <div className="product-card">
       {product.image ? (
-        <div className="product-thumb">
-          <img src={product.image} alt="ürün" />
+        <div 
+          className="product-thumb"
+          onClick={() => setIsLightboxOpen(true)}
+          style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+          title={language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details'}
+        >
+          <img src={product.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
       ) : (
         <div className="product-thumb" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -77,6 +86,14 @@ export default function CatalogItemCard({
           {language === 'tr' ? 'Sil' : 'Delete'}
         </button>
       </div>
+      {product.image && (
+        <Lightbox
+          isOpen={isLightboxOpen}
+          src={product.image}
+          onClose={() => setIsLightboxOpen(false)}
+          altText={product.productCode}
+        />
+      )}
     </div>
   );
 }
