@@ -12,10 +12,8 @@ using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize]
-public class ProductsController : ControllerBase
+public class ProductsController : BaseApiController
 {
     private readonly IProductService _productService;
     private readonly ILogger<ProductsController> _logger;
@@ -29,10 +27,10 @@ public class ProductsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        if (userId is null || string.IsNullOrEmpty(role))
         {
             return Unauthorized(new { message = "Kullanıcı kimliği bulunamadı." });
         }
@@ -46,10 +44,10 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Create([FromBody] Product product)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetCurrentUserId();
         var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Satıcı";
 
-        if (string.IsNullOrEmpty(userId))
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -63,8 +61,8 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = Roles.Mfr)]
     public async Task<IActionResult> ToggleComplete(string id, [FromBody] ToggleCompleteRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -78,8 +76,8 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> ToggleDefective(string id, [FromBody] ToggleDefectiveRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -98,10 +96,10 @@ public class ProductsController : ControllerBase
     [HttpPut("{id}/approval")]
     public async Task<IActionResult> ToggleApproval(string id, [FromBody] ToggleApprovalRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        if (userId is null || string.IsNullOrEmpty(role))
         {
             return Unauthorized();
         }
@@ -114,10 +112,10 @@ public class ProductsController : ControllerBase
     [HttpPut("{id}/status")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        if (userId is null || string.IsNullOrEmpty(role))
         {
             return Unauthorized();
         }
@@ -152,8 +150,8 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Update(string id, [FromBody] Product product)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -166,10 +164,10 @@ public class ProductsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(role))
+        if (userId is null || string.IsNullOrEmpty(role))
         {
             return Unauthorized();
         }
@@ -188,8 +186,8 @@ public class ProductsController : ControllerBase
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Delete(string id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }

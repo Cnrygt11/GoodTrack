@@ -10,9 +10,7 @@ using GoodTrack.API.DTOs.Auth;
 
 namespace GoodTrack.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
-public class AuthController : ControllerBase
+public class AuthController : BaseApiController
 {
     private readonly IAuthService _authService;
     private readonly ILogger<AuthController> _logger;
@@ -94,8 +92,8 @@ public class AuthController : ControllerBase
     [HttpGet("connections")]
     public async Task<IActionResult> GetConnections()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -109,11 +107,11 @@ public class AuthController : ControllerBase
     [HttpPost("connections/send-request")]
     public async Task<IActionResult> SendConnectionRequest([FromQuery] string username)
     {
-        var senderId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var senderId = GetCurrentUserId();
         var senderUsername = User.FindFirst(ClaimTypes.Name)?.Value;
         var senderRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-        if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(senderUsername) || string.IsNullOrEmpty(senderRole))
+        if (senderId is null || string.IsNullOrEmpty(senderUsername) || string.IsNullOrEmpty(senderRole))
         {
             return Unauthorized();
         }
@@ -127,8 +125,8 @@ public class AuthController : ControllerBase
     [HttpGet("connections/requests/incoming")]
     public async Task<IActionResult> GetIncomingRequests()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -142,8 +140,8 @@ public class AuthController : ControllerBase
     [HttpGet("connections/requests/sent")]
     public async Task<IActionResult> GetSentRequests()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -157,8 +155,8 @@ public class AuthController : ControllerBase
     [HttpPost("connections/requests/{requestId}/accept")]
     public async Task<IActionResult> AcceptRequest(string requestId)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -172,8 +170,8 @@ public class AuthController : ControllerBase
     [HttpPost("connections/requests/{requestId}/reject")]
     public async Task<IActionResult> RejectRequest(string requestId)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -187,8 +185,8 @@ public class AuthController : ControllerBase
     [HttpDelete("connections/requests/{requestId}")]
     public async Task<IActionResult> DeleteRequest(string requestId)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -202,8 +200,8 @@ public class AuthController : ControllerBase
     [HttpDelete("connections/{targetId}")]
     public async Task<IActionResult> RemoveConnection(string targetId)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -225,8 +223,8 @@ public class AuthController : ControllerBase
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -265,8 +263,8 @@ public class AuthController : ControllerBase
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -305,8 +303,8 @@ public class AuthController : ControllerBase
     [HttpPost("verify-password")]
     public async Task<IActionResult> VerifyPassword([FromBody] VerifyPasswordRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
@@ -329,8 +327,8 @@ public class AuthController : ControllerBase
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
