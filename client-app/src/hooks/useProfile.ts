@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, UserProfile } from '../services/api';
+import { compressImage } from '../utils/imageHelper';
 
 export default function useProfile() {
   const { user } = useAuth();
@@ -137,62 +138,62 @@ export default function useProfile() {
   }, []);
 
   // Profile Picture File Upload Handler
-  const handleProfilePictureChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleProfilePictureChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        setProfilePicture(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  }, []);
+    try {
+      const compressed = await compressImage(file);
+      setProfilePicture(compressed);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showToast(errorMessage);
+    }
+  }, [showToast]);
 
   const handleRemoveProfilePicture = useCallback(() => {
     setProfilePicture('');
   }, []);
 
   // Product Presentation Images Upload Handlers
-  const handleAddProductImage = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAddProductImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
     const remainingSlots = 10 - productImages.length;
     const filesToUpload = Array.from(files).slice(0, remainingSlots);
 
-    filesToUpload.forEach((file) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          setProductImages((prev) => [...prev, reader.result as string]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-  }, [productImages]);
+    try {
+      const compressedImages = await Promise.all(
+        filesToUpload.map((file) => compressImage(file))
+      );
+      setProductImages((prev) => [...prev, ...compressedImages]);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showToast(errorMessage);
+    }
+  }, [productImages, showToast]);
 
   const handleRemoveProductImage = useCallback((index: number) => {
     setProductImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleReplaceProductImage = useCallback((index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReplaceProductImage = useCallback(async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === 'string') {
-        setProductImages((prev) => {
-          const next = [...prev];
-          next[index] = reader.result as string;
-          return next;
-        });
-      }
-    };
-    reader.readAsDataURL(file);
-  }, []);
+    try {
+      const compressed = await compressImage(file);
+      setProductImages((prev) => {
+        const next = [...prev];
+        next[index] = compressed;
+        return next;
+      });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      showToast(errorMessage);
+    }
+  }, [showToast]);
 
   // B2B Keywords selection toggle
   const handleToggleKeyword = useCallback((kw: string) => {

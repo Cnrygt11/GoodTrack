@@ -64,8 +64,7 @@ export default function useConnections() {
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
       setAddUsername('');
-      await loadIncomingRequests();
-      await loadSentRequests();
+      await Promise.all([loadIncomingRequests(), loadSentRequests()]);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
@@ -82,10 +81,12 @@ export default function useConnections() {
       setActionLoading(true);
       const data = await api.acceptRequest(requestId);
       showToast(data.message || t('connReqAccepted'));
-      await refreshConnections();
-      await loadIncomingRequests();
-      await loadSentRequests();
-      await loadProducts();
+      await Promise.all([
+        refreshConnections(),
+        loadIncomingRequests(),
+        loadSentRequests(),
+        loadProducts()
+      ]);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
@@ -109,8 +110,7 @@ export default function useConnections() {
       setActionLoading(true);
       const data = await api.rejectRequest(requestId);
       showToast(data.message || t('connReqRejected'));
-      await loadIncomingRequests();
-      await loadSentRequests();
+      await Promise.all([loadIncomingRequests(), loadSentRequests()]);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
@@ -142,8 +142,7 @@ export default function useConnections() {
     try {
       const data = await api.removeConnection(targetId);
       showToast(data.message || t('connRemoved'));
-      await refreshConnections();
-      await loadProducts();
+      await Promise.all([refreshConnections(), loadProducts()]);
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       showToast(errorMessage);
