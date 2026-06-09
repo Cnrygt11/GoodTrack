@@ -88,7 +88,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
-        <Loader2 size={36} className="spinner" style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
+        <Loader2 size={36} className="animate-spin" style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
         <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</span>
       </div>
     );
