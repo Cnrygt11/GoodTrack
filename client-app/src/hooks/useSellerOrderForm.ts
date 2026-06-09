@@ -56,7 +56,7 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
-  const { products, setProducts, extraFieldDefs, setExtraFieldDefs, catalogProducts, connections } = useData();
+  const { products, loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
@@ -167,14 +167,14 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         const payload: Product = { ...editingProduct, code, image: orderImage, text: orderText, length: orderLength, extras: formattedExtras, mfrId, mfrName };
         const data = await api.updateProduct(editingProduct.id, payload);
         showToast(data.message || t('orderUpdatedSuccess'));
-        setProducts((prev: Product[]) => prev.map((p) => p.id === editingProduct.id ? data.product : p));
+        await loadProducts();
         handleClearForm();
         setActiveTab('list');
       } else {
         const payload: CreateProductPayload = { code, image: orderImage, text: orderText, length: orderLength, extras: formattedExtras, completed: false, mfrId, mfrName };
         const data = await api.createProduct(payload);
         showToast(data.message || t('orderSentSuccess'));
-        setProducts((prev: Product[]) => [...prev, data.product]);
+        await loadProducts();
         handleClearForm();
         setActiveTab('list');
       }
@@ -184,7 +184,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       isActionLoadingRef.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, connections, extraFieldDefs, extraValues, editingProduct, orderImage, orderText, orderLength, setProducts, showToast, t, handleClearForm]);
+  }, [productCode, mfrId, connections, extraFieldDefs, extraValues, editingProduct, orderImage, orderText, orderLength, loadProducts, showToast, t, handleClearForm]);
 
   const handleAddFieldSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
@@ -201,7 +201,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       setActionLoading(true);
       const data = await api.createField({ name, type: newFieldType, options });
       showToast(data.message || t('featureAddSuccess'));
-      setExtraFieldDefs((prev) => [...prev, data.field]);
+      await loadExtraFields();
       setIsFieldModalOpen(false);
       setNewFieldName('');
       setNewFieldType('text');
@@ -212,7 +212,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       isActionLoadingRef.current = false;
       setActionLoading(false);
     }
-  }, [newFieldName, newFieldType, newFieldOptions, setExtraFieldDefs, showToast, t]);
+  }, [newFieldName, newFieldType, newFieldOptions, loadExtraFields, showToast, t]);
 
   const handleRemoveField = useCallback(async (id: string) => {
     const { useConfirm } = await import('../context/ConfirmContext');
@@ -222,23 +222,23 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     try {
       const data = await api.deleteField(id);
       showToast(data.message || t('featureDelSuccess'));
-      setExtraFieldDefs((prev) => prev.filter((d) => d.id !== id));
+      await loadExtraFields();
       setExtraValues((prev) => { const next = { ...prev }; delete next[id]; return next; });
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
-  }, [setExtraFieldDefs, showToast, t]);
+  }, [loadExtraFields, showToast, t]);
 
   const handleDeleteClick = useCallback(async (product: Product) => {
     try {
       const data = await api.deleteProduct(product.id);
       showToast(data.message || t('deleteSuccess'));
-      setProducts((prev: Product[]) => prev.filter((p) => p.id !== product.id));
+      await loadProducts();
       if (editingProduct?.id === product.id) handleClearForm();
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
-  }, [editingProduct, setProducts, showToast, t, handleClearForm]);
+  }, [editingProduct, loadProducts, showToast, t, handleClearForm]);
 
   return {
     productCode, setProductCode,

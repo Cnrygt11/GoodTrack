@@ -10,7 +10,7 @@ import { MFR_SEEN_KEY_PREFIX } from '../constants/authKeys';
 export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
 export default function useMfrOrders() {
-  const { products, setProducts } = useData();
+  const { products } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 

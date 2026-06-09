@@ -12,7 +12,7 @@ export default function useCatalog() {
   const {
     connections,
     catalogProducts,
-    setCatalogProducts
+    loadCatalog
   } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
@@ -103,9 +103,7 @@ export default function useCatalog() {
         });
 
         showToast(data.message || t('catalogUpdateSuccess'));
-        setCatalogProducts((prev: CatalogProduct[]) =>
-          prev.map(p => (p.id === editingProduct.id ? data.product : p))
-        );
+        await loadCatalog();
         handleClearForm();
       } else {
         // Add mode
@@ -117,7 +115,7 @@ export default function useCatalog() {
         });
 
         showToast(data.message || t('catalogAddSuccess'));
-        setCatalogProducts((prev: CatalogProduct[]) => [...prev, data.product]);
+        await loadCatalog();
         handleClearForm();
       }
     } catch (err: unknown) {
@@ -126,7 +124,7 @@ export default function useCatalog() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, catalogImage, editingProduct, connections, setCatalogProducts, handleClearForm, showToast, t, language]);
+  }, [productCode, mfrId, catalogImage, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
 
   const handleDelete = useCallback(async (id: string) => {
     const accepted = await confirm({
@@ -139,7 +137,7 @@ export default function useCatalog() {
     try {
       const data = await api.deleteCatalogProduct(id);
       showToast(data.message || t('catalogDeleteSuccess'));
-      setCatalogProducts((prev: CatalogProduct[]) => prev.filter(p => p.id !== id));
+      await loadCatalog();
       // If we were editing this product, clear form
       if (editingProduct?.id === id) {
         handleClearForm();
@@ -147,7 +145,7 @@ export default function useCatalog() {
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
-  }, [language, showToast, t, setCatalogProducts, editingProduct, handleClearForm]);
+  }, [language, showToast, t, loadCatalog, editingProduct, handleClearForm]);
 
   return {
     connections,

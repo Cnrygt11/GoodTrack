@@ -10,12 +10,6 @@ interface DataContextType {
   sentRequests: ConnectionRequest[];
   catalogProducts: CatalogProduct[];
   extraFieldDefs: ExtraFieldDef[];
-  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
-  setConnections: React.Dispatch<React.SetStateAction<ConnectionUser[]>>;
-  setIncomingRequests: React.Dispatch<React.SetStateAction<ConnectionRequest[]>>;
-  setSentRequests: React.Dispatch<React.SetStateAction<ConnectionRequest[]>>;
-  setCatalogProducts: React.Dispatch<React.SetStateAction<CatalogProduct[]>>;
-  setExtraFieldDefs: React.Dispatch<React.SetStateAction<ExtraFieldDef[]>>;
   loadProducts: () => Promise<void>;
   refreshConnections: () => Promise<void>;
   loadIncomingRequests: () => Promise<void>;
@@ -123,12 +117,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       sentRequests,
       catalogProducts,
       extraFieldDefs,
-      setProducts,
-      setConnections,
-      setIncomingRequests,
-      setSentRequests,
-      setCatalogProducts,
-      setExtraFieldDefs,
       loadProducts,
       refreshConnections,
       loadIncomingRequests,
