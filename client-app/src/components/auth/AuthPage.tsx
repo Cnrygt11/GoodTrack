@@ -268,6 +268,9 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                     display: 'inline-flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
+                    opacity: submitting ? 0.6 : 1,
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    pointerEvents: submitting ? 'none' : 'auto',
                     boxShadow: theme === 'dark' ? '0 4px 14px rgba(245, 166, 35, 0.25)' : 'none'
                   }} 
                   disabled={submitting}
@@ -500,6 +503,9 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                     display: 'inline-flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
+                    opacity: submitting ? 0.6 : 1,
+                    cursor: submitting ? 'not-allowed' : 'pointer',
+                    pointerEvents: submitting ? 'none' : 'auto',
                     boxShadow: theme === 'dark' ? '0 4px 14px rgba(6, 182, 212, 0.25)' : 'none'
                   }} 
                   disabled={submitting}
