@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
 import { User } from '../services/api';
 import { useToast } from './ToastContext';
+import { AUTH_STORAGE_KEYS, AUTH_EVENTS } from '../constants/authKeys';
 
 interface AuthContextType {
   user: User | null;
@@ -16,28 +17,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
   
   const [user, setUser] = useState<User | null>(() => {
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
-    const role = localStorage.getItem('role') as 'seller' | 'mfr' | null;
-    const userId = localStorage.getItem('userId');
+    const token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
+    const username = localStorage.getItem(AUTH_STORAGE_KEYS.username);
+    const role = localStorage.getItem(AUTH_STORAGE_KEYS.role) as 'seller' | 'mfr' | null;
+    const userId = localStorage.getItem(AUTH_STORAGE_KEYS.userId);
     return token && username && role && userId ? { token, username, role, userId } : null;
   });
 
   const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false);
 
   const login = useCallback((token: string, username: string, role: 'seller' | 'mfr', userId: string) => {
-    localStorage.setItem('token', token);
-    localStorage.setItem('username', username);
-    localStorage.setItem('role', role);
-    localStorage.setItem('userId', userId);
+    localStorage.setItem(AUTH_STORAGE_KEYS.token, token);
+    localStorage.setItem(AUTH_STORAGE_KEYS.username, username);
+    localStorage.setItem(AUTH_STORAGE_KEYS.role, role);
+    localStorage.setItem(AUTH_STORAGE_KEYS.userId, userId);
     setUser({ token, username, role, userId });
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userId');
+    localStorage.removeItem(AUTH_STORAGE_KEYS.token);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.username);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.role);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.userId);
     setUser(null);
     setIsConnectionsModalOpen(false);
   }, []);
@@ -48,8 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logout();
       showToast('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
     };
-    window.addEventListener('auth-unauthorized', handleUnauthorized);
-    return () => window.removeEventListener('auth-unauthorized', handleUnauthorized);
+    window.addEventListener(AUTH_EVENTS.unauthorized, handleUnauthorized);
+    return () => window.removeEventListener(AUTH_EVENTS.unauthorized, handleUnauthorized);
   }, [logout, showToast]);
 
   return (

@@ -5,6 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/api';
 import { extractErrorMessage } from '../utils/errorUtils';
+import { MFR_SEEN_KEY_PREFIX } from '../constants/authKeys';
 
 export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
@@ -75,7 +76,7 @@ export default function useMfrOrders() {
     const tabs: MfrTab[] = ['awaiting', 'corrected', 'production', 'completed', 'delivered', 'defective', 'shipped'];
 
     tabs.forEach(tab => {
-      const storageKey = `seen_mfr_${tab}`;
+      const storageKey = `${MFR_SEEN_KEY_PREFIX}${tab}`;
       const seenRaw = localStorage.getItem(storageKey);
 
       let seen: string[] = [];
@@ -109,7 +110,7 @@ export default function useMfrOrders() {
       ...prev,
       [tab]: prev[tab].filter(id => id !== productId)
     }));
-    const storageKey = `seen_mfr_${tab}`;
+    const storageKey = `${MFR_SEEN_KEY_PREFIX}${tab}`;
     const seen = JSON.parse(localStorage.getItem(storageKey) || '[]') as string[];
     if (!seen.includes(productId)) {
       localStorage.setItem(storageKey, JSON.stringify([...seen, productId]));

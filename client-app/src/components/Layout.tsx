@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { ROUTES } from '../constants/routes';
 import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
 
 interface LayoutProps {
@@ -19,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
 
 
   const handleLogoClick = () => {
-    navigate(user.role === 'mfr' ? '/mfr/orders' : '/seller/orders');
+    navigate(user.role === 'mfr' ? ROUTES.mfrOrders : ROUTES.sellerOrders);
   };
 
   return (
@@ -75,7 +76,7 @@ export default function Layout({ children }: LayoutProps) {
           {user.role === 'mfr' && (
             <button 
               className="btn-secondary" 
-              onClick={() => navigate('/mfr/orders')}
+              onClick={() => navigate(ROUTES.mfrOrders)}
               style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -83,8 +84,8 @@ export default function Layout({ children }: LayoutProps) {
                 padding: '6px 14px', 
                 fontSize: '13px', 
                 borderRadius: '6px',
-                borderColor: currentPath === '/mfr/orders' ? 'var(--accent-mfr)' : 'var(--border)',
-                background: currentPath === '/mfr/orders' ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
+                borderColor: currentPath === ROUTES.mfrOrders ? 'var(--accent-mfr)' : 'var(--border)',
+                background: currentPath === ROUTES.mfrOrders ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
               }}
             >
               <Package size={14} />
@@ -96,7 +97,7 @@ export default function Layout({ children }: LayoutProps) {
             <>
               <button 
                 className="btn-secondary" 
-                onClick={() => navigate('/seller/orders')}
+                onClick={() => navigate(ROUTES.sellerOrders)}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -104,8 +105,8 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: currentPath === '/seller/orders' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === '/seller/orders' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === ROUTES.sellerOrders ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === ROUTES.sellerOrders ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Package size={14} />
@@ -114,7 +115,7 @@ export default function Layout({ children }: LayoutProps) {
 
               <button 
                 className="btn-secondary" 
-                onClick={() => navigate(currentPath === '/seller/search-mfr' ? '/seller/orders' : '/seller/search-mfr')}
+                onClick={() => navigate(currentPath === ROUTES.sellerSearch ? ROUTES.sellerOrders : ROUTES.sellerSearch)}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
@@ -122,8 +123,8 @@ export default function Layout({ children }: LayoutProps) {
                   padding: '6px 14px', 
                   fontSize: '13px', 
                   borderRadius: '6px',
-                  borderColor: currentPath === '/seller/search-mfr' ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === '/seller/search-mfr' ? 'var(--accent-seller-glow)' : 'var(--surface2)'
+                  borderColor: currentPath === ROUTES.sellerSearch ? 'var(--accent-seller)' : 'var(--border)',
+                  background: currentPath === ROUTES.sellerSearch ? 'var(--accent-seller-glow)' : 'var(--surface2)'
                 }}
               >
                 <Search size={14} />
@@ -134,7 +135,7 @@ export default function Layout({ children }: LayoutProps) {
           
           <button 
             className="btn-secondary" 
-            onClick={() => navigate(user.role === 'seller' ? '/seller/connections' : '/mfr/connections')}
+            onClick={() => navigate(user.role === 'seller' ? ROUTES.sellerConnections : ROUTES.mfrConnections)}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -142,8 +143,8 @@ export default function Layout({ children }: LayoutProps) {
               padding: '6px 14px', 
               fontSize: '13px', 
               borderRadius: '6px',
-              borderColor: currentPath === '/seller/connections' || currentPath === '/mfr/connections' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: currentPath === '/seller/connections' || currentPath === '/mfr/connections' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+              borderColor: currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
             }}
           >
             <Users size={14} />
@@ -152,7 +153,7 @@ export default function Layout({ children }: LayoutProps) {
 
           <button 
             className="btn-secondary" 
-            onClick={() => navigate(user.role === 'mfr' ? '/mfr/profile' : '/seller/profile')}
+            onClick={() => navigate(user.role === 'mfr' ? ROUTES.mfrProfile : ROUTES.sellerProfile)}
             style={{ 
               display: 'flex', 
               alignItems: 'center', 
@@ -160,8 +161,8 @@ export default function Layout({ children }: LayoutProps) {
               padding: '6px 14px', 
               fontSize: '13px', 
               borderRadius: '6px',
-              borderColor: currentPath === '/seller/profile' || currentPath === '/mfr/profile' ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: currentPath === '/seller/profile' || currentPath === '/mfr/profile' ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
+              borderColor: currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
+              background: currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
             }}
           >
             <User size={14} />

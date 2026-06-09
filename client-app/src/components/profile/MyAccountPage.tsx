@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
+import { ROUTES } from '../../constants/routes';
 import { ShieldCheck, User, Mail, Phone, Key, ArrowLeft, Loader2, Eye, EyeOff, Camera, Trash2, Plus, Image as ImageIcon, MapPin, Building2, CheckCircle2 } from 'lucide-react';
 
 const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
@@ -98,7 +99,7 @@ export default function MyAccountPage() {
       
       {/* Back to dashboard breadcrumb */}
       <button 
-        onClick={() => navigate(profile.role === 'mfr' ? '/mfr/orders' : '/seller/orders')}
+        onClick={() => navigate(profile.role === 'mfr' ? ROUTES.mfrOrders : ROUTES.sellerOrders)}
         className="btn-back" 
         style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
       >

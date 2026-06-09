@@ -1,3 +1,5 @@
+import { AUTH_STORAGE_KEYS, AUTH_EVENTS } from '../constants/authKeys';
+
 let rawBaseUrl = '/api';
 
 if (typeof window !== 'undefined') {
@@ -115,7 +117,7 @@ export interface Product {
 }
 
 async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
   
   if (!options.headers) {
     options.headers = {};
@@ -134,11 +136,11 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
   const response = await fetch(`${BASE_URL}${endpoint}`, options);
 
   if (response.status === 401) {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    localStorage.removeItem('userId');
-    window.dispatchEvent(new Event('auth-unauthorized'));
+    localStorage.removeItem(AUTH_STORAGE_KEYS.token);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.username);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.role);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.userId);
+    window.dispatchEvent(new Event(AUTH_EVENTS.unauthorized));
     throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
   }
 
