@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface LightboxProps {
@@ -28,13 +29,13 @@ export default function Lightbox({ isOpen, src, onClose, altText }: LightboxProp
     }
   };
 
-  return (
+  return createPortal(
     <div
       onClick={handleBackdropClick}
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 99999,
+        zIndex: 999999,
         background: 'rgba(7, 10, 19, 0.85)',
         backdropFilter: 'blur(12px)',
         WebkitBackdropFilter: 'blur(12px)',
@@ -107,6 +108,8 @@ export default function Lightbox({ isOpen, src, onClose, altText }: LightboxProp
           }}
         />
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
+
