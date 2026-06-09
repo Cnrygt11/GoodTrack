@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban, Info, Send, Archive, Calendar, Tag, Ruler, User } from 'lucide-react';
+import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User } from 'lucide-react';
 import { Product } from '../../services/api';
 import { Language, TranslationKey } from '../../services/translations';
 import { MfrTab } from '../../hooks/useMfrOrders';
@@ -18,7 +18,6 @@ interface MfrOrderCardProps {
   onOpenTimeline: (product: Product) => void;
 }
 
-
 export default function MfrOrderCard({
   product: p,
   activeTab,
@@ -31,132 +30,82 @@ export default function MfrOrderCard({
   onOpenTimeline,
 }: MfrOrderCardProps) {
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
-  const dateStr = p.createdAt ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  const timeStr = p.createdAt ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
-  const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
+
+  const dateStr = p.createdAt
+    ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
+    : '—';
+  const timeStr = p.createdAt
+    ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    : '';
+
+  const status = p.status || (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr' });
   const accentColor = getMfrCardAccentColor(status);
 
   const hasActionBar = ['awaiting', 'corrected', 'production', 'completed', 'defective', 'missing', 'shipped', 'cancelled'].includes(status);
 
   return (
-    <div
-      className="mfr-theme"
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '14px',
-        overflow: 'hidden',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        position: 'relative',
-        animation: 'slideUp 0.3s ease-out',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.35)';
-        e.currentTarget.style.borderColor = sc.border;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.borderColor = 'var(--border)';
-      }}
-    >
-      {/* Colored left accent bar */}
-      <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
-        background: accentColor, borderRadius: '14px 0 0 14px'
-      }} />
+    <div className="mfr-theme moc-card">
 
-      {/* Unseen indicator dot */}
+      {/* Colored left accent bar — color is dynamic, inline kept intentionally */}
+      <div className="moc-accent-bar" style={{ background: accentColor }} />
+
+      {/* Unseen dot — color is dynamic */}
       {isUnseen && (
         <div
-          style={{
-            position: 'absolute', top: '14px', left: '14px',
-            width: '8px', height: '8px', borderRadius: '50%',
-            background: sc.color, boxShadow: `0 0 8px ${sc.color}`,
-            cursor: 'pointer', zIndex: 5, animation: 'pulse 2s infinite'
-          }}
+          className="moc-unseen-dot"
+          style={{ background: sc.color, boxShadow: `0 0 8px ${sc.color}` }}
           title={language === 'tr' ? 'Yeni! Tıklayarak okundu olarak işaretle.' : 'New! Click to mark as read.'}
           onClick={(e) => { e.stopPropagation(); onMarkAsSeen(p.id, activeTab); }}
         />
       )}
 
-      {/* Main content */}
-      <div style={{ display: 'flex', gap: '16px', padding: '16px 16px 16px 20px', flex: 1 }}>
+      {/* Main body */}
+      <div className="moc-body">
 
         {/* Thumbnail */}
-        <div 
+        <div
+          className={`moc-thumb${p.image ? ' moc-thumb--clickable' : ''}`}
           onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
-          style={{
-            width: '80px', height: '80px', borderRadius: '10px', flexShrink: 0,
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: p.image ? 'pointer' : 'default',
-            transition: 'opacity 0.2s',
-          }}
-          onMouseEnter={(e) => { if (p.image) e.currentTarget.style.opacity = '0.85'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
           title={p.image ? (language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details') : undefined}
         >
           {p.image
-            ? <img src={p.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ? <img src={p.image} alt="ürün" />
             : <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
           }
         </div>
 
-        {/* Info block */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {/* Info column */}
+        <div className="moc-info">
+
           {/* Code + Status badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif", fontSize: '22px',
-              letterSpacing: '2px', color: 'var(--accent-mfr)',
-              textShadow: '0 0 12px var(--accent-mfr-glow)', lineHeight: 1
-            }}>
-              {p.code}
-            </span>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '4px',
-              background: sc.bg, border: `1px solid ${sc.border}`,
-              color: sc.color, borderRadius: '20px',
-              padding: '3px 10px', fontSize: '11px', fontWeight: 700,
-              letterSpacing: '0.3px', whiteSpace: 'nowrap'
-            }}>
+          <div className="moc-title-row">
+            <span className="moc-code">{p.code}</span>
+            {/* bg/border/color are dynamic — minimal inline kept */}
+            <span
+              className="moc-status-badge"
+              style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
+            >
               {sc.icon} {sc.label}
             </span>
           </div>
 
           {/* Chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div className="moc-chips">
             {p.text && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: '6px', padding: '3px 9px', fontSize: '12px', color: 'var(--muted)'
-              }}>
+              <span className="order-chip">
                 <Tag size={10} style={{ color: 'var(--accent-mfr)' }} />
                 <strong style={{ color: 'var(--text)' }}>{t('textLabel')}:</strong> {p.text}
               </span>
             )}
             {p.length && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                background: 'var(--surface2)', border: '1px solid var(--border)',
-                borderRadius: '6px', padding: '3px 9px', fontSize: '12px', color: 'var(--muted)'
-              }}>
+              <span className="order-chip">
                 <Ruler size={10} style={{ color: 'var(--accent-mfr)' }} />
                 <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
               </span>
             )}
             {p.sellerName && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '5px',
-                background: 'rgba(245,166,35,0.07)', border: '1px solid rgba(245,166,35,0.25)',
-                borderRadius: '6px', padding: '3px 9px', fontSize: '12px', color: 'var(--accent-seller)'
-              }}>
+              <span className="moc-chip--seller">
                 <User size={10} />
                 <strong>{t('sellerLabel')}:</strong> {p.sellerName}
               </span>
@@ -164,11 +113,7 @@ export default function MfrOrderCard({
             {Object.entries(p.extras || {}).map(([key, item]) => {
               if (!item.value) return null;
               return (
-                <span key={key} style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  background: 'var(--surface2)', border: '1px solid var(--border)',
-                  borderRadius: '6px', padding: '3px 9px', fontSize: '12px', color: 'var(--muted)'
-                }}>
+                <span key={key} className="order-chip">
                   <strong style={{ color: 'var(--text)' }}>{item.name}:</strong> {item.value}
                 </span>
               );
@@ -176,30 +121,19 @@ export default function MfrOrderCard({
           </div>
 
           {/* Dates + Timeline link */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginTop: '2px' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--muted)' }}>
+          <div className="moc-meta-row">
+            <span className="moc-date-span">
               <Calendar size={11} style={{ opacity: 0.7 }} />
               {t('sentDateLabel')}: <strong style={{ color: 'var(--text)' }}>{dateStr} {timeStr}</strong>
             </span>
             {p.completedAt && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#22c55e' }}>
+              <span className="moc-completed-span">
                 <CheckCircle2 size={11} />
                 {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
             {!(status === 'shipped' || status === 'cancelled') && (
-              <button
-                type="button"
-                onClick={() => onOpenTimeline(p)}
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: '5px',
-                  background: 'none', border: 'none', padding: '0',
-                  color: '#60a5fa', fontSize: '11.5px', cursor: 'pointer',
-                  fontFamily: 'inherit', fontWeight: 500,
-                  textDecoration: 'underline', textDecorationStyle: 'dotted',
-                  textUnderlineOffset: '3px'
-                }}
-              >
+              <button type="button" className="timeline-link" onClick={() => onOpenTimeline(p)}>
                 <Info size={11} />
                 {t('btnViewTimeline')}
               </button>
@@ -208,15 +142,9 @@ export default function MfrOrderCard({
         </div>
       </div>
 
-      {/* Action Bar */}
+      {/* Action bar */}
       {hasActionBar && (
-        <div style={{
-          display: 'flex', gap: '8px', padding: '10px 16px 10px 20px',
-          borderTop: '1px solid var(--border)',
-          background: 'rgba(0,0,0,0.12)',
-          justifyContent: 'flex-end',
-          flexWrap: 'wrap'
-        }}>
+        <div className="order-action-bar">
           {(status === 'awaiting' || status === 'corrected') && (
             <>
               <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnApproveProduction')}</MfrBtn>
@@ -241,19 +169,15 @@ export default function MfrOrderCard({
           )}
         </div>
       )}
+
       {p.image && (
-        <Lightbox
-          isOpen={isLightboxOpen}
-          src={p.image}
-          onClose={() => setIsLightboxOpen(false)}
-          altText={p.code}
-        />
+        <Lightbox isOpen={isLightboxOpen} src={p.image} onClose={() => setIsLightboxOpen(false)} altText={p.code} />
       )}
     </div>
   );
 }
 
-// --- Helper components ---
+// --- Helper button component ---
 
 interface MfrBtnProps {
   color: string;
@@ -264,23 +188,23 @@ interface MfrBtnProps {
   bordered?: boolean;
   dark?: boolean;
 }
+
 function MfrBtn({ color, onClick, children, icon, fullWidth, bordered, dark }: MfrBtnProps) {
+  const classes = [
+    'mfr-btn',
+    fullWidth ? 'mfr-btn--full' : '',
+    bordered ? 'mfr-btn--bordered' : '',
+    !bordered && dark ? 'mfr-btn--dark' : '',
+    !bordered && !dark ? 'mfr-btn--light' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <button
       type="button"
+      className={classes}
       onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-        padding: '7px 14px', borderRadius: '7px', cursor: 'pointer',
-        fontSize: '12px', fontWeight: 700, fontFamily: 'inherit',
-        letterSpacing: '0.3px', transition: 'opacity 0.15s, transform 0.15s',
-        width: fullWidth ? '100%' : undefined,
-        background: bordered ? 'transparent' : color,
-        color: bordered ? 'var(--text)' : dark ? '#09090b' : '#fff',
-        border: bordered ? '1px solid var(--border)' : 'none',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+      /* background color is dynamic per status — kept as minimal inline */
+      style={!bordered ? { background: color } : undefined}
     >
       {icon}
       {children}

@@ -1249,3 +1249,148 @@ h2 span.mfr-accent {
 .mfr-status-pill--connected { color: var(--success); }
 .mfr-status-pill--pending { color: var(--accent-seller); }
 .mfr-connect-btn { width: 100%; background: var(--accent-seller) !important; color: #0b0f19 !important; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 16px !important; font-weight: 600; }
+
+/* ===== MfrOrderCard ===== */
+
+/* Outer card shell */
+.moc-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  animation: slideUp 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+}
+
+.moc-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* Left accent bar (color set via inline style — dynamic per status) */
+.moc-accent-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  border-radius: 14px 0 0 14px;
+}
+
+/* Unseen indicator dot */
+.moc-unseen-dot {
+  position: absolute;
+  top: 14px; left: 14px;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 5;
+  animation: pulse 2s infinite;
+}
+
+/* Main body */
+.moc-body {
+  display: flex;
+  gap: 16px;
+  padding: 16px 16px 16px 20px;
+  flex: 1;
+}
+
+/* Thumbnail */
+.moc-thumb {
+  width: 80px; height: 80px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+}
+
+.moc-thumb--clickable { cursor: pointer; }
+.moc-thumb--clickable:hover { opacity: 0.85; }
+.moc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Info column */
+.moc-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+
+/* Code + badge row */
+.moc-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.moc-code {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 2px;
+  color: var(--accent-mfr);
+  text-shadow: 0 0 12px var(--accent-mfr-glow);
+  line-height: 1;
+}
+
+/* Status badge (bg/border/color set inline — dynamic) */
+.moc-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Chip row */
+.moc-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* Seller chip — accent-seller tinted */
+.moc-chip--seller {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: rgba(245,166,35,0.07);
+  border: 1px solid rgba(245,166,35,0.25);
+  border-radius: 6px; padding: 3px 9px;
+  font-size: 12px; color: var(--accent-seller);
+}
+
+/* Dates row */
+.moc-meta-row {
+  display: flex; gap: 12px;
+  flex-wrap: wrap; align-items: center;
+  margin-top: 2px;
+}
+
+.moc-date-span {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: var(--muted);
+}
+
+.moc-completed-span {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11.5px; color: #22c55e;
+}
+
+/* MfrBtn action button */
+.mfr-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: inherit;
+  letter-spacing: 0.3px;
+  transition: opacity 0.15s, transform 0.15s;
+  border: none;
+}
+
+.mfr-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+.mfr-btn--full { width: 100%; }
+.mfr-btn--bordered { background: transparent !important; border: 1px solid var(--border) !important; color: var(--text) !important; }
+.mfr-btn--dark { color: #09090b !important; }
+.mfr-btn--light { color: #fff !important; }
