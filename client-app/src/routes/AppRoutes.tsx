@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthPage from '../components/auth/AuthPage';
 import LandingPage from '../components/home/LandingPage';
@@ -37,6 +37,14 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
+}
+
+function OrderDetailRedirect() {
+  const { user } = useAuth();
+  const { id } = useParams<{ id: string }>();
+
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.role === 'mfr' ? `/mfr/orders/${id}` : `/seller/orders/${id}`} replace />;
 }
 
 export default function AppRoutes() {
@@ -130,12 +138,26 @@ export default function AppRoutes() {
       />
 
       <Route
-        path="/orders/:id"
+        path="/seller/orders/:id"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['seller']}>
             <OrderDetailPage />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+        path="/mfr/orders/:id"
+        element={
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <OrderDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/orders/:id"
+        element={<OrderDetailRedirect />}
       />
 
       <Route path="*" element={<Navigate to="/" replace />} />

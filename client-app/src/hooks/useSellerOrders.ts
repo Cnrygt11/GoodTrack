@@ -150,7 +150,7 @@ export default function useSellerOrders(): UseSellerOrdersReturn {
   const navigate = useNavigate();
 
   const openTimeline = useCallback((p: Product) => {
-    navigate(`/orders/${p.id}`);
+    navigate(`/seller/orders/${p.id}`);
   }, [navigate]);
 
   // --- Dropdown State ---

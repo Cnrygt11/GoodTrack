@@ -29,7 +29,7 @@ export default function useMfrOrders() {
   const navigate = useNavigate();
 
   const openTimeline = useCallback((p: Product) => {
-    navigate(`/orders/${p.id}`);
+    navigate(`/mfr/orders/${p.id}`);
   }, [navigate]);
 
   // Unseen orders notification states for each list filter tab
