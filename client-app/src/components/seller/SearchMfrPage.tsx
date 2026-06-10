@@ -24,32 +24,7 @@ export default function SearchMfrPage() {
     language, t,
   } = useSearchMfr();
 
-  if (loading && filteredAndSortedManufacturers.length === 0) {
-    return (
-      <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
-        <Loader2 className="animate-spin" size={36} style={{ color: 'var(--accent-seller)' }} />
-        <span style={{ fontSize: '15px', color: 'var(--muted)' }}>
-          {language === 'tr' ? 'Üretici veri tabanı yükleniyor...' : 'Loading manufacturer directory...'}
-        </span>
-      </div>
-    );
-  }
 
-  if (error && filteredAndSortedManufacturers.length === 0) {
-    return (
-      <div className="card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-        <XCircle size={44} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-        <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>
-          {language === 'tr' ? 'Bağlantı Hatası' : 'Connection Error'}
-        </h3>
-        <p style={{ color: 'var(--muted)', maxWidth: '400px', margin: '0 auto 24px auto' }}>{error}</p>
-        <button className="btn-secondary" onClick={fetchManufacturers} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-          <RefreshCw size={14} />
-          {language === 'tr' ? 'Yeniden Dene' : 'Try Again'}
-        </button>
-      </div>
-    );
-  }
 
   const hasActiveFilters = searchQuery || selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;
 
@@ -164,7 +139,26 @@ export default function SearchMfrPage() {
             </span>
           </div>
 
-          {filteredAndSortedManufacturers.length === 0 ? (
+          {loading && filteredAndSortedManufacturers.length === 0 ? (
+            <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
+              <Loader2 className="animate-spin" size={36} style={{ color: 'var(--accent-seller)' }} />
+              <span style={{ fontSize: '15px', color: 'var(--muted)' }}>
+                {language === 'tr' ? 'Üretici veri tabanı yükleniyor...' : 'Loading manufacturer directory...'}
+              </span>
+            </div>
+          ) : error && filteredAndSortedManufacturers.length === 0 ? (
+            <div className="card" style={{ textAlign: 'center', padding: '50px 20px' }}>
+              <XCircle size={44} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
+              <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>
+                {language === 'tr' ? 'Bağlantı Hatası' : 'Connection Error'}
+              </h3>
+              <p style={{ color: 'var(--muted)', maxWidth: '400px', margin: '0 auto 24px auto' }}>{error}</p>
+              <button className="btn-secondary" onClick={fetchManufacturers} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+                <RefreshCw size={14} />
+                {language === 'tr' ? 'Yeniden Dene' : 'Try Again'}
+              </button>
+            </div>
+          ) : filteredAndSortedManufacturers.length === 0 ? (
             <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
               <ImageIcon size={32} style={{ color: 'var(--muted)', marginBottom: '12px' }} />
               <p style={{ color: 'var(--muted)', margin: 0 }}>{t('searchNoResults')}</p>

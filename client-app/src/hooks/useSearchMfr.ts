@@ -49,6 +49,9 @@ export default function useSearchMfr() {
     try {
       setLoading(true);
       setError('');
+      if (reset) {
+        setManufacturers([]);
+      }
       
       const currentCursor = reset ? null : lastCursor;
       const data = await api.searchManufacturers(
