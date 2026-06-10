@@ -230,16 +230,23 @@ export default function ConnectionsPage() {
                     </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {getStatusBadge(r.status)}
-                      {r.status !== 'pending' && (
-                        <button 
-                          className="conn-remove" 
-                          style={{ display: 'flex', alignItems: 'center', padding: '6px', border: '1px solid var(--border)', borderRadius: '6px', background: 'var(--surface1)' }}
-                          onClick={() => handleDeleteSent(r.id)}
-                          title={t('clearBtn')}
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
+                      <button 
+                        className="conn-remove" 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          padding: '6px', 
+                          border: '1px solid var(--border)', 
+                          borderRadius: '6px', 
+                          background: 'var(--surface1)',
+                          color: r.status === 'pending' ? 'var(--danger)' : 'inherit',
+                          borderColor: r.status === 'pending' ? 'var(--danger)' : 'var(--border)'
+                        }}
+                        onClick={() => handleDeleteSent(r.id)}
+                        title={r.status === 'pending' ? t('cancelBtn') : t('clearBtn')}
+                      >
+                        <X size={12} />
+                      </button>
                     </div>
                   </div>
                 ))

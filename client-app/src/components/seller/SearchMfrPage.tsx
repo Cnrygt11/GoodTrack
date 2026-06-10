@@ -262,16 +262,34 @@ export default function SearchMfrPage() {
                             {language === 'tr' ? 'Bağlantı Aktif' : 'Connected'}
                           </div>
                         ) : isPending && pendingRequest ? (
-                          <button
-                            type="button"
-                            onClick={() => handleCancelConnection(pendingRequest.id, mfr.username)}
-                            className="btn-secondary mfr-connect-btn"
-                            disabled={isUserActionLoading}
-                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-                          >
-                            {isUserActionLoading ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
-                            {t('cancelBtn')}
-                          </button>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                            <span style={{ fontSize: '13px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
+                              <Clock size={13} style={{ color: 'var(--warning)' }} />
+                              {language === 'tr' ? 'İstek Gönderildi' : 'Request Sent'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCancelConnection(pendingRequest.id, mfr.username)}
+                              className="btn-secondary"
+                              disabled={isUserActionLoading}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                color: 'var(--danger)',
+                                borderColor: 'var(--danger)',
+                                background: 'rgba(239, 68, 68, 0.05)',
+                                padding: '4px 10px',
+                                fontSize: '12px',
+                                borderRadius: '6px',
+                                height: '28px',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isUserActionLoading ? <Loader2 className="animate-spin" size={12} /> : <XCircle size={12} />}
+                              {t('cancelBtn')}
+                            </button>
+                          </div>
                         ) : (
                           <button
                             type="button"
