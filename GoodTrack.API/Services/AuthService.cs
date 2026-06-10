@@ -429,17 +429,14 @@ public class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var jwtKey = _configuration["Jwt:Key"]
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? _configuration["Jwt:Key"]
             ?? throw new InvalidOperationException(
-                "JWT signing key is not configured. Set 'Jwt:Key' in appsettings or environment variables.");
+                "JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
 
-        var issuer = _configuration["Jwt:Issuer"]
-            ?? throw new InvalidOperationException(
-                "JWT issuer is not configured. Set 'Jwt:Issuer' in appsettings or environment variables.");
+        var issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API";
 
-        var audience = _configuration["Jwt:Audience"]
-            ?? throw new InvalidOperationException(
-                "JWT audience is not configured. Set 'Jwt:Audience' in appsettings or environment variables.");
+        var audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client";
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(jwtKey);
