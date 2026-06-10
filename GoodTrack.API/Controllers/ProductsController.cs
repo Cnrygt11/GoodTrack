@@ -57,6 +57,9 @@ public class ProductsController : BaseApiController
         return Ok(new { product = created, message = "Sipariş başarıyla üretime gönderildi." });
     }
 
+    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
+    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
+    // Currently kept for backwards compatibility.
     [HttpPut("{id}/complete")]
     [Authorize(Roles = Roles.Mfr)]
     public async Task<IActionResult> ToggleComplete(string id, [FromBody] ToggleCompleteRequest request)
@@ -93,6 +96,9 @@ public class ProductsController : BaseApiController
     }
 
 
+    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
+    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
+    // Currently kept for backwards compatibility.
     [HttpPut("{id}/approval")]
     public async Task<IActionResult> ToggleApproval(string id, [FromBody] ToggleApprovalRequest request)
     {

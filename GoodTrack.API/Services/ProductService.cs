@@ -129,6 +129,9 @@ public class ProductService : IProductService
         return order;
     }
 
+    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
+    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
+    // Currently kept for backwards compatibility.
     public async Task ToggleOrderCompletionAsync(string mfrId, string orderId, bool completed)
     {
         var product = await _productRepository.GetByIdAsync(orderId);
@@ -405,6 +408,9 @@ public class ProductService : IProductService
         await _hubContext.Clients.Users(product.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
     }
 
+    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
+    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
+    // Currently kept for backwards compatibility.
     public async Task ToggleOrderApprovalAsync(string userId, string role, string orderId, bool isPendingApproval)
     {
         var product = await _productRepository.GetByIdAsync(orderId);
