@@ -36,6 +36,10 @@ public class AuthController : BaseApiController
         return Ok(new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
     }
 
+    // TODO: Email verification is currently inactive.
+    // RegisterAsync sets IsActive = true unconditionally.
+    // To activate: remove IsActive = true from RegisterAsync, re-inject IEmailService,
+    // and call SendVerificationEmailAsync here.
     [HttpGet("verify-email")]
     public async Task<IActionResult> VerifyEmail([FromQuery] string username, [FromQuery] string token)
     {

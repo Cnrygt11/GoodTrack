@@ -161,6 +161,8 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow.ToString("o"),
+            // NOTE: Email verification is disabled. Set IsActive = false and call
+            // VerifyEmailAsync flow to re-enable. See TODO in VerifyEmailAsync.
             IsActive = true
         };
 
@@ -169,6 +171,10 @@ public class AuthService : IAuthService
         await _userRepository.SaveAsync(user);
     }
 
+    // TODO: Email verification is currently inactive.
+    // RegisterAsync sets IsActive = true unconditionally.
+    // To activate: remove IsActive = true from RegisterAsync, re-inject IEmailService,
+    // and call SendVerificationEmailAsync here.
     public async Task VerifyEmailAsync(string username, string token)
     {
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(token))
