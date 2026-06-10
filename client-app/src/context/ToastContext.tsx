@@ -16,25 +16,31 @@ const ToastContext = createContext<ToastContextType | null>(null);
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toast, setToast] = useState<ToastState>({ show: false, message: '', isError: false });
 
-  const showToast = useCallback((message: string) => {
-    const isNetworkOrFetchError = 
-      message.toLowerCase().includes('fetch') || 
-      message.toLowerCase().includes('network') || 
-      message.toLowerCase().includes('hata kodu') || 
-      message.toLowerCase().includes('sunucu') || 
-      message.toLowerCase().includes('bulunamadı') || 
-      message.toLowerCase().includes('geçersiz veri') || 
-      message.toLowerCase().includes('typeerror') || 
-      message.toLowerCase().includes('error') ||
-      message.toLowerCase().includes('connect') ||
-      message.toLowerCase().includes('http');
+  const showToast = useCallback((message: string, isErrorOverride?: boolean) => {
+    if (!message) return;
 
-    if (isNetworkOrFetchError) {
-      setToast({ show: true, message, isError: true });
-      setTimeout(() => {
-        setToast(prev => ({ ...prev, show: false }));
-      }, 4000); // 4 seconds for errors so they are more readable
-    }
+    const isError = isErrorOverride ?? (
+      message.toLowerCase().includes('hata') ||
+      message.toLowerCase().includes('error') ||
+      message.toLowerCase().includes('failed') ||
+      message.toLowerCase().includes('başarısız') ||
+      message.toLowerCase().includes('geçersiz') ||
+      message.toLowerCase().includes('alınmış') ||
+      message.toLowerCase().includes('bulunamadı') ||
+      message.toLowerCase().includes('yetkiniz') ||
+      message.toLowerCase().includes('uymuyor') ||
+      message.toLowerCase().includes('boş') ||
+      message.toLowerCase().includes('network') ||
+      message.toLowerCase().includes('fetch') ||
+      message.toLowerCase().includes('http') ||
+      message.toLowerCase().includes('doğrulayın') ||
+      message.toLowerCase().includes('yetersiz')
+    );
+
+    setToast({ show: true, message, isError });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, isError ? 4000 : 2500);
   }, []);
 
   return (
