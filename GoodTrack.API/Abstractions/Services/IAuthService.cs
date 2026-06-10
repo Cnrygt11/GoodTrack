@@ -19,7 +19,7 @@ public interface IAuthService
     Task<UserProfileDto> GetProfileAsync(string userId);
     Task<UserProfileDto> GetProfileByUsernameAsync(string username);
     Task UpdateProfileAsync(string userId, UserProfileDto dto);
-    Task<List<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword);
+    Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit);
     Task<bool> VerifyPasswordAsync(string userId, string password);
     Task ChangePasswordAsync(string userId, string oldPassword, string newPassword, string confirmNewPassword);
 }

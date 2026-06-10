@@ -31,61 +31,18 @@ public class ProductService : IProductService
 
     public async Task<List<Product>> GetUserProductsAsync(string userId, string role)
     {
-        List<Product> products;
         if (role == Roles.Seller)
         {
-            products = await _productRepository.GetProductsBySellerAsync(userId);
+            return await _productRepository.GetProductsBySellerAsync(userId);
         }
         else if (role == Roles.Mfr)
         {
-            products = await _productRepository.GetProductsByManufacturerAsync(userId);
+            return await _productRepository.GetProductsByManufacturerAsync(userId);
         }
         else
         {
             throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
         }
-
-        foreach (var p in products)
-        {
-            if (string.IsNullOrEmpty(p.Status))
-            {
-                if (p.IsDefective)
-                {
-                    p.Status = OrderStatus.Defective;
-                }
-                else if (p.Completed)
-                {
-                    p.Status = OrderStatus.Completed;
-                }
-                else if (p.IsPendingApproval)
-                {
-                    p.Status = OrderStatus.Awaiting;
-                }
-                else
-                {
-                    p.Status = OrderStatus.Production;
-                }
-
-                if (p.Logs == null || p.Logs.Count == 0)
-                {
-                    p.Logs = new List<OrderLog>
-                    {
-                        new OrderLog
-                        {
-                            Timestamp = p.CreatedAt ?? DateTime.UtcNow.ToString("o"),
-                            Status = p.Status,
-                            Message = "Sipariş durumu otomatik olarak eşleştirildi.",
-                            UserId = "system",
-                            UserName = "Sistem"
-                        }
-                    };
-                }
-
-                await _productRepository.SaveAsync(p);
-            }
-        }
-
-        return products;
     }
 
     public async Task<Product> CreateOrderAsync(string sellerId, string sellerName, Product order)
@@ -692,5 +649,10 @@ public class ProductService : IProductService
         if (role == Roles.Mfr && product.MfrId != userId) return null;
 
         return product;
+    }
+
+    public async Task<int> MigrateProductStatusesAsync()
+    {
+        return await _productRepository.MigrateStatusesAsync();
     }
 }

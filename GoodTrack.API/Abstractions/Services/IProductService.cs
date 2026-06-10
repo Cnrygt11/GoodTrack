@@ -13,5 +13,6 @@ public interface IProductService
     Task ToggleOrderApprovalAsync(string userId, string role, string orderId, bool isPendingApproval);
     Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null);
     Task<Product?> GetProductByIdAsync(string userId, string role, string orderId);
+    Task<int> MigrateProductStatusesAsync();
 }
 

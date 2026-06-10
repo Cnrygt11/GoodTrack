@@ -148,8 +148,8 @@ export default function useConnections() {
     e.preventDefault();
     try {
       setSearchLoading(true);
-      const data = await api.searchManufacturers(searchCity, searchKeyword);
-      setSearchResults(data);
+      const data = await api.searchManufacturers(searchCity || undefined, searchKeyword || undefined);
+      setSearchResults(data.items);
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     } finally {

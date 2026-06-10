@@ -290,11 +290,15 @@ public class AuthController : BaseApiController
 
     [Authorize]
     [HttpGet("manufacturers/search")]
-    public async Task<IActionResult> SearchManufacturers([FromQuery] string? city, [FromQuery] string? keyword)
+    public async Task<IActionResult> SearchManufacturers(
+        [FromQuery] string? city, 
+        [FromQuery] string? keyword,
+        [FromQuery] string? cursor,
+        [FromQuery] int limit = 10)
     {
         try
         {
-            var results = await _authService.SearchManufacturersAsync(city, keyword);
+            var results = await _authService.SearchManufacturersAsync(city, keyword, cursor, limit);
             return Ok(results);
         }
         catch (Exception ex)

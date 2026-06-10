@@ -9,4 +9,5 @@ public interface IProductRepository
     Task<List<Product>> GetProductsByManufacturerAsync(string mfrId);
     Task SaveAsync(Product product);
     Task DeleteAsync(string id);
+    Task<int> MigrateStatusesAsync();
 }

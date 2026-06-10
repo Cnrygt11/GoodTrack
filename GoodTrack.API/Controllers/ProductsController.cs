@@ -202,4 +202,13 @@ public class ProductsController : BaseApiController
         await _productService.DeleteProductAsync(userId, id);
         return Ok(new { message = "Sipariş başarıyla silindi." });
     }
+
+    [HttpPost("migrate-statuses")]
+    [Authorize(Roles = Roles.Admin)]
+    public async Task<IActionResult> MigrateStatuses()
+    {
+        _logger.LogInformation("Admin triggered a status migration.");
+        var count = await _productService.MigrateProductStatusesAsync();
+        return Ok(new { message = $"{count} sipariş başarıyla güncellendi." });
+    }
 }

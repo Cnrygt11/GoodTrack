@@ -11,19 +11,20 @@ export default function SearchMfrPage() {
   const {
     loading, error, actionLoading,
     searchQuery, setSearchQuery,
-    selectedCities, selectedCategories,
+    selectedCity, selectedCategory,
     mustHaveGallery, setMustHaveGallery,
     mustHaveAvatar, setMustHaveAvatar,
     availableCities,
     filteredAndSortedManufacturers,
     connections, sentRequests,
+    hasMore,
     handleToggleCity, handleToggleCategory,
     handleResetFilters, handleSendConnection,
-    fetchManufacturers,
+    fetchManufacturers, loadMore,
     language, t,
   } = useSearchMfr();
 
-  if (loading) {
+  if (loading && filteredAndSortedManufacturers.length === 0) {
     return (
       <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
         <Loader2 className="animate-spin" size={36} style={{ color: 'var(--accent-seller)' }} />
@@ -34,7 +35,7 @@ export default function SearchMfrPage() {
     );
   }
 
-  if (error) {
+  if (error && filteredAndSortedManufacturers.length === 0) {
     return (
       <div className="card" style={{ textAlign: 'center', padding: '50px 20px' }}>
         <XCircle size={44} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
@@ -50,7 +51,7 @@ export default function SearchMfrPage() {
     );
   }
 
-  const hasActiveFilters = searchQuery || selectedCities.length > 0 || selectedCategories.length > 0 || mustHaveGallery || mustHaveAvatar;
+  const hasActiveFilters = searchQuery || selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;
 
   return (
     <div className="smfr-page">
@@ -104,7 +105,7 @@ export default function SearchMfrPage() {
               ) : (
                 <div className="filter-checkbox-list">
                   {availableCities.map((city) => {
-                    const isChecked = selectedCities.includes(city);
+                    const isChecked = selectedCity === city;
                     return (
                       <label
                         key={city}
@@ -124,7 +125,7 @@ export default function SearchMfrPage() {
               <label className="filter-label">{t('filterByCategory')}</label>
               <div className="filter-checkbox-list--full">
                 {MANUFACTURER_CATEGORIES.map((cat) => {
-                  const isChecked = selectedCategories.includes(cat);
+                  const isChecked = selectedCategory === cat;
                   return (
                     <label
                       key={cat}
@@ -169,123 +170,139 @@ export default function SearchMfrPage() {
               <p style={{ color: 'var(--muted)', margin: 0 }}>{t('searchNoResults')}</p>
             </div>
           ) : (
-            <div className="smfr-card-grid">
-              {filteredAndSortedManufacturers.map((mfr) => {
-                const isConnected = connections.some((c) => c.username === mfr.username);
-                const isPending = sentRequests.some((r) => r.receiverUsername === mfr.username && r.status === 'pending');
-                const matchCount = mfr.keywords?.filter((k) => MANUFACTURER_CATEGORIES.includes(k)).length ?? 0;
+            <>
+              <div className="smfr-card-grid">
+                {filteredAndSortedManufacturers.map((mfr) => {
+                  const isConnected = connections.some((c) => c.username === mfr.username);
+                  const isPending = sentRequests.some((r) => r.receiverUsername === mfr.username && r.status === 'pending');
 
-                return (
-                  <div key={mfr.username} className="card mfr-card">
+                  return (
+                    <div key={mfr.username} className="card mfr-card">
 
-                    <div>
-                      {/* Avatar & Name */}
-                      <div
-                        className="mfr-card-header"
-                        onClick={() => navigate(`/seller/profile/${mfr.username}`)}
-                        title={language === 'tr' ? 'Profili Görüntüle' : 'View Profile'}
-                      >
-                        <div className="mfr-avatar">
-                          {mfr.profilePicture ? (
-                            <img
-                              src={mfr.profilePicture}
-                              alt={mfr.username}
-                              onClick={(e) => { e.stopPropagation(); setLightboxImage(mfr.profilePicture || null); }}
-                              title={language === 'tr' ? 'Resmi Büyüt' : 'Zoom Image'}
-                            />
-                          ) : (
-                            <span className="mfr-avatar-initials">
-                              {(mfr.firstName?.charAt(0) || '').toUpperCase()}{(mfr.lastName?.charAt(0) || '').toUpperCase()}
+                      <div>
+                        {/* Avatar & Name */}
+                        <div
+                          className="mfr-card-header"
+                          onClick={() => navigate(`/seller/profile/${mfr.username}`)}
+                          title={language === 'tr' ? 'Profili Görüntüle' : 'View Profile'}
+                        >
+                          <div className="mfr-avatar">
+                            {mfr.profilePicture ? (
+                              <img
+                                src={mfr.profilePicture}
+                                alt={mfr.username}
+                                onClick={(e) => { e.stopPropagation(); setLightboxImage(mfr.profilePicture || null); }}
+                                title={language === 'tr' ? 'Resmi Büyüt' : 'Zoom Image'}
+                              />
+                            ) : (
+                              <span className="mfr-avatar-initials">
+                                {(mfr.firstName?.charAt(0) || '').toUpperCase()}{(mfr.lastName?.charAt(0) || '').toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="mfr-name-block">
+                            <strong className="mfr-fullname">{mfr.firstName} {mfr.lastName}</strong>
+                            <span className="mfr-handle">@{mfr.username}</span>
+                          </div>
+                        </div>
+
+                        {/* City & Match */}
+                        <div className="mfr-meta">
+                          {mfr.city && (
+                            <span className="mfr-city-badge">
+                              <MapPin size={11} style={{ color: 'var(--danger)' }} />
+                              {mfr.city}
+                            </span>
+                          )}
+                          {selectedCategory && mfr.keywords?.includes(selectedCategory) && (
+                            <span className="mfr-match-badge">
+                              {selectedCategory} ({t('matchingCatCount')})
                             </span>
                           )}
                         </div>
 
-                        <div className="mfr-name-block">
-                          <strong className="mfr-fullname">{mfr.firstName} {mfr.lastName}</strong>
-                          <span className="mfr-handle">@{mfr.username}</span>
-                        </div>
-                      </div>
-
-                      {/* City & Match */}
-                      <div className="mfr-meta">
-                        {mfr.city && (
-                          <span className="mfr-city-badge">
-                            <MapPin size={11} style={{ color: 'var(--danger)' }} />
-                            {mfr.city}
-                          </span>
+                        {/* Bio */}
+                        {mfr.bio ? (
+                          <p className="mfr-bio" title={mfr.bio}>{mfr.bio}</p>
+                        ) : (
+                          <p className="mfr-bio--empty">
+                            {language === 'tr' ? 'Tanıtım metni bulunmuyor.' : 'No description available.'}
+                          </p>
                         )}
-                        {selectedCategories.length > 0 && matchCount > 0 && (
-                          <span className="mfr-match-badge">
-                            {matchCount} / {selectedCategories.length} {t('matchingCatCount')}
-                          </span>
-                        )}
-                      </div>
 
-                      {/* Bio */}
-                      {mfr.bio ? (
-                        <p className="mfr-bio" title={mfr.bio}>{mfr.bio}</p>
-                      ) : (
-                        <p className="mfr-bio--empty">
-                          {language === 'tr' ? 'Tanıtım metni bulunmuyor.' : 'No description available.'}
-                        </p>
-                      )}
-
-                      {/* Keywords */}
-                      {mfr.keywords && mfr.keywords.length > 0 && (
-                        <div className="mfr-keywords">
-                          {mfr.keywords.map((kw) => (
-                            <span key={kw} className="mfr-keyword-chip">{kw}</span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Gallery */}
-                      {mfr.productImages && mfr.productImages.length > 0 && (
-                        <div className="mfr-gallery">
-                          <span className="mfr-gallery-label">
-                            <ImageIcon size={11} />
-                            {language === 'tr' ? 'Ürün Galerisi' : 'Product Showcase'} ({mfr.productImages.length})
-                          </span>
-                          <div className="mfr-gallery-strip">
-                            {mfr.productImages.map((img, idx) => (
-                              <div key={idx} className="mfr-gallery-thumb" onClick={() => setLightboxImage(img)}>
-                                <img src={img} alt="Product showcase" />
-                              </div>
+                        {/* Keywords */}
+                        {mfr.keywords && mfr.keywords.length > 0 && (
+                          <div className="mfr-keywords">
+                            {mfr.keywords.map((kw) => (
+                              <span key={kw} className="mfr-keyword-chip">{kw}</span>
                             ))}
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
 
-                    {/* Action */}
-                    <div className="mfr-card-action">
-                      {isConnected ? (
-                        <div className="mfr-status-pill mfr-status-pill--connected">
-                          <CheckCircle2 size={16} />
-                          {language === 'tr' ? 'Bağlantı Aktif' : 'Connected'}
-                        </div>
-                      ) : isPending ? (
-                        <div className="mfr-status-pill mfr-status-pill--pending">
-                          <Clock size={16} />
-                          {language === 'tr' ? 'İstek Beklemede' : 'Request Pending'}
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => handleSendConnection(mfr.username)}
-                          className="btn-primary mfr-connect-btn"
-                          disabled={actionLoading}
-                        >
-                          {actionLoading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
-                          {t('connectBtn')}
-                        </button>
-                      )}
-                    </div>
+                        {/* Gallery */}
+                        {mfr.productImages && mfr.productImages.length > 0 && (
+                          <div className="mfr-gallery">
+                            <span className="mfr-gallery-label">
+                              <ImageIcon size={11} />
+                              {language === 'tr' ? 'Ürün Galerisi' : 'Product Showcase'} ({mfr.productImages.length})
+                            </span>
+                            <div className="mfr-gallery-strip">
+                              {mfr.productImages.map((img, idx) => (
+                                <div key={idx} className="mfr-gallery-thumb" onClick={() => setLightboxImage(img)}>
+                                  <img src={img} alt="Product showcase" />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
-                  </div>
-                );
-              })}
-            </div>
+                      {/* Action */}
+                      <div className="mfr-card-action">
+                        {isConnected ? (
+                          <div className="mfr-status-pill mfr-status-pill--connected">
+                            <CheckCircle2 size={16} />
+                            {language === 'tr' ? 'Bağlantı Aktif' : 'Connected'}
+                          </div>
+                        ) : isPending ? (
+                          <div className="mfr-status-pill mfr-status-pill--pending">
+                            <Clock size={16} />
+                            {language === 'tr' ? 'İstek Beklemede' : 'Request Pending'}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSendConnection(mfr.username)}
+                            className="btn-primary mfr-connect-btn"
+                            disabled={actionLoading}
+                          >
+                            {actionLoading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+                            {t('connectBtn')}
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+                  );
+                })}
+              </div>
+
+              {hasMore && (
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', paddingBottom: '20px' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={loadMore}
+                    disabled={loading}
+                    style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    {loading ? <Loader2 className="animate-spin" size={14} /> : null}
+                    {language === 'tr' ? 'Daha Fazla Yükle' : 'Load More'}
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 

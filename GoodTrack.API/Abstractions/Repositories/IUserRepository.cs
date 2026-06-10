@@ -8,5 +8,6 @@ public interface IUserRepository
     Task<User?> GetByUsernameAsync(string username);
     Task<User?> GetByEmailAsync(string email);
     Task<List<User>> GetManufacturersAsync();
+    Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit);
     Task SaveAsync(User user);
 }

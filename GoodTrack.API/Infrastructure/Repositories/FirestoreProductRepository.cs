@@ -57,4 +57,60 @@ public class FirestoreProductRepository : IProductRepository
         var docRef = _firestoreDb.Collection(CollectionName).Document(id);
         await docRef.DeleteAsync();
     }
+
+    public async Task<int> MigrateStatusesAsync()
+    {
+        var collection = _firestoreDb.Collection(CollectionName);
+        var snapshot = await collection.GetSnapshotAsync();
+        
+        int migratedCount = 0;
+        var batch = _firestoreDb.StartBatch();
+        int batchCount = 0;
+
+        foreach (var doc in snapshot.Documents)
+        {
+            var p = doc.ConvertTo<Product>();
+            if (string.IsNullOrEmpty(p.Status))
+            {
+                // Map status dynamically based on legacy flags
+                if (p.IsDefective) p.Status = "defective";
+                else if (p.Completed) p.Status = "completed";
+                else if (p.IsPendingApproval) p.Status = "awaiting";
+                else p.Status = "production";
+
+                if (p.Logs == null || p.Logs.Count == 0)
+                {
+                    p.Logs = new List<OrderLog>
+                    {
+                        new OrderLog
+                        {
+                            Timestamp = p.CreatedAt ?? System.DateTime.UtcNow.ToString("o"),
+                            Status = p.Status,
+                            Message = "Sipariş durumu otomatik olarak eşleştirildi.",
+                            UserId = "system",
+                            UserName = "Sistem"
+                        }
+                    };
+                }
+
+                batch.Set(doc.Reference, p);
+                batchCount++;
+                migratedCount++;
+
+                if (batchCount == 500)
+                {
+                    await batch.CommitAsync();
+                    batch = _firestoreDb.StartBatch();
+                    batchCount = 0;
+                }
+            }
+        }
+
+        if (batchCount > 0)
+        {
+            await batch.CommitAsync();
+        }
+
+        return migratedCount;
+    }
 }

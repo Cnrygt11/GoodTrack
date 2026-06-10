@@ -58,4 +58,54 @@ public class FirestoreUserRepository : IUserRepository
 
         await docRef.SetAsync(user);
     }
+
+    public async Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit)
+    {
+        var collection = _firestoreDb.Collection(CollectionName);
+        Query query = collection
+            .WhereEqualTo("role", "mfr")
+            .WhereEqualTo("isVisibleToSellers", true);
+
+        if (!string.IsNullOrEmpty(city))
+        {
+            query = query.WhereEqualTo("city", city.Trim());
+        }
+
+        if (!string.IsNullOrEmpty(keyword))
+        {
+            query = query.WhereArrayContains("keywords", keyword.Trim());
+        }
+
+        // Order by document ID for stable cursor startAfter queries
+        query = query.OrderBy(FieldPath.DocumentId);
+
+        if (!string.IsNullOrEmpty(cursor))
+        {
+            var startAfterDoc = await collection.Document(cursor).GetSnapshotAsync();
+            if (startAfterDoc.Exists)
+            {
+                query = query.StartAfter(startAfterDoc);
+            }
+        }
+
+        // Fetch limit + 1 items to see if there is a next page
+        query = query.Limit(limit + 1);
+
+        var snapshot = await query.GetSnapshotAsync();
+        var documents = snapshot.Documents;
+
+        bool hasNextPage = documents.Count > limit;
+        var items = documents
+            .Take(limit)
+            .Select(doc => doc.ConvertTo<User>())
+            .ToList();
+
+        string? nextCursor = null;
+        if (hasNextPage && items.Count > 0)
+        {
+            nextCursor = items.Last().Id;
+        }
+
+        return (items, nextCursor);
+    }
 }

@@ -614,43 +614,17 @@ public class AuthService : IAuthService
         await _userRepository.SaveAsync(user);
     }
 
-    public async Task<List<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword)
+    public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit)
     {
-        var allMfrs = await _userRepository.GetManufacturersAsync();
+        var (users, nextCursor) = await _userRepository.SearchManufacturersAsync(city, keyword, cursor, limit);
         
-        // Filter: only show visible ones
-        var query = allMfrs.Where(u => u.IsVisibleToSellers);
+        var items = users.Select(MapToProfileDto).ToList();
 
-        // Filter by city (case-insensitive)
-        if (!string.IsNullOrEmpty(city))
+        return new PagedResultDto<UserProfileDto>
         {
-            var cityClean = city.Trim().ToLowerInvariant();
-            query = query.Where(u => u.City != null && u.City.Trim().ToLowerInvariant().Contains(cityClean));
-        }
-
-        // Filter by category keyword (exact match or list contains it)
-        if (!string.IsNullOrEmpty(keyword))
-        {
-            var keywordClean = keyword.Trim().ToLowerInvariant();
-            query = query.Where(u => u.Keywords != null && u.Keywords.Any(k => k.Trim().ToLowerInvariant() == keywordClean));
-        }
-
-        return query.Select(u => new UserProfileDto
-        {
-            Username = u.Username,
-            Email = u.Email,
-            PhoneNumber = u.PhoneNumber,
-            FirstName = u.FirstName,
-            LastName = u.LastName,
-            Role = u.Role,
-            ProfilePicture = u.ProfilePicture,
-            Address = u.Address,
-            City = u.City,
-            Bio = u.Bio,
-            ProductImages = u.ProductImages ?? new List<string>(),
-            Keywords = u.Keywords ?? new List<string>(),
-            IsVisibleToSellers = u.IsVisibleToSellers
-        }).ToList();
+            Items = items,
+            NextCursor = nextCursor
+        };
     }
 
     public async Task<bool> VerifyPasswordAsync(string userId, string password)

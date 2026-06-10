@@ -396,10 +396,17 @@ export const api = {
     });
   },
 
-  searchManufacturers(city?: string, keyword?: string): Promise<UserProfile[]> {
+  searchManufacturers(
+    city?: string,
+    keyword?: string,
+    cursor?: string,
+    limit?: number
+  ): Promise<{ items: UserProfile[]; nextCursor: string | null }> {
     const params = new URLSearchParams();
     if (city) params.append('city', city);
     if (keyword) params.append('keyword', keyword);
-    return apiCall<UserProfile[]>(`/auth/manufacturers/search?${params.toString()}`);
+    if (cursor) params.append('cursor', cursor);
+    if (limit) params.append('limit', limit.toString());
+    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(`/auth/manufacturers/search?${params.toString()}`);
   }
 };
