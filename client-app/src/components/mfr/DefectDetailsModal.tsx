@@ -1,17 +1,16 @@
 import { X, Info, Package } from 'lucide-react';
 import { Product } from '../../services/api';
-import { Language, TranslationKey } from '../../services/translations';
 import Modal from '../ui/Modal';
+import { useSettings } from '../../context/SettingsContext';
 
 interface DefectDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
-  language: Language;
-  t: (key: TranslationKey) => string;
 }
 
-export default function DefectDetailsModal({ isOpen, onClose, product, language, t }: DefectDetailsModalProps) {
+export default function DefectDetailsModal({ isOpen, onClose, product }: DefectDetailsModalProps) {
+  const { language, t } = useSettings();
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>

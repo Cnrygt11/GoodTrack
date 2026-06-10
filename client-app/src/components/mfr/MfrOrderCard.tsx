@@ -1,17 +1,15 @@
 import React from 'react';
 import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User } from 'lucide-react';
 import { Product } from '../../services/api';
-import { Language, TranslationKey } from '../../services/translations';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
 import Lightbox from '../ui/Lightbox';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MfrOrderCardProps {
   product: Product;
   activeTab: MfrTab;
   isUnseen: boolean;
-  language: Language;
-  t: (key: TranslationKey) => string;
   onUpdateStatus: (productId: string, status: string) => Promise<void>;
   onMarkAsSeen: (productId: string, tab: MfrTab) => void;
   onOpenDefectDetails: (product: Product) => void;
@@ -22,13 +20,12 @@ export default function MfrOrderCard({
   product: p,
   activeTab,
   isUnseen,
-  language,
-  t,
   onUpdateStatus,
   onMarkAsSeen,
   onOpenDefectDetails,
   onOpenTimeline,
 }: MfrOrderCardProps) {
+  const { language, t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = p.createdAt

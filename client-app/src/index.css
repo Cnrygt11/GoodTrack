@@ -1642,3 +1642,117 @@ h2 span.mfr-accent {
   border: 1px solid var(--border);
   margin-top: 10px;
 }
+
+/* MfrPage Layout & Component Styles */
+.mfr-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mfr-page-tabs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.mfr-page-tab-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  font-family: inherit;
+}
+
+.mfr-page-tab-btn:hover:not(.mfr-page-tab-btn--active) {
+  transform: translateY(-2px);
+  border-color: var(--accent-mfr);
+}
+
+.mfr-page-tab-btn--active {
+  background: var(--accent-mfr-glow);
+  border: 2px solid var(--accent-mfr);
+  box-shadow: 0 8px 20px var(--accent-mfr-glow);
+}
+
+.mfr-page-tab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.mfr-page-tab-btn--active .mfr-page-tab-icon {
+  color: var(--accent-mfr);
+}
+
+.mfr-page-tab-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+}
+
+.mfr-page-tab-btn--active .mfr-page-tab-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.mfr-page-tab-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--danger);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  box-shadow: 0 2px 5px rgba(239, 68, 68, 0.4);
+}
+
+.mfr-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.mfr-list-header h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mfr-sort-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mfr-sort-label {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.mfr-sort-select {
+  width: 160px;
+  padding: 6px 10px;
+  font-size: 12.5px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  outline: none;
+}

@@ -31,7 +31,6 @@ function getTabIcon(tab: MfrTab, active: boolean) {
 
 export default function MfrPage() {
   const {
-    language,
     t,
     activeTab,
     setActiveTab,
@@ -60,19 +59,14 @@ export default function MfrPage() {
   ];
 
   return (
-    <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div id="mfr-screen" className="mfr-theme mfr-screen">
       {/* Dashboard Title */}
       <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
         {t('productionDashboardTitlePart1')} <span className="mfr-accent">{t('productionDashboardTitlePart2')}</span>
       </h2>
 
       {/* Dashboard Cards Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
-        gap: '12px',
-        marginBottom: '28px'
-      }}>
+      <div className="mfr-page-tabs-grid">
         {tabs.map(tab => {
           const isActive = activeTab === tab.key;
           const count = badgeCounts[tab.key] || 0;
@@ -80,62 +74,16 @@ export default function MfrPage() {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              style={{
-                background: isActive ? 'var(--accent-mfr-glow)' : 'var(--surface)',
-                border: isActive ? '2px solid var(--accent-mfr)' : '1px solid var(--border)',
-                borderRadius: '12px',
-                padding: '16px 12px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                boxShadow: isActive ? '0 8px 20px var(--accent-mfr-glow)' : 'none',
-                position: 'relative'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.borderColor = 'var(--accent-mfr)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                }
-              }}
+              className={`mfr-page-tab-btn ${isActive ? 'mfr-page-tab-btn--active' : ''}`}
             >
-              <div style={{
-                color: isActive ? 'var(--accent-mfr)' : 'var(--muted)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
+              <div className="mfr-page-tab-icon">
                 {getTabIcon(tab.key, isActive)}
               </div>
-              <span style={{
-                fontSize: '12px',
-                fontWeight: isActive ? 700 : 500,
-                color: isActive ? 'var(--text)' : 'var(--muted)',
-                textAlign: 'center'
-              }}>
+              <span className="mfr-page-tab-label">
                 {tab.label}
               </span>
               {count > 0 && (
-                <span style={{
-                  position: 'absolute',
-                  top: '8px',
-                  right: '8px',
-                  background: 'var(--danger)',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 700,
-                  padding: '2px 6px',
-                  borderRadius: '10px',
-                  boxShadow: '0 2px 5px rgba(239, 68, 68, 0.4)'
-                }}>
+                <span className="mfr-page-tab-badge">
                   {count}
                 </span>
               )}
@@ -145,19 +93,19 @@ export default function MfrPage() {
       </div>
 
       {/* Orders List Header */}
-      <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="mfr-list-header">
+        <h3>
           {t('orderListLabel')}{' '}
           <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>{tabs.find(t => t.key === activeTab)?.label}</span>
         </h3>
 
         {/* Sort Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '12.5px', color: 'var(--muted)' }}>{t('sortByDate')}:</span>
+        <div className="mfr-sort-row">
+          <span className="mfr-sort-label">{t('sortByDate')}:</span>
           <select
             value={sortOrder}
             onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
-            style={{ width: '160px', padding: '6px 10px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)' }}
+            className="mfr-sort-select"
           >
             <option value="desc">{t('newestFirst')}</option>
             <option value="asc">{t('oldestFirst')}</option>
@@ -167,11 +115,11 @@ export default function MfrPage() {
 
       <div className="product-list">
         {filteredProducts.length === 0 ? (
-          <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '40px 0' }}>
+          <div className="empty-state">
             <div className="empty-icon">
-              <Factory size={36} style={{ color: 'var(--muted)' }} />
+              <Factory size={36} />
             </div>
-            <p style={{ margin: 0, color: 'var(--muted)' }}>
+            <p>
               {t('noOrdersInTab')}
             </p>
           </div>
@@ -182,8 +130,6 @@ export default function MfrPage() {
               product={p}
               activeTab={activeTab}
               isUnseen={unseenIds[activeTab]?.includes(p.id) ?? false}
-              language={language}
-              t={t}
               onUpdateStatus={handleUpdateStatus}
               onMarkAsSeen={handleMarkSingleAsSeen}
               onOpenDefectDetails={openDefectDetails}
@@ -197,12 +143,9 @@ export default function MfrPage() {
         isOpen={isDetailsModalOpen}
         onClose={closeDefectDetails}
         product={selectedDefectProduct}
-        language={language}
-        t={t}
       />
 
     </div>
   );
 }
-
 
