@@ -36,20 +36,7 @@ export default function useSearchMfr() {
   const [lastCursor, setLastCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
 
-  // Search Filters
-  const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
 
-  // Debounce search query to avoid spamming API requests on every keystroke
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedSearchQuery(searchQuery);
-    }, 400);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [searchQuery]);
 
   // Load B2B connections and sent requests on mount to ensure fresh state
   useEffect(() => {
@@ -74,7 +61,7 @@ export default function useSearchMfr() {
       const currentCursor = reset ? null : lastCursor;
       const data = await api.searchManufacturers(
         selectedCity || undefined,
-        selectedCategory || debouncedSearchQuery || undefined,
+        selectedCategory || undefined,
         currentCursor || undefined,
         10
       );
@@ -87,12 +74,12 @@ export default function useSearchMfr() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCity, selectedCategory, debouncedSearchQuery, lastCursor]);
+  }, [selectedCity, selectedCategory, lastCursor]);
 
   // Initial fetch or fetch on filter change
   useEffect(() => {
     fetchManufacturers(true);
-  }, [selectedCity, selectedCategory, debouncedSearchQuery]);
+  }, [selectedCity, selectedCategory]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
@@ -109,7 +96,6 @@ export default function useSearchMfr() {
   }, []);
 
   const handleResetFilters = useCallback(() => {
-    setSearchQuery('');
     setSelectedCity('');
     setSelectedCategory('');
     setMustHaveGallery(false);
@@ -160,8 +146,7 @@ export default function useSearchMfr() {
     loading,
     error,
     actionLoadingMap,
-    searchQuery,
-    setSearchQuery,
+
     selectedCity,
     selectedCategory,
     mustHaveGallery,

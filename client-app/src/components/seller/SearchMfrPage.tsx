@@ -10,7 +10,6 @@ export default function SearchMfrPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const {
     loading, error, actionLoadingMap,
-    searchQuery, setSearchQuery,
     selectedCity, selectedCategory,
     mustHaveGallery, setMustHaveGallery,
     mustHaveAvatar, setMustHaveAvatar,
@@ -26,7 +25,7 @@ export default function SearchMfrPage() {
 
 
 
-  const hasActiveFilters = searchQuery || selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;
+  const hasActiveFilters = selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;
 
   return (
     <div className="smfr-page">
@@ -56,19 +55,7 @@ export default function SearchMfrPage() {
               )}
             </div>
 
-            {/* Text Search */}
-            <div className="form-group" style={{ margin: 0 }}>
-              <div className="smfr-search-wrap">
-                <Search size={14} className="smfr-search-icon" />
-                <input
-                  type="text"
-                  className="smfr-search-input"
-                  placeholder={language === 'tr' ? 'İsim, kullanıcı adı, bio...' : 'Search name, username...'}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-            </div>
+
 
             {/* City Filter */}
             <div>
