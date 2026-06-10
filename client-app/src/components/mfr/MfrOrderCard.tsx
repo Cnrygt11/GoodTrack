@@ -32,10 +32,10 @@ export default function MfrOrderCard({
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
   const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
     : '';
 
   const status = p.status || (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
@@ -129,7 +129,7 @@ export default function MfrOrderCard({
             {p.completedAt && (
               <span className="moc-completed-span">
                 <CheckCircle2 size={11} />
-                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</strong>
+                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
             {!(status === 'shipped' || status === 'cancelled') && (

@@ -269,6 +269,7 @@ export const translations = {
     editBtn: 'Düzenle',
     deleteBtn: 'Sil',
     selectedLabel: 'Seçildi',
+    byLabel: 'Kim:',
   },
   en: {
     // Auth Page
@@ -540,6 +541,7 @@ export const translations = {
     editBtn: 'Edit',
     deleteBtn: 'Delete',
     selectedLabel: 'Selected',
+    byLabel: 'By:',
   }
 } as const;
 

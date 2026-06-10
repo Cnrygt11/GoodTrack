@@ -80,8 +80,8 @@ export default function OrderDetailPage() {
   const toShipIndex = allLogs.findIndex(log => log.status === 'to_ship');
   const visibleLogs = (user?.role === 'mfr' && toShipIndex !== -1) ? allLogs.slice(0, toShipIndex + 1) : allLogs;
 
-  const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '';
+  const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
     <div style={{ maxWidth: '1000px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
@@ -214,7 +214,7 @@ export default function OrderDetailPage() {
                   <CheckCircle2 size={13} />
                   {t('completedDateLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{new Date(product.completedAt).toLocaleDateString('tr-TR')}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{new Date(product.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}</span>
               </div>
             )}
           </div>
@@ -264,7 +264,7 @@ export default function OrderDetailPage() {
             }} />
 
             {visibleLogs.map((log, index) => {
-              const dateStr = new Date(log.timestamp).toLocaleString('tr-TR');
+              const dateStr = new Date(log.timestamp).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US');
               const isActive = index === visibleLogs.length - 1;
               const accentThemeColor = user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)';
 
@@ -293,7 +293,7 @@ export default function OrderDetailPage() {
                       <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{dateStr}</span>
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                      <span><strong>Kim:</strong> {log.userName}</span>
+                      <span><strong>{t('byLabel')}</strong> {log.userName}</span>
                     </div>
                   </div>
                 </div>
