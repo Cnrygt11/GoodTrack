@@ -100,16 +100,16 @@ export default function MyAccountPage() {
   const glowBg = profile.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)';
 
   return (
-    <div style={{ maxWidth: '650px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out', paddingBottom: '40px' }}>
+    <div className="profile-page">
       
       {/* Back to dashboard breadcrumb */}
       <button 
         onClick={() => navigate(profile.role === 'mfr' ? ROUTES.mfrOrders : ROUTES.sellerOrders)}
         className="btn-back" 
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
+        style={{ marginBottom: '24px' }}
       >
         <ArrowLeft size={14} />
-        {language === 'tr' ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
+        {t('backToDashboard')}
       </button>
 
       {flowStep === 'profile' && (
@@ -117,22 +117,10 @@ export default function MyAccountPage() {
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', borderBottom: '1px solid var(--border)', paddingBottom: '20px' }}>
             {/* Profile Picture Avatar */}
-            <div style={{ position: 'relative', width: '72px', height: '72px' }}>
+            <div className="profile-avatar-wrapper">
               <div 
                 onClick={() => avatarInputRef.current?.click()}
-                style={{ 
-                  width: '72px', 
-                  height: '72px', 
-                  borderRadius: '50%', 
-                  background: 'var(--surface2)', 
-                  border: `2px solid ${accentColor}`,
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  position: 'relative'
-                }}
+                className="profile-avatar"
                 title={t('changePictureBtn')}
               >
                 {profilePicture ? (
@@ -144,20 +132,7 @@ export default function MyAccountPage() {
                 )}
                 
                 {/* Overlay camera icon on hover */}
-                <div style={{
-                  position: 'absolute',
-                  inset: 0,
-                  background: 'rgba(0,0,0,0.5)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: 0,
-                  transition: 'opacity 0.2s',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
-                >
+                <div className="profile-avatar-overlay">
                   <Camera size={18} style={{ color: '#fff' }} />
                 </div>
               </div>
@@ -380,44 +355,16 @@ export default function MyAccountPage() {
                     </span>
                   </div>
 
-                  <div style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
-                    gap: '12px', 
-                    background: 'var(--surface2)', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: '8px', 
-                    padding: '12px' 
-                  }}>
+                  <div className="profile-img-grid">
                     {productImages.map((img, index) => (
                       <div 
-                        key={index} 
-                        style={{ 
-                          position: 'relative', 
-                          aspectRatio: '1', 
-                          borderRadius: '6px', 
-                          border: '1px solid var(--border)', 
-                          overflow: 'hidden',
-                          background: 'var(--surface3)'
-                        }}
+                        key={img.substring(0, 50)} 
+                        className="profile-img-item"
                       >
                         <img src={img} alt={`Showcase ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         
                         {/* Hover Overlay Actions */}
-                        <div style={{
-                          position: 'absolute',
-                          inset: 0,
-                          background: 'rgba(0,0,0,0.6)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '8px',
-                          opacity: 0,
-                          transition: 'opacity 0.2s'
-                        }}
-                        onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                        onMouseLeave={(e) => (e.currentTarget.style.opacity = '0')}
-                        >
+                        <div className="profile-img-overlay">
                           <button
                             type="button"
                             onClick={() => replaceInputRefs.current[index]?.click()}
@@ -452,28 +399,7 @@ export default function MyAccountPage() {
                       <button
                         type="button"
                         onClick={() => galleryInputRef.current?.click()}
-                        style={{
-                          aspectRatio: '1',
-                          borderRadius: '6px',
-                          border: '2px dashed var(--border)',
-                          background: 'transparent',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'var(--muted)',
-                          cursor: 'pointer',
-                          gap: '4px',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.borderColor = accentColor;
-                          e.currentTarget.style.color = accentColor;
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.borderColor = 'var(--border)';
-                          e.currentTarget.style.color = 'var(--muted)';
-                        }}
+                        className="profile-add-img-btn"
                       >
                         <Plus size={20} />
                         <span style={{ fontSize: '10px' }}>{language === 'tr' ? 'Görsel Ekle' : 'Add Image'}</span>
@@ -501,16 +427,7 @@ export default function MyAccountPage() {
                 </div>
 
                 {/* Visibility Toggle */}
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  padding: '14px 16px', 
-                  background: 'var(--surface2)', 
-                  borderRadius: '8px', 
-                  border: '1px solid var(--border)',
-                  marginTop: '10px'
-                }}>
+                <div className="profile-visibility-row">
                   <div>
                     <strong style={{ fontSize: '14px', display: 'block' }}>{t('visibilityLabel')}</strong>
                     <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
