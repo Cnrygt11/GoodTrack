@@ -23,7 +23,7 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { connections, sentRequests, loadSentRequests } = useData();
+  const { connections, sentRequests, loadSentRequests, refreshConnections } = useData();
   const { showToast } = useToast();
   const { t, language } = useSettings();
 
@@ -38,6 +38,24 @@ export default function useSearchMfr() {
 
   // Search Filters
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+
+  // Debounce search query to avoid spamming API requests on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  // Load B2B connections and sent requests on mount to ensure fresh state
+  useEffect(() => {
+    refreshConnections().catch(console.error);
+    loadSentRequests().catch(console.error);
+  }, [refreshConnections, loadSentRequests]);
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
@@ -56,7 +74,7 @@ export default function useSearchMfr() {
       const currentCursor = reset ? null : lastCursor;
       const data = await api.searchManufacturers(
         selectedCity || undefined,
-        selectedCategory || searchQuery || undefined,
+        selectedCategory || debouncedSearchQuery || undefined,
         currentCursor || undefined,
         10
       );
@@ -69,12 +87,12 @@ export default function useSearchMfr() {
     } finally {
       setLoading(false);
     }
-  }, [selectedCity, selectedCategory, searchQuery, lastCursor]);
+  }, [selectedCity, selectedCategory, debouncedSearchQuery, lastCursor]);
 
   // Initial fetch or fetch on filter change
   useEffect(() => {
     fetchManufacturers(true);
-  }, [selectedCity, selectedCategory, searchQuery]);
+  }, [selectedCity, selectedCategory, debouncedSearchQuery]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {
