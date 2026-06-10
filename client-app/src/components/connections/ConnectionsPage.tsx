@@ -162,12 +162,14 @@ export default function ConnectionsPage() {
                       background: 'var(--surface2)' 
                     }}
                   >
-                    <span 
+                    <button 
+                      type="button"
+                      className="btn-link"
                       onClick={() => handleConnectionClick(r.senderUsername)}
-                      style={{ fontWeight: 600, color: accentColor, cursor: 'pointer' }}
+                      style={{ fontWeight: 600, color: accentColor }}
                     >
                       @{r.senderUsername}
-                    </span>
+                    </button>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button 
                         className="btn-primary" 
@@ -218,12 +220,14 @@ export default function ConnectionsPage() {
                       background: 'var(--surface2)' 
                     }}
                   >
-                    <span 
+                    <button 
+                      type="button"
+                      className="btn-link"
                       onClick={() => handleConnectionClick(r.receiverUsername)}
-                      style={{ fontWeight: 600, color: 'var(--text)', cursor: 'pointer' }}
+                      style={{ fontWeight: 600, color: 'var(--text)' }}
                     >
                       @{r.receiverUsername}
-                    </span>
+                    </button>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {getStatusBadge(r.status)}
                       {r.status !== 'pending' && (
@@ -268,9 +272,22 @@ export default function ConnectionsPage() {
                     background: 'var(--surface2)' 
                   }}
                 >
-                  <div 
+                  <button 
+                    type="button"
                     onClick={() => handleConnectionClick(c.username)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '12px', 
+                      cursor: 'pointer',
+                      border: 'none',
+                      background: 'none',
+                      textAlign: 'left',
+                      width: '100%',
+                      padding: 0,
+                      font: 'inherit',
+                      color: 'inherit'
+                    }}
                   >
                     <div style={{ 
                       width: '40px', 
@@ -295,7 +312,7 @@ export default function ConnectionsPage() {
                         {c.role === 'mfr' ? t('mfr') : t('seller')}
                       </span>
                     </div>
-                  </div>
+                  </button>
                   
                   <div style={{ display: 'flex', gap: '8px' }}>
                     <button 
