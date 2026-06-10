@@ -30,7 +30,7 @@ export default function useSearchMfr() {
   const [manufacturers, setManufacturers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoadingMap, setActionLoadingMap] = useState<Record<string, boolean>>({});
 
   // Pagination & Cursor State
   const [lastCursor, setLastCursor] = useState<string | null>(null);
@@ -114,21 +114,34 @@ export default function useSearchMfr() {
 
   const handleSendConnection = useCallback(async (username: string) => {
     try {
-      setActionLoading(true);
+      setActionLoadingMap(prev => ({ ...prev, [username]: true }));
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
       await loadSentRequests();
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     } finally {
-      setActionLoading(false);
+      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
+    }
+  }, [t, loadSentRequests, showToast]);
+
+  const handleCancelConnection = useCallback(async (requestId: string, username: string) => {
+    try {
+      setActionLoadingMap(prev => ({ ...prev, [username]: true }));
+      const data = await api.deleteSentRequest(requestId);
+      showToast(data.message || t('connReqDeleted'));
+      await loadSentRequests();
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err));
+    } finally {
+      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     }
   }, [t, loadSentRequests, showToast]);
 
   return {
     loading,
     error,
-    actionLoading,
+    actionLoadingMap,
     searchQuery,
     setSearchQuery,
     selectedCity,
@@ -146,6 +159,7 @@ export default function useSearchMfr() {
     handleToggleCategory,
     handleResetFilters,
     handleSendConnection,
+    handleCancelConnection,
     fetchManufacturers: () => fetchManufacturers(true),
     loadMore,
     language,

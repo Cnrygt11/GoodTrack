@@ -9,7 +9,7 @@ export default function SearchMfrPage() {
   const navigate = useNavigate();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const {
-    loading, error, actionLoading,
+    loading, error, actionLoadingMap,
     searchQuery, setSearchQuery,
     selectedCity, selectedCategory,
     mustHaveGallery, setMustHaveGallery,
@@ -19,7 +19,7 @@ export default function SearchMfrPage() {
     connections, sentRequests,
     hasMore,
     handleToggleCity, handleToggleCategory,
-    handleResetFilters, handleSendConnection,
+    handleResetFilters, handleSendConnection, handleCancelConnection,
     fetchManufacturers, loadMore,
     language, t,
   } = useSearchMfr();
@@ -168,7 +168,9 @@ export default function SearchMfrPage() {
               <div className="smfr-card-grid">
                 {filteredAndSortedManufacturers.map((mfr) => {
                   const isConnected = connections.some((c) => c.username === mfr.username);
-                  const isPending = sentRequests.some((r) => r.receiverUsername === mfr.username && r.status === 'pending');
+                  const pendingRequest = sentRequests.find((r) => r.receiverUsername === mfr.username && r.status === 'pending');
+                  const isPending = !!pendingRequest;
+                  const isUserActionLoading = !!actionLoadingMap[mfr.username];
 
                   return (
                     <div key={mfr.username} className="card mfr-card">
@@ -259,19 +261,25 @@ export default function SearchMfrPage() {
                             <CheckCircle2 size={16} />
                             {language === 'tr' ? 'Bağlantı Aktif' : 'Connected'}
                           </div>
-                        ) : isPending ? (
-                          <div className="mfr-status-pill mfr-status-pill--pending">
-                            <Clock size={16} />
-                            {language === 'tr' ? 'İstek Beklemede' : 'Request Pending'}
-                          </div>
+                        ) : isPending && pendingRequest ? (
+                          <button
+                            type="button"
+                            onClick={() => handleCancelConnection(pendingRequest.id, mfr.username)}
+                            className="btn-secondary mfr-connect-btn"
+                            disabled={isUserActionLoading}
+                            style={{ color: 'var(--danger)', borderColor: 'var(--danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                          >
+                            {isUserActionLoading ? <Loader2 className="animate-spin" size={14} /> : <XCircle size={14} />}
+                            {t('cancelBtn')}
+                          </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleSendConnection(mfr.username)}
                             className="btn-primary mfr-connect-btn"
-                            disabled={actionLoading}
+                            disabled={isUserActionLoading}
                           >
-                            {actionLoading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+                            {isUserActionLoading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
                             {t('connectBtn')}
                           </button>
                         )}
