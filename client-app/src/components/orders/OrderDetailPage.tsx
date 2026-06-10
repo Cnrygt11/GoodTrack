@@ -31,7 +31,7 @@ export default function OrderDetailPage() {
         setProduct(data);
       } catch (err: unknown) {
         console.error(err);
-        setError(language === 'tr' ? 'Sipariş detayları yüklenemedi.' : 'Failed to load order details.');
+        setError(t('failedToLoadOrderDetails'));
       } finally {
         setLoading(false);
       }
@@ -53,7 +53,7 @@ export default function OrderDetailPage() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
         <Loader2 size={36} className="animate-spin" style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
-        <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</span>
+        <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{t('loadingText')}</span>
       </div>
     );
   }
@@ -62,11 +62,11 @@ export default function OrderDetailPage() {
     return (
       <div style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', textAlign: 'center' }} className="card">
         <AlertTriangle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-        <h3 style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{language === 'tr' ? 'Bir Hata Oluştu' : 'An Error Occurred'}</h3>
-        <p style={{ color: 'var(--muted)', margin: '0 0 24px 0' }}>{error || (language === 'tr' ? 'Sipariş bulunamadı.' : 'Order not found.')}</p>
+        <h3 style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{t('anErrorOccurred')}</h3>
+        <p style={{ color: 'var(--muted)', margin: '0 0 24px 0' }}>{error || t('orderNotFound')}</p>
         <button className="btn-secondary" onClick={handleBack} style={{ margin: '0 auto' }}>
           <ArrowLeft size={14} style={{ marginRight: '6px' }} />
-          {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+          {t('goBack')}
         </button>
       </div>
     );
@@ -90,10 +90,10 @@ export default function OrderDetailPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <button onClick={handleBack} className="btn-back" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ArrowLeft size={16} />
-          {language === 'tr' ? 'Kontrol Paneline Dön' : 'Back to Dashboard'}
+          {t('backToDashboard')}
         </button>
         <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
-          {language === 'tr' ? 'Sipariş ID:' : 'Order ID:'} <strong style={{ color: 'var(--text)' }}>{product.id}</strong>
+          {t('orderIdLabel')} <strong style={{ color: 'var(--text)' }}>{product.id}</strong>
         </span>
       </div>
 
@@ -141,7 +141,7 @@ export default function OrderDetailPage() {
           {/* Details Specifications */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <h4 style={{ margin: '0 0 4px 0', borderBottom: '1px solid var(--border)', paddingBottom: '8px', color: 'var(--text)' }}>
-              {language === 'tr' ? 'Sipariş Özellikleri' : 'Order Specifications'}
+              {t('orderSpecifications')}
             </h4>
             
             {product.text && (
@@ -160,7 +160,7 @@ export default function OrderDetailPage() {
                   <Ruler size={13} style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
                   {t('lengthLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.length} {language === 'tr' ? 'inç' : 'in'}</span>
+                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.length} {t('inchSuffix')}</span>
               </div>
             )}
 
@@ -197,7 +197,7 @@ export default function OrderDetailPage() {
             <div style={{ height: '8px' }} />
 
             <h4 style={{ margin: '0 0 4px 0', borderBottom: '1px solid var(--border)', paddingBottom: '8px', color: 'var(--text)' }}>
-              {language === 'tr' ? 'Sipariş Zamanları' : 'Order Chronology'}
+              {t('orderChronology')}
             </h4>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
@@ -230,7 +230,7 @@ export default function OrderDetailPage() {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontWeight: 700, fontSize: '13.5px', marginBottom: '6px' }}>
                 <Info size={14} />
-                {language === 'tr' ? 'Sorun Bildirimi:' : 'Reported Problem:'}
+                {t('reportedProblemLabel')}
               </div>
               <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--text)' }}>{product.defectNote}</p>
               {product.defectImage && (
@@ -302,7 +302,7 @@ export default function OrderDetailPage() {
 
             {visibleLogs.length === 0 && (
               <p style={{ margin: 0, padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
-                {language === 'tr' ? 'Hareket günlüğü bulunamadı.' : 'No timeline logs found.'}
+                {t('noTimelineLogs')}
               </p>
             )}
           </div>

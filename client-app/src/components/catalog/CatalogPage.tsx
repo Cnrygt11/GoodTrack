@@ -31,11 +31,7 @@ export default function CatalogPage() {
     <div id="catalog-screen">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h2 style={{ marginBottom: 0 }}>
-          {language === 'tr' ? (
-            <>ÜRÜN <span>KATALOĞU</span></>
-          ) : (
-            <>PRODUCT <span>CATALOG</span></>
-          )}
+          {t('productCatalogTitlePart1')} <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
         </h2>
       </div>
 
@@ -57,11 +53,7 @@ export default function CatalogPage() {
       />
 
       <h2>
-        {language === 'tr' ? (
-          <>KAYITLI <span>KATALOG ÜRÜNLERİ</span></>
-        ) : (
-          <>REGISTERED <span>CATALOG PRODUCTS</span></>
-        )}
+        {t('registeredCatalogProductsTitlePart1')} <span className="seller-accent">{t('registeredCatalogProductsTitlePart2')}</span>
       </h2>
 
       <div className="product-list">
@@ -77,7 +69,6 @@ export default function CatalogPage() {
             <CatalogItemCard
               key={p.id}
               product={p}
-              language={language}
               onEdit={handleStartEdit}
               onDelete={handleDelete}
             />

@@ -2,20 +2,20 @@ import React from 'react';
 import { Package, Edit2, Trash2 } from 'lucide-react';
 import { CatalogProduct } from '../../services/api';
 import Lightbox from '../ui/Lightbox';
+import { useSettings } from '../../context/SettingsContext';
 
 interface CatalogItemCardProps {
   product: CatalogProduct;
-  language: string;
   onEdit: (product: CatalogProduct) => void;
   onDelete: (id: string) => void;
 }
 
 export default function CatalogItemCard({
   product,
-  language,
   onEdit,
   onDelete
 }: CatalogItemCardProps) {
+  const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
   return (
     <div className="product-card">
@@ -26,7 +26,7 @@ export default function CatalogItemCard({
           style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; }}
           onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-          title={language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details'}
+          title={t('clickToInspectDetails')}
         >
           <img src={product.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         </div>
@@ -39,7 +39,7 @@ export default function CatalogItemCard({
         <div className="product-code">{product.productCode}</div>
         <div className="product-fields">
           <div className="product-field-chip" style={{ border: '1px solid var(--accent-mfr)', color: 'var(--accent-mfr)' }}>
-            <strong>{language === 'tr' ? 'Atanmış Üretici' : 'Assigned Manufacturer'}:</strong> {product.mfrName}
+            <strong>{t('assignedManufacturerLabel')}:</strong> {product.mfrName}
           </div>
         </div>
       </div>
@@ -63,7 +63,7 @@ export default function CatalogItemCard({
           onClick={() => onEdit(product)}
         >
           <Edit2 size={14} />
-          {language === 'tr' ? 'Düzenle' : 'Edit'}
+          {t('editBtn')}
         </button>
         <button 
           type="button"
@@ -83,7 +83,7 @@ export default function CatalogItemCard({
           onClick={() => onDelete(product.id)}
         >
           <Trash2 size={14} />
-          {language === 'tr' ? 'Sil' : 'Delete'}
+          {t('deleteBtn')}
         </button>
       </div>
       {product.image && (

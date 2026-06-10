@@ -55,7 +55,7 @@ export default function MfrOrderCard({
         <div
           className="moc-unseen-dot"
           style={{ background: sc.color, boxShadow: `0 0 8px ${sc.color}` }}
-          title={language === 'tr' ? 'Yeni! Tıklayarak okundu olarak işaretle.' : 'New! Click to mark as read.'}
+          title={t('unseenDotTitle')}
           onClick={(e) => { e.stopPropagation(); onMarkAsSeen(p.id, activeTab); }}
         />
       )}
@@ -67,7 +67,7 @@ export default function MfrOrderCard({
         <div
           className={`moc-thumb${p.image ? ' moc-thumb--clickable' : ''}`}
           onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
-          title={p.image ? (language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details') : undefined}
+          title={p.image ? t('clickToInspectDetails') : undefined}
         >
           {p.image
             ? <img src={p.image} alt="ürün" />
@@ -101,7 +101,7 @@ export default function MfrOrderCard({
             {p.length && (
               <span className="order-chip">
                 <Ruler size={10} style={{ color: 'var(--accent-mfr)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
+                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length} {t('inchSuffix')}
               </span>
             )}
             {p.sellerName && (

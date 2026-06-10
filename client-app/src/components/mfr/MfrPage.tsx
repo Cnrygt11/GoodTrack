@@ -59,22 +59,11 @@ export default function MfrPage() {
     { key: 'shipped' as const, label: t('tabArchiveMfr') }
   ];
 
-  const titleMap = {
-    awaiting: language === 'tr' ? <><span>GELEN </span><span>SİPARİŞLER</span></> : <><span>INCOMING </span><span>ORDERS</span></>,
-    corrected: language === 'tr' ? <><span>DÜZELTİLMİŞ </span><span>SİPARİŞLER</span></> : <><span>CORRECTED </span><span>ORDERS</span></>,
-    production: language === 'tr' ? <><span>ÜRETİMDEKİ </span><span>SİPARİŞLER</span></> : <><span>ORDERS </span><span>IN PRODUCTION</span></>,
-    completed: language === 'tr' ? <><span>ÜRETİMİ </span><span>TAMAMLANANLAR</span></> : <><span>COMPLETED </span><span>PRODUCTION</span></>,
-    delivered: language === 'tr' ? <><span>TESLİM </span><span>EDİLENLER</span></> : <><span>DELIVERED </span><span>ORDERS</span></>,
-    defective: language === 'tr' ? <><span>SİPARİŞ </span><span>SORUNLARI</span></> : <><span>ORDER </span><span>PROBLEMS</span></>,
-    shipped: language === 'tr' ? <><span>ARŞİVDEKİ </span><span>SİPARİŞLER</span></> : <><span>ARCHIVED </span><span>ORDERS</span></>
-  };
-
   return (
     <div id="mfr-screen" className="mfr-theme" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      
       {/* Dashboard Title */}
       <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
-        {language === 'tr' ? <>ÜRETİM <span>PANELİ</span></> : <>PRODUCTION <span>DASHBOARD</span></>}
+        {t('productionDashboardTitlePart1')} <span className="mfr-accent">{t('productionDashboardTitlePart2')}</span>
       </h2>
 
       {/* Dashboard Cards Grid */}
@@ -158,7 +147,7 @@ export default function MfrPage() {
       {/* Orders List Header */}
       <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', paddingBottom: '12px', marginBottom: '16px' }}>
         <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {language === 'tr' ? 'Sipariş Listesi:' : 'Order List:'}{' '}
+          {t('orderListLabel')}{' '}
           <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>{tabs.find(t => t.key === activeTab)?.label}</span>
         </h3>
 
@@ -183,7 +172,7 @@ export default function MfrPage() {
               <Factory size={36} style={{ color: 'var(--muted)' }} />
             </div>
             <p style={{ margin: 0, color: 'var(--muted)' }}>
-              {language === 'tr' ? 'Bu sekmede sipariş bulunamadı.' : 'No orders found for this tab.'}
+              {t('noOrdersInTab')}
             </p>
           </div>
         ) : (

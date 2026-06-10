@@ -41,7 +41,7 @@ export default function CatalogForm({
       <h3>
         {editingProduct 
           ? t('editCatalogProductTitle') 
-          : (language === 'tr' ? 'Yeni Katalog Ürünü Ekle' : 'Add New Catalog Product')}
+          : t('addNewCatalogProduct')}
       </h3>
       <form onSubmit={onSubmit}>
         <div className="form-grid">
@@ -76,7 +76,7 @@ export default function CatalogForm({
                 <>
                   <img className="image-preview" src={catalogImage} alt="preview" style={{ display: 'block' }} />
                   <span style={{ fontSize: '10px', color: 'var(--success)', marginTop: '4px' }}>
-                    {language === 'tr' ? 'Seçildi' : 'Selected'}: {imageFileName ? imageFileName.substring(0, 16) + '...' : ''}
+                    {t('selectedLabel')}: {imageFileName ? imageFileName.substring(0, 16) + '...' : ''}
                   </span>
                 </>
               )}
@@ -84,7 +84,7 @@ export default function CatalogForm({
           </div>
 
           <div className="form-group">
-            <label>{language === 'tr' ? 'Atanmış Üretici' : 'Assigned Manufacturer'}</label>
+            <label>{t('assignedManufacturerLabel')}</label>
             <select 
               value={mfrId}
               onChange={(e) => setMfrId(e.target.value)}
@@ -117,7 +117,7 @@ export default function CatalogForm({
             )}
             {editingProduct 
               ? t('saveChanges') 
-              : (language === 'tr' ? 'Kataloğa Ekle' : 'Add to Catalog')}
+              : t('addToCatalog')}
           </button>
         </div>
       </form>

@@ -42,14 +42,14 @@ export default function DefectDetailsModal({ isOpen, onClose, product, language,
               lineHeight: 1.5,
               whiteSpace: 'pre-wrap'
             }}>
-              {product.defectNote || (language === 'tr' ? 'Açıklama belirtilmemiş.' : 'No description provided.')}
+              {product.defectNote || t('noDescriptionProvided')}
             </div>
           </div>
 
           {product.defectImage ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                {language === 'tr' ? 'Hata Fotoğrafı' : 'Defect Image'}
+                {t('defectPhoto')}
               </span>
               <div style={{
                 background: 'var(--surface2)',
@@ -103,7 +103,7 @@ export default function DefectDetailsModal({ isOpen, onClose, product, language,
                 cursor: 'pointer'
               }}
             >
-              {language === 'tr' ? 'Kapat' : 'Close'}
+              {t('closeBtn')}
             </button>
           </div>
         </div>
