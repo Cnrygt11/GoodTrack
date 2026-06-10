@@ -9,9 +9,7 @@ import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useConnections() {
   const {
-    user,
-    isConnectionsModalOpen,
-    setIsConnectionsModalOpen
+    user
   } = useAuth();
 
   const {
@@ -175,8 +173,6 @@ export default function useConnections() {
 
   return {
     user,
-    isConnectionsModalOpen,
-    setIsConnectionsModalOpen,
     connections,
     incomingRequests,
     sentRequests,

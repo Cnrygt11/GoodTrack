@@ -10,7 +10,7 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { user, logout, setIsConnectionsModalOpen } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, language, toggleTheme, setLanguage, t } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();

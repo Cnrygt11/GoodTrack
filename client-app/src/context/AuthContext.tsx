@@ -5,10 +5,8 @@ import { AUTH_STORAGE_KEYS, AUTH_EVENTS } from '../constants/authKeys';
 
 interface AuthContextType {
   user: User | null;
-  isConnectionsModalOpen: boolean;
   login: (token: string, username: string, role: 'seller' | 'mfr', userId: string) => void;
   logout: () => void;
-  setIsConnectionsModalOpen: (open: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -24,7 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return token && username && role && userId ? { token, username, role, userId } : null;
   });
 
-  const [isConnectionsModalOpen, setIsConnectionsModalOpen] = useState(false);
+
 
   const login = useCallback((token: string, username: string, role: 'seller' | 'mfr', userId: string) => {
     localStorage.setItem(AUTH_STORAGE_KEYS.token, token);
@@ -40,7 +38,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(AUTH_STORAGE_KEYS.role);
     localStorage.removeItem(AUTH_STORAGE_KEYS.userId);
     setUser(null);
-    setIsConnectionsModalOpen(false);
   }, []);
 
   // Listen to automatic token invalidation events from API client
@@ -56,10 +53,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user,
-      isConnectionsModalOpen,
       login,
-      logout,
-      setIsConnectionsModalOpen
+      logout
     }}>
       {children}
     </AuthContext.Provider>
