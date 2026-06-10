@@ -203,6 +203,9 @@ body {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: border-color 0.2s, color 0.2s, transform 0.2s;
 }
 
@@ -858,6 +861,46 @@ h2 span.mfr-accent {
   gap: 8px;
   border-right: 1px solid var(--border);
   padding-right: 16px;
+}
+
+/* Layout Nav Buttons */
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nav-btn:hover {
+  border-color: var(--accent-seller);
+}
+
+.mfr-theme .nav-btn:hover {
+  border-color: var(--accent-mfr);
+}
+
+.nav-btn--active.nav-btn--seller {
+  border-color: var(--accent-seller);
+  background: var(--accent-seller-glow);
+}
+
+.nav-btn--active.nav-btn--mfr {
+  border-color: var(--accent-mfr);
+  background: var(--accent-mfr-glow);
+}
+
+.topbar-user-label {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 /* ===== RESPONSIVE STYLES ===== */

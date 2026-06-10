@@ -75,18 +75,8 @@ export default function Layout({ children }: LayoutProps) {
           
           {user.role === 'mfr' && (
             <button 
-              className="btn-secondary" 
+              className={`nav-btn ${currentPath === ROUTES.mfrOrders ? 'nav-btn--active nav-btn--mfr' : ''}`}
               onClick={() => navigate(ROUTES.mfrOrders)}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px', 
-                padding: '6px 14px', 
-                fontSize: '13px', 
-                borderRadius: '6px',
-                borderColor: currentPath === ROUTES.mfrOrders ? 'var(--accent-mfr)' : 'var(--border)',
-                background: currentPath === ROUTES.mfrOrders ? 'var(--accent-mfr-glow)' : 'var(--surface2)'
-              }}
             >
               <Package size={14} />
               {t('btnOrderScreen')}
@@ -96,36 +86,16 @@ export default function Layout({ children }: LayoutProps) {
           {user.role === 'seller' && (
             <>
               <button 
-                className="btn-secondary" 
+                className={`nav-btn ${currentPath === ROUTES.sellerOrders ? 'nav-btn--active nav-btn--seller' : ''}`}
                 onClick={() => navigate(ROUTES.sellerOrders)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  padding: '6px 14px', 
-                  fontSize: '13px', 
-                  borderRadius: '6px',
-                  borderColor: currentPath === ROUTES.sellerOrders ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === ROUTES.sellerOrders ? 'var(--accent-seller-glow)' : 'var(--surface2)'
-                }}
               >
                 <Package size={14} />
                 {t('btnOrderScreen')}
               </button>
 
               <button 
-                className="btn-secondary" 
+                className={`nav-btn ${currentPath === ROUTES.sellerSearch ? 'nav-btn--active nav-btn--seller' : ''}`}
                 onClick={() => navigate(currentPath === ROUTES.sellerSearch ? ROUTES.sellerOrders : ROUTES.sellerSearch)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: '6px', 
-                  padding: '6px 14px', 
-                  fontSize: '13px', 
-                  borderRadius: '6px',
-                  borderColor: currentPath === ROUTES.sellerSearch ? 'var(--accent-seller)' : 'var(--border)',
-                  background: currentPath === ROUTES.sellerSearch ? 'var(--accent-seller-glow)' : 'var(--surface2)'
-                }}
               >
                 <Search size={14} />
                 {t('findMfrTab')}
@@ -134,36 +104,24 @@ export default function Layout({ children }: LayoutProps) {
           )}
           
           <button 
-            className="btn-secondary" 
+            className={`nav-btn ${
+              currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections 
+                ? `nav-btn--active nav-btn--${user.role}` 
+                : ''
+            }`}
             onClick={() => navigate(user.role === 'seller' ? ROUTES.sellerConnections : ROUTES.mfrConnections)}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              padding: '6px 14px', 
-              fontSize: '13px', 
-              borderRadius: '6px',
-              borderColor: currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
-            }}
           >
             <Users size={14} />
             {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}
           </button>
 
           <button 
-            className="btn-secondary" 
+            className={`nav-btn ${
+              currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile 
+                ? `nav-btn--active nav-btn--${user.role}` 
+                : ''
+            }`}
             onClick={() => navigate(user.role === 'mfr' ? ROUTES.mfrProfile : ROUTES.sellerProfile)}
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              padding: '6px 14px', 
-              fontSize: '13px', 
-              borderRadius: '6px',
-              borderColor: currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile ? (user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)') : 'var(--border)',
-              background: currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile ? (user.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)') : 'var(--surface2)'
-            }}
           >
             <User size={14} />
             {t('btnMyAccount')}
@@ -172,7 +130,6 @@ export default function Layout({ children }: LayoutProps) {
           <button 
             className="btn-back" 
             onClick={logout}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <LogOut size={14} />
             {t('btnLogout')}
