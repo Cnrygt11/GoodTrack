@@ -136,10 +136,6 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
   const response = await fetch(`${BASE_URL}${endpoint}`, options);
 
   if (response.status === 401) {
-    localStorage.removeItem(AUTH_STORAGE_KEYS.token);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.username);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.role);
-    localStorage.removeItem(AUTH_STORAGE_KEYS.userId);
     window.dispatchEvent(new Event(AUTH_EVENTS.unauthorized));
     throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
   }
