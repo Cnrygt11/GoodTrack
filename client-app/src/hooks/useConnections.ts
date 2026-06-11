@@ -22,7 +22,9 @@ export default function useConnections() {
     loadProducts,
     setConnections,
     setIncomingRequests,
-    setSentRequests
+    setSentRequests,
+    optimisticConnections,
+    optimisticRemovals
   } = useData();
 
   const { showToast } = useToast();
@@ -128,13 +130,14 @@ export default function useConnections() {
       setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
+      optimisticConnections.current.delete(req.senderId);
       setIncomingRequests(prevIncoming);
       setConnections(prevConnections);
       showToast(extractErrorMessage(err));
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [incomingRequests, connections, setIncomingRequests, setConnections, user, showToast]);
+  }, [incomingRequests, connections, setIncomingRequests, setConnections, user, showToast, optimisticConnections]);
 
   const handleReject = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
@@ -203,11 +206,12 @@ export default function useConnections() {
       setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
+      optimisticRemovals.current.delete(targetId);
       setConnections(prevConnections);
       showToast(extractErrorMessage(err));
       setActionLoading(false);
     }
-  }, [language, confirm, connections, setConnections, showToast]);
+  }, [language, confirm, connections, setConnections, showToast, optimisticRemovals]);
 
   // Handle B2B directory search
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {
