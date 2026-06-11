@@ -1,7 +1,7 @@
 import React from 'react';
-import { ConnectionUser } from '../../services/api';
+import { ExtraFieldDef, ConnectionUser } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
-import { Camera, Send, CheckCircle2, Loader2 } from 'lucide-react';
+import { Camera, Plus, Send, CheckCircle2, X, Loader2 } from 'lucide-react';
 
 interface OrderFormProps {
   language: string;
@@ -18,6 +18,11 @@ interface OrderFormProps {
   mfrId: string;
   setMfrId: (v: string) => void;
   connections: ConnectionUser[];
+  extraFieldDefs: ExtraFieldDef[];
+  extraValues: Record<string, string>;
+  onExtraValueChange: (fieldId: string, val: string) => void;
+  onRemoveField: (id: string) => Promise<void>;
+  onOpenFieldModal: () => void;
   actionLoading: boolean;
   onClearForm: () => void;
   onSetActiveTab: (tab: 'list' | 'create') => void;
@@ -30,7 +35,8 @@ export default function OrderForm({
   orderImage, imageFileName, onImageChange,
   orderText, setOrderText,
   mfrId, setMfrId, connections,
-  actionLoading, onClearForm, onSetActiveTab, onSubmit
+  extraFieldDefs, extraValues, onExtraValueChange, onRemoveField,
+  onOpenFieldModal, actionLoading, onClearForm, onSetActiveTab, onSubmit
 }: OrderFormProps) {
   return (
     <>
@@ -112,6 +118,59 @@ export default function OrderForm({
               </select>
             </div>
           </div>
+
+          {/* Dynamic Extra Fields */}
+          <div className="extra-fields">
+            {extraFieldDefs.map(def => (
+              <div className="extra-field-row" key={def.id}>
+                <span className="field-label">{def.name}</span>
+                <span className="field-type">
+                  {def.type === 'text' ? (language === 'tr' ? 'Metin' : 'Text') : (language === 'tr' ? 'Liste' : 'List')}
+                </span>
+
+                <div className="field-input">
+                  {def.type === 'text' ? (
+                    <input
+                      type="text"
+                      placeholder={language === 'tr' ? `${def.name} giriniz` : `Enter ${def.name}`}
+                      value={extraValues[def.id] || ''}
+                      onChange={(e) => onExtraValueChange(def.id, e.target.value)}
+                    />
+                  ) : (
+                    <select
+                      value={extraValues[def.id] || ''}
+                      onChange={(e) => onExtraValueChange(def.id, e.target.value)}
+                    >
+                      <option value="">{t('selectDefault')}</option>
+                      {(def.options || []).map(o => (
+                        <option key={o} value={o}>{o}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  className="del-btn"
+                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                  onClick={() => onRemoveField(def.id)}
+                  title={language === 'tr' ? 'Kaldır' : 'Remove'}
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="add-field-btn"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            onClick={onOpenFieldModal}
+          >
+            <Plus size={16} />
+            {t('addNewFeature')}
+          </button>
 
           <div className="form-actions">
             <button
