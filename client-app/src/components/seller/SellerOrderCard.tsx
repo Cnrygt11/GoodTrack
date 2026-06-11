@@ -7,7 +7,7 @@ import { useToast } from '../../context/ToastContext';
 import Lightbox from '../ui/Lightbox';
 import {
   Package, Info, MoreVertical, Edit2, Trash2, Send, Archive, Calendar,
-  Factory, Tag, Ruler, CheckCircle2, Ban,
+  Factory, Tag, Ruler, CheckCircle2, Ban, AlertTriangle,
 } from 'lucide-react';
 
 interface SellerOrderCardProps {
@@ -23,12 +23,14 @@ interface SellerOrderCardProps {
   onShip: (productId: string) => Promise<void>;
   onViewTimeline: (product: Product) => void;
   onMarkSeen: (productId: string, tab: ListFilter) => void;
+  onViewBrokenNote?: (product: Product) => void;
 }
 
 export default function SellerOrderCard({
   product: p, listFilter,
   isUnseen, isDropdownOpen,
   onDropdownToggle, onEdit, onDelete, onCancel, onVerify, onShip, onViewTimeline, onMarkSeen,
+  onViewBrokenNote,
 }: SellerOrderCardProps) {
   // Read language, t and showToast from context — no prop drilling needed
   const { language, t } = useSettings();
@@ -141,6 +143,34 @@ export default function SellerOrderCard({
             }}>
               {sc.icon} {sc.label}
             </span>
+            {status === 'broken' && p.defectNote && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewBrokenNote?.(p);
+                }}
+                className="icon-btn"
+                style={{
+                  padding: '4px',
+                  borderRadius: '50%',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '6px',
+                  transition: 'background 0.2s',
+                }}
+                title={language === 'tr' ? 'Bozuk Sipariş Açıklaması' : 'Broken Order Explanation'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+              >
+                <AlertTriangle size={12} />
+              </button>
+            )}
           </div>
 
           {/* Chips */}

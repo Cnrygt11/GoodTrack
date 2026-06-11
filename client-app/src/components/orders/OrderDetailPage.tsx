@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, Product } from '../../services/api';
 import { getStatusConfig } from '../../utils/statusConfig';
+import BrokenDetailsModal from '../seller/BrokenDetailsModal';
 import {
   ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban,
   Calendar, Factory, Tag, Ruler, Send, Archive, Info, Loader2, User
@@ -19,6 +20,7 @@ export default function OrderDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -123,6 +125,31 @@ export default function OrderDetailPage() {
             }}>
               {sc.icon} {sc.label}
             </span>
+            {status === 'broken' && product.defectNote && user?.role === 'seller' && (
+              <button
+                type="button"
+                onClick={() => setIsBrokenModalOpen(true)}
+                className="icon-btn"
+                style={{
+                  padding: '4px',
+                  borderRadius: '50%',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginLeft: '6px',
+                  transition: 'background 0.2s',
+                }}
+                title={language === 'tr' ? 'Bozuk Sipariş Açıklaması' : 'Broken Order Explanation'}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+              >
+                <AlertTriangle size={12} />
+              </button>
+            )}
           </div>
 
           {/* Large Image Preview */}
@@ -309,6 +336,12 @@ export default function OrderDetailPage() {
         </div>
 
       </div>
+
+      <BrokenDetailsModal
+        isOpen={isBrokenModalOpen}
+        onClose={() => setIsBrokenModalOpen(false)}
+        product={product}
+      />
     </div>
   );
 }

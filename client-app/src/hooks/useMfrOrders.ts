@@ -27,6 +27,10 @@ export default function useMfrOrders() {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
+  // Broken order report modal state
+  const [brokenProductId, setBrokenProductId] = useState<string | null>(null);
+  const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
+
   // Timeline modal state
   const navigate = useNavigate();
 
@@ -117,10 +121,16 @@ export default function useMfrOrders() {
     }
   }, []);
 
-  const handleUpdateStatus = useCallback(async (productId: string, status: string) => {
+  const handleUpdateStatus = useCallback(async (productId: string, status: string, defectNote?: string) => {
+    if (status === 'broken' && !defectNote) {
+      setBrokenProductId(productId);
+      setIsBrokenModalOpen(true);
+      return;
+    }
+
     try {
       setActionLoading(true);
-      const data = await api.updateOrderStatus(productId, status);
+      const data = await api.updateOrderStatus(productId, status, defectNote);
       showToast(data.message || t('statusUpdatedSuccess'));
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
@@ -128,6 +138,21 @@ export default function useMfrOrders() {
       setActionLoading(false);
     }
   }, [showToast, t]);
+
+  const handleBrokenSubmit = useCallback(async (note: string) => {
+    if (!brokenProductId) return;
+    try {
+      setActionLoading(true);
+      const data = await api.updateOrderStatus(brokenProductId, 'broken', note);
+      showToast(data.message || t('statusUpdatedSuccess'));
+      setIsBrokenModalOpen(false);
+      setBrokenProductId(null);
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err));
+    } finally {
+      setActionLoading(false);
+    }
+  }, [brokenProductId, showToast, t]);
 
   const openDefectDetails = useCallback((product: Product) => {
     setSelectedDefectProduct(product);
@@ -175,6 +200,9 @@ export default function useMfrOrders() {
     handleMarkSingleAsSeen,
     openDefectDetails,
     closeDefectDetails,
+    isBrokenModalOpen,
+    setIsBrokenModalOpen,
+    handleBrokenSubmit,
     filteredProducts
   };
 }

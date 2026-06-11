@@ -456,7 +456,7 @@ public class ProductService : IProductService
         {
             OrderStatus.Cancelled => ApplyCancelled(product, oldStatus, role),
             OrderStatus.Production => await ApplyProductionAsync(product, oldStatus, role),
-            OrderStatus.Broken => ApplyBroken(product, oldStatus, role),
+            OrderStatus.Broken => ApplyBroken(product, oldStatus, role, defectNote),
             OrderStatus.Completed => ApplyCompleted(product, oldStatus, role),
             OrderStatus.Delivered => ApplyDelivered(product, oldStatus, role),
             OrderStatus.ToShip => ApplyToShip(product, oldStatus, role),
@@ -504,7 +504,7 @@ public class ProductService : IProductService
             : "Sorunlu sipariş üretici tarafından tekrar üretime alındı.";
     }
 
-    private static string ApplyBroken(Product p, string oldStatus, string role)
+    private static string ApplyBroken(Product p, string oldStatus, string role, string? defectNote)
     {
         if (role != Roles.Mfr)
             throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
@@ -515,7 +515,10 @@ public class ProductService : IProductService
         p.IsPendingApproval = false;
         p.IsDefective = false;
         p.Completed = false;
-        return "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.";
+        p.DefectNote = defectNote;
+        return string.IsNullOrEmpty(defectNote)
+            ? "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi."
+            : $"Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi. Açıklama: {defectNote}";
     }
 
     private static string ApplyCompleted(Product p, string oldStatus, string role)

@@ -41,6 +41,20 @@ export default function useSellerOrders() {
   // --- Dropdown State ---
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
 
+  // --- Broken Order Modal State ---
+  const [selectedBrokenProduct, setSelectedBrokenProduct] = useState<Product | null>(null);
+  const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
+
+  const openBrokenDetails = useCallback((p: Product) => {
+    setSelectedBrokenProduct(p);
+    setIsBrokenModalOpen(true);
+  }, []);
+
+  const closeBrokenDetails = useCallback(() => {
+    setIsBrokenModalOpen(false);
+    setSelectedBrokenProduct(null);
+  }, []);
+
   // --- Sub-hooks ---
   const badges = useSellerOrderBadges(products, listFilter);
 
@@ -139,5 +153,8 @@ export default function useSellerOrders() {
 
     // Dropdown
     activeDropdownId, setActiveDropdownId,
+
+    // Broken details modal
+    isBrokenModalOpen, selectedBrokenProduct, openBrokenDetails, closeBrokenDetails,
   };
 }

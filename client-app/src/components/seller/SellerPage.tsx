@@ -5,6 +5,7 @@ import OrderForm from './OrderForm';
 import SellerOrderCard from './SellerOrderCard';
 import AddFieldModal from './AddFieldModal';
 import DefectReportModal from './DefectReportModal';
+import BrokenDetailsModal from './BrokenDetailsModal';
 import CatalogPage from '../catalog/CatalogPage';
 import { ListFilter, SellerTabId } from '../../types/orders';
 
@@ -41,6 +42,7 @@ export default function SellerPage() {
     handleCancelOrder, handleVerifyOrder, handleShipOrder,
     handleDefectImageChange, handleDefectReportSubmit,
     handleMarkSingleAsSeen,
+    isBrokenModalOpen, selectedBrokenProduct, openBrokenDetails, closeBrokenDetails,
   } = useSellerOrders();
 
   const tabs = [
@@ -164,6 +166,7 @@ export default function SellerPage() {
                   onShip={handleShipOrder}
                   onViewTimeline={openTimeline}
                   onMarkSeen={handleMarkSingleAsSeen}
+                  onViewBrokenNote={openBrokenDetails}
                 />
               ))
             )}
@@ -188,6 +191,12 @@ export default function SellerPage() {
         defectImage={defectImage} defectImageFileName={defectImageFileName}
         actionLoading={actionLoading}
         onImageChange={handleDefectImageChange} onSubmit={handleDefectReportSubmit}
+      />
+
+      <BrokenDetailsModal
+        isOpen={isBrokenModalOpen}
+        onClose={closeBrokenDetails}
+        product={selectedBrokenProduct}
       />
 
     </div>

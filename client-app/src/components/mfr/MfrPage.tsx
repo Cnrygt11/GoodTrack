@@ -3,6 +3,7 @@ import { Factory, Package, Info, Clock, AlertTriangle, CheckCircle2, XCircle, Ar
 import useMfrOrders, { MfrTab } from '../../hooks/useMfrOrders';
 import MfrOrderCard from './MfrOrderCard';
 import DefectDetailsModal from './DefectDetailsModal';
+import BrokenReportModal from './BrokenReportModal';
 import { TranslationKey } from '../../services/translations';
 import { Product } from '../../services/api';
 
@@ -45,6 +46,10 @@ export default function MfrPage() {
     handleMarkSingleAsSeen,
     openDefectDetails,
     closeDefectDetails,
+    isBrokenModalOpen,
+    setIsBrokenModalOpen,
+    handleBrokenSubmit,
+    actionLoading,
     filteredProducts
   } = useMfrOrders();
 
@@ -143,6 +148,13 @@ export default function MfrPage() {
         isOpen={isDetailsModalOpen}
         onClose={closeDefectDetails}
         product={selectedDefectProduct}
+      />
+
+      <BrokenReportModal
+        isOpen={isBrokenModalOpen}
+        onClose={() => setIsBrokenModalOpen(false)}
+        onSubmit={handleBrokenSubmit}
+        actionLoading={actionLoading}
       />
 
     </div>
