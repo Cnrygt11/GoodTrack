@@ -55,9 +55,9 @@ export function getStatusConfig(
     case 'production':
       return { ...productionStyle, icon: React.createElement(Clock, { size: sz }), label: isReproduction ? t('statusReproduction') : t('statusInProduction') };
     case 'completed':
-      return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: t('statusCompleted') };
+      return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: isReproduction ? t('statusReproductionCompleted') : t('statusCompleted') };
     case 'delivered':
-      return { color: '#8bc34a', bg: 'rgba(139,195,74,0.1)', border: 'rgba(139,195,74,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: t('statusDelivered') };
+      return { color: '#8bc34a', bg: 'rgba(139,195,74,0.1)', border: 'rgba(139,195,74,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: isReproduction ? t('statusReproductionDelivered') : t('statusDelivered') };
     case 'defective':
       return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: React.createElement(XCircle, { size: sz }), label: t('statusDefective') };
     case 'missing':
