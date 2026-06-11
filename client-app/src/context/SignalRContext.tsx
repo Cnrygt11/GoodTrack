@@ -38,7 +38,20 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
       .withUrl(hubUrl, {
         accessTokenFactory: () => user.token
       })
-      .configureLogging(LogLevel.Information)
+      .configureLogging({
+        log(logLevel, message) {
+          if (message.includes('stopped during negotiation') || message.includes('AbortError')) {
+            return;
+          }
+          if (logLevel === LogLevel.Error) {
+            console.error('[SignalR]', message);
+          } else if (logLevel === LogLevel.Warning) {
+            console.warn('[SignalR]', message);
+          } else if (logLevel === LogLevel.Information) {
+            console.log('[SignalR]', message);
+          }
+        }
+      })
       .withAutomaticReconnect()
       .build();
 
