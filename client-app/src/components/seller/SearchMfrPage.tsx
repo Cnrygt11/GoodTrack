@@ -9,16 +9,15 @@ export default function SearchMfrPage() {
   const navigate = useNavigate();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const {
-    loading, error, actionLoadingMap,
+    loading, error,
     selectedCity, selectedCategory,
     mustHaveGallery, setMustHaveGallery,
     mustHaveAvatar, setMustHaveAvatar,
     availableCities,
     filteredAndSortedManufacturers,
-    connections, sentRequests,
     hasMore,
     handleToggleCity, handleToggleCategory,
-    handleResetFilters, handleSendConnection, handleCancelConnection,
+    handleResetFilters,
     fetchManufacturers, loadMore,
     language, t,
   } = useSearchMfr();
@@ -154,21 +153,12 @@ export default function SearchMfrPage() {
             <>
               <div className="smfr-card-grid">
                 {filteredAndSortedManufacturers.map((mfr) => {
-                  const isConnected = connections.some((c) => c.username === mfr.username);
-                  const pendingRequest = sentRequests.find((r) => r.receiverUsername === mfr.username && r.status === 'pending');
-                  const isPending = !!pendingRequest;
-                  const isUserActionLoading = !!actionLoadingMap[mfr.username];
-
                   return (
                     <div key={mfr.username} className="card mfr-card">
 
                       <div>
                         {/* Avatar & Name */}
-                        <div
-                          className="mfr-card-header"
-                          onClick={() => navigate(`/seller/profile/${mfr.username}`)}
-                          title={language === 'tr' ? 'Profili Görüntüle' : 'View Profile'}
-                        >
+                        <div className="mfr-card-header">
                           <div className="mfr-avatar">
                             {mfr.profilePicture ? (
                               <img
@@ -186,7 +176,7 @@ export default function SearchMfrPage() {
 
                           <div className="mfr-name-block">
                             <strong className="mfr-fullname">{mfr.firstName} {mfr.lastName}</strong>
-                            <span className="mfr-handle">@{mfr.username}</span>
+                            <span className="mfr-handle">{mfr.phoneNumber || (language === 'tr' ? 'Telefon numarası bulunmuyor' : 'No phone number')}</span>
                           </div>
                         </div>
 
@@ -238,53 +228,6 @@ export default function SearchMfrPage() {
                               ))}
                             </div>
                           </div>
-                        )}
-                      </div>
-
-                      {/* Action */}
-                      <div className="mfr-card-action">
-                        {isConnected ? (
-                          <div className="mfr-status-pill mfr-status-pill--connected">
-                            <CheckCircle2 size={16} />
-                            {language === 'tr' ? 'Bağlantı Aktif' : 'Connected'}
-                          </div>
-                        ) : isPending && pendingRequest ? (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                            <span style={{ fontSize: '13px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 500 }}>
-                              <Clock size={13} style={{ color: 'var(--warning)' }} />
-                              {language === 'tr' ? 'İstek Gönderildi' : 'Request Sent'}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => handleCancelConnection(pendingRequest.id, mfr.username)}
-                              className="btn-secondary"
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                color: 'var(--danger)',
-                                borderColor: 'var(--danger)',
-                                background: 'rgba(239, 68, 68, 0.05)',
-                                padding: '4px 10px',
-                                fontSize: '12px',
-                                borderRadius: '6px',
-                                height: '28px',
-                                cursor: 'pointer',
-                              }}
-                            >
-                              <XCircle size={12} />
-                              {t('cancelBtn')}
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => handleSendConnection(mfr.username)}
-                            className="btn-primary mfr-connect-btn"
-                          >
-                            <Plus size={14} />
-                            {t('connectBtn')}
-                          </button>
                         )}
                       </div>
 

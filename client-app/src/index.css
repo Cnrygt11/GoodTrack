@@ -1263,7 +1263,7 @@ h2 span.mfr-accent {
 
 .mfr-card { padding: 20px; background: var(--surface2); border: 1px solid var(--border); display: flex; flex-direction: column; gap: 14px; height: 100%; justify-content: space-between; transition: transform 0.2s, box-shadow 0.2s; }
 .mfr-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
-.mfr-card-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; cursor: pointer; }
+.mfr-card-header { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
 .mfr-avatar { width: 46px; height: 46px; border-radius: 50%; background: var(--surface2); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
 .mfr-avatar img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
 .mfr-avatar-initials { font-weight: 600; color: var(--accent-mfr); font-size: 15px; }
