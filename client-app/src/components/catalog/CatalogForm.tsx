@@ -1,6 +1,6 @@
 import React from 'react';
-import { Camera, Plus, Save, Loader2 } from 'lucide-react';
-import { CatalogProduct, ConnectionUser } from '../../services/api';
+import { Camera, Plus, Save, Loader2, X } from 'lucide-react';
+import { CatalogProduct, ConnectionUser, ExtraFieldDef } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
 
 interface CatalogFormProps {
@@ -18,6 +18,9 @@ interface CatalogFormProps {
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onClearForm: () => void;
   onSubmit: (e: React.FormEvent) => void;
+  extraFieldDefs: ExtraFieldDef[];
+  onOpenFieldModal: () => void;
+  onRemoveField: (id: string) => Promise<void>;
 }
 
 export default function CatalogForm({
@@ -34,7 +37,10 @@ export default function CatalogForm({
   connections,
   onImageChange,
   onClearForm,
-  onSubmit
+  onSubmit,
+  extraFieldDefs,
+  onOpenFieldModal,
+  onRemoveField
 }: CatalogFormProps) {
   return (
     <div className="form-card">
@@ -96,6 +102,52 @@ export default function CatalogForm({
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Dynamic Extra Fields */}
+        <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--muted)' }}>
+              {language === 'tr' ? 'Sipariş Özellikleri (Özel Alanlar)' : 'Order Custom Fields'}
+            </span>
+            <button
+              type="button"
+              className="add-field-btn"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', margin: 0, padding: '4px 10px', fontSize: '12px' }}
+              onClick={onOpenFieldModal}
+            >
+              <Plus size={14} />
+              {t('addNewFeature')}
+            </button>
+          </div>
+
+          {extraFieldDefs.length === 0 ? (
+            <p style={{ color: 'var(--muted)', fontSize: '12px', margin: 0, fontStyle: 'italic' }}>
+              {language === 'tr' ? 'Tanımlanmış özel alan bulunmuyor.' : 'No custom fields defined.'}
+            </p>
+          ) : (
+            <div className="extra-fields" style={{ margin: 0 }}>
+              {extraFieldDefs.map(def => (
+                <div className="extra-field-row" key={def.id} style={{ justifyContent: 'space-between', padding: '8px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className="field-label" style={{ fontWeight: 600, fontSize: '13px' }}>{def.name}</span>
+                    <span className="field-type" style={{ fontSize: '10px' }}>
+                      {def.type === 'text' ? (language === 'tr' ? 'Metin' : 'Text') : (language === 'tr' ? 'Liste' : 'List')}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    className="del-btn"
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                    onClick={() => onRemoveField(def.id)}
+                    title={language === 'tr' ? 'Kaldır' : 'Remove'}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="form-actions">
