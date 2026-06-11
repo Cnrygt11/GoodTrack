@@ -77,10 +77,6 @@ export default function SellerPage() {
           orderText={orderText} setOrderText={setOrderText}
           mfrId={mfrId} setMfrId={setMfrId}
           connections={connections}
-          extraFieldDefs={extraFieldDefs} extraValues={extraValues}
-          onExtraValueChange={handleExtraValueChange}
-          onRemoveField={handleRemoveField}
-          onOpenFieldModal={() => setIsFieldModalOpen(true)}
           actionLoading={actionLoading}
           onClearForm={handleClearForm}
           onSetActiveTab={setActiveTab}
