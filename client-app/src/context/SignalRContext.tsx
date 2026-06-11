@@ -70,6 +70,11 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
         setConnection(newConnection);
       })
       .catch(err => {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes('stopped during negotiation') || errMsg.includes('AbortError')) {
+          console.warn('[SignalR] Connection start aborted during negotiation (likely due to React StrictMode or HMR).');
+          return;
+        }
         console.error('[SignalR] Error establishing Tracking Hub connection:', err);
       });
 
