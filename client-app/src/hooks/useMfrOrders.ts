@@ -31,6 +31,11 @@ export default function useMfrOrders() {
   const [brokenProductId, setBrokenProductId] = useState<string | null>(null);
   const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
 
+  const closeBrokenModal = useCallback(() => {
+    setIsBrokenModalOpen(false);
+    setBrokenProductId(null);
+  }, []);
+
   // Timeline modal state
   const navigate = useNavigate();
 
@@ -122,7 +127,9 @@ export default function useMfrOrders() {
   }, []);
 
   const handleUpdateStatus = useCallback(async (productId: string, status: string, defectNote?: string) => {
+    console.log('[useMfrOrders] handleUpdateStatus:', { productId, status, defectNote });
     if (status === 'broken' && !defectNote) {
+      console.log('[useMfrOrders] Intercepted broken status without note. Opening BrokenReportModal...');
       setBrokenProductId(productId);
       setIsBrokenModalOpen(true);
       return;
@@ -140,6 +147,7 @@ export default function useMfrOrders() {
   }, [showToast, t]);
 
   const handleBrokenSubmit = useCallback(async (note: string) => {
+    console.log('[useMfrOrders] handleBrokenSubmit:', { brokenProductId, note });
     if (!brokenProductId) return;
     try {
       setActionLoading(true);
@@ -201,7 +209,7 @@ export default function useMfrOrders() {
     openDefectDetails,
     closeDefectDetails,
     isBrokenModalOpen,
-    setIsBrokenModalOpen,
+    closeBrokenModal,
     handleBrokenSubmit,
     filteredProducts
   };

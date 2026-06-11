@@ -47,7 +47,7 @@ export default function MfrPage() {
     openDefectDetails,
     closeDefectDetails,
     isBrokenModalOpen,
-    setIsBrokenModalOpen,
+    closeBrokenModal,
     handleBrokenSubmit,
     actionLoading,
     filteredProducts
@@ -152,7 +152,7 @@ export default function MfrPage() {
 
       <BrokenReportModal
         isOpen={isBrokenModalOpen}
-        onClose={() => setIsBrokenModalOpen(false)}
+        onClose={closeBrokenModal}
         onSubmit={handleBrokenSubmit}
         actionLoading={actionLoading}
       />
