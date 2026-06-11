@@ -49,14 +49,18 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     });
 
     newConnection.on('ReceiveConnectionRequest', () => {
-      console.log('[SignalR] Received Connection Request List Notification.');
-      loadIncomingRequestsRef.current();
-      loadSentRequestsRef.current();
+      console.log('[SignalR] Received Connection Request List Notification. Scheduling fetch...');
+      setTimeout(() => {
+        loadIncomingRequestsRef.current();
+        loadSentRequestsRef.current();
+      }, 1000);
     });
 
     newConnection.on('ReceiveConnectionUpdate', () => {
-      console.log('[SignalR] Received Connection Listing Notification.');
-      refreshConnectionsRef.current();
+      console.log('[SignalR] Received Connection Listing Notification. Scheduling fetch...');
+      setTimeout(() => {
+        refreshConnectionsRef.current();
+      }, 1000);
     });
 
     // Start connection
