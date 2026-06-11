@@ -23,6 +23,15 @@ public class CatalogProduct
     [FirestoreProperty("mfrName")]
     public string MfrName { get; set; } = string.Empty;
 
+    [FirestoreProperty("text")]
+    public string? Text { get; set; }
+
+    [FirestoreProperty("length")]
+    public string? Length { get; set; }
+
+    [FirestoreProperty("extras")]
+    public Dictionary<string, ExtraValue>? Extras { get; set; }
+
     [FirestoreProperty("createdAt")]
     public string CreatedAt { get; set; } = string.Empty;
 }

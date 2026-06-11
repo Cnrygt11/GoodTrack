@@ -15,7 +15,7 @@ export default function CatalogItemCard({
   onEdit,
   onDelete
 }: CatalogItemCardProps) {
-  const { t } = useSettings();
+  const { t, language } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
   return (
     <div className="product-card">
@@ -37,10 +37,28 @@ export default function CatalogItemCard({
       )}
       <div className="product-info">
         <div className="product-code">{product.productCode}</div>
-        <div className="product-fields">
+        <div className="product-fields" style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
           <div className="product-field-chip" style={{ border: '1px solid var(--accent-mfr)', color: 'var(--accent-mfr)' }}>
             <strong>{t('assignedManufacturerLabel')}:</strong> {product.mfrName}
           </div>
+          {product.text && (
+            <div className="product-field-chip" title={product.text}>
+              <strong>{t('customText')}:</strong> {product.text}
+            </div>
+          )}
+          {product.length && (
+            <div className="product-field-chip">
+              <strong>{t('lengthInch')}:</strong> {product.length} {language === 'tr' ? 'inç' : 'inches'}
+            </div>
+          )}
+          {product.extras && Object.values(product.extras).map((val, idx) => {
+            if (!val.value) return null;
+            return (
+              <div className="product-field-chip" key={idx} title={`${val.name}: ${val.value}`}>
+                <strong>{val.name}:</strong> {val.value}
+              </div>
+            );
+          })}
         </div>
       </div>
       

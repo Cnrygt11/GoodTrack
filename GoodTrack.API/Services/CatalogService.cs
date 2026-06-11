@@ -111,7 +111,10 @@ public class CatalogService : ICatalogService
         existing.MfrId = updatedProduct.MfrId;
         existing.MfrName = updatedProduct.MfrName;
         existing.Image = updatedProduct.Image;
-
+        existing.Text = updatedProduct.Text;
+        existing.Length = updatedProduct.Length;
+        existing.Extras = updatedProduct.Extras;
+        
         await _catalogRepository.SaveAsync(existing);
         return existing;
     }

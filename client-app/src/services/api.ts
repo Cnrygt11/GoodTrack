@@ -71,6 +71,9 @@ export interface CatalogProduct {
   image: string;
   mfrId: string;
   mfrName: string;
+  text?: string;
+  length?: string;
+  extras?: { [fieldId: string]: ExtraFieldValue };
 }
 
 export interface ExtraFieldDef {
@@ -202,6 +205,9 @@ export interface CreateCatalogProductPayload {
   image: string;
   mfrId: string;
   mfrName: string;
+  text?: string;
+  length?: string;
+  extras?: Record<string, ExtraFieldValue>;
 }
 
 export interface UpdateCatalogProductPayload {
@@ -209,6 +215,9 @@ export interface UpdateCatalogProductPayload {
   image: string;
   mfrId: string;
   mfrName: string;
+  text?: string;
+  length?: string;
+  extras?: Record<string, ExtraFieldValue>;
 }
 
 export interface CreateFieldPayload {

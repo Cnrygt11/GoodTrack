@@ -9,10 +9,16 @@ interface CatalogFormProps {
   editingProduct: CatalogProduct | null;
   productCode: string;
   setProductCode: (val: string) => void;
+  productText: string;
+  setProductText: (val: string) => void;
+  productLength: string;
+  setProductLength: (val: string) => void;
   mfrId: string;
   setMfrId: (val: string) => void;
   catalogImage: string | null;
   imageFileName: string;
+  extraValues: Record<string, string>;
+  onExtraValueChange: (fieldId: string, val: string) => void;
   actionLoading: boolean;
   connections: ConnectionUser[];
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -29,10 +35,16 @@ export default function CatalogForm({
   editingProduct,
   productCode,
   setProductCode,
+  productText,
+  setProductText,
+  productLength,
+  setProductLength,
   mfrId,
   setMfrId,
   catalogImage,
   imageFileName,
+  extraValues,
+  onExtraValueChange,
   actionLoading,
   connections,
   onImageChange,
@@ -55,7 +67,7 @@ export default function CatalogForm({
             <label>{t('productCode')}</label>
             <input 
               type="text" 
-              placeholder="Örn: A31" 
+              placeholder={language === 'tr' ? 'Örn: A31' : 'e.g. A31'}
               value={productCode}
               onChange={(e) => setProductCode(e.target.value)}
               required
@@ -82,11 +94,35 @@ export default function CatalogForm({
                 <>
                   <img className="image-preview" src={catalogImage} alt="preview" style={{ display: 'block' }} />
                   <span style={{ fontSize: '10px', color: 'var(--success)', marginTop: '4px' }}>
-                    {t('selectedLabel')}: {imageFileName ? imageFileName.substring(0, 16) + '...' : ''}
+                    {imageFileName.substring(0, 16)}...
                   </span>
                 </>
               )}
             </div>
+          </div>
+
+          <div className="form-group">
+            <label>{t('customText')}</label>
+            <input
+              type="text"
+              placeholder={language === 'tr' ? 'Metin giriniz' : 'Enter text'}
+              value={productText}
+              onChange={(e) => setProductText(e.target.value)}
+            />
+          </div>
+
+          <div className="form-group">
+            <label>{t('lengthInch')}</label>
+            <select
+              value={productLength}
+              onChange={(e) => setProductLength(e.target.value)}
+            >
+              <option value="">{t('selectDefault')}</option>
+              <option value="20">20 {language === 'tr' ? 'inç' : 'inches'}</option>
+              <option value="22">22 {language === 'tr' ? 'inç' : 'inches'}</option>
+              <option value="24">24 {language === 'tr' ? 'inç' : 'inches'}</option>
+              <option value="26">26 {language === 'tr' ? 'inç' : 'inches'}</option>
+            </select>
           </div>
 
           <div className="form-group">
@@ -128,13 +164,37 @@ export default function CatalogForm({
           ) : (
             <div className="extra-fields" style={{ margin: 0 }}>
               {extraFieldDefs.map(def => (
-                <div className="extra-field-row" key={def.id} style={{ justifyContent: 'space-between', padding: '8px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="extra-field-row" key={def.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '8px 12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
                     <span className="field-label" style={{ fontWeight: 600, fontSize: '13px' }}>{def.name}</span>
                     <span className="field-type" style={{ fontSize: '10px' }}>
                       {def.type === 'text' ? (language === 'tr' ? 'Metin' : 'Text') : (language === 'tr' ? 'Liste' : 'List')}
                     </span>
                   </div>
+
+                  <div className="field-input" style={{ flex: 1, maxWidth: '300px' }}>
+                    {def.type === 'text' ? (
+                      <input
+                        type="text"
+                        placeholder={language === 'tr' ? `${def.name} giriniz` : `Enter ${def.name}`}
+                        value={extraValues[def.id] || ''}
+                        onChange={(e) => onExtraValueChange(def.id, e.target.value)}
+                        style={{ width: '100%', padding: '6px', fontSize: '12px' }}
+                      />
+                    ) : (
+                      <select
+                        value={extraValues[def.id] || ''}
+                        onChange={(e) => onExtraValueChange(def.id, e.target.value)}
+                        style={{ width: '100%', padding: '6px', fontSize: '12px' }}
+                      >
+                        <option value="">{t('selectDefault')}</option>
+                        {(def.options || []).map(o => (
+                          <option key={o} value={o}>{o}</option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
                   <button
                     type="button"
                     className="del-btn"

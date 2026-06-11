@@ -25,10 +25,16 @@ export default function CatalogPage({
     editingProduct,
     productCode,
     setProductCode,
+    productText,
+    setProductText,
+    productLength,
+    setProductLength,
     mfrId,
     setMfrId,
     catalogImage,
     imageFileName,
+    extraValues,
+    handleExtraValueChange,
     actionLoading,
     handleImageChange,
     handleClearForm,
@@ -51,10 +57,16 @@ export default function CatalogPage({
         editingProduct={editingProduct}
         productCode={productCode}
         setProductCode={setProductCode}
+        productText={productText}
+        setProductText={setProductText}
+        productLength={productLength}
+        setProductLength={setProductLength}
         mfrId={mfrId}
         setMfrId={setMfrId}
         catalogImage={catalogImage}
         imageFileName={imageFileName}
+        extraValues={extraValues}
+        onExtraValueChange={handleExtraValueChange}
         actionLoading={actionLoading}
         connections={connections}
         onImageChange={handleImageChange}

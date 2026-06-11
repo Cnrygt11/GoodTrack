@@ -12,7 +12,8 @@ export default function useCatalog() {
   const {
     connections,
     catalogProducts,
-    loadCatalog
+    loadCatalog,
+    extraFieldDefs
   } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
@@ -23,11 +24,18 @@ export default function useCatalog() {
 
   // Catalog Form inputs
   const [productCode, setProductCode] = useState('');
+  const [productText, setProductText] = useState('');
+  const [productLength, setProductLength] = useState('');
   const [mfrId, setMfrId] = useState('');
   const [catalogImage, setCatalogImage] = useState<string | null>(null); // base64 string
   const [imageFileName, setImageFileName] = useState('');
+  const [extraValues, setExtraValues] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState(false);
   const isActionLoading = useRef(false);
+
+  const handleExtraValueChange = useCallback((fieldId: string, val: string) => {
+    setExtraValues((prev) => ({ ...prev, [fieldId]: val }));
+  }, []);
 
   const handleImageChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,9 +53,12 @@ export default function useCatalog() {
 
   const handleClearForm = useCallback(() => {
     setProductCode('');
+    setProductText('');
+    setProductLength('');
     setMfrId('');
     setCatalogImage(null);
     setImageFileName('');
+    setExtraValues({});
     setEditingProduct(null);
     // Clear the file input element
     const fileInput = document.getElementById('cat-image') as HTMLInputElement | null;
@@ -57,16 +68,25 @@ export default function useCatalog() {
   const handleStartEdit = useCallback((product: CatalogProduct) => {
     setEditingProduct(product);
     setProductCode(product.productCode);
+    setProductText(product.text || '');
+    setProductLength(product.length || '');
     setMfrId(product.mfrId);
     setCatalogImage(product.image);
     setImageFileName(product.image ? 'Mevcut Görsel' : '');
+    
+    // Set dynamic extras values
+    const initialExtras: Record<string, string> = {};
+    extraFieldDefs.forEach((def) => {
+      initialExtras[def.id] = product.extras?.[def.id]?.value || '';
+    });
+    setExtraValues(initialExtras);
     
     // Smooth scroll to form
     const formCard = document.querySelector('.form-card');
     if (formCard) {
       formCard.scrollIntoView({ behavior: 'smooth' });
     }
-  }, []);
+  }, [extraFieldDefs]);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +110,12 @@ export default function useCatalog() {
     const selectedMfr = connections.find(c => c.id === mfrId);
     const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
 
+    // Format extra fields
+    const formattedExtras: Record<string, any> = {};
+    extraFieldDefs.forEach((def) => {
+      formattedExtras[def.id] = { name: def.name, type: def.type, value: extraValues[def.id] || '' };
+    });
+
     try {
       isActionLoading.current = true;
       setActionLoading(true);
@@ -99,7 +125,10 @@ export default function useCatalog() {
           productCode: code,
           image: catalogImage,
           mfrId,
-          mfrName
+          mfrName,
+          text: productText,
+          length: productLength,
+          extras: formattedExtras
         });
 
         showToast(data.message || t('catalogUpdateSuccess'));
@@ -112,6 +141,9 @@ export default function useCatalog() {
           image: catalogImage,
           mfrId,
           mfrName,
+          text: productText,
+          length: productLength,
+          extras: formattedExtras
         });
 
         showToast(data.message || t('catalogAddSuccess'));
@@ -124,7 +156,7 @@ export default function useCatalog() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, catalogImage, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
+  }, [productCode, mfrId, catalogImage, productText, productLength, extraValues, extraFieldDefs, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
 
   const handleDelete = useCallback(async (id: string) => {
     const accepted = await confirm({
@@ -150,15 +182,22 @@ export default function useCatalog() {
   return {
     connections,
     catalogProducts,
+    extraFieldDefs,
     language,
     t,
     editingProduct,
     productCode,
     setProductCode,
+    productText,
+    setProductText,
+    productLength,
+    setProductLength,
     mfrId,
     setMfrId,
     catalogImage,
     imageFileName,
+    extraValues,
+    handleExtraValueChange,
     actionLoading,
     handleImageChange,
     handleClearForm,

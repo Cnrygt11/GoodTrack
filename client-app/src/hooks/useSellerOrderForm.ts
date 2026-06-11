@@ -88,15 +88,29 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   useEffect(() => {
     const code = productCode.trim().toLowerCase();
     if (!code) { setAutofillSuccess(false); return; }
+    if (editingProduct) return; // Don't overwrite when editing an existing order
+    
     const match = catalogProducts.find((p) => p.productCode.trim().toLowerCase() === code);
     if (match) {
       setMfrId(match.mfrId);
-      if (match.image) { setOrderImage(match.image); setImageFileName('Katalog Görseli'); }
+      if (match.image) { 
+        setOrderImage(match.image); 
+        setImageFileName('Katalog Görseli'); 
+      }
+      setOrderText(match.text || '');
+      setOrderLength(match.length || '');
+      
+      const nextExtras: Record<string, string> = {};
+      extraFieldDefs.forEach((def) => {
+        nextExtras[def.id] = match.extras?.[def.id]?.value || '';
+      });
+      setExtraValues(nextExtras);
+      
       setAutofillSuccess(true);
     } else {
       setAutofillSuccess(false);
     }
-  }, [productCode, catalogProducts]);
+  }, [productCode, catalogProducts, editingProduct, extraFieldDefs]);
 
   // --- Handlers ---
 
