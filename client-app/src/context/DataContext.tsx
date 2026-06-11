@@ -95,6 +95,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       loadProducts();
       refreshConnections(); // Both roles need their connections list
+      loadIncomingRequests();
+      loadSentRequests();
       if (user.role === 'seller') {
         loadExtraFields();
         loadCatalog();
@@ -107,7 +109,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setCatalogProducts([]);
       setExtraFieldDefs([]);
     }
-  }, [user, loadProducts, loadExtraFields, loadCatalog, refreshConnections]);
+  }, [user, loadProducts, loadExtraFields, loadCatalog, refreshConnections, loadIncomingRequests, loadSentRequests]);
 
   return (
     <DataContext.Provider value={{

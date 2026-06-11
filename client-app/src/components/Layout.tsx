@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useData } from '../context/DataContext';
 import { ROUTES } from '../constants/routes';
 import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
 
@@ -12,12 +13,39 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const { theme, language, toggleTheme, setLanguage, t } = useSettings();
+  const { incomingRequests } = useData();
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;
 
+  const [lastViewed, setLastViewed] = useState<string | null>(() => {
+    return user ? localStorage.getItem(`lastViewedConnectionsTime_${user.username}`) : null;
+  });
+
+  // Scoped last viewed timestamp for connection requests
+  useEffect(() => {
+    if (user) {
+      setLastViewed(localStorage.getItem(`lastViewedConnectionsTime_${user.username}`));
+    } else {
+      setLastViewed(null);
+    }
+  }, [user]);
+
+  // Update viewed timestamp when navigating to connections page
+  useEffect(() => {
+    if (user && (currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections)) {
+      const now = new Date().toISOString();
+      localStorage.setItem(`lastViewedConnectionsTime_${user.username}`, now);
+      setLastViewed(now);
+    }
+  }, [currentPath, user]);
+
   if (!user) return <>{children}</>;
 
+  const hasNewRequests = incomingRequests.some(req => {
+    if (!lastViewed) return true;
+    return new Date(req.createdAt) > new Date(lastViewed);
+  });
 
   const handleLogoClick = () => {
     navigate(user.role === 'mfr' ? ROUTES.mfrOrders : ROUTES.sellerOrders);
@@ -110,9 +138,24 @@ export default function Layout({ children }: LayoutProps) {
                 : ''
             }`}
             onClick={() => navigate(user.role === 'seller' ? ROUTES.sellerConnections : ROUTES.mfrConnections)}
+            style={{ position: 'relative' }}
           >
             <Users size={14} />
             {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}
+            {hasNewRequests && (
+              <span 
+                style={{
+                  position: 'absolute',
+                  top: '4px',
+                  right: '4px',
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  backgroundColor: 'var(--danger, #ef4444)',
+                  boxShadow: '0 0 0 2px var(--surface1)',
+                }}
+              />
+            )}
           </button>
 
           <button 
