@@ -16,6 +16,7 @@ export default function ConnectionsPage() {
     addUsername,
     setAddUsername,
     actionLoading,
+    connectionsLoading,
     handleAddSubmit,
     handleAccept,
     handleReject,
@@ -126,9 +127,8 @@ export default function ConnectionsPage() {
                   type="submit" 
                   className="btn-primary" 
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: accentColor, color: '#0b0f19' }}
-                  disabled={actionLoading}
                 >
-                  {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <UserPlus size={16} />}
+                  <UserPlus size={16} />
                   {t('addBtn')}
                 </button>
               </div>
@@ -265,7 +265,11 @@ export default function ConnectionsPage() {
             {t('activeConnections')} ({connections.length})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {connections.length === 0 ? (
+            {connectionsLoading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                <Loader2 className="animate-spin" size={24} style={{ color: accentColor }} />
+              </div>
+            ) : connections.length === 0 ? (
               <div style={{ color: 'var(--muted)', fontSize: '14px', textAlign: 'center', padding: '40px 0' }}>
                 {t('noActiveConnections')}
               </div>

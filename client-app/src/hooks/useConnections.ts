@@ -31,6 +31,7 @@ export default function useConnections() {
 
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [connectionsLoading, setConnectionsLoading] = useState(true);
   const isActionLoading = useRef(false);
 
   // Sub-tab state inside Connections Modal ('manage' vs 'search')
@@ -45,9 +46,14 @@ export default function useConnections() {
   // Fetch data automatically on mount
   useEffect(() => {
     if (user) {
-      refreshConnections();
-      loadIncomingRequests();
-      loadSentRequests();
+      setConnectionsLoading(true);
+      Promise.all([
+        refreshConnections(),
+        loadIncomingRequests(),
+        loadSentRequests()
+      ]).finally(() => {
+        setConnectionsLoading(false);
+      });
     }
   }, [user, refreshConnections, loadIncomingRequests, loadSentRequests]);
 
@@ -78,15 +84,11 @@ export default function useConnections() {
     try {
       isActionLoading.current = true;
       setActionLoading(true);
-      const data = await api.sendConnectionRequest(username);
-      showToast(data.message || t('connReqSuccess'));
+      await api.sendConnectionRequest(username);
       
       // Unblock UI immediately after API success response
       isActionLoading.current = false;
       setActionLoading(false);
-      
-      // Run updates in background to get actual data (like real receiverId and createdAt)
-      Promise.all([loadIncomingRequests(), loadSentRequests()]).catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
@@ -95,7 +97,7 @@ export default function useConnections() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [addUsername, language, t, loadIncomingRequests, loadSentRequests, showToast, user, sentRequests, setSentRequests]);
+  }, [addUsername, language, showToast, user, sentRequests, setSentRequests]);
 
   const handleAccept = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
@@ -119,20 +121,11 @@ export default function useConnections() {
     try {
       isActionLoading.current = true;
       setActionLoading(true);
-      const data = await api.acceptRequest(requestId);
-      showToast(data.message || t('connReqAccepted'));
+      await api.acceptRequest(requestId);
       
       // Unblock UI immediately
       isActionLoading.current = false;
       setActionLoading(false);
-      
-      // Run refreshes in the background
-      Promise.all([
-        refreshConnections(),
-        loadIncomingRequests(),
-        loadSentRequests(),
-        loadProducts()
-      ]).catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setIncomingRequests(prevIncoming);
@@ -141,7 +134,7 @@ export default function useConnections() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [t, refreshConnections, loadIncomingRequests, loadSentRequests, loadProducts, showToast, incomingRequests, connections, setIncomingRequests, setConnections, user]);
+  }, [incomingRequests, connections, setIncomingRequests, setConnections, user, showToast]);
 
   const handleReject = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
@@ -161,15 +154,11 @@ export default function useConnections() {
     try {
       isActionLoading.current = true;
       setActionLoading(true);
-      const data = await api.rejectRequest(requestId);
-      showToast(data.message || t('connReqRejected'));
+      await api.rejectRequest(requestId);
       
       // Unblock UI immediately
       isActionLoading.current = false;
       setActionLoading(false);
-      
-      // Run refreshes in background
-      Promise.all([loadIncomingRequests(), loadSentRequests()]).catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setIncomingRequests(prevIncoming);
@@ -177,7 +166,7 @@ export default function useConnections() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [language, t, loadIncomingRequests, loadSentRequests, showToast, confirm, incomingRequests, setIncomingRequests]);
+  }, [language, confirm, incomingRequests, setIncomingRequests, showToast]);
 
   const handleDeleteSent = useCallback(async (requestId: string) => {
     const prevSent = [...sentRequests];
@@ -186,15 +175,13 @@ export default function useConnections() {
     setSentRequests(prev => prev.filter(r => r.id !== requestId));
 
     try {
-      const data = await api.deleteSentRequest(requestId);
-      showToast(data.message || t('connReqDeleted'));
-      loadSentRequests().catch(console.error);
+      await api.deleteSentRequest(requestId);
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
+  }, [sentRequests, setSentRequests, showToast]);
 
   const handleRemoveConnection = useCallback(async (targetId: string) => {
     const accepted = await confirm({
@@ -212,18 +199,15 @@ export default function useConnections() {
 
     try {
       setActionLoading(true);
-      const data = await api.removeConnection(targetId);
-      showToast(data.message || t('connRemoved'));
+      await api.removeConnection(targetId);
       setActionLoading(false);
-      
-      Promise.all([refreshConnections(), loadProducts()]).catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setConnections(prevConnections);
       showToast(extractErrorMessage(err));
       setActionLoading(false);
     }
-  }, [language, t, refreshConnections, loadProducts, showToast, confirm, connections, setConnections]);
+  }, [language, confirm, connections, setConnections, showToast]);
 
   // Handle B2B directory search
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {
@@ -263,6 +247,7 @@ export default function useConnections() {
     addUsername,
     setAddUsername,
     actionLoading,
+    connectionsLoading,
     handleAddSubmit,
     handleAccept,
     handleReject,

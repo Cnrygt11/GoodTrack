@@ -134,11 +134,8 @@ export default function useSearchMfr() {
 
     try {
       setActionLoadingMap(prev => ({ ...prev, [username]: true }));
-      const data = await api.sendConnectionRequest(username);
-      showToast(data.message || t('connReqSuccess'));
-      
+      await api.sendConnectionRequest(username);
       setActionLoadingMap(prev => ({ ...prev, [username]: false }));
-      loadSentRequests().catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
@@ -155,11 +152,8 @@ export default function useSearchMfr() {
 
     try {
       setActionLoadingMap(prev => ({ ...prev, [username]: true }));
-      const data = await api.deleteSentRequest(requestId);
-      showToast(data.message || t('connReqDeleted'));
-      
+      await api.deleteSentRequest(requestId);
       setActionLoadingMap(prev => ({ ...prev, [username]: false }));
-      loadSentRequests().catch(console.error);
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
