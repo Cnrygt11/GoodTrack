@@ -135,6 +135,7 @@ export default function useSellerOrders() {
     defectNote: actions.defectNote, setDefectNote: actions.setDefectNote,
     defectImage: actions.defectImage, defectImageFileName: actions.defectImageFileName,
     handleCancelOrder: actions.handleCancelOrder,
+    handleRequestCancel: actions.handleRequestCancel,
     handleVerifyOrder: actions.handleVerifyOrder,
     handleShipOrder: actions.handleShipOrder,
     handleDefectClick: actions.handleDefectClick,

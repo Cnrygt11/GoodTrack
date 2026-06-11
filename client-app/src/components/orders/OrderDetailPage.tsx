@@ -125,6 +125,17 @@ export default function OrderDetailPage() {
             }}>
               {sc.icon} {sc.label}
             </span>
+            {product.cancelRequested && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444', borderRadius: '20px',
+                padding: '4px 12px', fontSize: '12px', fontWeight: 700,
+                letterSpacing: '0.3px', whiteSpace: 'nowrap'
+              }}>
+                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+              </span>
+            )}
             {status === 'broken' && product.defectNote && user?.role === 'seller' && (
               <button
                 type="button"

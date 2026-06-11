@@ -24,6 +24,7 @@ interface SellerOrderCardProps {
   onViewTimeline: (product: Product) => void;
   onMarkSeen: (productId: string, tab: ListFilter) => void;
   onViewBrokenNote?: (product: Product) => void;
+  onRequestCancel?: (productId: string) => Promise<void>;
 }
 
 export default function SellerOrderCard({
@@ -31,6 +32,7 @@ export default function SellerOrderCard({
   isUnseen, isDropdownOpen,
   onDropdownToggle, onEdit, onDelete, onCancel, onVerify, onShip, onViewTimeline, onMarkSeen,
   onViewBrokenNote,
+  onRequestCancel,
 }: SellerOrderCardProps) {
   // Read language, t and showToast from context — no prop drilling needed
   const { language, t } = useSettings();
@@ -143,6 +145,17 @@ export default function SellerOrderCard({
             }}>
               {sc.icon} {sc.label}
             </span>
+            {p.cancelRequested && (
+              <span style={{
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
+                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+                color: '#ef4444', borderRadius: '20px',
+                padding: '3px 10px', fontSize: '11px', fontWeight: 700,
+                letterSpacing: '0.3px', whiteSpace: 'nowrap',
+              }}>
+                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+              </span>
+            )}
             {status === 'broken' && p.defectNote && (
               <button
                 type="button"
@@ -254,6 +267,20 @@ export default function SellerOrderCard({
                   {status === 'awaiting' && (
                     <DropdownItem icon={<Trash2 size={13} style={{ color: 'var(--danger)' }} />} label={language === 'tr' ? 'Sil' : 'Delete'} color="var(--danger)" onClick={() => { onDelete(p); onDropdownToggle(null); }} />
                   )}
+                </>
+              )}
+              {status === 'production' && !p.cancelRequested && (
+                <>
+                  <div className="dropdown-divider" />
+                  <DropdownItem
+                    icon={<Ban size={13} style={{ color: 'var(--danger)' }} />}
+                    label={language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation'}
+                    color="var(--danger)"
+                    onClick={() => {
+                      onRequestCancel?.(p.id);
+                      onDropdownToggle(null);
+                    }}
+                  />
                 </>
               )}
             </div>

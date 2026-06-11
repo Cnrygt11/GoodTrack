@@ -162,6 +162,19 @@ export default function useMfrOrders() {
     }
   }, [brokenProductId, showToast, t]);
 
+  const handleRespondCancel = useCallback(async (productId: string, approve: boolean) => {
+    console.log('[useMfrOrders] handleRespondCancel:', { productId, approve });
+    try {
+      setActionLoading(true);
+      const data = await api.respondToOrderCancellation(productId, approve);
+      showToast(data.message || t('statusUpdatedSuccess'));
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err));
+    } finally {
+      setActionLoading(false);
+    }
+  }, [showToast, t]);
+
   const openDefectDetails = useCallback((product: Product) => {
     setSelectedDefectProduct(product);
     setIsDetailsModalOpen(true);
@@ -211,6 +224,7 @@ export default function useMfrOrders() {
     isBrokenModalOpen,
     closeBrokenModal,
     handleBrokenSubmit,
+    handleRespondCancel,
     filteredProducts
   };
 }

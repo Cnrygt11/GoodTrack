@@ -107,6 +107,7 @@ export interface Product {
   defectImage?: string | null;
   isPendingApproval?: boolean;
   isReproduction?: boolean;
+  cancelRequested?: boolean;
   status?: string;
   logs?: OrderLog[];
   mfrId: string;
@@ -316,6 +317,19 @@ export const api = {
     return apiCall<{ product: Product; message: string }>(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
+    });
+  },
+
+  requestOrderCancellation(productId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/cancel-request`, {
+      method: 'POST',
+    });
+  },
+
+  respondToOrderCancellation(productId: string, approve: boolean): Promise<{ message: string }> {
+    return apiCall<{ message: string }>(`/products/${productId}/cancel-request/respond`, {
+      method: 'POST',
+      body: JSON.stringify({ approve }),
     });
   },
 

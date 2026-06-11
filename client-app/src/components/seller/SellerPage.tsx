@@ -39,7 +39,7 @@ export default function SellerPage() {
     unseenIds, badgeCounts, filteredProducts,
     handleImageChange, handleClearForm, handleEditClick, handleExtraValueChange,
     handleSubmit, handleAddFieldSubmit, handleRemoveField, handleDeleteClick,
-    handleCancelOrder, handleVerifyOrder, handleShipOrder,
+    handleCancelOrder, handleRequestCancel, handleVerifyOrder, handleShipOrder,
     handleDefectImageChange, handleDefectReportSubmit,
     handleMarkSingleAsSeen,
     isBrokenModalOpen, selectedBrokenProduct, openBrokenDetails, closeBrokenDetails,
@@ -162,6 +162,7 @@ export default function SellerPage() {
                   onEdit={handleEditClick}
                   onDelete={handleDeleteClick}
                   onCancel={handleCancelOrder}
+                  onRequestCancel={handleRequestCancel}
                   onVerify={handleVerifyOrder}
                   onShip={handleShipOrder}
                   onViewTimeline={openTimeline}

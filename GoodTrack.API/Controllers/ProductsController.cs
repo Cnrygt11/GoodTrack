@@ -211,4 +211,56 @@ public class ProductsController : BaseApiController
         var count = await _productService.MigrateProductStatusesAsync();
         return Ok(new { message = $"{count} sipariş başarıyla güncellendi." });
     }
+
+    [HttpPost("{id}/cancel-request")]
+    [Authorize(Roles = Roles.Seller)]
+    public async Task<IActionResult> RequestCancellation(string id)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        _logger.LogInformation("Seller {UserId} requesting cancellation for order {Id}", userId, id);
+        try
+        {
+            await _productService.RequestOrderCancellationAsync(userId, id);
+            return Ok(new { message = "İptal talebi üreticiye iletildi." });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("{id}/cancel-request/respond")]
+    [Authorize(Roles = Roles.Mfr)]
+    public async Task<IActionResult> RespondToCancellation(string id, [FromBody] RespondToCancellationRequest request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null) return Unauthorized();
+
+        if (request == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        _logger.LogInformation("Manufacturer {UserId} responding to cancellation for order {Id} with: {Approve}", userId, id, request.Approve);
+        try
+        {
+            await _productService.RespondToOrderCancellationAsync(userId, id, request.Approve);
+            string msg = request.Approve ? "İptal talebi onaylandı, sipariş iptal edildi." : "İptal talebi reddedildi, üretime devam ediliyor.";
+            return Ok(new { message = msg });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
+    }
 }

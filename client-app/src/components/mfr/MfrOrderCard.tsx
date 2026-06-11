@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User } from 'lucide-react';
+import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User, AlertTriangle } from 'lucide-react';
 import { Product } from '../../services/api';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
@@ -14,6 +14,7 @@ interface MfrOrderCardProps {
   onMarkAsSeen: (productId: string, tab: MfrTab) => void;
   onOpenDefectDetails: (product: Product) => void;
   onOpenTimeline: (product: Product) => void;
+  onRespondCancel?: (productId: string, approve: boolean) => Promise<void>;
 }
 
 export default function MfrOrderCard({
@@ -24,6 +25,7 @@ export default function MfrOrderCard({
   onMarkAsSeen,
   onOpenDefectDetails,
   onOpenTimeline,
+  onRespondCancel,
 }: MfrOrderCardProps) {
   const { language, t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
@@ -85,6 +87,14 @@ export default function MfrOrderCard({
             >
               {sc.icon} {sc.label}
             </span>
+            {p.cancelRequested && (
+              <span
+                className="moc-status-badge"
+                style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
+              >
+                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+              </span>
+            )}
           </div>
 
           {/* Chips */}
@@ -142,27 +152,42 @@ export default function MfrOrderCard({
       {/* Action bar */}
       {hasActionBar && (
         <div className="order-action-bar">
-          {(status === 'awaiting' || status === 'corrected') && (
+          {p.cancelRequested ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+              <div style={{ color: 'var(--danger)', fontSize: '12.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                <AlertTriangle size={14} />
+                {language === 'tr' ? 'Satıcı İptal Talebi Gönderdi!' : 'Seller Requested Cancellation!'}
+              </div>
+              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+                <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>{language === 'tr' ? 'İptal Talebini Onayla' : 'Approve Request'}</MfrBtn>
+                <MfrBtn color="#ef4444" onClick={() => onRespondCancel?.(p.id, false)}>{language === 'tr' ? 'İptal Talebini Reddet' : 'Reject Request'}</MfrBtn>
+              </div>
+            </div>
+          ) : (
             <>
-              <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnApproveProduction')}</MfrBtn>
-              <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, 'broken')}>{t('btnMarkBroken')}</MfrBtn>
+              {(status === 'awaiting' || status === 'corrected') && (
+                <>
+                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnApproveProduction')}</MfrBtn>
+                  <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, 'broken')}>{t('btnMarkBroken')}</MfrBtn>
+                </>
+              )}
+              {status === 'production' && (
+                <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'completed')} fullWidth>{t('btnFinishProduction')}</MfrBtn>
+              )}
+              {status === 'completed' && (
+                <MfrBtn color="#00bcd4" onClick={() => onUpdateStatus(p.id, 'delivered')} fullWidth>{t('btnDeliver')}</MfrBtn>
+              )}
+              {(status === 'defective' || status === 'missing') && (
+                <>
+                  <MfrBtn color="var(--surface2)" bordered onClick={() => onOpenDefectDetails(p)}>{t('btnDetails')}</MfrBtn>
+                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnReproduce')}</MfrBtn>
+                  <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'delivered')}>{t('btnDeliverFixed')}</MfrBtn>
+                </>
+              )}
+              {(status === 'shipped' || status === 'cancelled') && (
+                <MfrBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onOpenTimeline(p)} fullWidth>{t('btnViewTimeline')}</MfrBtn>
+              )}
             </>
-          )}
-          {status === 'production' && (
-            <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'completed')} fullWidth>{t('btnFinishProduction')}</MfrBtn>
-          )}
-          {status === 'completed' && (
-            <MfrBtn color="#00bcd4" onClick={() => onUpdateStatus(p.id, 'delivered')} fullWidth>{t('btnDeliver')}</MfrBtn>
-          )}
-          {(status === 'defective' || status === 'missing') && (
-            <>
-              <MfrBtn color="var(--surface2)" bordered onClick={() => onOpenDefectDetails(p)}>{t('btnDetails')}</MfrBtn>
-              <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnReproduce')}</MfrBtn>
-              <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'delivered')}>{t('btnDeliverFixed')}</MfrBtn>
-            </>
-          )}
-          {(status === 'shipped' || status === 'cancelled') && (
-            <MfrBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onOpenTimeline(p)} fullWidth>{t('btnViewTimeline')}</MfrBtn>
           )}
         </div>
       )}

@@ -64,6 +64,9 @@ public class Product
 
     [FirestoreProperty("mfrName")]
     public string MfrName { get; set; } = string.Empty;
+
+    [FirestoreProperty("cancelRequested")]
+    public bool CancelRequested { get; set; }
 }
 
 [FirestoreData]

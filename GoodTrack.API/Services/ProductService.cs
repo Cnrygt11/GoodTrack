@@ -659,4 +659,59 @@ public class ProductService : IProductService
     {
         return await _productRepository.MigrateStatusesAsync();
     }
+
+    public async Task RequestOrderCancellationAsync(string sellerId, string orderId)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null)
+            throw new KeyNotFoundException("Sipariş bulunamadı!");
+
+        if (product.SellerId != sellerId)
+            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+
+        string currentStatus = ResolveCurrentStatus(product);
+        if (currentStatus != OrderStatus.Production)
+            throw new InvalidOperationException("Yalnızca üretimdeki siparişler için iptal talebi oluşturulabilir.");
+
+        if (product.CancelRequested)
+            throw new InvalidOperationException("Bu sipariş için zaten aktif bir iptal talebi bulunuyor.");
+
+        product.CancelRequested = true;
+        AppendLog(product, sellerId, product.SellerName, "Sipariş için satıcı tarafından iptal talebi gönderildi.");
+        await _productRepository.SaveAsync(product);
+        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+    }
+
+    public async Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null)
+            throw new KeyNotFoundException("Sipariş bulunamadı!");
+
+        if (product.MfrId != mfrId)
+            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+
+        if (!product.CancelRequested)
+            throw new InvalidOperationException("Bu sipariş için aktif bir iptal talebi bulunmuyor.");
+
+        product.CancelRequested = false;
+
+        string logMsg;
+        if (approve)
+        {
+            product.Status = OrderStatus.Cancelled;
+            product.IsPendingApproval = false;
+            product.IsDefective = false;
+            product.Completed = false;
+            logMsg = "Sipariş iptal talebi üretici tarafından onaylandı ve sipariş iptal edildi.";
+        }
+        else
+        {
+            logMsg = "Sipariş iptal talebi üretici tarafından reddedildi. Üretime devam ediliyor.";
+        }
+
+        AppendLog(product, mfrId, product.MfrName, logMsg);
+        await _productRepository.SaveAsync(product);
+        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+    }
 }

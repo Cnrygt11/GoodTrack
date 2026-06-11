@@ -22,8 +22,8 @@ interface UseSellerOrderActionsReturn {
   // Loading (shared ref from form hook)
   actionLoading: boolean;
 
-  // Handlers
   handleCancelOrder: (productId: string) => Promise<void>;
+  handleRequestCancel: (productId: string) => Promise<void>;
   handleVerifyOrder: (
     productId: string,
     action: 'correct' | 'defective' | 'missing',
@@ -72,6 +72,26 @@ export default function useSellerOrderActions(
     try {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'cancelled');
+      showToast(data.message || t('statusUpdatedSuccess'));
+      await loadProducts();
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err));
+    } finally {
+      setActionLoading(false);
+    }
+  }, [confirm, language, loadProducts, showToast, t]);
+
+  const handleRequestCancel = useCallback(async (productId: string) => {
+    const accepted = await confirm({
+      title: language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation',
+      message: language === 'tr' ? 'Üretimde olan bu sipariş için iptal talebi göndermek istediğinize emin misiniz?' : 'Are you sure you want to request cancellation for this order in production?',
+      confirmText: language === 'tr' ? 'Talep Gönder' : 'Send Request',
+      isDestructive: true,
+    });
+    if (!accepted) return;
+    try {
+      setActionLoading(true);
+      const data = await api.requestOrderCancellation(productId);
       showToast(data.message || t('statusUpdatedSuccess'));
       await loadProducts();
     } catch (err: unknown) {
@@ -184,7 +204,7 @@ export default function useSellerOrderActions(
     defectNote, setDefectNote,
     defectImage, defectImageFileName,
     actionLoading,
-    handleCancelOrder, handleVerifyOrder, handleShipOrder,
+    handleCancelOrder, handleVerifyOrder, handleShipOrder, handleRequestCancel,
     handleDefectClick, handleDefectImageChange, handleDefectReportSubmit,
   };
 }

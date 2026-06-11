@@ -49,6 +49,7 @@ export default function MfrPage() {
     isBrokenModalOpen,
     closeBrokenModal,
     handleBrokenSubmit,
+    handleRespondCancel,
     actionLoading,
     filteredProducts
   } = useMfrOrders();
@@ -139,6 +140,7 @@ export default function MfrPage() {
               onMarkAsSeen={handleMarkSingleAsSeen}
               onOpenDefectDetails={openDefectDetails}
               onOpenTimeline={openTimeline}
+              onRespondCancel={handleRespondCancel}
             />
           ))
         )}

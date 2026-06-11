@@ -14,5 +14,7 @@ public interface IProductService
     Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null);
     Task<Product?> GetProductByIdAsync(string userId, string role, string orderId);
     Task<int> MigrateProductStatusesAsync();
+    Task RequestOrderCancellationAsync(string sellerId, string orderId);
+    Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve);
 }
 
