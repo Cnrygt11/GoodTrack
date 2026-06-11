@@ -178,7 +178,6 @@ export default function ConnectionsPage() {
                         className="btn-primary" 
                         style={{ padding: '6px 12px', fontSize: '12px', background: 'var(--success)', color: '#111', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => handleAccept(r.id)}
-                        disabled={actionLoading}
                       >
                         <Check size={12} />
                         {t('acceptBtn')}
@@ -187,7 +186,6 @@ export default function ConnectionsPage() {
                         className="btn-secondary" 
                         style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                         onClick={() => handleReject(r.id)}
-                        disabled={actionLoading}
                       >
                         <X size={12} />
                         {t('rejectBtn')}
@@ -341,7 +339,6 @@ export default function ConnectionsPage() {
                       className="btn-secondary" 
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', borderColor: 'var(--danger)', color: 'var(--danger)' }}
                       onClick={() => handleRemoveConnection(c.id)}
-                      disabled={actionLoading}
                     >
                       <Trash2 size={13} />
                       {t('disconnectBtn')}

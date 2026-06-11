@@ -26,10 +26,11 @@ export type StatusConfig = {
 export function getStatusConfig(
   status: string,
   t: (key: TranslationKey) => string,
-  options?: { iconSize?: number; role?: 'seller' | 'mfr' },
+  options?: { iconSize?: number; role?: 'seller' | 'mfr'; isReproduction?: boolean },
 ): StatusConfig {
   const sz = options?.iconSize ?? 11;
   const role = options?.role ?? 'seller';
+  const isReproduction = options?.isReproduction ?? false;
 
   const productionStyle =
     role === 'mfr'
@@ -52,7 +53,7 @@ export function getStatusConfig(
     case 'broken':
       return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: React.createElement(AlertTriangle, { size: sz }), label: t('statusBroken') };
     case 'production':
-      return { ...productionStyle, icon: React.createElement(Clock, { size: sz }), label: t('statusInProduction') };
+      return { ...productionStyle, icon: React.createElement(Clock, { size: sz }), label: isReproduction ? t('statusReproduction') : t('statusInProduction') };
     case 'completed':
       return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: t('statusCompleted') };
     case 'delivered':

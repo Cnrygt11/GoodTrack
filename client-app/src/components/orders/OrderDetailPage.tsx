@@ -73,7 +73,7 @@ export default function OrderDetailPage() {
   }
 
   const status = product.status || (product.isDefective ? 'defective' : (product.completed ? 'completed' : (product.isPendingApproval ? 'awaiting' : 'production')));
-  const sc = getStatusConfig(status, t, { iconSize: 12, role: user?.role === 'mfr' ? 'mfr' : 'seller' });
+  const sc = getStatusConfig(status, t, { iconSize: 12, role: user?.role === 'mfr' ? 'mfr' : 'seller', isReproduction: product.isReproduction });
 
   // Mfr timeline logs filtering: only show up to and including 'to_ship' status
   const allLogs = product.logs || [];

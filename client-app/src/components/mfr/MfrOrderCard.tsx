@@ -36,7 +36,7 @@ export default function MfrOrderCard({
     : '';
 
   const status = p.status || (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
-  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr' });
+  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr', isReproduction: p.isReproduction });
   const accentColor = getMfrCardAccentColor(status);
 
   const hasActionBar = ['awaiting', 'corrected', 'production', 'completed', 'defective', 'missing', 'shipped', 'cancelled'].includes(status);

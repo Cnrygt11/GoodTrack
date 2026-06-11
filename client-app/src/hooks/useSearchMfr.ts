@@ -133,16 +133,13 @@ export default function useSearchMfr() {
     setSentRequests(prev => [...prev, tempRequest]);
 
     try {
-      setActionLoadingMap(prev => ({ ...prev, [username]: true }));
       await api.sendConnectionRequest(username);
-      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
-      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     }
-  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
+  }, [showToast, sentRequests, setSentRequests]);
 
   const handleCancelConnection = useCallback(async (requestId: string, username: string) => {
     const prevSent = [...sentRequests];
@@ -151,16 +148,13 @@ export default function useSearchMfr() {
     setSentRequests(prev => prev.filter(r => r.id !== requestId));
 
     try {
-      setActionLoadingMap(prev => ({ ...prev, [username]: true }));
       await api.deleteSentRequest(requestId);
-      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
-      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     }
-  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
+  }, [showToast, sentRequests, setSentRequests]);
 
   return {
     loading,

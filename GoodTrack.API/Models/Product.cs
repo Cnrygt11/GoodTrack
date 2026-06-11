@@ -32,6 +32,9 @@ public class Product
     [FirestoreProperty("isPendingApproval")]
     public bool IsPendingApproval { get; set; }
 
+    [FirestoreProperty("isReproduction")]
+    public bool IsReproduction { get; set; }
+
     [FirestoreProperty("defectNote")]
     public string? DefectNote { get; set; }
 

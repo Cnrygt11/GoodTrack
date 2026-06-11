@@ -61,7 +61,6 @@ export default function useConnections() {
 
   const handleAddSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isActionLoading.current) return;
     const username = addUsername.trim();
     if (!username) {
       showToast(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
@@ -84,26 +83,16 @@ export default function useConnections() {
     setAddUsername('');
 
     try {
-      isActionLoading.current = true;
-      setActionLoading(true);
       await api.sendConnectionRequest(username);
-      
-      // Unblock UI immediately after API success response
-      isActionLoading.current = false;
-      setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
       setSentRequests(prevSent);
       setAddUsername(username);
       showToast(extractErrorMessage(err));
-      isActionLoading.current = false;
-      setActionLoading(false);
     }
   }, [addUsername, language, showToast, user, sentRequests, setSentRequests]);
 
   const handleAccept = useCallback(async (requestId: string) => {
-    if (isActionLoading.current) return;
-    
     // Find the request to get sender username/id
     const req = incomingRequests.find(r => r.id === requestId);
     if (!req) return;
@@ -121,26 +110,17 @@ export default function useConnections() {
     setConnections(prev => [...prev, newConn]);
 
     try {
-      isActionLoading.current = true;
-      setActionLoading(true);
       await api.acceptRequest(requestId);
-      
-      // Unblock UI immediately
-      isActionLoading.current = false;
-      setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
       optimisticConnections.current.delete(req.senderId);
       setIncomingRequests(prevIncoming);
       setConnections(prevConnections);
       showToast(extractErrorMessage(err));
-      isActionLoading.current = false;
-      setActionLoading(false);
     }
   }, [incomingRequests, connections, setIncomingRequests, setConnections, user, showToast, optimisticConnections]);
 
   const handleReject = useCallback(async (requestId: string) => {
-    if (isActionLoading.current) return;
     const accepted = await confirm({
       title: language === 'tr' ? 'İsteği Reddet' : 'Reject Request',
       message: language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?',
@@ -155,19 +135,11 @@ export default function useConnections() {
     setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
 
     try {
-      isActionLoading.current = true;
-      setActionLoading(true);
       await api.rejectRequest(requestId);
-      
-      // Unblock UI immediately
-      isActionLoading.current = false;
-      setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
       setIncomingRequests(prevIncoming);
       showToast(extractErrorMessage(err));
-      isActionLoading.current = false;
-      setActionLoading(false);
     }
   }, [language, confirm, incomingRequests, setIncomingRequests, showToast]);
 
@@ -201,15 +173,12 @@ export default function useConnections() {
     setConnections(prev => prev.filter(c => c.id !== targetId));
 
     try {
-      setActionLoading(true);
       await api.removeConnection(targetId);
-      setActionLoading(false);
     } catch (err: unknown) {
       // Rollback on failure
       optimisticRemovals.current.delete(targetId);
       setConnections(prevConnections);
       showToast(extractErrorMessage(err));
-      setActionLoading(false);
     }
   }, [language, confirm, connections, setConnections, showToast, optimisticRemovals]);
 

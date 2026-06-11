@@ -492,6 +492,7 @@ public class ProductService : IProductService
         p.Completed = false;
         p.IsDefective = false;
         p.IsPendingApproval = false;
+        p.IsReproduction = oldStatus == OrderStatus.Defective || oldStatus == OrderStatus.Missing;
 
         string? oldDefectImage = p.DefectImage;
         p.DefectNote = null;

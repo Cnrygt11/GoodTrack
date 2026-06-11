@@ -106,6 +106,7 @@ export interface Product {
   defectNote?: string;
   defectImage?: string | null;
   isPendingApproval?: boolean;
+  isReproduction?: boolean;
   status?: string;
   logs?: OrderLog[];
   mfrId: string;

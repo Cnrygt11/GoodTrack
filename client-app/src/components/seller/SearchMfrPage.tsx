@@ -258,7 +258,6 @@ export default function SearchMfrPage() {
                               type="button"
                               onClick={() => handleCancelConnection(pendingRequest.id, mfr.username)}
                               className="btn-secondary"
-                              disabled={isUserActionLoading}
                               style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -273,7 +272,7 @@ export default function SearchMfrPage() {
                                 cursor: 'pointer',
                               }}
                             >
-                              {isUserActionLoading ? <Loader2 className="animate-spin" size={12} /> : <XCircle size={12} />}
+                              <XCircle size={12} />
                               {t('cancelBtn')}
                             </button>
                           </div>
@@ -282,9 +281,8 @@ export default function SearchMfrPage() {
                             type="button"
                             onClick={() => handleSendConnection(mfr.username)}
                             className="btn-primary mfr-connect-btn"
-                            disabled={isUserActionLoading}
                           >
-                            {isUserActionLoading ? <Loader2 className="animate-spin" size={14} /> : <Plus size={14} />}
+                            <Plus size={14} />
                             {t('connectBtn')}
                           </button>
                         )}

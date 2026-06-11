@@ -47,7 +47,7 @@ export default function SellerOrderCard({
     p.status ||
     (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
   const isEditable = status === 'awaiting' || status === 'corrected' || status === 'broken';
-  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'seller' });
+  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'seller', isReproduction: p.isReproduction });
   const accent = getSellerCardAccent(status);
 
   const hasActionBar =
