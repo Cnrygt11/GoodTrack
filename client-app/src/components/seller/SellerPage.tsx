@@ -88,7 +88,11 @@ export default function SellerPage() {
           onSubmit={handleSubmit}
         />
       ) : activeTab === 'catalog' ? (
-        <CatalogPage />
+        <CatalogPage
+          extraFieldDefs={extraFieldDefs}
+          onOpenFieldModal={() => setIsFieldModalOpen(true)}
+          onRemoveField={handleRemoveField}
+        />
       ) : (
         <>
           {/* Dashboard title */}
