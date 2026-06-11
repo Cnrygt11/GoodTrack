@@ -248,6 +248,27 @@ public class AuthController : BaseApiController
     [HttpGet("profile/{username}")]
     public async Task<IActionResult> GetProfileByUsername(string username)
     {
+        var currentUserId = GetCurrentUserId();
+        var currentUserUsername = User.FindFirst(ClaimTypes.Name)?.Value;
+        if (currentUserId == null || string.IsNullOrEmpty(currentUserUsername))
+        {
+            return Unauthorized();
+        }
+
+        bool isSelf = currentUserUsername.Equals(username, StringComparison.OrdinalIgnoreCase);
+        bool isConnected = false;
+
+        if (!isSelf)
+        {
+            var connections = await _authService.GetConnectionsAsync(currentUserId);
+            isConnected = System.Linq.Enumerable.Any(connections, c => c.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (!isSelf && !isConnected)
+        {
+            return BadRequest(new { message = "Sadece bağlantınız olan kullanıcıların profillerini görüntüleyebilirsiniz." });
+        }
+
         try
         {
             var profile = await _authService.GetProfileByUsernameAsync(username);

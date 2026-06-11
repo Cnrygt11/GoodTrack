@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { api, UserProfile } from '../../services/api';
+import { extractErrorMessage } from '../../utils/errorUtils';
 import { ArrowLeft, Loader2, AlertTriangle, Mail, Phone, MapPin, Globe, Award, Image as ImageIcon } from 'lucide-react';
 import Lightbox from '../ui/Lightbox';
 
@@ -28,11 +29,7 @@ export default function UserProfileDetailPage() {
         setProfile(data);
       } catch (err: unknown) {
         console.error(err);
-        setError(
-          language === 'tr' 
-            ? 'Kullanıcı profili yüklenemedi. Böyle bir kullanıcı bulunamadı veya profil gizli.' 
-            : 'Failed to load user profile. User not found or profile is private.'
-        );
+        setError(extractErrorMessage(err));
       } finally {
         setLoading(false);
       }
