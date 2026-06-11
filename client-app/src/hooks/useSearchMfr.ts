@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { api, UserProfile } from '../services/api';
+import { api, UserProfile, ConnectionRequest } from '../services/api';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -23,7 +23,7 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { connections, sentRequests, loadSentRequests, refreshConnections } = useData();
+  const { connections, sentRequests, loadSentRequests, refreshConnections, setSentRequests } = useData();
   const { showToast } = useToast();
   const { t, language } = useSettings();
 
@@ -117,30 +117,56 @@ export default function useSearchMfr() {
   }, [manufacturers, mustHaveGallery, mustHaveAvatar]);
 
   const handleSendConnection = useCallback(async (username: string) => {
+    const tempId = `temp-send-${Date.now()}`;
+    const tempRequest: ConnectionRequest = {
+      id: tempId,
+      senderId: '', // temp
+      senderUsername: '', // temp
+      receiverId: '', // temp
+      receiverUsername: username,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    const prevSent = [...sentRequests];
+    
+    // Optimistic Update
+    setSentRequests(prev => [...prev, tempRequest]);
+
     try {
       setActionLoadingMap(prev => ({ ...prev, [username]: true }));
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
-      await loadSentRequests();
+      
+      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
+      loadSentRequests().catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
-    } finally {
       setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     }
-  }, [t, loadSentRequests, showToast]);
+  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
 
   const handleCancelConnection = useCallback(async (requestId: string, username: string) => {
+    const prevSent = [...sentRequests];
+
+    // Optimistic Update
+    setSentRequests(prev => prev.filter(r => r.id !== requestId));
+
     try {
       setActionLoadingMap(prev => ({ ...prev, [username]: true }));
       const data = await api.deleteSentRequest(requestId);
       showToast(data.message || t('connReqDeleted'));
-      await loadSentRequests();
+      
+      setActionLoadingMap(prev => ({ ...prev, [username]: false }));
+      loadSentRequests().catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
-    } finally {
       setActionLoadingMap(prev => ({ ...prev, [username]: false }));
     }
-  }, [t, loadSentRequests, showToast]);
+  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
 
   return {
     loading,

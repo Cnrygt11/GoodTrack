@@ -16,6 +16,10 @@ interface DataContextType {
   loadSentRequests: () => Promise<void>;
   loadCatalog: () => Promise<void>;
   loadExtraFields: () => Promise<void>;
+  setConnections: React.Dispatch<React.SetStateAction<ConnectionUser[]>>;
+  setIncomingRequests: React.Dispatch<React.SetStateAction<ConnectionRequest[]>>;
+  setSentRequests: React.Dispatch<React.SetStateAction<ConnectionRequest[]>>;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -124,7 +128,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       loadIncomingRequests,
       loadSentRequests,
       loadCatalog,
-      loadExtraFields
+      loadExtraFields,
+      setConnections,
+      setIncomingRequests,
+      setSentRequests,
+      setProducts
     }}>
       {children}
     </DataContext.Provider>

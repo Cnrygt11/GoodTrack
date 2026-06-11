@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, UserProfile } from '../services/api';
+import { api, UserProfile, ConnectionRequest, ConnectionUser } from '../services/api';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useConnections() {
@@ -19,7 +19,10 @@ export default function useConnections() {
     refreshConnections,
     loadIncomingRequests,
     loadSentRequests,
-    loadProducts
+    loadProducts,
+    setConnections,
+    setIncomingRequests,
+    setSentRequests
   } = useData();
 
   const { showToast } = useToast();
@@ -57,41 +60,88 @@ export default function useConnections() {
       return;
     }
 
+    // Optimistic Update
+    const tempId = `temp-send-${Date.now()}`;
+    const tempRequest: ConnectionRequest = {
+      id: tempId,
+      senderId: user?.userId || '',
+      senderUsername: user?.username || '',
+      receiverId: '', // temp
+      receiverUsername: username,
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    };
+    const prevSent = [...sentRequests];
+    setSentRequests(prev => [...prev, tempRequest]);
+    setAddUsername('');
+
     try {
       isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.sendConnectionRequest(username);
       showToast(data.message || t('connReqSuccess'));
-      setAddUsername('');
-      await Promise.all([loadIncomingRequests(), loadSentRequests()]);
+      
+      // Unblock UI immediately after API success response
+      isActionLoading.current = false;
+      setActionLoading(false);
+      
+      // Run updates in background to get actual data (like real receiverId and createdAt)
+      Promise.all([loadIncomingRequests(), loadSentRequests()]).catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setSentRequests(prevSent);
+      setAddUsername(username);
       showToast(extractErrorMessage(err));
-    } finally {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [addUsername, language, t, loadIncomingRequests, loadSentRequests, showToast]);
+  }, [addUsername, language, t, loadIncomingRequests, loadSentRequests, showToast, user, sentRequests, setSentRequests]);
 
   const handleAccept = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
+    
+    // Find the request to get sender username/id
+    const req = incomingRequests.find(r => r.id === requestId);
+    if (!req) return;
+
+    const prevIncoming = [...incomingRequests];
+    const prevConnections = [...connections];
+
+    // Optimistic Update
+    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+    const newConn: ConnectionUser = {
+      id: req.senderId,
+      username: req.senderUsername,
+      role: user?.role === 'seller' ? 'mfr' : 'seller'
+    };
+    setConnections(prev => [...prev, newConn]);
+
     try {
       isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.acceptRequest(requestId);
       showToast(data.message || t('connReqAccepted'));
-      await Promise.all([
+      
+      // Unblock UI immediately
+      isActionLoading.current = false;
+      setActionLoading(false);
+      
+      // Run refreshes in the background
+      Promise.all([
         refreshConnections(),
         loadIncomingRequests(),
         loadSentRequests(),
         loadProducts()
-      ]);
+      ]).catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setIncomingRequests(prevIncoming);
+      setConnections(prevConnections);
       showToast(extractErrorMessage(err));
-    } finally {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [t, refreshConnections, loadIncomingRequests, loadSentRequests, loadProducts, showToast]);
+  }, [t, refreshConnections, loadIncomingRequests, loadSentRequests, loadProducts, showToast, incomingRequests, connections, setIncomingRequests, setConnections, user]);
 
   const handleReject = useCallback(async (requestId: string) => {
     if (isActionLoading.current) return;
@@ -102,29 +152,49 @@ export default function useConnections() {
       isDestructive: true
     });
     if (!accepted) return;
+
+    const prevIncoming = [...incomingRequests];
+
+    // Optimistic Update
+    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+
     try {
       isActionLoading.current = true;
       setActionLoading(true);
       const data = await api.rejectRequest(requestId);
       showToast(data.message || t('connReqRejected'));
-      await Promise.all([loadIncomingRequests(), loadSentRequests()]);
+      
+      // Unblock UI immediately
+      isActionLoading.current = false;
+      setActionLoading(false);
+      
+      // Run refreshes in background
+      Promise.all([loadIncomingRequests(), loadSentRequests()]).catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setIncomingRequests(prevIncoming);
       showToast(extractErrorMessage(err));
-    } finally {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [language, t, loadIncomingRequests, loadSentRequests, showToast]);
+  }, [language, t, loadIncomingRequests, loadSentRequests, showToast, confirm, incomingRequests, setIncomingRequests]);
 
   const handleDeleteSent = useCallback(async (requestId: string) => {
+    const prevSent = [...sentRequests];
+    
+    // Optimistic Update
+    setSentRequests(prev => prev.filter(r => r.id !== requestId));
+
     try {
       const data = await api.deleteSentRequest(requestId);
       showToast(data.message || t('connReqDeleted'));
-      await loadSentRequests();
+      loadSentRequests().catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [t, loadSentRequests, showToast]);
+  }, [t, loadSentRequests, showToast, sentRequests, setSentRequests]);
 
   const handleRemoveConnection = useCallback(async (targetId: string) => {
     const accepted = await confirm({
@@ -134,14 +204,26 @@ export default function useConnections() {
       isDestructive: true
     });
     if (!accepted) return;
+
+    const prevConnections = [...connections];
+
+    // Optimistic Update
+    setConnections(prev => prev.filter(c => c.id !== targetId));
+
     try {
+      setActionLoading(true);
       const data = await api.removeConnection(targetId);
       showToast(data.message || t('connRemoved'));
-      await Promise.all([refreshConnections(), loadProducts()]);
+      setActionLoading(false);
+      
+      Promise.all([refreshConnections(), loadProducts()]).catch(console.error);
     } catch (err: unknown) {
+      // Rollback on failure
+      setConnections(prevConnections);
       showToast(extractErrorMessage(err));
+      setActionLoading(false);
     }
-  }, [language, t, refreshConnections, loadProducts, showToast]);
+  }, [language, t, refreshConnections, loadProducts, showToast, confirm, connections, setConnections]);
 
   // Handle B2B directory search
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {
