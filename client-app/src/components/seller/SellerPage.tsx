@@ -29,7 +29,7 @@ export default function SellerPage() {
   const {
     language, t, connections, extraFieldDefs,
     activeTab, setActiveTab, listFilter, setListFilter, sortOrder, setSortOrder,
-    productCode, setProductCode, orderText, setOrderText, orderLength, setOrderLength,
+    productCode, setProductCode, orderText, setOrderText,
     mfrId, setMfrId, orderImage, imageFileName, autofillSuccess, extraValues,
     editingProduct, actionLoading,
     isFieldModalOpen, setIsFieldModalOpen, newFieldName, setNewFieldName,
@@ -75,7 +75,6 @@ export default function SellerPage() {
           autofillSuccess={autofillSuccess}
           orderImage={orderImage} imageFileName={imageFileName} onImageChange={handleImageChange}
           orderText={orderText} setOrderText={setOrderText}
-          orderLength={orderLength} setOrderLength={setOrderLength}
           mfrId={mfrId} setMfrId={setMfrId}
           connections={connections}
           extraFieldDefs={extraFieldDefs} extraValues={extraValues}

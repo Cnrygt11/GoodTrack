@@ -24,8 +24,6 @@ export default function useCatalog() {
 
   // Catalog Form inputs
   const [productCode, setProductCode] = useState('');
-  const [productText, setProductText] = useState('');
-  const [productLength, setProductLength] = useState('');
   const [mfrId, setMfrId] = useState('');
   const [catalogImage, setCatalogImage] = useState<string | null>(null); // base64 string
   const [imageFileName, setImageFileName] = useState('');
@@ -53,8 +51,6 @@ export default function useCatalog() {
 
   const handleClearForm = useCallback(() => {
     setProductCode('');
-    setProductText('');
-    setProductLength('');
     setMfrId('');
     setCatalogImage(null);
     setImageFileName('');
@@ -68,8 +64,6 @@ export default function useCatalog() {
   const handleStartEdit = useCallback((product: CatalogProduct) => {
     setEditingProduct(product);
     setProductCode(product.productCode);
-    setProductText(product.text || '');
-    setProductLength(product.length || '');
     setMfrId(product.mfrId);
     setCatalogImage(product.image);
     setImageFileName(product.image ? 'Mevcut Görsel' : '');
@@ -126,8 +120,6 @@ export default function useCatalog() {
           image: catalogImage,
           mfrId,
           mfrName,
-          text: productText,
-          length: productLength,
           extras: formattedExtras
         });
 
@@ -141,8 +133,6 @@ export default function useCatalog() {
           image: catalogImage,
           mfrId,
           mfrName,
-          text: productText,
-          length: productLength,
           extras: formattedExtras
         });
 
@@ -156,7 +146,7 @@ export default function useCatalog() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, catalogImage, productText, productLength, extraValues, extraFieldDefs, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
+  }, [productCode, mfrId, catalogImage, extraValues, extraFieldDefs, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
 
   const handleDelete = useCallback(async (id: string) => {
     const accepted = await confirm({
@@ -188,10 +178,6 @@ export default function useCatalog() {
     editingProduct,
     productCode,
     setProductCode,
-    productText,
-    setProductText,
-    productLength,
-    setProductLength,
     mfrId,
     setMfrId,
     catalogImage,

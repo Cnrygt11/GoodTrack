@@ -15,8 +15,6 @@ interface OrderFormProps {
   onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
   orderText: string;
   setOrderText: (v: string) => void;
-  orderLength: string;
-  setOrderLength: (v: string) => void;
   mfrId: string;
   setMfrId: (v: string) => void;
   connections: ConnectionUser[];
@@ -35,7 +33,7 @@ export default function OrderForm({
   language, t, editingProduct,
   productCode, setProductCode, autofillSuccess,
   orderImage, imageFileName, onImageChange,
-  orderText, setOrderText, orderLength, setOrderLength,
+  orderText, setOrderText,
   mfrId, setMfrId, connections,
   extraFieldDefs, extraValues, onExtraValueChange, onRemoveField,
   onOpenFieldModal, actionLoading, onClearForm, onSetActiveTab, onSubmit
@@ -104,20 +102,6 @@ export default function OrderForm({
                 value={orderText}
                 onChange={(e) => setOrderText(e.target.value)}
               />
-            </div>
-
-            <div className="form-group">
-              <label>{t('lengthInch')}</label>
-              <select
-                value={orderLength}
-                onChange={(e) => setOrderLength(e.target.value)}
-              >
-                <option value="">{t('selectDefault')}</option>
-                <option value="20">20 {language === 'tr' ? 'inç' : 'inches'}</option>
-                <option value="22">22 {language === 'tr' ? 'inç' : 'inches'}</option>
-                <option value="24">24 {language === 'tr' ? 'inç' : 'inches'}</option>
-                <option value="26">26 {language === 'tr' ? 'inç' : 'inches'}</option>
-              </select>
             </div>
 
             <div className="form-group">

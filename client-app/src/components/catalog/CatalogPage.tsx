@@ -25,10 +25,6 @@ export default function CatalogPage({
     editingProduct,
     productCode,
     setProductCode,
-    productText,
-    setProductText,
-    productLength,
-    setProductLength,
     mfrId,
     setMfrId,
     catalogImage,
@@ -57,10 +53,6 @@ export default function CatalogPage({
         editingProduct={editingProduct}
         productCode={productCode}
         setProductCode={setProductCode}
-        productText={productText}
-        setProductText={setProductText}
-        productLength={productLength}
-        setProductLength={setProductLength}
         mfrId={mfrId}
         setMfrId={setMfrId}
         catalogImage={catalogImage}

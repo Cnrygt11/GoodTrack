@@ -135,7 +135,6 @@ export default function useSellerOrders() {
     // Form (from useSellerOrderForm)
     productCode: form.productCode, setProductCode: form.setProductCode,
     orderText: form.orderText, setOrderText: form.setOrderText,
-    orderLength: form.orderLength, setOrderLength: form.setOrderLength,
     mfrId: form.mfrId, setMfrId: form.setMfrId,
     orderImage: form.orderImage, imageFileName: form.imageFileName,
     autofillSuccess: form.autofillSuccess, extraValues: form.extraValues,

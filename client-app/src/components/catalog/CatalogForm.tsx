@@ -9,10 +9,6 @@ interface CatalogFormProps {
   editingProduct: CatalogProduct | null;
   productCode: string;
   setProductCode: (val: string) => void;
-  productText: string;
-  setProductText: (val: string) => void;
-  productLength: string;
-  setProductLength: (val: string) => void;
   mfrId: string;
   setMfrId: (val: string) => void;
   catalogImage: string | null;
@@ -35,10 +31,6 @@ export default function CatalogForm({
   editingProduct,
   productCode,
   setProductCode,
-  productText,
-  setProductText,
-  productLength,
-  setProductLength,
   mfrId,
   setMfrId,
   catalogImage,
@@ -99,30 +91,6 @@ export default function CatalogForm({
                 </>
               )}
             </div>
-          </div>
-
-          <div className="form-group">
-            <label>{t('customText')}</label>
-            <input
-              type="text"
-              placeholder={language === 'tr' ? 'Metin giriniz' : 'Enter text'}
-              value={productText}
-              onChange={(e) => setProductText(e.target.value)}
-            />
-          </div>
-
-          <div className="form-group">
-            <label>{t('lengthInch')}</label>
-            <select
-              value={productLength}
-              onChange={(e) => setProductLength(e.target.value)}
-            >
-              <option value="">{t('selectDefault')}</option>
-              <option value="20">20 {language === 'tr' ? 'inç' : 'inches'}</option>
-              <option value="22">22 {language === 'tr' ? 'inç' : 'inches'}</option>
-              <option value="24">24 {language === 'tr' ? 'inç' : 'inches'}</option>
-              <option value="26">26 {language === 'tr' ? 'inç' : 'inches'}</option>
-            </select>
           </div>
 
           <div className="form-group">

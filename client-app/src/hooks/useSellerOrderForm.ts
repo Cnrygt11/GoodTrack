@@ -13,8 +13,6 @@ interface UseSellerOrderFormReturn {
   setProductCode: (v: string) => void;
   orderText: string;
   setOrderText: (v: string) => void;
-  orderLength: string;
-  setOrderLength: (v: string) => void;
   mfrId: string;
   setMfrId: (v: string) => void;
   orderImage: string | null;
@@ -66,7 +64,6 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   // --- Form State ---
   const [productCode, setProductCode] = useState('');
   const [orderText, setOrderText] = useState('');
-  const [orderLength, setOrderLength] = useState('');
   const [mfrId, setMfrId] = useState('');
   const [orderImage, setOrderImage] = useState<string | null>(null);
   const [imageFileName, setImageFileName] = useState('');
@@ -98,7 +95,6 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         setImageFileName('Katalog Görseli'); 
       }
       setOrderText(match.text || '');
-      setOrderLength(match.length || '');
       
       const nextExtras: Record<string, string> = {};
       extraFieldDefs.forEach((def) => {
@@ -117,7 +113,6 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   const handleClearForm = useCallback(() => {
     setProductCode('');
     setOrderText('');
-    setOrderLength('');
     setMfrId('');
     setOrderImage(null);
     setImageFileName('');
@@ -132,7 +127,6 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     setEditingProduct(product);
     setProductCode(product.code);
     setOrderText(product.text || '');
-    setOrderLength(product.length || '');
     setMfrId(product.mfrId);
     setOrderImage(product.image);
     setImageFileName(product.image ? 'Mevcut Görsel' : '');
@@ -178,14 +172,14 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       isActionLoadingRef.current = true;
       setActionLoading(true);
       if (editingProduct) {
-        const payload: Product = { ...editingProduct, code, image: orderImage, text: orderText, length: orderLength, extras: formattedExtras, mfrId, mfrName };
+        const payload: Product = { ...editingProduct, code, image: orderImage, text: orderText, extras: formattedExtras, mfrId, mfrName };
         const data = await api.updateProduct(editingProduct.id, payload);
         showToast(data.message || t('orderUpdatedSuccess'));
         await loadProducts();
         handleClearForm();
         setActiveTab('list');
       } else {
-        const payload: CreateProductPayload = { code, image: orderImage, text: orderText, length: orderLength, extras: formattedExtras, completed: false, mfrId, mfrName };
+        const payload: CreateProductPayload = { code, image: orderImage, text: orderText, extras: formattedExtras, completed: false, mfrId, mfrName };
         const data = await api.createProduct(payload);
         showToast(data.message || t('orderSentSuccess'));
         await loadProducts();
@@ -198,7 +192,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       isActionLoadingRef.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, connections, extraFieldDefs, extraValues, editingProduct, orderImage, orderText, orderLength, loadProducts, showToast, t, handleClearForm]);
+  }, [productCode, mfrId, connections, extraFieldDefs, extraValues, editingProduct, orderImage, orderText, loadProducts, showToast, t, handleClearForm]);
 
   const handleAddFieldSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
@@ -257,7 +251,6 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   return {
     productCode, setProductCode,
     orderText, setOrderText,
-    orderLength, setOrderLength,
     mfrId, setMfrId,
     orderImage, imageFileName, autofillSuccess, extraValues,
     editingProduct,
