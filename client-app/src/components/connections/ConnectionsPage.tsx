@@ -29,6 +29,9 @@ export default function ConnectionsPage() {
   const accentColor = isSeller ? 'var(--accent-seller)' : 'var(--accent-mfr)';
   const glowBg = isSeller ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)';
 
+  // Filter out accepted sent requests since they are already active connections
+  const filteredSentRequests = sentRequests.filter(r => r.status !== 'accepted');
+
   const getStatusBadge = (status: ConnectionRequest['status']) => {
     let text = t('statusPending');
     let icon = <Clock size={12} />;
@@ -202,12 +205,12 @@ export default function ConnectionsPage() {
               {t('sentRequests')}
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {sentRequests.length === 0 ? (
+              {filteredSentRequests.length === 0 ? (
                 <div style={{ color: 'var(--muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
                   {t('noSentRequests')}
                 </div>
               ) : (
-                sentRequests.map(r => (
+                filteredSentRequests.map(r => (
                   <div 
                     key={r.id} 
                     style={{ 
@@ -240,7 +243,8 @@ export default function ConnectionsPage() {
                           borderRadius: '6px', 
                           background: 'var(--surface1)',
                           color: r.status === 'pending' ? 'var(--danger)' : 'inherit',
-                          borderColor: r.status === 'pending' ? 'var(--danger)' : 'var(--border)'
+                          borderColor: r.status === 'pending' ? 'var(--danger)' : 'var(--border)',
+                          cursor: 'pointer'
                         }}
                         onClick={() => handleDeleteSent(r.id)}
                         title={r.status === 'pending' ? t('cancelBtn') : t('clearBtn')}
