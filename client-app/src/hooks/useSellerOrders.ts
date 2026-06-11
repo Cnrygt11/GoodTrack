@@ -29,9 +29,34 @@ export default function useSellerOrders() {
   const navigate = useNavigate();
 
   // --- Tab & Filter State ---
-  const [activeTab, setActiveTab] = useState<SellerTabId>('list');
   const [searchParams, setSearchParams] = useSearchParams();
-  const listFilter = (searchParams.get('tab') as ListFilter) || 'awaiting';
+  const tabParam = searchParams.get('tab');
+
+  const activeTab: SellerTabId =
+    tabParam === 'create' ? 'create' :
+    tabParam === 'catalog' ? 'catalog' : 'list';
+
+  const listFilter: ListFilter =
+    (tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter))
+      ? (tabParam as ListFilter)
+      : 'awaiting';
+
+  const setActiveTab = useCallback(
+    (tab: SellerTabId) => {
+      setSearchParams((prev) => {
+        if (tab === 'create') {
+          prev.set('tab', 'create');
+        } else if (tab === 'catalog') {
+          prev.set('tab', 'catalog');
+        } else {
+          prev.set('tab', listFilter);
+        }
+        return prev;
+      });
+    },
+    [setSearchParams, listFilter]
+  );
+
   const setListFilter = useCallback(
     (tab: ListFilter) => setSearchParams((prev) => { prev.set('tab', tab); return prev; }),
     [setSearchParams],
