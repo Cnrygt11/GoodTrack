@@ -4184,6 +4184,99 @@ h2 span.mfr-accent {
 .color-info { color: #60a5fa !important; }
 .color-danger { color: var(--danger) !important; }
 
+/* ===== MODAL HELPER STYLES ===== */
+.mb-14 {
+  margin-bottom: 14px;
+}
+
+.mb-20 {
+  margin-bottom: 20px;
+}
+
+.inline-flex-center-gap-4 {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.modal-header-danger {
+  margin: 0;
+  color: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-body-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-body-subcolumn {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.modal-explanation-box {
+  background: var(--surface2);
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.modal-textarea:focus {
+  border-color: var(--accent-seller);
+}
+
+.modal-textarea-danger:focus {
+  border-color: var(--danger);
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+
 
 
 

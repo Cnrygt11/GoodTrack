@@ -27,17 +27,17 @@ export default function AddFieldModal({
 }: AddFieldModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-        <h3 style={{ margin: 0 }}>{t('newFeatureTitle')}</h3>
+      <div className="modal-header">
+        <h3>{t('newFeatureTitle')}</h3>
         <button
           onClick={onClose}
-          style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
+          className="modal-close-btn"
         >
           <X size={18} />
         </button>
       </div>
       <form onSubmit={onSubmit}>
-        <div className="form-group" style={{ marginBottom: '14px' }}>
+        <div className="form-group mb-14">
           <label>{t('featureName')}</label>
           <input
             type="text"
@@ -47,7 +47,7 @@ export default function AddFieldModal({
             required
           />
         </div>
-        <div className="form-group" style={{ marginBottom: '14px' }}>
+        <div className="form-group mb-14">
           <label>{t('fieldType')}</label>
           <select
             value={newFieldType}
@@ -58,7 +58,7 @@ export default function AddFieldModal({
           </select>
         </div>
         {newFieldType === 'select' && (
-          <div className="form-group" style={{ marginBottom: '20px' }}>
+          <div className="form-group mb-20">
             <label>{t('optionsListLabel')}</label>
             <input
               type="text"
@@ -71,12 +71,11 @@ export default function AddFieldModal({
         )}
         <div className="modal-actions">
           <button type="button" className="btn-secondary" onClick={onClose} disabled={actionLoading}>
-            {language === 'tr' ? 'İptal' : 'Cancel'}
+            {t('btnCancel')}
           </button>
           <button
             type="submit"
-            className="btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            className="btn-primary inline-flex-center-gap-4"
             disabled={actionLoading}
           >
             {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <PlusCircle size={16} />}

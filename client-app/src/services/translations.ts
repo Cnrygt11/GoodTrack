@@ -344,6 +344,8 @@ export const translations = {
     sellerDashboardTitlePart1: 'SİPARİŞ',
     sellerDashboardTitlePart2: 'PANELİ',
     noOrdersFoundInTab: 'Aradığınız kritere uygun sipariş bulunamadı.',
+    btnCancel: 'İptal',
+    mfrExplanation: 'Üretici Açıklaması',
   },
   en: {
     // Auth Page
@@ -690,6 +692,8 @@ export const translations = {
     sellerDashboardTitlePart1: 'ORDER',
     sellerDashboardTitlePart2: 'DASHBOARD',
     noOrdersFoundInTab: 'No orders found for this tab.',
+    btnCancel: 'Cancel',
+    mfrExplanation: 'Manufacturer Explanation',
   }
 } as const;
 
