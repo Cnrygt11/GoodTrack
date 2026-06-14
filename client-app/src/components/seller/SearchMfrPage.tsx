@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useSearchMfr from '../../hooks/useSearchMfr';
-import { MapPin, Search, Sparkles, Image as ImageIcon, CheckCircle2, Clock, Plus, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 import Lightbox from '../ui/Lightbox';
 
@@ -21,8 +21,6 @@ export default function SearchMfrPage() {
     fetchManufacturers, loadMore,
     language, t,
   } = useSearchMfr();
-
-
 
   const hasActiveFilters = selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;
 
@@ -54,14 +52,12 @@ export default function SearchMfrPage() {
               )}
             </div>
 
-
-
             {/* City Filter */}
             <div>
               <label className="filter-label">{t('filterByCity')}</label>
               {availableCities.length === 0 ? (
-                <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                  {language === 'tr' ? 'Kayıtlı şehir bulunamadı.' : 'No cities found.'}
+                <span className="smfr-no-cities-msg">
+                  {t('noCitiesFound')}
                 </span>
               ) : (
                 <div className="filter-checkbox-list">
@@ -72,7 +68,7 @@ export default function SearchMfrPage() {
                         key={city}
                         className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'}`}
                       >
-                        <input type="checkbox" checked={isChecked} onChange={() => handleToggleCity(city)} style={{ cursor: 'pointer' }} />
+                        <input type="checkbox" checked={isChecked} onChange={() => handleToggleCity(city)} className="cursor-pointer" />
                         <span>{city}</span>
                       </label>
                     );
@@ -92,7 +88,7 @@ export default function SearchMfrPage() {
                       key={cat}
                       className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'}`}
                     >
-                      <input type="checkbox" checked={isChecked} onChange={() => handleToggleCategory(cat)} style={{ cursor: 'pointer' }} />
+                      <input type="checkbox" checked={isChecked} onChange={() => handleToggleCategory(cat)} className="cursor-pointer" />
                       <span>{cat}</span>
                     </label>
                   );
@@ -120,34 +116,34 @@ export default function SearchMfrPage() {
 
           <div className="smfr-results-bar">
             <span>
-              {language === 'tr' ? 'Bulunan Üretici Sayısı:' : 'Manufacturers Found:'}{' '}
+              {t('manufacturersFound')}{' '}
               <strong>{filteredAndSortedManufacturers.length}</strong>
             </span>
           </div>
 
           {loading && filteredAndSortedManufacturers.length === 0 ? (
-            <div className="card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '100px 0', gap: '16px' }}>
-              <Loader2 className="animate-spin" size={36} style={{ color: 'var(--accent-seller)' }} />
-              <span style={{ fontSize: '15px', color: 'var(--muted)' }}>
-                {language === 'tr' ? 'Üretici veri tabanı yükleniyor...' : 'Loading manufacturer directory...'}
+            <div className="card smfr-loading-card">
+              <Loader2 className="animate-spin smfr-loader-icon" size={36} />
+              <span className="smfr-loading-text">
+                {t('loadingDirectory')}
               </span>
             </div>
           ) : error && filteredAndSortedManufacturers.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '50px 20px' }}>
-              <XCircle size={44} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-              <h3 style={{ color: 'var(--danger)', marginBottom: '12px' }}>
-                {language === 'tr' ? 'Bağlantı Hatası' : 'Connection Error'}
+            <div className="card smfr-error-card">
+              <XCircle size={44} className="smfr-error-icon" />
+              <h3 className="smfr-error-title">
+                {t('connectionError')}
               </h3>
-              <p style={{ color: 'var(--muted)', maxWidth: '400px', margin: '0 auto 24px auto' }}>{error}</p>
-              <button className="btn-secondary" onClick={fetchManufacturers} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+              <p className="smfr-error-msg">{error}</p>
+              <button className="btn-secondary smfr-retry-btn" onClick={fetchManufacturers}>
                 <RefreshCw size={14} />
-                {language === 'tr' ? 'Yeniden Dene' : 'Try Again'}
+                {t('btnTryAgain')}
               </button>
             </div>
           ) : filteredAndSortedManufacturers.length === 0 ? (
-            <div className="card" style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <ImageIcon size={32} style={{ color: 'var(--muted)', marginBottom: '12px' }} />
-              <p style={{ color: 'var(--muted)', margin: 0 }}>{t('searchNoResults')}</p>
+            <div className="card smfr-empty-card">
+              <ImageIcon size={32} className="smfr-empty-icon" />
+              <p className="smfr-loading-text">{t('searchNoResults')}</p>
             </div>
           ) : (
             <>
@@ -165,7 +161,7 @@ export default function SearchMfrPage() {
                                 src={mfr.profilePicture}
                                 alt={mfr.username}
                                 onClick={(e) => { e.stopPropagation(); setLightboxImage(mfr.profilePicture || null); }}
-                                title={language === 'tr' ? 'Resmi Büyüt' : 'Zoom Image'}
+                                title={t('zoomImage')}
                               />
                             ) : (
                               <span className="mfr-avatar-initials">
@@ -176,7 +172,7 @@ export default function SearchMfrPage() {
 
                           <div className="mfr-name-block">
                             <strong className="mfr-fullname">{mfr.firstName} {mfr.lastName}</strong>
-                            <span className="mfr-handle">{mfr.phoneNumber || (language === 'tr' ? 'Telefon numarası bulunmuyor' : 'No phone number')}</span>
+                            <span className="mfr-handle">{mfr.phoneNumber || t('noPhoneNumber')}</span>
                           </div>
                         </div>
 
@@ -184,7 +180,7 @@ export default function SearchMfrPage() {
                         <div className="mfr-meta">
                           {mfr.city && (
                             <span className="mfr-city-badge">
-                              <MapPin size={11} style={{ color: 'var(--danger)' }} />
+                              <MapPin size={11} className="smfr-map-pin" />
                               {mfr.city}
                             </span>
                           )}
@@ -200,7 +196,7 @@ export default function SearchMfrPage() {
                           <p className="mfr-bio" title={mfr.bio}>{mfr.bio}</p>
                         ) : (
                           <p className="mfr-bio--empty">
-                            {language === 'tr' ? 'Tanıtım metni bulunmuyor.' : 'No description available.'}
+                            {t('noIntroText')}
                           </p>
                         )}
 
@@ -218,7 +214,7 @@ export default function SearchMfrPage() {
                           <div className="mfr-gallery">
                             <span className="mfr-gallery-label">
                               <ImageIcon size={11} />
-                              {language === 'tr' ? 'Ürün Galerisi' : 'Product Showcase'} ({mfr.productImages.length})
+                              {t('productGalleryLabel')} ({mfr.productImages.length})
                             </span>
                             <div className="mfr-gallery-strip">
                               {mfr.productImages.map((img, idx) => (
@@ -237,16 +233,15 @@ export default function SearchMfrPage() {
               </div>
 
               {hasMore && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '28px', paddingBottom: '20px' }}>
+                <div className="smfr-loadmore-wrapper">
                   <button
                     type="button"
-                    className="btn-secondary"
+                    className="btn-secondary smfr-loadmore-btn"
                     onClick={loadMore}
                     disabled={loading}
-                    style={{ padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '8px' }}
                   >
                     {loading ? <Loader2 className="animate-spin" size={14} /> : null}
-                    {language === 'tr' ? 'Daha Fazla Yükle' : 'Load More'}
+                    {t('loadMoreBtn')}
                   </button>
                 </div>
               )}

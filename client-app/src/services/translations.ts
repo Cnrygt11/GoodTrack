@@ -330,6 +330,15 @@ export const translations = {
     specialtiesKeywords: 'Uzmanlık Alanları / Etiketler',
     productShowcaseGallery: 'Ürün Galeri Vitrini',
     sampleCatalog: 'Örnek Kataloğu',
+    noCitiesFound: 'Kayıtlı şehir bulunamadı.',
+    manufacturersFound: 'Bulunan Üretici Sayısı:',
+    loadingDirectory: 'Üretici veri tabanı yükleniyor...',
+    connectionError: 'Bağlantı Hatası',
+    zoomImage: 'Resmi Büyüt',
+    noPhoneNumber: 'Telefon numarası bulunmuyor',
+    noIntroText: 'Tanıtım metni bulunmuyor.',
+    productGalleryLabel: 'Ürün Galerisi',
+    loadMoreBtn: 'Daha Fazla Yükle',
   },
   en: {
     // Auth Page
@@ -662,6 +671,15 @@ export const translations = {
     specialtiesKeywords: 'Specialties / Keywords',
     productShowcaseGallery: 'Product Showcase Gallery',
     sampleCatalog: 'Sample Catalog',
+    noCitiesFound: 'No cities found.',
+    manufacturersFound: 'Manufacturers Found:',
+    loadingDirectory: 'Loading manufacturer directory...',
+    connectionError: 'Connection Error',
+    zoomImage: 'Zoom Image',
+    noPhoneNumber: 'No phone number',
+    noIntroText: 'No description available.',
+    productGalleryLabel: 'Product Showcase',
+    loadMoreBtn: 'Load More',
   }
 } as const;
 
