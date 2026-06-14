@@ -2003,5 +2003,344 @@ h2 span.mfr-accent {
   padding: 8px 0;
 }
 
+/* ===== PROFILE PAGE STYLES ===== */
+.profile-loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+  gap: 16px;
+}
+
+.profile-loading-container span {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.seller-theme .profile-loading-container svg {
+  color: var(--accent-seller);
+}
+
+.mfr-theme .profile-loading-container svg {
+  color: var(--accent-mfr);
+}
+
+.profile-error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.profile-error-container h3 {
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+
+.profile-error-container p {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.profile-avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar-initials {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.seller-theme .profile-avatar-initials {
+  color: var(--accent-seller);
+}
+
+.mfr-theme .profile-avatar-initials {
+  color: var(--accent-mfr);
+}
+
+.profile-avatar-overlay svg {
+  color: #fff;
+}
+
+.profile-avatar-info {
+  flex: 1;
+}
+
+.profile-avatar-info .title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-avatar-info h2 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.profile-avatar-info .badge-role {
+  display: inline-block;
+}
+
+.profile-avatar-info .button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.btn-profile-pic-action {
+  padding: 2px 8px;
+  font-size: 11px;
+  border-color: var(--border);
+}
+
+.btn-profile-pic-action.delete {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.profile-fields-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.profile-names-row {
+  display: flex;
+  gap: 16px;
+}
+
+.profile-names-row .form-group {
+  flex: 1;
+}
+
+.profile-names-row input {
+  width: 100%;
+}
+
+.form-group-with-icon {
+  position: relative;
+}
+
+.form-group-with-icon svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+
+.form-group-with-icon input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.profile-mfr-divider {
+  border-top: 1px solid var(--border);
+  margin-top: 10px;
+  padding-top: 20px;
+}
+
+.profile-mfr-divider h3 {
+  margin: 0 0 16px 0;
+  font-size: 16px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.seller-theme .profile-mfr-divider h3 {
+  color: var(--accent-seller);
+}
+
+.mfr-theme .profile-mfr-divider h3 {
+  color: var(--accent-mfr);
+}
+
+.form-row-responsive .form-group.flex-2 {
+  flex: 2;
+}
+
+.form-row-responsive .form-group input {
+  width: 100%;
+}
+
+.bio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.bio-textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  font-size: 14px;
+}
+
+.keywords-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keywords-grid .btn-keyword {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.seller-theme .keywords-grid .btn-keyword.active {
+  background: var(--accent-seller);
+  color: #0b0f19;
+  border: 1px solid var(--accent-seller);
+}
+
+.mfr-theme .keywords-grid .btn-keyword.active {
+  background: var(--accent-mfr);
+  color: #0b0f19;
+  border: 1px solid var(--accent-mfr);
+}
+
+.showcase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.profile-img-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-img-overlay button {
+  background: var(--surface);
+  border: none;
+  color: var(--text);
+  padding: 4px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.profile-img-overlay button.delete {
+  color: var(--danger);
+}
+
+.profile-add-img-btn span {
+  font-size: 10px;
+}
+
+.showcase-warning {
+  margin-top: 8px;
+  color: var(--danger);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-visibility-row .switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.profile-visibility-row .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.profile-visibility-row .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--border);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.seller-theme .profile-visibility-row input:checked + .slider {
+  background-color: var(--accent-seller);
+}
+
+.mfr-theme .profile-visibility-row input:checked + .slider {
+  background-color: var(--accent-mfr);
+}
+
+.profile-visibility-row .slider::before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #0b0f19;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.profile-visibility-row input:checked + .slider::before {
+  transform: translateX(20px);
+}
+
+.profile-actions-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-actions-footer .btn-change-password {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+}
+
+.seller-theme .profile-actions-footer .btn-change-password {
+  border-color: var(--accent-seller);
+  color: var(--accent-seller);
+}
+
+.mfr-theme .profile-actions-footer .btn-change-password {
+  border-color: var(--accent-mfr);
+  color: var(--accent-mfr);
+}
+
+
 
 

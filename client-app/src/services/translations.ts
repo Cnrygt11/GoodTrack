@@ -282,6 +282,15 @@ export const translations = {
     reportBrokenTitle: 'Bozuk Sipariş Bildirimi',
     brokenExplanation: 'Bozuk Sipariş Açıklaması',
     brokenPlaceholder: 'Lütfen siparişin neden bozuk olduğunu açıklayın...',
+    loadingAccountDetails: 'Hesap bilgileri yükleniyor...',
+    btnTryAgain: 'Yeniden Dene',
+    firstName: 'Ad',
+    lastName: 'Soyad',
+    mfrBusinessInfo: 'Üretici Firma Bilgileri',
+    btnReplace: 'Değiştir',
+    btnAddImage: 'Görsel Ekle',
+    mfrVisibilityWarning: 'Uyarı: Üretici arama dizininde çıkmak için en az 3 tanıtım görseli yüklemelisiniz.',
+    mfrVisibilitySubLabel: 'Bu ayar açık olduğunda satıcılar şehir ve kategoriler ile sizi arayıp bulabilir.',
   },
   en: {
     // Auth Page
@@ -566,6 +575,15 @@ export const translations = {
     reportBrokenTitle: 'Report Broken Order',
     brokenExplanation: 'Broken Order Explanation',
     brokenPlaceholder: 'Please explain why the order is broken...',
+    loadingAccountDetails: 'Loading account details...',
+    btnTryAgain: 'Try Again',
+    firstName: 'First Name',
+    lastName: 'Last Name',
+    mfrBusinessInfo: 'Manufacturer Business Info',
+    btnReplace: 'Replace',
+    btnAddImage: 'Add Image',
+    mfrVisibilityWarning: 'Warning: You must upload at least 3 presentation images to appear in the search directory.',
+    mfrVisibilitySubLabel: 'When enabled, sellers can search and find your shop by city and categories.',
   }
 } as const;
 
