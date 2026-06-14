@@ -279,6 +279,9 @@ export const translations = {
     listLabel: 'Liste',
     titleRemove: 'Kaldır',
     enterField: '{name} giriniz',
+    reportBrokenTitle: 'Bozuk Sipariş Bildirimi',
+    brokenExplanation: 'Bozuk Sipariş Açıklaması',
+    brokenPlaceholder: 'Lütfen siparişin neden bozuk olduğunu açıklayın...',
   },
   en: {
     // Auth Page
@@ -560,6 +563,9 @@ export const translations = {
     listLabel: 'List',
     titleRemove: 'Remove',
     enterField: 'Enter {name}',
+    reportBrokenTitle: 'Report Broken Order',
+    brokenExplanation: 'Broken Order Explanation',
+    brokenPlaceholder: 'Please explain why the order is broken...',
   }
 } as const;
 
