@@ -5,6 +5,7 @@ import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
+import { ORDER_STATUS } from '../../utils/constants';
 
 interface MfrOrderCardProps {
   product: Product;
@@ -37,11 +38,11 @@ export default function MfrOrderCard({
     ? new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
     : '';
 
-  const status = p.status || (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
+  const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr', isReproduction: p.isReproduction });
   const accentColor = getMfrCardAccentColor(status);
 
-  const hasActionBar = ['awaiting', 'corrected', 'production', 'completed', 'defective', 'missing', 'shipped', 'cancelled'].includes(status);
+  const hasActionBar = [ORDER_STATUS.AWAITING, ORDER_STATUS.CORRECTED, ORDER_STATUS.PRODUCTION, ORDER_STATUS.COMPLETED, ORDER_STATUS.DEFECTIVE, ORDER_STATUS.MISSING, ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED].includes(status as any);
 
   return (
     <div className="mfr-theme moc-card">
@@ -165,26 +166,26 @@ export default function MfrOrderCard({
             </div>
           ) : (
             <>
-              {(status === 'awaiting' || status === 'corrected') && (
+              {(status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED) && (
                 <>
-                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnApproveProduction')}</MfrBtn>
-                  <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, 'broken')}>{t('btnMarkBroken')}</MfrBtn>
+                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}>{t('btnApproveProduction')}</MfrBtn>
+                  <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.BROKEN)}>{t('btnMarkBroken')}</MfrBtn>
                 </>
               )}
-              {status === 'production' && (
-                <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'completed')} fullWidth>{t('btnFinishProduction')}</MfrBtn>
+              {status === ORDER_STATUS.PRODUCTION && (
+                <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.COMPLETED)} fullWidth>{t('btnFinishProduction')}</MfrBtn>
               )}
-              {status === 'completed' && (
-                <MfrBtn color="#00bcd4" onClick={() => onUpdateStatus(p.id, 'delivered')} fullWidth>{t('btnDeliver')}</MfrBtn>
+              {status === ORDER_STATUS.COMPLETED && (
+                <MfrBtn color="#00bcd4" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)} fullWidth>{t('btnDeliver')}</MfrBtn>
               )}
-              {(status === 'defective' || status === 'missing') && (
+              {(status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING) && (
                 <>
                   <MfrBtn color="var(--surface2)" bordered onClick={() => onOpenDefectDetails(p)}>{t('btnDetails')}</MfrBtn>
-                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, 'production')}>{t('btnReproduce')}</MfrBtn>
-                  <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, 'delivered')}>{t('btnDeliverFixed')}</MfrBtn>
+                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}>{t('btnReproduce')}</MfrBtn>
+                  <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)}>{t('btnDeliverFixed')}</MfrBtn>
                 </>
               )}
-              {(status === 'shipped' || status === 'cancelled') && (
+              {(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) && (
                 <MfrBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onOpenTimeline(p)} fullWidth>{t('btnViewTimeline')}</MfrBtn>
               )}
             </>

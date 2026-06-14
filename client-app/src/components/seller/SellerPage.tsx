@@ -8,20 +8,21 @@ import DefectReportModal from './DefectReportModal';
 import BrokenDetailsModal from './BrokenDetailsModal';
 import CatalogPage from '../catalog/CatalogPage';
 import { ListFilter, SellerTabId } from '../../types/orders';
+import { ORDER_STATUS } from '../../utils/constants';
 
 function getTabIcon(tab: ListFilter, active: boolean) {
   const size = 20;
   const c = active ? 'var(--accent-seller)' : 'var(--muted)';
   switch (tab) {
-    case 'awaiting':    return <Clock size={size} style={{ color: c }} />;
-    case 'broken':      return <AlertTriangle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case 'production':  return <Clock size={size} style={{ color: c }} />;
-    case 'completed':   return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
-    case 'delivered':   return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
-    case 'defective':   return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case 'to_ship':     return <Send size={size} style={{ color: active ? '#9c27b0' : 'var(--muted)' }} />;
-    case 'shipped':     return <Archive size={size} style={{ color: c }} />;
-    default:            return <Package size={size} style={{ color: c }} />;
+    case ORDER_STATUS.AWAITING:    return <Clock size={size} style={{ color: c }} />;
+    case ORDER_STATUS.BROKEN:      return <AlertTriangle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
+    case ORDER_STATUS.PRODUCTION:  return <Clock size={size} style={{ color: c }} />;
+    case ORDER_STATUS.COMPLETED:   return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
+    case ORDER_STATUS.DELIVERED:   return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
+    case ORDER_STATUS.DEFECTIVE:   return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
+    case ORDER_STATUS.TO_SHIP:     return <Send size={size} style={{ color: active ? '#9c27b0' : 'var(--muted)' }} />;
+    case ORDER_STATUS.SHIPPED:     return <Archive size={size} style={{ color: c }} />;
+    default:                       return <Package size={size} style={{ color: c }} />;
   }
 }
 
@@ -46,14 +47,14 @@ export default function SellerPage() {
   } = useSellerOrders();
 
   const tabs = [
-    { key: 'awaiting'   as const, label: t('tabAwaiting') },
-    { key: 'broken'     as const, label: t('tabBroken') },
-    { key: 'production' as const, label: t('tabProduction') },
-    { key: 'completed'  as const, label: t('tabCompleted') },
-    { key: 'delivered'  as const, label: t('tabDelivered') },
-    { key: 'defective'  as const, label: t('tabReportedIssues') },
-    { key: 'to_ship'    as const, label: t('tabToShip') },
-    { key: 'shipped'    as const, label: t('tabShipped') },
+    { key: ORDER_STATUS.AWAITING, label: t('tabAwaiting') },
+    { key: ORDER_STATUS.BROKEN, label: t('tabBroken') },
+    { key: ORDER_STATUS.PRODUCTION, label: t('tabProduction') },
+    { key: ORDER_STATUS.COMPLETED, label: t('tabCompleted') },
+    { key: ORDER_STATUS.DELIVERED, label: t('tabDelivered') },
+    { key: ORDER_STATUS.DEFECTIVE, label: t('tabReportedIssues') },
+    { key: ORDER_STATUS.TO_SHIP, label: t('tabToShip') },
+    { key: ORDER_STATUS.SHIPPED, label: t('tabShipped') },
   ];
 
   return (

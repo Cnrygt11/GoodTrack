@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Product } from '../services/api';
 import { ListFilter, LIST_FILTER_TABS } from '../types/orders';
+import { ORDER_STATUS } from '../utils/constants';
 
 interface UseSellerOrderBadgesReturn {
   unseenIds: Record<string, string[]>;
@@ -12,16 +13,16 @@ interface UseSellerOrderBadgesReturn {
 function resolveProductTab(p: Product): ListFilter {
   const status =
     p.status ||
-    (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
+    (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
 
-  if (status === 'awaiting' || status === 'corrected') return 'awaiting';
-  if (status === 'broken') return 'broken';
-  if (status === 'production') return 'production';
-  if (status === 'completed') return 'completed';
-  if (status === 'delivered') return 'delivered';
-  if (status === 'defective' || status === 'missing') return 'defective';
-  if (status === 'to_ship') return 'to_ship';
-  if (status === 'shipped' || status === 'cancelled') return 'shipped';
+  if (status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED) return 'awaiting';
+  if (status === ORDER_STATUS.BROKEN) return 'broken';
+  if (status === ORDER_STATUS.PRODUCTION) return 'production';
+  if (status === ORDER_STATUS.COMPLETED) return 'completed';
+  if (status === ORDER_STATUS.DELIVERED) return 'delivered';
+  if (status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING) return 'defective';
+  if (status === ORDER_STATUS.TO_SHIP) return 'to_ship';
+  if (status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) return 'shipped';
   return 'production';
 }
 

@@ -5,6 +5,7 @@ import { getStatusConfig, getSellerCardAccent } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import Lightbox from '../ui/Lightbox';
+import { ORDER_STATUS } from '../../utils/constants';
 import {
   Package, Info, MoreVertical, Edit2, Trash2, Send, Archive, Calendar,
   Factory, Tag, Ruler, CheckCircle2, Ban, AlertTriangle,
@@ -41,21 +42,21 @@ export default function SellerOrderCard({
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
   const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
     : '';
 
   const status =
     p.status ||
-    (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
-  const isEditable = status === 'awaiting' || status === 'corrected' || status === 'broken';
+    (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
+  const isEditable = status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED || status === ORDER_STATUS.BROKEN;
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'seller', isReproduction: p.isReproduction });
   const accent = getSellerCardAccent(status);
 
   const hasActionBar =
-    status === 'delivered' || status === 'to_ship' || status === 'shipped' || status === 'cancelled';
+    status === ORDER_STATUS.DELIVERED || status === ORDER_STATUS.TO_SHIP || status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
 
   return (
     <div
@@ -225,10 +226,10 @@ export default function SellerOrderCard({
             {p.completedAt && (
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#22c55e' }}>
                 <CheckCircle2 size={11} />
-                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' })}</strong>
+                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
-            {!(status === 'shipped' || status === 'cancelled') && (
+            {!(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) && (
               <button
                 type="button"
                 onClick={() => onViewTimeline(p)}
@@ -264,12 +265,12 @@ export default function SellerOrderCard({
                 <>
                   <div className="dropdown-divider" />
                   <DropdownItem icon={<Ban size={13} style={{ color: 'var(--danger)' }} />} label={t('btnCancelOrder')} color="var(--danger)" onClick={() => { onCancel(p.id); onDropdownToggle(null); }} />
-                  {status === 'awaiting' && (
+                  {status === ORDER_STATUS.AWAITING && (
                     <DropdownItem icon={<Trash2 size={13} style={{ color: 'var(--danger)' }} />} label={language === 'tr' ? 'Sil' : 'Delete'} color="var(--danger)" onClick={() => { onDelete(p); onDropdownToggle(null); }} />
                   )}
                 </>
               )}
-              {status === 'production' && !p.cancelRequested && (
+              {status === ORDER_STATUS.PRODUCTION && !p.cancelRequested && (
                 <>
                   <div className="dropdown-divider" />
                   <DropdownItem

@@ -5,6 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { Product } from '../services/api';
 import { TranslationKey } from '../services/translations';
 import { ListFilter, SellerTabId, LIST_FILTER_TABS } from '../types/orders';
+import { ORDER_STATUS } from '../utils/constants';
 import useSellerOrderBadges from './useSellerOrderBadges';
 import useSellerOrderForm from './useSellerOrderForm';
 import useSellerOrderActions from './useSellerOrderActions';
@@ -39,7 +40,7 @@ export default function useSellerOrders() {
   const listFilter: ListFilter =
     (tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter))
       ? (tabParam as ListFilter)
-      : 'awaiting';
+      : ORDER_STATUS.AWAITING;
 
   const setActiveTab = useCallback(
     (tab: SellerTabId) => {
@@ -101,15 +102,15 @@ export default function useSellerOrders() {
   });
 
   const filteredProducts = sortedProducts.filter((p) => {
-    const status = p.status || (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
-    if (listFilter === 'awaiting') return status === 'awaiting' || status === 'corrected';
-    if (listFilter === 'broken') return status === 'broken';
-    if (listFilter === 'production') return status === 'production';
-    if (listFilter === 'completed') return status === 'completed';
-    if (listFilter === 'delivered') return status === 'delivered';
-    if (listFilter === 'defective') return status === 'defective' || status === 'missing';
-    if (listFilter === 'to_ship') return status === 'to_ship';
-    if (listFilter === 'shipped') return status === 'shipped' || status === 'cancelled';
+    const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
+    if (listFilter === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
+    if (listFilter === ORDER_STATUS.BROKEN) return status === ORDER_STATUS.BROKEN;
+    if (listFilter === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
+    if (listFilter === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
+    if (listFilter === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
+    if (listFilter === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+    if (listFilter === ORDER_STATUS.TO_SHIP) return status === ORDER_STATUS.TO_SHIP;
+    if (listFilter === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
     return true;
   });
 

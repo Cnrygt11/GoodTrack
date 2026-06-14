@@ -5,6 +5,7 @@ import { useSettings } from '../../context/SettingsContext';
 import { api, Product } from '../../services/api';
 import { getStatusConfig } from '../../utils/statusConfig';
 import BrokenDetailsModal from '../seller/BrokenDetailsModal';
+import { ORDER_STATUS } from '../../utils/constants';
 import {
   ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban,
   Calendar, Factory, Tag, Ruler, Send, Archive, Info, Loader2, User
@@ -74,12 +75,12 @@ export default function OrderDetailPage() {
     );
   }
 
-  const status = product.status || (product.isDefective ? 'defective' : (product.completed ? 'completed' : (product.isPendingApproval ? 'awaiting' : 'production')));
+  const status = product.status || (product.isDefective ? ORDER_STATUS.DEFECTIVE : (product.completed ? ORDER_STATUS.COMPLETED : (product.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
   const sc = getStatusConfig(status, t, { iconSize: 12, role: user?.role === 'mfr' ? 'mfr' : 'seller', isReproduction: product.isReproduction });
 
   // Mfr timeline logs filtering: only show up to and including 'to_ship' status
   const allLogs = product.logs || [];
-  const toShipIndex = allLogs.findIndex(log => log.status === 'to_ship');
+  const toShipIndex = allLogs.findIndex(log => log.status === ORDER_STATUS.TO_SHIP);
   const visibleLogs = (user?.role === 'mfr' && toShipIndex !== -1) ? allLogs.slice(0, toShipIndex + 1) : allLogs;
 
   const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';

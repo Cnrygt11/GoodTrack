@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/api';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { MFR_SEEN_KEY_PREFIX } from '../constants/authKeys';
+import { ORDER_STATUS } from '../utils/constants';
 
 export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
@@ -15,7 +16,7 @@ export default function useMfrOrders() {
   const { language, t } = useSettings();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as MfrTab) || 'awaiting';
+  const activeTab = (searchParams.get('tab') as MfrTab) || ORDER_STATUS.AWAITING;
   const setActiveTab = useCallback((tab: MfrTab) => {
     setSearchParams(prev => {
       prev.set('tab', tab);
@@ -66,13 +67,13 @@ export default function useMfrOrders() {
   useEffect(() => {
     // Group products by status
     const groupedIds: Record<string, string[]> = {
-      awaiting: products.filter(p => p.status === 'awaiting').map(p => p.id),
-      corrected: products.filter(p => p.status === 'corrected').map(p => p.id),
-      production: products.filter(p => p.status === 'production').map(p => p.id),
-      completed: products.filter(p => p.status === 'completed').map(p => p.id),
-      delivered: products.filter(p => p.status === 'delivered').map(p => p.id),
-      defective: products.filter(p => p.status === 'defective' || p.status === 'missing').map(p => p.id),
-      shipped: products.filter(p => p.status === 'shipped' || p.status === 'cancelled').map(p => p.id)
+      awaiting: products.filter(p => p.status === ORDER_STATUS.AWAITING).map(p => p.id),
+      corrected: products.filter(p => p.status === ORDER_STATUS.CORRECTED).map(p => p.id),
+      production: products.filter(p => p.status === ORDER_STATUS.PRODUCTION).map(p => p.id),
+      completed: products.filter(p => p.status === ORDER_STATUS.COMPLETED).map(p => p.id),
+      delivered: products.filter(p => p.status === ORDER_STATUS.DELIVERED).map(p => p.id),
+      defective: products.filter(p => p.status === ORDER_STATUS.DEFECTIVE || p.status === ORDER_STATUS.MISSING).map(p => p.id),
+      shipped: products.filter(p => p.status === ORDER_STATUS.SHIPPED || p.status === ORDER_STATUS.CANCELLED).map(p => p.id)
     };
 
     const nextUnseen: Record<string, string[]> = {
@@ -193,14 +194,14 @@ export default function useMfrOrders() {
 
   // Computed: filtered products based on active tab
   const filteredProducts = sortedProducts.filter(p => {
-    const status = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
-    if (activeTab === 'awaiting') return status === 'awaiting';
-    if (activeTab === 'corrected') return status === 'corrected';
-    if (activeTab === 'production') return status === 'production';
-    if (activeTab === 'completed') return status === 'completed';
-    if (activeTab === 'delivered') return status === 'delivered';
-    if (activeTab === 'defective') return status === 'defective' || status === 'missing';
-    if (activeTab === 'shipped') return status === 'shipped' || status === 'cancelled';
+    const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : (p.completed ? ORDER_STATUS.COMPLETED : (p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
+    if (activeTab === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING;
+    if (activeTab === ORDER_STATUS.CORRECTED) return status === ORDER_STATUS.CORRECTED;
+    if (activeTab === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
+    if (activeTab === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
+    if (activeTab === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
+    if (activeTab === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+    if (activeTab === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
     return true;
   });
 

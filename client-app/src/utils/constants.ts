@@ -17,3 +17,24 @@ export const MANUFACTURER_CATEGORIES: string[] = [
   'Terzi',
   'Lazer Kesim',
 ];
+
+export const ROLES = {
+  SELLER: 'seller',
+  MFR: 'mfr',
+  ADMIN: 'admin',
+} as const;
+
+export const ORDER_STATUS = {
+  AWAITING: 'awaiting',
+  PRODUCTION: 'production',
+  COMPLETED: 'completed',
+  DELIVERED: 'delivered',
+  BROKEN: 'broken',
+  CORRECTED: 'corrected',
+  DEFECTIVE: 'defective',
+  MISSING: 'missing',
+  TO_SHIP: 'to_ship',
+  SHIPPED: 'shipped',
+  CANCELLED: 'cancelled',
+} as const;
+

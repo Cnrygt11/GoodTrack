@@ -6,24 +6,25 @@ import DefectDetailsModal from './DefectDetailsModal';
 import BrokenReportModal from './BrokenReportModal';
 import { TranslationKey } from '../../services/translations';
 import { Product } from '../../services/api';
+import { ORDER_STATUS } from '../../utils/constants';
 
 function getTabIcon(tab: MfrTab, active: boolean) {
   const size = 20;
   const color = active ? 'var(--accent-mfr)' : 'var(--muted)';
   switch (tab) {
-    case 'awaiting':
+    case ORDER_STATUS.AWAITING:
       return <Clock size={size} style={{ color }} />;
-    case 'corrected':
+    case ORDER_STATUS.CORRECTED:
       return <CheckCircle2 size={size} style={{ color: active ? '#00bcd4' : 'var(--muted)' }} />;
-    case 'production':
+    case ORDER_STATUS.PRODUCTION:
       return <Play size={size} style={{ color }} />;
-    case 'completed':
+    case ORDER_STATUS.COMPLETED:
       return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
-    case 'delivered':
+    case ORDER_STATUS.DELIVERED:
       return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
-    case 'defective':
+    case ORDER_STATUS.DEFECTIVE:
       return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case 'shipped':
+    case ORDER_STATUS.SHIPPED:
       return <Archive size={size} style={{ color }} />;
     default:
       return <Package size={size} style={{ color }} />;
@@ -55,13 +56,13 @@ export default function MfrPage() {
   } = useMfrOrders();
 
   const tabs = [
-    { key: 'awaiting' as const, label: t('tabAwaiting') },
-    { key: 'corrected' as const, label: t('tabCorrected') },
-    { key: 'production' as const, label: t('tabProduction') },
-    { key: 'completed' as const, label: t('tabCompleted') },
-    { key: 'delivered' as const, label: t('tabDelivered') },
-    { key: 'defective' as const, label: t('tabIssuesMfr') },
-    { key: 'shipped' as const, label: t('tabArchiveMfr') }
+    { key: ORDER_STATUS.AWAITING, label: t('tabAwaiting') },
+    { key: ORDER_STATUS.CORRECTED, label: t('tabCorrected') },
+    { key: ORDER_STATUS.PRODUCTION, label: t('tabProduction') },
+    { key: ORDER_STATUS.COMPLETED, label: t('tabCompleted') },
+    { key: ORDER_STATUS.DELIVERED, label: t('tabDelivered') },
+    { key: ORDER_STATUS.DEFECTIVE, label: t('tabIssuesMfr') },
+    { key: ORDER_STATUS.SHIPPED, label: t('tabArchiveMfr') }
   ];
 
   return (

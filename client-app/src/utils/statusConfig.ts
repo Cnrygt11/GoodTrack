@@ -4,6 +4,7 @@ import {
   Ban, Send, Archive, Package,
 } from 'lucide-react';
 import { TranslationKey } from '../services/translations';
+import { ORDER_STATUS, ROLES } from './constants';
 
 export type StatusConfig = {
   color: string;
@@ -33,7 +34,7 @@ export function getStatusConfig(
   const isReproduction = options?.isReproduction ?? false;
 
   const productionStyle =
-    role === 'mfr'
+    role === ROLES.MFR
       ? {
           color: 'var(--accent-mfr)',
           bg: 'var(--accent-mfr-glow)',
@@ -46,27 +47,27 @@ export function getStatusConfig(
         };
 
   switch (status) {
-    case 'awaiting':
+    case ORDER_STATUS.AWAITING:
       return { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', border: 'rgba(245,158,11,0.3)', icon: React.createElement(Clock, { size: sz }), label: t('statusPendingApproval') };
-    case 'corrected':
+    case ORDER_STATUS.CORRECTED:
       return { color: '#00bcd4', bg: 'rgba(0,188,212,0.1)', border: 'rgba(0,188,212,0.3)', icon: React.createElement(Clock, { size: sz }), label: t('statusCorrected') };
-    case 'broken':
+    case ORDER_STATUS.BROKEN:
       return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: React.createElement(AlertTriangle, { size: sz }), label: t('statusBroken') };
-    case 'production':
+    case ORDER_STATUS.PRODUCTION:
       return { ...productionStyle, icon: React.createElement(Clock, { size: sz }), label: isReproduction ? t('statusReproduction') : t('statusInProduction') };
-    case 'completed':
+    case ORDER_STATUS.COMPLETED:
       return { color: '#22c55e', bg: 'rgba(34,197,94,0.1)', border: 'rgba(34,197,94,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: isReproduction ? t('statusReproductionCompleted') : t('statusCompleted') };
-    case 'delivered':
+    case ORDER_STATUS.DELIVERED:
       return { color: '#8bc34a', bg: 'rgba(139,195,74,0.1)', border: 'rgba(139,195,74,0.3)', icon: React.createElement(CheckCircle2, { size: sz }), label: isReproduction ? t('statusReproductionDelivered') : t('statusDelivered') };
-    case 'defective':
+    case ORDER_STATUS.DEFECTIVE:
       return { color: '#ef4444', bg: 'rgba(239,68,68,0.1)', border: 'rgba(239,68,68,0.3)', icon: React.createElement(XCircle, { size: sz }), label: t('statusDefective') };
-    case 'missing':
+    case ORDER_STATUS.MISSING:
       return { color: '#ff5722', bg: 'rgba(255,87,34,0.1)', border: 'rgba(255,87,34,0.3)', icon: React.createElement(AlertTriangle, { size: sz }), label: t('statusMissing') };
-    case 'to_ship':
+    case ORDER_STATUS.TO_SHIP:
       return { color: '#a855f7', bg: 'rgba(168,85,247,0.1)', border: 'rgba(168,85,247,0.3)', icon: React.createElement(Send, { size: sz }), label: t('statusToShip') };
-    case 'shipped':
+    case ORDER_STATUS.SHIPPED:
       return { color: '#94a3b8', bg: 'rgba(148,163,184,0.08)', border: 'rgba(148,163,184,0.2)', icon: React.createElement(Archive, { size: sz }), label: t('statusShipped') };
-    case 'cancelled':
+    case ORDER_STATUS.CANCELLED:
       return { color: '#6b7280', bg: 'rgba(107,114,128,0.08)', border: 'rgba(107,114,128,0.2)', icon: React.createElement(Ban, { size: sz }), label: t('statusCancelled') };
     default:
       return { color: 'var(--muted)', bg: 'transparent', border: 'var(--border)', icon: React.createElement(Package, { size: sz }), label: status };
@@ -78,13 +79,13 @@ export function getStatusConfig(
  * Used by seller-side order cards.
  */
 export function getSellerCardAccent(status: string): { left: string; glow: string } {
-  if (status === 'defective' || status === 'missing' || status === 'broken')
+  if (status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING || status === ORDER_STATUS.BROKEN)
     return { left: '#ef4444', glow: 'rgba(239,68,68,0.08)' };
-  if (status === 'completed' || status === 'delivered')
+  if (status === ORDER_STATUS.COMPLETED || status === ORDER_STATUS.DELIVERED)
     return { left: '#22c55e', glow: 'rgba(34,197,94,0.05)' };
-  if (status === 'to_ship')
+  if (status === ORDER_STATUS.TO_SHIP)
     return { left: '#a855f7', glow: 'rgba(168,85,247,0.06)' };
-  if (status === 'shipped' || status === 'cancelled')
+  if (status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED)
     return { left: '#4b5563', glow: 'transparent' };
   return { left: 'var(--accent-seller)', glow: 'var(--accent-seller-glow)' };
 }
@@ -94,9 +95,9 @@ export function getSellerCardAccent(status: string): { left: string; glow: strin
  * Used by mfr-side order cards.
  */
 export function getMfrCardAccentColor(status: string): string {
-  if (status === 'defective' || status === 'missing' || status === 'broken') return '#ef4444';
-  if (status === 'completed' || status === 'delivered') return '#22c55e';
-  if (status === 'to_ship') return '#a855f7';
-  if (status === 'shipped' || status === 'cancelled') return '#4b5563';
+  if (status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING || status === ORDER_STATUS.BROKEN) return '#ef4444';
+  if (status === ORDER_STATUS.COMPLETED || status === ORDER_STATUS.DELIVERED) return '#22c55e';
+  if (status === ORDER_STATUS.TO_SHIP) return '#a855f7';
+  if (status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) return '#4b5563';
   return 'var(--accent-mfr)';
 }

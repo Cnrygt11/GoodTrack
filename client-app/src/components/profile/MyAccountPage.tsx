@@ -4,8 +4,7 @@ import useProfile from '../../hooks/useProfile';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import { ROUTES } from '../../constants/routes';
 import { ShieldCheck, User, Mail, Phone, Key, ArrowLeft, Loader2, Eye, EyeOff, Camera, Trash2, Plus, Image as ImageIcon, MapPin, Building2, CheckCircle2 } from 'lucide-react';
-
-const CATEGORIES = ['Deri', 'Gümüş', 'Altın', 'Ahşap', 'Takı', 'Bijuteri', 'Terzi', 'Lazer Kesim'];
+import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 
 export default function MyAccountPage() {
   const navigate = useNavigate();
@@ -320,7 +319,7 @@ export default function MyAccountPage() {
                 <div className="form-group">
                   <label style={{ marginBottom: '8px', display: 'block' }}>{t('keywordsLabel')}</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {CATEGORIES.map((cat) => {
+                    {MANUFACTURER_CATEGORIES.map((cat) => {
                       const isSelected = keywords.includes(cat);
                       return (
                         <button
