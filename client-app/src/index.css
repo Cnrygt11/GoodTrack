@@ -2036,6 +2036,11 @@ h2 span.mfr-accent {
   margin-bottom: 12px;
 }
 
+.profile-error-icon {
+  color: var(--danger);
+  margin-bottom: 16px;
+}
+
 .profile-error-container p {
   color: var(--muted);
   margin-bottom: 24px;
@@ -3540,3 +3545,223 @@ h2 span.mfr-accent {
   font-size: 12px;
   letter-spacing: 1px;
 }
+
+/* ===== USER PROFILE DETAIL PAGE STYLES ===== */
+.profile-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.3s ease-out;
+  padding-bottom: 40px;
+}
+
+.profile-detail-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.profile-detail-card {
+  padding: 0 !important;
+  overflow: hidden;
+  margin-bottom: 28px;
+  border: 1px solid var(--border);
+}
+
+.profile-detail-banner {
+  height: 140px;
+  opacity: 0.8;
+}
+
+.profile-detail-card.role-seller .profile-detail-banner {
+  background: linear-gradient(135deg, var(--accent-seller) 0%, var(--surface1) 100%);
+}
+
+.profile-detail-card.role-mfr .profile-detail-banner {
+  background: linear-gradient(135deg, var(--accent-mfr) 0%, var(--surface1) 100%);
+}
+
+.profile-detail-body {
+  padding: 0 32px 32px 32px;
+  position: relative;
+}
+
+.profile-detail-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: -60px;
+  margin-bottom: 20px;
+}
+
+.profile-detail-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--surface);
+  object-fit: cover;
+  background: var(--surface2);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-detail-avatar.clickable {
+  cursor: zoom-in;
+}
+
+.profile-detail-avatar-fallback {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid var(--surface);
+  background: var(--surface2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 32px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.profile-detail-card.role-seller .profile-detail-avatar-fallback {
+  color: var(--accent-seller);
+}
+
+.profile-detail-card.role-mfr .profile-detail-avatar-fallback {
+  color: var(--accent-mfr);
+}
+
+.profile-detail-badge-role {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.profile-detail-name {
+  margin: 0 0 4px 0;
+  font-size: 26px;
+}
+
+.profile-detail-username {
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+.profile-detail-card.role-seller .profile-detail-username {
+  color: var(--accent-seller);
+}
+
+.profile-detail-card.role-mfr .profile-detail-username {
+  color: var(--accent-mfr);
+}
+
+.profile-detail-bio {
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+  white-space: pre-wrap;
+}
+
+.profile-detail-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 20px;
+}
+
+.profile-detail-info-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.profile-detail-info-item span {
+  color: var(--text);
+}
+
+.profile-detail-card.role-seller .profile-detail-info-item svg {
+  color: var(--accent-seller);
+}
+
+.profile-detail-card.role-mfr .profile-detail-info-item svg {
+  color: var(--accent-mfr);
+}
+
+.profile-detail-section-card {
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.profile-detail-section-title {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.role-seller .profile-detail-section-title svg {
+  color: var(--accent-seller);
+}
+
+.role-mfr .profile-detail-section-title svg {
+  color: var(--accent-mfr);
+}
+
+.profile-detail-tags-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.profile-detail-tag {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.role-seller .profile-detail-tag {
+  background: var(--accent-seller-glow);
+  color: var(--accent-seller);
+  border: 1px solid rgba(245, 166, 35, 0.2);
+}
+
+.role-mfr .profile-detail-tag {
+  background: var(--accent-mfr-glow);
+  color: var(--accent-mfr);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+}
+
+.profile-detail-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.profile-detail-gallery-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: zoom-in;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  transition: transform 0.2s ease;
+}
+
+.profile-detail-gallery-item:hover {
+  transform: scale(1.02);
+}
+
+.profile-detail-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+

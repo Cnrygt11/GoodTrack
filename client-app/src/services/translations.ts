@@ -324,6 +324,12 @@ export const translations = {
     landingMfrFeature2: 'Tarihsel sipariş zaman tüneli',
     landingMfrFeature3: 'Gerçek zamanlı SignalR bildirimleri',
     landingAllRightsReserved: 'TÜM HAKLARI SAKLIDIR.',
+    notSpecified: 'Belirtilmemiş',
+    mfrProfile: 'Üretici Profili',
+    sellerProfile: 'Satıcı Profili',
+    specialtiesKeywords: 'Uzmanlık Alanları / Etiketler',
+    productShowcaseGallery: 'Ürün Galeri Vitrini',
+    sampleCatalog: 'Örnek Kataloğu',
   },
   en: {
     // Auth Page
@@ -650,6 +656,12 @@ export const translations = {
     landingMfrFeature2: 'Historical order timeline visualizer',
     landingMfrFeature3: 'Real-time SignalR notifications',
     landingAllRightsReserved: 'ALL RIGHTS RESERVED.',
+    notSpecified: 'Not specified',
+    mfrProfile: 'Manufacturer Profile',
+    sellerProfile: 'Seller Profile',
+    specialtiesKeywords: 'Specialties / Keywords',
+    productShowcaseGallery: 'Product Showcase Gallery',
+    sampleCatalog: 'Sample Catalog',
   }
 } as const;
 

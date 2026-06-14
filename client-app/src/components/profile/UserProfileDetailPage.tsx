@@ -48,134 +48,109 @@ export default function UserProfileDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
-        <Loader2 size={36} className="animate-spin" style={{ color: currentUser?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
-        <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{language === 'tr' ? 'Yükleniyor...' : 'Loading...'}</span>
+      <div className="profile-loading-container">
+        <Loader2 size={36} className="animate-spin" />
+        <span>{t('loadingText')}</span>
       </div>
     );
   }
 
   if (error || !profile) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', textAlign: 'center' }} className="card">
-        <AlertTriangle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-        <h3 style={{ marginBottom: '8px' }}>{language === 'tr' ? 'Hata Oluştu' : 'Error Occurred'}</h3>
-        <p style={{ color: 'var(--muted)', fontSize: '14px', marginBottom: '24px' }}>{error}</p>
-        <button onClick={handleBack} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+      <div className="card profile-error-container">
+        <AlertTriangle size={48} className="profile-error-icon" />
+        <h3>{t('anErrorOccurred')}</h3>
+        <p>{error}</p>
+        <button onClick={handleBack} className="btn-secondary profile-detail-back-btn">
           <ArrowLeft size={14} />
-          {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+          {t('goBack')}
         </button>
       </div>
     );
   }
 
   const isMfr = profile.role === 'mfr';
-  const roleLabel = isMfr ? (language === 'tr' ? 'Üretici' : 'Manufacturer') : (language === 'tr' ? 'Satıcı' : 'Seller');
-  const accentColor = profile.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)';
-  const glowBg = profile.role === 'seller' ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)';
+  const roleLabel = isMfr ? t('mfr') : t('seller');
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out', paddingBottom: '40px' }}>
+    <div className="profile-detail-container">
       
       {/* Back breadcrumb */}
       <button 
         onClick={handleBack}
-        className="btn-back" 
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
+        className="btn-back profile-detail-back-btn"
       >
         <ArrowLeft size={14} />
-        {language === 'tr' ? 'Geri Dön' : 'Go Back'}
+        {t('goBack')}
       </button>
 
       {/* Main Profile Showcase Card */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '28px', border: '1px solid var(--border)' }}>
+      <div className={`card profile-detail-card role-${profile.role}`}>
         {/* Cover banner */}
-        <div style={{ height: '140px', background: `linear-gradient(135deg, ${accentColor} 0%, var(--surface1) 100%)`, opacity: 0.8 }} />
+        <div className="profile-detail-banner" />
 
         {/* Profile Info Details Header */}
-        <div style={{ padding: '0 32px 32px 32px', position: 'relative' }}>
+        <div className="profile-detail-body">
           {/* Avatar positioning */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '-60px', marginBottom: '20px' }}>
+          <div className="profile-detail-header-row">
             {profile.profilePicture ? (
               <img 
                 src={profile.profilePicture} 
                 alt={profile.username}
                 onClick={() => setLightboxImage(profile.profilePicture!)}
-                style={{ 
-                  width: '120px', 
-                  height: '120px', 
-                  borderRadius: '50%', 
-                  border: '4px solid var(--surface1)', 
-                  objectFit: 'cover',
-                  background: 'var(--surface2)',
-                  cursor: 'zoom-in',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
-                }}
+                className="profile-detail-avatar clickable"
               />
             ) : (
-              <div style={{ 
-                width: '120px', 
-                height: '120px', 
-                borderRadius: '50%', 
-                border: '4px solid var(--surface1)', 
-                background: 'var(--surface2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: accentColor,
-                fontWeight: 700,
-                fontSize: '32px',
-                boxShadow: '0 10px 20px rgba(0,0,0,0.3)'
-              }}>
+              <div className="profile-detail-avatar-fallback">
                 {profile.username.substring(0, 2).toUpperCase()}
               </div>
             )}
 
-            <span className={`badge-role ${profile.role}`} style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '20px', fontWeight: 700 }}>
+            <span className={`badge-role ${profile.role} profile-detail-badge-role`}>
               {roleLabel}
             </span>
           </div>
 
-          <h1 style={{ margin: '0 0 4px 0', fontSize: '26px' }}>
+          <h1 className="profile-detail-name">
             {profile.firstName || profile.lastName 
               ? `${profile.firstName} ${profile.lastName}`.trim() 
               : profile.username}
           </h1>
-          <p style={{ color: accentColor, margin: '0 0 16px 0', fontWeight: 600 }}>
+          <p className="profile-detail-username">
             @{profile.username}
           </p>
 
           {profile.bio && (
-            <p style={{ color: 'var(--text)', fontSize: '15px', lineHeight: '1.6', marginBottom: '24px', whiteSpace: 'pre-wrap' }}>
+            <p className="profile-detail-bio">
               {profile.bio}
             </p>
           )}
 
           {/* Contact & Location Info Details */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--muted)', fontSize: '14px' }}>
-              <Mail size={16} style={{ color: accentColor }} />
-              <span style={{ color: 'var(--text)' }}>{profile.email}</span>
+          <div className="profile-detail-info-grid">
+            <div className="profile-detail-info-item">
+              <Mail size={16} />
+              <span>{profile.email}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--muted)', fontSize: '14px' }}>
-              <Phone size={16} style={{ color: accentColor }} />
-              <span style={{ color: 'var(--text)' }}>{profile.phoneNumber || (language === 'tr' ? 'Belirtilmemiş' : 'Not specified')}</span>
+            <div className="profile-detail-info-item">
+              <Phone size={16} />
+              <span>{profile.phoneNumber || t('notSpecified')}</span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--muted)', fontSize: '14px' }}>
-              <MapPin size={16} style={{ color: accentColor }} />
-              <span style={{ color: 'var(--text)' }}>
+            <div className="profile-detail-info-item">
+              <MapPin size={16} />
+              <span>
                 {profile.city 
                   ? `${profile.address ? profile.address + ', ' : ''}${profile.city}` 
-                  : (language === 'tr' ? 'Belirtilmemiş' : 'Not specified')}
+                  : t('notSpecified')}
               </span>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--muted)', fontSize: '14px' }}>
-              <Award size={16} style={{ color: accentColor }} />
-              <span style={{ color: 'var(--text)' }}>
-                {isMfr ? (language === 'tr' ? 'Üretici Profili' : 'Manufacturer Profile') : (language === 'tr' ? 'Satıcı Profili' : 'Seller Profile')}
+            <div className="profile-detail-info-item">
+              <Award size={16} />
+              <span>
+                {isMfr ? t('mfrProfile') : t('sellerProfile')}
               </span>
             </div>
           </div>
@@ -184,24 +159,16 @@ export default function UserProfileDetailPage() {
 
       {/* Keywords / Tags Section */}
       {profile.keywords && profile.keywords.length > 0 && (
-        <div className="card" style={{ padding: '24px', marginBottom: '28px' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Globe size={18} style={{ color: accentColor }} />
-            {language === 'tr' ? 'Uzmanlık Alanları / Etiketler' : 'Specialties / Keywords'}
+        <div className={`profile-detail-section-card card role-${profile.role}`}>
+          <h3 className="profile-detail-section-title">
+            <Globe size={18} />
+            {t('specialtiesKeywords')}
           </h3>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+          <div className="profile-detail-tags-list">
             {profile.keywords.map((tag, idx) => (
               <span 
                 key={idx} 
-                style={{ 
-                  background: glowBg, 
-                  color: accentColor, 
-                  padding: '6px 12px', 
-                  borderRadius: '6px', 
-                  fontSize: '13px', 
-                  fontWeight: 600,
-                  border: `1px solid ${accentColor}33`
-                }}
+                className="profile-detail-tag"
               >
                 #{tag}
               </span>
@@ -212,36 +179,21 @@ export default function UserProfileDetailPage() {
 
       {/* Product Showcase Gallery Section */}
       {profile.productImages && profile.productImages.length > 0 && (
-        <div className="card" style={{ padding: '24px' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ImageIcon size={18} style={{ color: accentColor }} />
-            {isMfr ? (language === 'tr' ? 'Ürün Galeri Vitrini' : 'Product Showcase Gallery') : (language === 'tr' ? 'Örnek Kataloğu' : 'Sample Catalog')}
+        <div className={`profile-detail-section-card card role-${profile.role}`}>
+          <h3 className="profile-detail-section-title">
+            <ImageIcon size={18} />
+            {isMfr ? t('productShowcaseGallery') : t('sampleCatalog')}
           </h3>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', 
-            gap: '16px' 
-          }}>
+          <div className="profile-detail-gallery-grid">
             {profile.productImages.map((imgUrl, idx) => (
               <div 
                 key={idx} 
                 onClick={() => setLightboxImage(imgUrl)}
-                style={{ 
-                  position: 'relative', 
-                  aspectRatio: '1', 
-                  borderRadius: '8px', 
-                  overflow: 'hidden', 
-                  cursor: 'zoom-in',
-                  border: '1px solid var(--border)',
-                  background: 'var(--surface2)',
-                  transition: 'transform 0.2s ease'
-                }}
-                className="gallery-item"
+                className="profile-detail-gallery-item"
               >
                 <img 
                   src={imgUrl} 
                   alt={`Showcase ${idx}`} 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>
             ))}
