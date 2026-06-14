@@ -188,6 +188,19 @@ body {
   border-radius: 6px;
 }
 
+.btn-flex-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-feedback-success {
+  color: var(--success);
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+}
+
 .btn-lang {
   padding: 6px 10px;
   font-size: 12px;
@@ -393,6 +406,16 @@ h2 span.mfr-accent {
 .image-upload-area .upload-icon {
   font-size: 32px;
   margin-bottom: 6px;
+  display: flex;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.image-upload-area .filename-preview {
+  font-size: 10px;
+  color: var(--success);
+  margin-top: 4px;
+  display: block;
 }
 
 .image-upload-area .upload-text {
@@ -401,6 +424,7 @@ h2 span.mfr-accent {
 }
 
 .image-preview {
+  display: block;
   max-height: 80px;
   max-width: 100%;
   margin-top: 8px;
@@ -460,6 +484,9 @@ h2 span.mfr-accent {
 }
 
 .extra-field-row .del-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
   color: var(--danger);

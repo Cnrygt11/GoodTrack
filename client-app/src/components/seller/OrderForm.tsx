@@ -61,7 +61,7 @@ export default function OrderForm({
                 required
               />
               {autofillSuccess && (
-                <span style={{ color: 'var(--success)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
+                <span className="form-feedback-success">
                   ✓ {t('autofillMatch')}
                 </span>
               )}
@@ -78,15 +78,15 @@ export default function OrderForm({
                 />
                 {!orderImage ? (
                   <>
-                    <div className="upload-icon" style={{ display: 'flex', justifyContent: 'center' }}>
-                      <Camera size={24} style={{ color: 'var(--muted)' }} />
+                    <div className="upload-icon">
+                      <Camera size={24} />
                     </div>
                     <div className="upload-text">{t('clickToUpload')}</div>
                   </>
                 ) : (
                   <>
-                    <img className="image-preview" src={orderImage} alt="preview" style={{ display: 'block' }} />
-                    <span style={{ fontSize: '10px', color: 'var(--success)', marginTop: '4px' }}>
+                    <img className="image-preview" src={orderImage} alt="preview" />
+                    <span className="filename-preview">
                       {imageFileName.substring(0, 16)}...
                     </span>
                   </>
@@ -152,7 +152,6 @@ export default function OrderForm({
                 <button
                   type="button"
                   className="del-btn"
-                  style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
                   onClick={() => onRemoveField(def.id)}
                   title={language === 'tr' ? 'Kaldır' : 'Remove'}
                 >
@@ -164,8 +163,7 @@ export default function OrderForm({
 
           <button
             type="button"
-            className="add-field-btn"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            className="add-field-btn btn-flex-inline"
             onClick={onOpenFieldModal}
           >
             <Plus size={16} />
@@ -188,8 +186,7 @@ export default function OrderForm({
             </button>
             <button
               type="submit"
-              className="btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              className="btn-primary btn-flex-inline"
               disabled={actionLoading}
             >
               {actionLoading
