@@ -54,13 +54,9 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className={user.role === 'mfr' ? 'mfr-theme' : 'seller-theme'}>
       <header className="topbar">
-        <div className="topbar-title" onClick={handleLogoClick} style={{ cursor: 'pointer', userSelect: 'none' }}>
+        <div className="topbar-title" onClick={handleLogoClick}>
           {t('appTitle')}{' '}
-          <span 
-            style={{ 
-              color: user.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' 
-            }}
-          >
+          <span className="topbar-subtitle">
             {t('appSubTitle')}
           </span>
         </div>
@@ -71,9 +67,8 @@ export default function Layout({ children }: LayoutProps) {
             {/* Theme Toggle */}
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-secondary btn-icon"
               onClick={toggleTheme}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '6px' }}
               title={theme === 'dark' ? 'Aydınlık Tema / Light Theme' : 'Karanlık Tema / Dark Theme'}
             >
               {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
@@ -82,17 +77,16 @@ export default function Layout({ children }: LayoutProps) {
             {/* Language Toggle */}
             <button
               type="button"
-              className="btn-secondary"
+              className="btn-secondary btn-lang"
               onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
-              style={{ padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '6px' }}
             >
               {language === 'tr' ? 'EN' : 'TR'}
             </button>
           </div>
 
-          <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
+          <span className="topbar-user-label">
             {t('userLabel')}:{' '}
-            <strong style={{ color: 'var(--text)' }}>
+            <strong className="topbar-username">
               {user.username}
             </strong>
           </span>
@@ -143,18 +137,7 @@ export default function Layout({ children }: LayoutProps) {
             <Users size={14} />
             {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}
             {hasNewRequests && (
-              <span 
-                style={{
-                  position: 'absolute',
-                  top: '4px',
-                  right: '4px',
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--danger, #ef4444)',
-                  boxShadow: '0 0 0 2px var(--surface1)',
-                }}
-              />
+              <span className="unseen-dot-nav" />
             )}
           </button>
 
