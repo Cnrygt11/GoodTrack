@@ -10,19 +10,18 @@ import CatalogPage from '../catalog/CatalogPage';
 import { ListFilter, SellerTabId } from '../../types/orders';
 import { ORDER_STATUS } from '../../utils/constants';
 
-function getTabIcon(tab: ListFilter, active: boolean) {
+function getTabIcon(tab: ListFilter) {
   const size = 20;
-  const c = active ? 'var(--accent-seller)' : 'var(--muted)';
   switch (tab) {
-    case ORDER_STATUS.AWAITING:    return <Clock size={size} style={{ color: c }} />;
-    case ORDER_STATUS.BROKEN:      return <AlertTriangle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case ORDER_STATUS.PRODUCTION:  return <Clock size={size} style={{ color: c }} />;
-    case ORDER_STATUS.COMPLETED:   return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
-    case ORDER_STATUS.DELIVERED:   return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
-    case ORDER_STATUS.DEFECTIVE:   return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case ORDER_STATUS.TO_SHIP:     return <Send size={size} style={{ color: active ? '#9c27b0' : 'var(--muted)' }} />;
-    case ORDER_STATUS.SHIPPED:     return <Archive size={size} style={{ color: c }} />;
-    default:                       return <Package size={size} style={{ color: c }} />;
+    case ORDER_STATUS.AWAITING:    return <Clock size={size} />;
+    case ORDER_STATUS.BROKEN:      return <AlertTriangle size={size} />;
+    case ORDER_STATUS.PRODUCTION:  return <Clock size={size} />;
+    case ORDER_STATUS.COMPLETED:   return <CheckCircle2 size={size} />;
+    case ORDER_STATUS.DELIVERED:   return <CheckCircle2 size={size} />;
+    case ORDER_STATUS.DEFECTIVE:   return <XCircle size={size} />;
+    case ORDER_STATUS.TO_SHIP:     return <Send size={size} />;
+    case ORDER_STATUS.SHIPPED:     return <Archive size={size} />;
+    default:                       return <Package size={size} />;
   }
 }
 
@@ -62,8 +61,8 @@ export default function SellerPage() {
 
       {/* Sub-tab navigation */}
       <div className="seller-tab-nav">
-        <TabButton active={activeTab === 'list'}    onClick={() => setActiveTab('list')}    icon={<ClipboardList size={16} />} label={language === 'tr' ? 'Gönderilen Siparişler' : 'Sent Orders'} />
-        <TabButton active={activeTab === 'create'}  onClick={() => setActiveTab('create')}  icon={<PlusCircle size={16} />}   label={language === 'tr' ? 'Yeni Sipariş Oluştur' : 'Create New Order'} />
+        <TabButton active={activeTab === 'list'}    onClick={() => setActiveTab('list')}    icon={<ClipboardList size={16} />} label={t('tabSentOrders')} />
+        <TabButton active={activeTab === 'create'}  onClick={() => setActiveTab('create')}  icon={<PlusCircle size={16} />}   label={t('tabCreateOrder')} />
         <TabButton active={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} icon={<Package size={16} />}      label={t('btnMyProducts')} />
       </div>
 
@@ -97,7 +96,7 @@ export default function SellerPage() {
         <>
           {/* Dashboard title */}
           <h2 className="seller-dashboard-title">
-            {language === 'tr' ? <><>SİPARİŞ </><span>PANELİ</span></> : <><>ORDER </><span>DASHBOARD</span></>}
+            <>{t('sellerDashboardTitlePart1')} <span>{t('sellerDashboardTitlePart2')}</span></>
           </h2>
 
           {/* Status filter grid */}
@@ -112,8 +111,8 @@ export default function SellerPage() {
                   className={`seller-stat-card${isActive ? ' seller-stat-card--active' : ''}`}
                   onClick={() => setListFilter(tab.key)}
                 >
-                  <div className={`seller-stat-icon${isActive ? ' seller-stat-icon--active' : ' seller-stat-icon--inactive'}`}>
-                    {getTabIcon(tab.key, isActive)}
+                  <div className={`seller-stat-icon status-${tab.key} ${isActive ? 'seller-stat-icon--active' : 'seller-stat-icon--inactive'}`}>
+                    {getTabIcon(tab.key)}
                   </div>
                   <span className={`seller-stat-label${isActive ? ' seller-stat-label--active' : ''}`}>
                     {tab.label}
@@ -127,7 +126,7 @@ export default function SellerPage() {
           {/* List header */}
           <div className="seller-list-header">
             <h3>
-              {language === 'tr' ? 'Sipariş Listesi:' : 'Order List:'}{' '}
+              {t('orderListLabel')}{' '}
               <span className="seller-list-filter-name">
                 {tabs.find((tab) => tab.key === listFilter)?.label}
               </span>
@@ -150,8 +149,8 @@ export default function SellerPage() {
             {filteredProducts.length === 0 ? (
               <div className="seller-empty-state">
                 <Package size={36} />
-                <p style={{ margin: 0 }}>
-                  {language === 'tr' ? 'Aradığınız kritere uygun sipariş bulunamadı.' : 'No orders found for this tab.'}
+                <p>
+                  {t('noOrdersFoundInTab')}
                 </p>
               </div>
             ) : (

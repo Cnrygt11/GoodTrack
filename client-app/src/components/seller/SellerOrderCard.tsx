@@ -1,14 +1,14 @@
 import React from 'react';
 import { Product } from '../../services/api';
 import { ListFilter } from '../../types/orders';
-import { getStatusConfig, getSellerCardAccent } from '../../utils/statusConfig';
+import { getStatusConfig } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
 import { useToast } from '../../context/ToastContext';
 import Lightbox from '../ui/Lightbox';
 import { ORDER_STATUS } from '../../utils/constants';
 import {
   Package, Info, MoreVertical, Edit2, Trash2, Send, Archive, Calendar,
-  Factory, Tag, Ruler, CheckCircle2, Ban, AlertTriangle,
+  Factory, Tag, Ruler, CheckCircle2, Ban, AlertTriangle, XCircle,
 } from 'lucide-react';
 
 interface SellerOrderCardProps {
@@ -35,7 +35,6 @@ export default function SellerOrderCard({
   onViewBrokenNote,
   onRequestCancel,
 }: SellerOrderCardProps) {
-  // Read language, t and showToast from context — no prop drilling needed
   const { language, t } = useSettings();
   const { showToast } = useToast();
 
@@ -53,108 +52,55 @@ export default function SellerOrderCard({
     (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
   const isEditable = status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED || status === ORDER_STATUS.BROKEN;
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'seller', isReproduction: p.isReproduction });
-  const accent = getSellerCardAccent(status);
 
   const hasActionBar =
     status === ORDER_STATUS.DELIVERED || status === ORDER_STATUS.TO_SHIP || status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
 
   return (
-    <div
-      style={{
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '14px',
-        overflow: isDropdownOpen ? 'visible' : 'hidden',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
-        position: 'relative',
-        zIndex: isDropdownOpen ? 100 : 1,
-        animation: 'slideUp 0.3s ease-out',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-2px)';
-        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.35)';
-        e.currentTarget.style.borderColor = sc.border;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = 'none';
-        e.currentTarget.style.borderColor = 'var(--border)';
-      }}
-    >
+    <div className={`seller-order-card status-${status} ${isDropdownOpen ? 'dropdown-open' : ''}`}>
       {/* Colored left accent bar */}
-      <div style={{
-        position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
-        background: accent.left, borderRadius: '14px 0 0 14px',
-      }} />
+      <div className="seller-order-card-accent-bar" />
 
       {/* Unseen glow dot */}
       {isUnseen && (
         <div
-          style={{
-            position: 'absolute', top: '14px', left: '14px',
-            width: '8px', height: '8px', borderRadius: '50%',
-            background: sc.color, boxShadow: `0 0 8px ${sc.color}`,
-            cursor: 'pointer', zIndex: 5, animation: 'pulse 2s infinite',
-          }}
-          title={language === 'tr' ? 'Yeni! Tıklayarak okundu olarak işaretle.' : 'New! Click to mark as read.'}
+          className="seller-order-card-unseen-dot"
+          title={t('unseenDotTitle')}
           onClick={(e) => { e.stopPropagation(); onMarkSeen(p.id, listFilter); }}
         />
       )}
 
       {/* Main content */}
-      <div style={{ display: 'flex', gap: '16px', padding: '16px 16px 16px 20px', flex: 1 }}>
+      <div className="seller-order-card-content">
 
         {/* Thumbnail */}
         <div
           onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
-          style={{
-            width: '80px', height: '80px', borderRadius: '10px', flexShrink: 0,
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: p.image ? 'pointer' : 'default',
-            transition: 'opacity 0.2s',
-          }}
-          onMouseEnter={(e) => { if (p.image) e.currentTarget.style.opacity = '0.85'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-          title={p.image ? (language === 'tr' ? 'Detaylı görmek için tıklayın' : 'Click to inspect details') : undefined}
+          className={`seller-order-card-thumb ${p.image ? 'clickable' : ''}`}
+          title={p.image ? t('clickToInspectDetails') : undefined}
         >
           {p.image
-            ? <img src={p.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
+            ? <img src={p.image} alt="ürün" />
+            : <Package size={28} />
           }
         </div>
 
         {/* Info block */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="seller-order-card-info">
           {/* Code + Status badge */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <span style={{
-              fontFamily: "'Bebas Neue', sans-serif", fontSize: '22px',
-              letterSpacing: '2px', color: 'var(--accent-seller)',
-              textShadow: '0 0 12px var(--accent-seller-glow)', lineHeight: 1,
-            }}>
+          <div className="seller-order-card-header">
+            <span className="seller-order-card-code">
               {p.code}
             </span>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '4px',
-              background: sc.bg, border: `1px solid ${sc.border}`,
-              color: sc.color, borderRadius: '20px',
-              padding: '3px 10px', fontSize: '11px', fontWeight: 700,
-              letterSpacing: '0.3px', whiteSpace: 'nowrap',
-            }}>
+            <span 
+              className="seller-order-card-status"
+              style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
+            >
               {sc.icon} {sc.label}
             </span>
             {p.cancelRequested && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#ef4444', borderRadius: '20px',
-                padding: '3px 10px', fontSize: '11px', fontWeight: 700,
-                letterSpacing: '0.3px', whiteSpace: 'nowrap',
-              }}>
-                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+              <span className="seller-order-card-cancel-requested">
+                {t('cancelRequestPending')}
               </span>
             )}
             {status === 'broken' && p.defectNote && (
@@ -164,23 +110,8 @@ export default function SellerOrderCard({
                   e.stopPropagation();
                   onViewBrokenNote?.(p);
                 }}
-                className="icon-btn"
-                style={{
-                  padding: '4px',
-                  borderRadius: '50%',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '6px',
-                  transition: 'background 0.2s',
-                }}
-                title={language === 'tr' ? 'Bozuk Sipariş Açıklaması' : 'Broken Order Explanation'}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                className="seller-order-card-broken-btn"
+                title={t('brokenOrderExplanation')}
               >
                 <AlertTriangle size={12} />
               </button>
@@ -188,17 +119,17 @@ export default function SellerOrderCard({
           </div>
 
           {/* Chips */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+          <div className="seller-order-card-header">
             {p.text && (
               <span className="order-chip">
-                <Tag size={10} style={{ color: 'var(--accent-seller)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('textLabel')}:</strong> {p.text}
+                <Tag size={10} />
+                <strong>{t('textLabel')}:</strong> {p.text}
               </span>
             )}
             {p.length && (
               <span className="order-chip">
-                <Ruler size={10} style={{ color: 'var(--accent-seller)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
+                <Ruler size={10} />
+                <strong>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
               </span>
             )}
             {p.mfrName && (
@@ -211,20 +142,20 @@ export default function SellerOrderCard({
               if (!item.value) return null;
               return (
                 <span key={key} className="order-chip">
-                  <strong style={{ color: 'var(--text)' }}>{item.name}:</strong> {item.value}
+                  <strong>{item.name}:</strong> {item.value}
                 </span>
               );
             })}
           </div>
 
           {/* Dates + Timeline link */}
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', marginTop: '2px' }}>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: 'var(--muted)' }}>
-              <Calendar size={11} style={{ color: 'var(--muted)', opacity: 0.7 }} />
-              {t('sentDateLabel')}: <strong style={{ color: 'var(--text)' }}>{dateStr} {timeStr}</strong>
+          <div className="seller-order-card-header">
+            <span className="seller-order-card-date">
+              <Calendar size={11} />
+              {t('sentDateLabel')}: <strong>{dateStr} {timeStr}</strong>
             </span>
             {p.completedAt && (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11.5px', color: '#22c55e' }}>
+              <span className="seller-order-card-date completed">
                 <CheckCircle2 size={11} />
                 {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
               </span>
@@ -243,10 +174,7 @@ export default function SellerOrderCard({
         </div>
 
         {/* Right: three-dot menu */}
-        <div
-          style={{ position: 'relative', flexShrink: 0, alignSelf: 'flex-start' }}
-          onClick={(e) => e.stopPropagation()}
-        >
+        <div className="seller-order-card-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); onDropdownToggle(isDropdownOpen ? null : p.id); }}
@@ -258,15 +186,33 @@ export default function SellerOrderCard({
           {isDropdownOpen && (
             <div className="dropdown-menu">
               {isEditable && (
-                <DropdownItem icon={<Edit2 size={13} style={{ color: 'var(--accent-seller)' }} />} label={language === 'tr' ? 'Düzenle' : 'Edit'} color="var(--text)" onClick={() => { onEdit(p); onDropdownToggle(null); }} />
+                <DropdownItem 
+                  icon={<Edit2 size={13} className="color-accent" />} 
+                  label={language === 'tr' ? 'Düzenle' : 'Edit'} 
+                  onClick={() => { onEdit(p); onDropdownToggle(null); }} 
+                />
               )}
-              <DropdownItem icon={<Info size={13} style={{ color: '#60a5fa' }} />} label={t('btnViewTimeline')} color="var(--text)" onClick={() => { onViewTimeline(p); onDropdownToggle(null); }} />
+              <DropdownItem 
+                icon={<Info size={13} className="color-info" />} 
+                label={t('btnViewTimeline')} 
+                onClick={() => { onViewTimeline(p); onDropdownToggle(null); }} 
+              />
               {isEditable && (
                 <>
                   <div className="dropdown-divider" />
-                  <DropdownItem icon={<Ban size={13} style={{ color: 'var(--danger)' }} />} label={t('btnCancelOrder')} color="var(--danger)" onClick={() => { onCancel(p.id); onDropdownToggle(null); }} />
+                  <DropdownItem 
+                    icon={<Ban size={13} className="color-danger" />} 
+                    label={t('btnCancelOrder')} 
+                    isDanger 
+                    onClick={() => { onCancel(p.id); onDropdownToggle(null); }} 
+                  />
                   {status === ORDER_STATUS.AWAITING && (
-                    <DropdownItem icon={<Trash2 size={13} style={{ color: 'var(--danger)' }} />} label={language === 'tr' ? 'Sil' : 'Delete'} color="var(--danger)" onClick={() => { onDelete(p); onDropdownToggle(null); }} />
+                    <DropdownItem 
+                      icon={<Trash2 size={13} className="color-danger" />} 
+                      label={language === 'tr' ? 'Sil' : 'Delete'} 
+                      isDanger 
+                      onClick={() => { onDelete(p); onDropdownToggle(null); }} 
+                    />
                   )}
                 </>
               )}
@@ -274,9 +220,9 @@ export default function SellerOrderCard({
                 <>
                   <div className="dropdown-divider" />
                   <DropdownItem
-                    icon={<Ban size={13} style={{ color: 'var(--danger)' }} />}
+                    icon={<Ban size={13} className="color-danger" />}
                     label={language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation'}
-                    color="var(--danger)"
+                    isDanger
                     onClick={() => {
                       onRequestCancel?.(p.id);
                       onDropdownToggle(null);
@@ -294,16 +240,16 @@ export default function SellerOrderCard({
         <div className="order-action-bar">
           {status === 'delivered' && (
             <>
-              <ActionBtn color="#22c55e" onClick={() => onVerify(p.id, 'correct')}>{t('btnVerifyCorrect')}</ActionBtn>
-              <ActionBtn color="#ef4444" onClick={() => onVerify(p.id, 'defective')}>{t('btnVerifyDefective')}</ActionBtn>
-              <ActionBtn color="#f97316" onClick={() => onVerify(p.id, 'missing')}>{t('btnVerifyMissing')}</ActionBtn>
+              <ActionBtn type="correct" onClick={() => onVerify(p.id, 'correct')}>{t('btnVerifyCorrect')}</ActionBtn>
+              <ActionBtn type="defective" onClick={() => onVerify(p.id, 'defective')}>{t('btnVerifyDefective')}</ActionBtn>
+              <ActionBtn type="missing" onClick={() => onVerify(p.id, 'missing')}>{t('btnVerifyMissing')}</ActionBtn>
             </>
           )}
           {status === 'to_ship' && (
-            <ActionBtn color="#a855f7" icon={<Send size={12} />} onClick={() => onShip(p.id)} fullWidth>{t('btnMarkShipped')}</ActionBtn>
+            <ActionBtn type="ship" icon={<Send size={12} />} onClick={() => onShip(p.id)} fullWidth>{t('btnMarkShipped')}</ActionBtn>
           )}
           {(status === 'shipped' || status === 'cancelled') && (
-            <ActionBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onViewTimeline(p)} fullWidth>{t('btnViewTimeline')}</ActionBtn>
+            <ActionBtn type="archive" bordered icon={<Info size={12} />} onClick={() => onViewTimeline(p)} fullWidth>{t('btnViewTimeline')}</ActionBtn>
           )}
         </div>
       )}
@@ -325,22 +271,15 @@ export default function SellerOrderCard({
 interface DropdownItemProps {
   icon: React.ReactNode;
   label: string;
-  color: string;
+  isDanger?: boolean;
   onClick: () => void;
 }
-function DropdownItem({ icon, label, color, onClick }: DropdownItemProps) {
+function DropdownItem({ icon, label, isDanger, onClick }: DropdownItemProps) {
   return (
     <button
       type="button"
       onClick={(e) => { e.stopPropagation(); onClick(); }}
-      style={{
-        padding: '9px 14px', background: 'none', border: 'none',
-        color, textAlign: 'left', cursor: 'pointer', fontSize: '13px',
-        display: 'flex', alignItems: 'center', gap: '9px', width: '100%',
-        fontWeight: 500, transition: 'background 0.15s', fontFamily: 'inherit',
-      }}
-      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--surface2)'}
-      onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+      className={`dropdown-menu-item ${isDanger ? 'danger' : ''}`}
     >
       {icon}
       {label}
@@ -349,30 +288,19 @@ function DropdownItem({ icon, label, color, onClick }: DropdownItemProps) {
 }
 
 interface ActionBtnProps {
-  color: string;
+  type: 'correct' | 'defective' | 'missing' | 'ship' | 'archive';
   onClick: () => void;
   children: React.ReactNode;
   icon?: React.ReactNode;
   fullWidth?: boolean;
   bordered?: boolean;
 }
-function ActionBtn({ color, onClick, children, icon, fullWidth, bordered }: ActionBtnProps) {
+function ActionBtn({ type, onClick, children, icon, fullWidth, bordered }: ActionBtnProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      style={{
-        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-        padding: '7px 14px', borderRadius: '7px', cursor: 'pointer',
-        fontSize: '12px', fontWeight: 700, fontFamily: 'inherit',
-        letterSpacing: '0.3px', transition: 'opacity 0.15s, transform 0.15s',
-        width: fullWidth ? '100%' : undefined,
-        background: bordered ? 'transparent' : color,
-        color: bordered ? 'var(--text)' : (color === 'var(--muted)' ? '#111' : '#fff'),
-        border: bordered ? '1px solid var(--border)' : 'none',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.85'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.transform = 'translateY(0)'; }}
+      className={`action-btn action-btn--${type} ${fullWidth ? 'action-btn--full' : ''} ${bordered ? 'action-btn--bordered' : ''}`}
     >
       {icon}
       {children}

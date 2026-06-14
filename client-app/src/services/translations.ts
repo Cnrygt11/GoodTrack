@@ -339,6 +339,11 @@ export const translations = {
     noIntroText: 'Tanıtım metni bulunmuyor.',
     productGalleryLabel: 'Ürün Galerisi',
     loadMoreBtn: 'Daha Fazla Yükle',
+    tabSentOrders: 'Gönderilen Siparişler',
+    tabCreateOrder: 'Yeni Sipariş Oluştur',
+    sellerDashboardTitlePart1: 'SİPARİŞ',
+    sellerDashboardTitlePart2: 'PANELİ',
+    noOrdersFoundInTab: 'Aradığınız kritere uygun sipariş bulunamadı.',
   },
   en: {
     // Auth Page
@@ -680,6 +685,11 @@ export const translations = {
     noIntroText: 'No description available.',
     productGalleryLabel: 'Product Showcase',
     loadMoreBtn: 'Load More',
+    tabSentOrders: 'Sent Orders',
+    tabCreateOrder: 'Create New Order',
+    sellerDashboardTitlePart1: 'ORDER',
+    sellerDashboardTitlePart2: 'DASHBOARD',
+    noOrdersFoundInTab: 'No orders found for this tab.',
   }
 } as const;
 
