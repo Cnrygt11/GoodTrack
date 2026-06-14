@@ -273,6 +273,12 @@ export const translations = {
     deleteBtn: 'Sil',
     selectedLabel: 'Seçildi',
     byLabel: 'Kim:',
+    placeholderProductCode: 'Örn: A31',
+    orderCustomFields: 'Sipariş Özellikleri (Özel Alanlar)',
+    noCustomFieldsDefined: 'Tanımlanmış özel alan bulunmuyor.',
+    listLabel: 'Liste',
+    titleRemove: 'Kaldır',
+    enterField: '{name} giriniz',
   },
   en: {
     // Auth Page
@@ -548,6 +554,12 @@ export const translations = {
     deleteBtn: 'Delete',
     selectedLabel: 'Selected',
     byLabel: 'By:',
+    placeholderProductCode: 'e.g. A31',
+    orderCustomFields: 'Order Custom Fields',
+    noCustomFieldsDefined: 'No custom fields defined.',
+    listLabel: 'List',
+    titleRemove: 'Remove',
+    enterField: 'Enter {name}',
   }
 } as const;
 

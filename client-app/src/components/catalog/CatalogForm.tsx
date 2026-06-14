@@ -59,7 +59,7 @@ export default function CatalogForm({
             <label>{t('productCode')}</label>
             <input 
               type="text" 
-              placeholder={language === 'tr' ? 'Örn: A31' : 'e.g. A31'}
+              placeholder={t('placeholderProductCode')}
               value={productCode}
               onChange={(e) => setProductCode(e.target.value)}
               required
@@ -77,15 +77,15 @@ export default function CatalogForm({
               />
               {!catalogImage ? (
                 <>
-                  <div className="upload-icon" style={{ display: 'flex', justifyContent: 'center' }}>
-                    <Camera size={24} style={{ color: 'var(--muted)' }} />
+                  <div className="upload-icon">
+                    <Camera size={24} />
                   </div>
                   <div className="upload-text">{t('clickToUpload')}</div>
                 </>
               ) : (
                 <>
-                  <img className="image-preview" src={catalogImage} alt="preview" style={{ display: 'block' }} />
-                  <span style={{ fontSize: '10px', color: 'var(--success)', marginTop: '4px' }}>
+                  <img className="image-preview" src={catalogImage} alt="preview" />
+                  <span className="filename-preview">
                     {imageFileName.substring(0, 16)}...
                   </span>
                 </>
@@ -109,15 +109,14 @@ export default function CatalogForm({
         </div>
 
         {/* Dynamic Extra Fields */}
-        <div style={{ marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--muted)' }}>
-              {language === 'tr' ? 'Sipariş Özellikleri (Özel Alanlar)' : 'Order Custom Fields'}
+        <div className="form-section-divider">
+          <div className="form-section-header">
+            <span className="form-section-title">
+              {t('orderCustomFields')}
             </span>
             <button
               type="button"
-              className="add-field-btn"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', margin: 0, padding: '4px 10px', fontSize: '12px' }}
+              className="add-field-btn add-field-btn-sm"
               onClick={onOpenFieldModal}
             >
               <Plus size={14} />
@@ -126,34 +125,32 @@ export default function CatalogForm({
           </div>
 
           {extraFieldDefs.length === 0 ? (
-            <p style={{ color: 'var(--muted)', fontSize: '12px', margin: 0, fontStyle: 'italic' }}>
-              {language === 'tr' ? 'Tanımlanmış özel alan bulunmuyor.' : 'No custom fields defined.'}
+            <p className="form-section-empty">
+              {t('noCustomFieldsDefined')}
             </p>
           ) : (
-            <div className="extra-fields" style={{ margin: 0 }}>
+            <div className="extra-fields">
               {extraFieldDefs.map(def => (
-                <div className="extra-field-row" key={def.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '8px 12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                    <span className="field-label" style={{ fontWeight: 600, fontSize: '13px' }}>{def.name}</span>
-                    <span className="field-type" style={{ fontSize: '10px' }}>
-                      {def.type === 'text' ? (language === 'tr' ? 'Metin' : 'Text') : (language === 'tr' ? 'Liste' : 'List')}
+                <div className="extra-field-row compact" key={def.id}>
+                  <div className="field-info">
+                    <span className="field-label">{def.name}</span>
+                    <span className="field-type">
+                      {def.type === 'text' ? t('textLabel') : t('listLabel')}
                     </span>
                   </div>
 
-                  <div className="field-input" style={{ flex: 1, maxWidth: '300px' }}>
+                  <div className="field-input">
                     {def.type === 'text' ? (
                       <input
                         type="text"
-                        placeholder={language === 'tr' ? `${def.name} giriniz` : `Enter ${def.name}`}
+                        placeholder={t('enterField').replace('{name}', def.name)}
                         value={extraValues[def.id] || ''}
                         onChange={(e) => onExtraValueChange(def.id, e.target.value)}
-                        style={{ width: '100%', padding: '6px', fontSize: '12px' }}
                       />
                     ) : (
                       <select
                         value={extraValues[def.id] || ''}
                         onChange={(e) => onExtraValueChange(def.id, e.target.value)}
-                        style={{ width: '100%', padding: '6px', fontSize: '12px' }}
                       >
                         <option value="">{t('selectDefault')}</option>
                         {(def.options || []).map(o => (
@@ -166,9 +163,8 @@ export default function CatalogForm({
                   <button
                     type="button"
                     className="del-btn"
-                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
                     onClick={() => onRemoveField(def.id)}
-                    title={language === 'tr' ? 'Kaldır' : 'Remove'}
+                    title={t('titleRemove')}
                   >
                     <X size={12} />
                   </button>
@@ -184,8 +180,7 @@ export default function CatalogForm({
           </button>
           <button 
             type="submit" 
-            className="btn-primary"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            className="btn-primary btn-flex-inline"
             disabled={actionLoading}
           >
             {actionLoading ? (

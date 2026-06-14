@@ -1,4 +1,4 @@
-import { ArrowLeft, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
