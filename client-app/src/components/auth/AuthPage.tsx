@@ -50,69 +50,30 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [showRegPassword, setShowRegPassword] = useState(false);
 
-  // Helper function to dynamically calculate input styles based on error presence
-  const getFieldStyle = (fieldName: string) => {
+  // Helper function to dynamically calculate input classes based on error presence
+  const getFieldClassName = (fieldName: string) => {
     const hasError = showErrors && formErrors[fieldName];
-    return {
-      height: '42px',
-      boxSizing: 'border-box' as const,
-      width: '100%',
-      paddingLeft: '38px',
-      paddingRight: fieldName.toLowerCase().includes('password') ? '40px' : '12px',
-      background: 'var(--surface)',
-      color: 'var(--text)',
-      border: hasError ? '1.5px solid var(--danger)' : '1px solid var(--border)',
-      borderRadius: '8px',
-      outline: 'none',
-      fontSize: '14px',
-      transition: 'all 0.2s ease',
-      boxShadow: hasError ? '0 0 8px rgba(239, 68, 68, 0.15)' : 'none',
-    };
+    const isPassword = fieldName.toLowerCase().includes('password');
+    return `auth-input-field${isPassword ? ' password-input' : ''}${hasError ? ' has-error' : ''}`;
   };
 
-  const getSelectStyle = (fieldName: string) => {
+  const getSelectClassName = (fieldName: string) => {
     const hasError = showErrors && formErrors[fieldName];
-    return {
-      height: '42px',
-      boxSizing: 'border-box' as const,
-      background: 'var(--surface)',
-      color: 'var(--text)',
-      border: hasError ? '1.5px solid var(--danger)' : '1px solid var(--border)',
-      borderRadius: '8px',
-      outline: 'none',
-      fontSize: '14px',
-      padding: '0 8px',
-      cursor: 'pointer',
-      transition: 'all 0.2s ease',
-    };
+    return `auth-select-field${hasError ? ' has-error' : ''}`;
   };
 
   return (
-    <div id="splash" style={{ 
-      position: 'relative', 
-      overflowY: 'auto', 
-      padding: '40px 20px',
-      boxSizing: 'border-box',
-      background: theme === 'dark' 
-        ? 'radial-gradient(ellipse at 60% 40%, #151109 0%, #09090b 80%)'
-        : 'radial-gradient(ellipse at 60% 40%, #fefcf3 0%, #f4f4f5 80%)',
-    }}>
+    <div
+      id="splash"
+      className={`auth-splash-container ${theme === 'dark' ? 'dark-bg' : 'light-bg'}`}
+    >
       {/* Theme & Language Switchers */}
-      <div style={{
-        position: 'absolute',
-        top: '20px',
-        right: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px',
-        zIndex: 100
-      }}>
+      <div className="auth-switchers-row">
         {/* Theme Toggle */}
         <button
           type="button"
-          className="btn-secondary"
+          className="btn-secondary auth-icon-btn"
           onClick={toggleTheme}
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px', borderRadius: '6px' }}
           title={theme === 'dark' ? 'Aydınlık Tema / Light Theme' : 'Karanlık Tema / Dark Theme'}
         >
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
@@ -121,96 +82,68 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
         {/* Language Toggle */}
         <button
           type="button"
-          className="btn-secondary"
+          className="btn-secondary auth-lang-btn"
           onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
-          style={{ padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '6px' }}
         >
           {language === 'tr' ? 'EN' : 'TR'}
         </button>
       </div>
 
-      <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-        <Link to="/" style={{ textDecoration: 'none' }}>
-          <div className="splash-title" style={{ 
-            cursor: 'pointer', 
-            fontSize: 'clamp(36px, 6vw, 56px)',
-            textShadow: theme === 'dark' ? '0 0 30px rgba(245, 166, 35, 0.25)' : 'none'
-          }}>
+      <div className="auth-title-container">
+        <Link to="/" className="auth-title-link">
+          <div className="splash-title auth-logo-title">
             GOOD<span style={{ color: 'var(--accent-seller)' }}>TRACK</span>
           </div>
         </Link>
-        <p className="splash-sub" style={{ textAlign: 'center', marginTop: '12px', fontSize: '12px' }}>
+        <p className="splash-sub auth-splash-subtitle">
           {activeTab === 'login' ? t('welcomeBack') : t('joinUs')}
         </p>
       </div>
 
-      <div className="auth-card" style={{ 
-        marginTop: '15px',
-        border: '1px solid var(--border)',
-        boxShadow: theme === 'dark' ? '0 24px 64px rgba(0, 0, 0, 0.7)' : '0 16px 48px rgba(9, 9, 11, 0.08)',
-        background: theme === 'dark' 
-          ? 'linear-gradient(135deg, rgba(24, 24, 27, 0.85) 0%, rgba(15, 15, 18, 0.95) 100%)' 
-          : 'linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(244, 244, 245, 0.95) 100%)',
-      }}>
+      <div className="auth-card">
         {verificationPending ? (
-          <div style={{ textAlign: 'center', padding: '10px 0' }}>
-            <div style={{ 
-              width: '64px', 
-              height: '64px', 
-              borderRadius: '50%', 
-              background: 'rgba(6, 182, 212, 0.1)', 
-              color: 'var(--primary)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              margin: '0 auto 20px', 
-              fontSize: '28px',
-              border: '1px solid rgba(6, 182, 212, 0.2)',
-              boxShadow: '0 0 16px rgba(6, 182, 212, 0.1)'
-            }}>
+          <div className="auth-verification-pending">
+            <div className="verification-pending-icon">
               ✉️
             </div>
-            <h3 style={{ marginBottom: '12px', color: 'var(--text-main)', fontSize: '20px', fontWeight: 600 }}>
-              {language === 'tr' ? 'Doğrulama E-postası Gönderildi' : 'Verification Email Sent'}
+            <h3>
+              {t('verificationEmailSent')}
             </h3>
-            <p style={{ fontSize: '13.5px', color: 'var(--text-sub)', lineHeight: '1.6', marginBottom: '24px' }}>
-              {language === 'tr' 
-                ? `Lütfen ${verificationUsername} hesabı için e-posta kutunuzu kontrol edin ve size gönderdiğimiz doğrulama linkine tıklayın. Hesabınız aktif edildiğinde giriş yapabilirsiniz.`
-                : `Please check your inbox for user ${verificationUsername} and click the verification link we sent you. You can log in once your account is activated.`}
+            <p>
+              {t('verificationEmailInstruction').replace('{username}', verificationUsername)}
             </p>
             <button 
               type="button" 
-              className="btn-primary" 
-              style={{ width: '100%' }}
+              className="btn-primary auth-width-full" 
               onClick={() => {
                 setVerificationPending(false);
               }}
             >
-              {language === 'tr' ? 'Giriş Sayfasına Dön' : 'Back to Login'}
+              {t('backToLogin')}
             </button>
           </div>
         ) : (
           <>
             {activeTab === 'login' ? (
               <form onSubmit={handleLoginSubmit} noValidate>
-                <div style={{ position: 'relative', marginBottom: '24px', textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '0.5px' }}>
+                <div className="auth-form-title-wrapper">
+                  <h2>
                     {t('login')}
                   </h2>
-                  <div style={{ width: '32px', height: '3px', background: 'var(--accent-seller)', margin: '0 auto', borderRadius: '2px' }} />
+                  <div className="auth-form-title-underline" />
                 </div>
                 
                 {/* Username Field */}
-                <div className="form-group" style={{ marginBottom: '16px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px' }}>{t('username')}</label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                <div className="form-group">
+                  <label>{t('username')}</label>
+                  <div className="auth-relative-flex-center">
+                    <User size={16} />
                     <input 
                       type="text" 
                       placeholder={t('username')} 
                       value={loginUsername}
                       onChange={(e) => setLoginUsername(e.target.value)}
-                      style={getFieldStyle('loginUsername')}
+                      className={getFieldClassName('loginUsername')}
                     />
                   </div>
                   {showErrors && formErrors.loginUsername && (
@@ -221,33 +154,21 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
 
                 {/* Password Field */}
-                <div className="form-group" style={{ marginBottom: '24px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.5px' }}>{t('password')}</label>
-                  <div style={{ position: 'relative' }}>
-                    <Lock size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                <div className="form-group mb-24">
+                  <label>{t('password')}</label>
+                  <div className="auth-relative-flex-center">
+                    <Lock size={16} />
                     <input 
                       type={showLoginPassword ? 'text' : 'password'} 
                       placeholder={t('password')} 
                       value={loginPassword}
                       onChange={(e) => setLoginPassword(e.target.value)}
-                      style={getFieldStyle('loginPassword')}
+                      className={getFieldClassName('loginPassword')}
                     />
                     <button
                       type="button"
                       onClick={() => setShowLoginPassword(!showLoginPassword)}
-                      style={{
-                        position: 'absolute',
-                        right: '12px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'none',
-                        border: 'none',
-                        color: 'var(--muted)',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: 0
-                      }}
+                      className="auth-password-toggle"
                     >
                       {showLoginPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -261,26 +182,15 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
 
                 <button 
                   type="submit" 
-                  className="btn-primary" 
-                  style={{ 
-                    width: '100%', 
-                    height: '42px', 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    opacity: submitting ? 0.6 : 1,
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    pointerEvents: submitting ? 'none' : 'auto',
-                    boxShadow: theme === 'dark' ? '0 4px 14px rgba(245, 166, 35, 0.25)' : 'none'
-                  }} 
+                  className="btn-primary auth-submit-btn seller" 
                   disabled={submitting}
                 >
                   {submitting ? <Loader2 className="animate-spin" size={18} /> : t('login')}
                 </button>
 
-                <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>
+                <div className="auth-footer-link-wrapper">
                   <span style={{ color: 'var(--muted)' }}>
-                    {language === 'tr' ? 'Hesabınız yok mu?' : "Don't have an account?"}{' '}
+                    {t('dontHaveAccount')}{' '}
                   </span>
                   <Link to="/register" style={{ color: 'var(--accent-seller)', fontWeight: '600', textDecoration: 'none' }}>
                     {t('register')}
@@ -289,25 +199,25 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
               </form>
             ) : (
               <form onSubmit={handleRegisterSubmit} noValidate>
-                <div style={{ position: 'relative', marginBottom: '24px', textAlign: 'center' }}>
-                  <h2 style={{ fontSize: '22px', fontWeight: '700', margin: '0 0 6px 0', color: 'var(--text)', letterSpacing: '0.5px' }}>
+                <div className="auth-form-title-wrapper">
+                  <h2>
                     {t('register')}
                   </h2>
-                  <div style={{ width: '32px', height: '3px', background: 'var(--accent-mfr)', margin: '0 auto', borderRadius: '2px' }} />
+                  <div className="auth-form-title-underline mfr" />
                 </div>
 
                 {/* Name Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div className="auth-grid-2">
                   <div className="form-group">
-                    <label style={{ fontSize: '11px', fontWeight: '700' }}>{language === 'tr' ? 'İSİM' : 'FIRST NAME'}</label>
-                    <div style={{ position: 'relative' }}>
-                      <User size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                    <label>{t('firstNameLabel')}</label>
+                    <div className="auth-relative-flex-center">
+                      <User size={14} />
                       <input 
                         type="text" 
-                        placeholder={language === 'tr' ? 'Adınız' : 'First Name'} 
+                        placeholder={t('firstNamePlaceholder')} 
                         value={firstName}
                         onChange={(e) => setFirstName(e.target.value)}
-                        style={getFieldStyle('firstName')}
+                        className={getFieldClassName('firstName')}
                       />
                     </div>
                     {showErrors && formErrors.firstName && (
@@ -317,15 +227,15 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                     )}
                   </div>
                   <div className="form-group">
-                    <label style={{ fontSize: '11px', fontWeight: '700' }}>{language === 'tr' ? 'SOYİSİM' : 'LAST NAME'}</label>
-                    <div style={{ position: 'relative' }}>
-                      <User size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                    <label>{t('lastNameLabel')}</label>
+                    <div className="auth-relative-flex-center">
+                      <User size={14} />
                       <input 
                         type="text" 
-                        placeholder={language === 'tr' ? 'Soyadınız' : 'Last Name'} 
+                        placeholder={t('lastNamePlaceholder')} 
                         value={lastName}
                         onChange={(e) => setLastName(e.target.value)}
-                        style={getFieldStyle('lastName')}
+                        className={getFieldClassName('lastName')}
                       />
                     </div>
                     {showErrors && formErrors.lastName && (
@@ -337,16 +247,16 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
                 
                 {/* Username Field */}
-                <div className="form-group" style={{ marginBottom: '14px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700' }}>{t('username')}</label>
-                  <div style={{ position: 'relative' }}>
-                    <User size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                <div className="form-group mb-14">
+                  <label>{t('username')}</label>
+                  <div className="auth-relative-flex-center">
+                    <User size={16} />
                     <input 
                       type="text" 
                       placeholder={t('username')} 
                       value={regUsername}
                       onChange={(e) => setRegUsername(e.target.value)}
-                      style={getFieldStyle('regUsername')}
+                      className={getFieldClassName('regUsername')}
                     />
                   </div>
                   {showErrors && formErrors.regUsername && (
@@ -357,16 +267,16 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
 
                 {/* Email Field */}
-                <div className="form-group" style={{ marginBottom: '14px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700' }}>{language === 'tr' ? 'E-POSTA ADRESİ' : 'EMAIL ADDRESS'}</label>
-                  <div style={{ position: 'relative' }}>
-                    <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                <div className="form-group mb-14">
+                  <label>{t('emailAddressLabel')}</label>
+                  <div className="auth-relative-flex-center">
+                    <Mail size={16} />
                     <input 
                       type="email" 
-                      placeholder={language === 'tr' ? 'E-posta adresinizi girin' : 'Enter email address'} 
+                      placeholder={t('emailAddressPlaceholder')} 
                       value={regEmail}
                       onChange={(e) => setRegEmail(e.target.value)}
-                      style={getFieldStyle('regEmail')}
+                      className={getFieldClassName('regEmail')}
                     />
                   </div>
                   {showErrors && formErrors.regEmail && (
@@ -377,13 +287,13 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
 
                 {/* Phone Field */}
-                <div className="form-group" style={{ marginBottom: '14px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700' }}>{t('phone')}</label>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', position: 'relative' }}>
+                <div className="form-group mb-14">
+                  <label>{t('phone')}</label>
+                  <div className="auth-phone-row">
                     <select
                       value={countryCode}
                       onChange={(e) => setCountryCode(e.target.value)}
-                      style={getSelectStyle('phoneBody')}
+                      className={getSelectClassName('phoneBody')}
                     >
                       <option value="+90">🇹🇷 +90</option>
                       <option value="+1">🇺🇸 +1</option>
@@ -394,14 +304,14 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                       <option value="+34">🇪🇸 +34</option>
                       <option value="+994">🇦🇿 +994</option>
                     </select>
-                    <div style={{ position: 'relative', flexGrow: 1 }}>
-                      <Phone size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                    <div className="auth-flex-grow-relative">
+                      <Phone size={14} />
                       <input 
                         type="text" 
                         placeholder="555 123 4567" 
                         value={phoneBody}
                         onChange={(e) => setPhoneBody(e.target.value)}
-                        style={getFieldStyle('phoneBody')}
+                        className={getFieldClassName('phoneBody')}
                       />
                     </div>
                   </div>
@@ -413,33 +323,22 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
 
                 {/* Passwords Row */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+                <div className="auth-grid-2">
                   <div className="form-group">
-                    <label style={{ fontSize: '11px', fontWeight: '700' }}>{t('password')}</label>
-                    <div style={{ position: 'relative' }}>
-                      <Lock size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                    <label>{t('password')}</label>
+                    <div className="auth-relative-flex-center">
+                      <Lock size={14} />
                       <input 
                         type={showRegPassword ? 'text' : 'password'} 
                         placeholder={t('password')} 
                         value={regPassword}
                         onChange={(e) => setRegPassword(e.target.value)}
-                        style={getFieldStyle('regPassword')}
+                        className={getFieldClassName('regPassword')}
                       />
                       <button
                         type="button"
                         onClick={() => setShowRegPassword(!showRegPassword)}
-                        style={{
-                          position: 'absolute',
-                          right: '10px',
-                          top: '50%',
-                          transform: 'translateY(-50%)',
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--muted)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          padding: 0
-                        }}
+                        className="auth-password-toggle small-right"
                       >
                         {showRegPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                       </button>
@@ -451,15 +350,15 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                     )}
                   </div>
                   <div className="form-group">
-                    <label style={{ fontSize: '11px', fontWeight: '700' }}>{t('confirmPassword')}</label>
-                    <div style={{ position: 'relative' }}>
-                      <Lock size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--muted)' }} />
+                    <label>{t('confirmPassword')}</label>
+                    <div className="auth-relative-flex-center">
+                      <Lock size={14} />
                       <input 
                         type={showRegPassword ? 'text' : 'password'} 
                         placeholder={t('confirmPassword')} 
                         value={regConfirm}
                         onChange={(e) => setRegConfirm(e.target.value)}
-                        style={getFieldStyle('regConfirm')}
+                        className={getFieldClassName('regConfirm')}
                       />
                     </div>
                     {showErrors && formErrors.regConfirm && (
@@ -471,24 +370,20 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
                 </div>
 
                 {/* Role Field */}
-                <div className="form-group" style={{ marginBottom: '24px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '700' }}>{t('selectRole')}</label>
-                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                    <Shield size={16} style={{ position: 'absolute', left: '12px', color: 'var(--muted)', zIndex: 10 }} />
+                <div className="form-group mb-24">
+                  <label>{t('selectRole')}</label>
+                  <div className="auth-relative-flex-center">
+                    <Shield size={16} />
                     <select 
                       value={regRole}
                       onChange={(e) => setRegRole(e.target.value as 'seller' | 'mfr')}
-                      style={{
-                        ...getSelectStyle('regRole'),
-                        width: '100%',
-                        paddingLeft: '38px',
-                      }}
+                      className={`${getSelectClassName('regRole')} full-width-icon`}
                     >
                       <option value="seller">
-                        {t('seller')} {language === 'tr' ? '(🛍️ Sipariş Veren)' : '(🛍️ Order Placement)'}
+                        {t('seller')} {t('roleSellerInfo')}
                       </option>
                       <option value="mfr">
-                        {t('mfr')} {language === 'tr' ? '(🏭 Üretici / Atölye)' : '(🏭 Manufacturer / Workshop)'}
+                        {t('mfr')} {t('roleMfrInfo')}
                       </option>
                     </select>
                   </div>
@@ -496,26 +391,15 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
 
                 <button 
                   type="submit" 
-                  className="btn-primary mfr" 
-                  style={{ 
-                    width: '100%', 
-                    height: '42px', 
-                    display: 'inline-flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    opacity: submitting ? 0.6 : 1,
-                    cursor: submitting ? 'not-allowed' : 'pointer',
-                    pointerEvents: submitting ? 'none' : 'auto',
-                    boxShadow: theme === 'dark' ? '0 4px 14px rgba(6, 182, 212, 0.25)' : 'none'
-                  }} 
+                  className="btn-primary auth-submit-btn mfr" 
                   disabled={submitting}
                 >
                   {submitting ? <Loader2 className="animate-spin" size={18} /> : t('register')}
                 </button>
 
-                <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13px' }}>
+                <div className="auth-footer-link-wrapper">
                   <span style={{ color: 'var(--muted)' }}>
-                    {language === 'tr' ? 'Zaten hesabınız var mı?' : 'Already have an account?'}{' '}
+                    {t('alreadyHaveAccount')}{' '}
                   </span>
                   <Link to="/login" style={{ color: 'var(--accent-mfr)', fontWeight: '600', textDecoration: 'none' }}>
                     {t('login')}
