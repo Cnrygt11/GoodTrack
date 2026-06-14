@@ -27,8 +27,6 @@ export default function ConnectionsPage() {
   if (!user) return null;
 
   const isSeller = user.role === 'seller';
-  const accentColor = isSeller ? 'var(--accent-seller)' : 'var(--accent-mfr)';
-  const glowBg = isSeller ? 'var(--accent-seller-glow)' : 'var(--accent-mfr-glow)';
 
   // Filter out accepted sent requests since they are already active connections
   const filteredSentRequests = sentRequests.filter(r => r.status !== 'accepted');
@@ -36,32 +34,20 @@ export default function ConnectionsPage() {
   const getStatusBadge = (status: ConnectionRequest['status']) => {
     let text = t('statusPending');
     let icon = <Clock size={12} />;
-    let style = { color: 'var(--accent-seller)', border: '1px solid var(--accent-seller)', background: 'var(--accent-seller-glow)' };
+    let statusClass = 'pending';
 
     if (status === 'accepted') {
       text = t('statusAccepted');
       icon = <CheckCircle2 size={12} />;
-      style = { color: 'var(--success)', border: '1px solid var(--success)', background: 'rgba(34,197,94,0.1)' };
+      statusClass = 'accepted';
     } else if (status === 'rejected') {
       text = t('statusRejected');
       icon = <XCircle size={12} />;
-      style = { color: 'var(--danger)', border: '1px solid var(--danger)', background: 'rgba(239,68,68,0.1)' };
+      statusClass = 'rejected';
     }
 
     return (
-      <span 
-        style={{ 
-          fontSize: '11px', 
-          fontWeight: 600, 
-          padding: '4px 8px', 
-          borderRadius: '4px', 
-          textTransform: 'uppercase', 
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          ...style 
-        }}
-      >
+      <span className={`connection-status-badge connection-status-badge--${statusClass}`}>
         {icon}
         {text}
       </span>
@@ -73,60 +59,49 @@ export default function ConnectionsPage() {
   };
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out', paddingBottom: '40px' }}>
+    <div className="connections-container">
       {/* Back to dashboard breadcrumb */}
       <button 
         onClick={() => navigate(isSeller ? '/seller/orders' : '/mfr/orders')}
-        className="btn-back" 
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}
+        className="btn-back connections-back-btn"
       >
         <ArrowLeft size={14} />
         {t('backToDashboard')}
       </button>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
-        <h2 style={{ margin: 0 }}>
+      <div className="connections-header">
+        <h2 className="connections-title">
           {isSeller ? t('btnMyManufacturers') : t('btnMySellers')}
         </h2>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '28px' }}>
+      <div className="connections-grid">
         {/* Left Column: Requests and Add Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+        <div className="connections-left-col">
           {/* Add Connection */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px' }}>
+          <div className="connections-card">
+            <h3 className="connections-card-title">
               {isSeller 
                 ? t('addNewManufacturer') 
                 : t('addNewSeller')}
             </h3>
-            <form onSubmit={handleAddSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <label style={{ fontSize: '12px', color: 'var(--muted)' }}>
+            <form onSubmit={handleAddSubmit} className="connections-form">
+              <label className="connections-form-label">
                 {isSeller 
                   ? t('connectManufacturerPrompt') 
                   : t('connectSellerPrompt')}
               </label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className="connections-input-row">
                 <input 
                   type="text" 
                   placeholder={t('usernamePlaceholder')}
                   value={addUsername}
                   onChange={(e) => setAddUsername(e.target.value)}
-                  style={{ 
-                    flex: 1, 
-                    background: 'var(--surface2)', 
-                    border: '1px solid var(--border)', 
-                    color: 'var(--text)', 
-                    borderRadius: '7px', 
-                    padding: '10px 14px', 
-                    outline: 'none', 
-                    fontSize: '14px' 
-                  }} 
+                  className="connections-input"
                 />
                 <button 
                   type="submit" 
-                  className="btn-primary" 
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: accentColor, color: '#0b0f19' }}
+                  className="btn-primary btn-connection-add"
                 >
                   <UserPlus size={16} />
                   {t('addBtn')}
@@ -136,55 +111,43 @@ export default function ConnectionsPage() {
           </div>
 
           {/* Gelen İstekler */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="connections-card">
+            <h3 className="connections-card-title connections-card-title--flex">
               <span>{t('incomingRequests')}</span>
               {incomingRequests.length > 0 && (
-                <span style={{ fontSize: '12px', background: 'var(--danger)', color: 'white', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>
+                <span className="connections-badge-danger">
                   {incomingRequests.length}
                 </span>
               )}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="connections-list">
               {incomingRequests.length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                <div className="connections-empty-text">
                   {t('noIncoming')}
                 </div>
               ) : (
                 incomingRequests.map(r => (
                   <div 
                     key={r.id}
-                    className="connection-row" 
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      padding: '12px 16px', 
-                      border: '1px solid var(--border)', 
-                      borderRadius: '8px', 
-                      background: 'var(--surface2)' 
-                    }}
+                    className="connection-row"
                   >
                     <button 
                       type="button"
                       className="btn-link"
                       onClick={() => handleConnectionClick(r.senderUsername)}
-                      style={{ fontWeight: 600, color: accentColor }}
                     >
                       @{r.senderUsername}
                     </button>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="connections-actions-wrapper">
                       <button 
-                        className="btn-primary" 
-                        style={{ padding: '6px 12px', fontSize: '12px', background: 'var(--success)', color: '#111', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className="btn-primary btn-connection-accept"
                         onClick={() => handleAccept(r.id)}
                       >
                         <Check size={12} />
                         {t('acceptBtn')}
                       </button>
                       <button 
-                        className="btn-secondary" 
-                        style={{ padding: '6px 12px', fontSize: '12px', borderColor: 'var(--danger)', color: 'var(--danger)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        className="btn-secondary btn-connection-reject"
                         onClick={() => handleReject(r.id)}
                       >
                         <X size={12} />
@@ -198,52 +161,32 @@ export default function ConnectionsPage() {
           </div>
 
           {/* Gönderilen İstekler */}
-          <div className="card" style={{ padding: '24px' }}>
-            <h3 style={{ marginTop: 0, marginBottom: '16px', fontSize: '16px' }}>
+          <div className="connections-card">
+            <h3 className="connections-card-title">
               {t('sentRequests')}
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="connections-list">
               {filteredSentRequests.length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: '13px', textAlign: 'center', padding: '20px 0' }}>
+                <div className="connections-empty-text">
                   {t('noSentRequests')}
                 </div>
               ) : (
                 filteredSentRequests.map(r => (
                   <div 
                     key={r.id} 
-                    style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center', 
-                      padding: '12px 16px', 
-                      border: '1px solid var(--border)', 
-                      borderRadius: '8px', 
-                      background: 'var(--surface2)' 
-                    }}
+                    className="connection-row"
                   >
                     <button 
                       type="button"
-                      className="btn-link"
+                      className="btn-link connection-row-username"
                       onClick={() => handleConnectionClick(r.receiverUsername)}
-                      style={{ fontWeight: 600, color: 'var(--text)' }}
                     >
                       @{r.receiverUsername}
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className="connections-flex-center-gap-8">
                       {getStatusBadge(r.status)}
                       <button 
-                        className="conn-remove" 
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          padding: '6px', 
-                          border: '1px solid var(--border)', 
-                          borderRadius: '6px', 
-                          background: 'var(--surface1)',
-                          color: r.status === 'pending' ? 'var(--danger)' : 'inherit',
-                          borderColor: r.status === 'pending' ? 'var(--danger)' : 'var(--border)',
-                          cursor: 'pointer'
-                        }}
+                        className={`btn-connection-cancel${r.status === 'pending' ? ' danger-style' : ''}`}
                         onClick={() => handleDeleteSent(r.id)}
                         title={r.status === 'pending' ? t('cancelBtn') : t('clearBtn')}
                       >
@@ -258,86 +201,52 @@ export default function ConnectionsPage() {
         </div>
 
         {/* Right Column: Active Connections */}
-        <div className="card" style={{ padding: '24px' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '20px', fontSize: '18px' }}>
+        <div className="connections-card">
+          <h3 className="connections-card-title connections-card-title--large">
             {t('activeConnections')} ({connections.length})
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="connections-list">
             {connectionsLoading ? (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-                <Loader2 className="animate-spin" size={24} style={{ color: accentColor }} />
+              <div className="connections-loading-wrapper">
+                <Loader2 className="animate-spin connections-loader" size={24} />
               </div>
             ) : connections.length === 0 ? (
-              <div style={{ color: 'var(--muted)', fontSize: '14px', textAlign: 'center', padding: '40px 0' }}>
+              <div className="connections-empty-text connections-empty-text--large">
                 {t('noActiveConnections')}
               </div>
             ) : (
               connections.map(c => (
                 <div 
                   key={c.id} 
-                  style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center', 
-                    padding: '16px 20px', 
-                    border: '1px solid var(--border)', 
-                    borderRadius: '10px', 
-                    background: 'var(--surface2)' 
-                  }}
+                  className="connection-row active-connection-row"
                 >
                   <button 
                     type="button"
                     onClick={() => handleConnectionClick(c.username)}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '12px', 
-                      cursor: 'pointer',
-                      border: 'none',
-                      background: 'none',
-                      textAlign: 'left',
-                      width: '100%',
-                      padding: 0,
-                      font: 'inherit',
-                      color: 'inherit'
-                    }}
+                    className="connection-profile-btn"
                   >
-                    <div style={{ 
-                      width: '40px', 
-                      height: '40px', 
-                      borderRadius: '50%', 
-                      background: glowBg, 
-                      border: `1.5px solid ${accentColor}`,
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      color: accentColor,
-                      fontWeight: 600,
-                      fontSize: '14px'
-                    }}>
+                    <div className="connection-avatar">
                       {c.username.substring(0, 2).toUpperCase()}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: 600, fontSize: '15px', color: 'var(--text)' }}>
+                    <div className="connection-info">
+                      <span className="connection-username">
                         @{c.username}
                       </span>
-                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                      <span className="connection-role-label">
                         {c.role === 'mfr' ? t('mfr') : t('seller')}
                       </span>
                     </div>
                   </button>
                   
-                  <div style={{ display: 'flex', gap: '8px' }}>
+                  <div className="connections-actions-wrapper">
                     <button 
-                      className="btn-secondary" 
-                      style={{ padding: '6px 12px', fontSize: '13px', borderColor: accentColor, color: accentColor }}
+                      className="btn-secondary btn-connection-profile"
                       onClick={() => handleConnectionClick(c.username)}
                     >
                       {t('viewProfile')}
                     </button>
                     <button 
-                      className="btn-secondary" 
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', fontSize: '13px', borderColor: 'var(--danger)', color: 'var(--danger)' }}
+                      className="btn-secondary btn-connection-disconnect"
                       onClick={() => handleRemoveConnection(c.id)}
                     >
                       <Trash2 size={13} />
