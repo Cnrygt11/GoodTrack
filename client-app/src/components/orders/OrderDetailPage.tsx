@@ -54,21 +54,21 @@ export default function OrderDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: '16px' }}>
-        <Loader2 size={36} className="animate-spin" style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
-        <span style={{ color: 'var(--muted)', fontSize: '14px' }}>{t('loadingText')}</span>
+      <div className="order-detail-loading-wrapper">
+        <Loader2 size={36} className="animate-spin order-detail-loader" />
+        <span className="order-detail-loading-text">{t('loadingText')}</span>
       </div>
     );
   }
 
   if (error || !product) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '24px', textAlign: 'center' }} className="card">
-        <AlertTriangle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
-        <h3 style={{ margin: '0 0 12px 0', color: 'var(--text)' }}>{t('anErrorOccurred')}</h3>
-        <p style={{ color: 'var(--muted)', margin: '0 0 24px 0' }}>{error || t('orderNotFound')}</p>
-        <button className="btn-secondary" onClick={handleBack} style={{ margin: '0 auto' }}>
-          <ArrowLeft size={14} style={{ marginRight: '6px' }} />
+      <div className="card order-detail-error-card">
+        <AlertTriangle size={48} className="order-detail-error-icon" />
+        <h3 className="order-detail-error-title">{t('anErrorOccurred')}</h3>
+        <p className="order-detail-error-msg">{error || t('orderNotFound')}</p>
+        <button className="btn-secondary order-detail-error-back-btn" onClick={handleBack}>
+          <ArrowLeft size={14} className="margin-right-6" />
           {t('goBack')}
         </button>
       </div>
@@ -87,77 +87,47 @@ export default function OrderDetailPage() {
   const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto', animation: 'fadeIn 0.3s ease-out' }}>
+    <div className="order-detail-container">
       
       {/* Header breadcrumb */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <button onClick={handleBack} className="btn-back" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="order-detail-breadcrumb">
+        <button onClick={handleBack} className="btn-back">
           <ArrowLeft size={16} />
           {t('backToDashboard')}
         </button>
-        <span style={{ fontSize: '13px', color: 'var(--muted)' }}>
-          {t('orderIdLabel')} <strong style={{ color: 'var(--text)' }}>{product.id}</strong>
+        <span className="order-detail-id-text">
+          {t('orderIdLabel')} <strong className="order-detail-id-val">{product.id}</strong>
         </span>
       </div>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-        gap: '24px',
-        alignItems: 'start'
-      }}>
+      <div className="order-detail-grid">
         
         {/* Left Column: Product Info Card */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-            <h2 style={{
-              fontFamily: "'Bebas Neue', sans-serif", fontSize: '32px',
-              letterSpacing: '2px', color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)',
-              margin: 0, lineHeight: 1
-            }}>
+        <div className="card order-detail-left-col">
+          <div className="order-detail-header-row">
+            <h2 className="order-detail-code-title">
               {product.code}
             </h2>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: '5px',
-              background: sc.bg, border: `1px solid ${sc.border}`,
-              color: sc.color, borderRadius: '20px',
-              padding: '4px 12px', fontSize: '12px', fontWeight: 700,
-              letterSpacing: '0.3px', whiteSpace: 'nowrap'
-            }}>
+            <span 
+              className="order-detail-status-badge"
+              style={{
+                background: sc.bg, border: `1px solid ${sc.border}`,
+                color: sc.color
+              }}
+            >
               {sc.icon} {sc.label}
             </span>
             {product.cancelRequested && (
-              <span style={{
-                display: 'inline-flex', alignItems: 'center', gap: '4px',
-                background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                color: '#ef4444', borderRadius: '20px',
-                padding: '4px 12px', fontSize: '12px', fontWeight: 700,
-                letterSpacing: '0.3px', whiteSpace: 'nowrap'
-              }}>
-                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+              <span className="order-detail-cancel-pending-badge">
+                {t('cancelRequestPending')}
               </span>
             )}
             {status === 'broken' && product.defectNote && user?.role === 'seller' && (
               <button
                 type="button"
                 onClick={() => setIsBrokenModalOpen(true)}
-                className="icon-btn"
-                style={{
-                  padding: '4px',
-                  borderRadius: '50%',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444',
-                  cursor: 'pointer',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginLeft: '6px',
-                  transition: 'background 0.2s',
-                }}
-                title={language === 'tr' ? 'Bozuk Sipariş Açıklaması' : 'Broken Order Explanation'}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.2)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'}
+                className="icon-btn order-detail-broken-exp-btn"
+                title={t('brokenOrderExplanation')}
               >
                 <AlertTriangle size={12} />
               </button>
@@ -165,116 +135,106 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Large Image Preview */}
-          <div style={{
-            width: '100%', height: '240px', borderRadius: '12px',
-            background: 'var(--surface2)', border: '1px solid var(--border)',
-            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
+          <div className="order-detail-image-preview">
             {product.image ? (
-              <img src={product.image} alt="ürün" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img src={product.image} alt="ürün" />
             ) : (
-              <Package size={64} style={{ color: 'var(--muted)', opacity: 0.3 }} />
+              <Package size={64} className="order-detail-image-fallback" />
             )}
           </div>
 
           {/* Details Specifications */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <h4 style={{ margin: '0 0 4px 0', borderBottom: '1px solid var(--border)', paddingBottom: '8px', color: 'var(--text)' }}>
+          <div className="order-detail-specs-stack">
+            <h4>
               {t('orderSpecifications')}
             </h4>
             
             {product.text && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                <span style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Tag size={13} style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
+              <div className="order-detail-spec-row">
+                <span className="order-detail-spec-label">
+                  <Tag size={13} />
                   {t('textLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.text}</span>
+                <span className="order-detail-spec-val">{product.text}</span>
               </div>
             )}
 
             {product.length && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                <span style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Ruler size={13} style={{ color: user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)' }} />
+              <div className="order-detail-spec-row">
+                <span className="order-detail-spec-label">
+                  <Ruler size={13} />
                   {t('lengthLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.length} {t('inchSuffix')}</span>
+                <span className="order-detail-spec-val">{product.length} {t('inchSuffix')}</span>
               </div>
             )}
 
             {product.sellerName && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                <span style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <User size={13} style={{ color: 'var(--accent-seller)' }} />
+              <div className="order-detail-spec-row">
+                <span className="order-detail-spec-label">
+                  <User size={13} className="seller-color" />
                   {t('sellerLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.sellerName}</span>
+                <span className="order-detail-spec-val">{product.sellerName}</span>
               </div>
             )}
 
             {product.mfrName && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                <span style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Factory size={13} style={{ color: 'var(--accent-mfr)' }} />
+              <div className="order-detail-spec-row">
+                <span className="order-detail-spec-label">
+                  <Factory size={13} className="mfr-color" />
                   {t('mfrLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{product.mfrName}</span>
+                <span className="order-detail-spec-val">{product.mfrName}</span>
               </div>
             )}
 
             {Object.entries(product.extras || {}).map(([key, item]) => {
               if (!item.value) return null;
               return (
-                <div key={key} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
+                <div key={key} className="order-detail-spec-row">
                   <span style={{ color: 'var(--muted)' }}>{item.name}</span>
-                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>{item.value}</span>
+                  <span className="order-detail-spec-val">{item.value}</span>
                 </div>
               );
             })}
 
             <div style={{ height: '8px' }} />
 
-            <h4 style={{ margin: '0 0 4px 0', borderBottom: '1px solid var(--border)', paddingBottom: '8px', color: 'var(--text)' }}>
+            <h4>
               {t('orderChronology')}
             </h4>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-              <span style={{ color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="order-detail-spec-row">
+              <span className="order-detail-spec-label">
                 <Calendar size={13} />
                 {t('sentDateLabel')}
               </span>
-              <span style={{ fontWeight: 600, color: 'var(--text)' }}>{dateStr} {timeStr}</span>
+              <span className="order-detail-spec-val">{dateStr} {timeStr}</span>
             </div>
 
             {product.completedAt && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13.5px' }}>
-                <span style={{ color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="order-detail-spec-row">
+                <span className="order-detail-completed-label">
                   <CheckCircle2 size={13} />
                   {t('completedDateLabel')}
                 </span>
-                <span style={{ fontWeight: 600, color: 'var(--text)' }}>{new Date(product.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}</span>
+                <span className="order-detail-spec-val">{new Date(product.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}</span>
               </div>
             )}
           </div>
 
           {/* Defect note block if exists */}
           {product.defectNote && (
-            <div style={{
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              borderRadius: '8px',
-              padding: '12px',
-              marginTop: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--danger)', fontWeight: 700, fontSize: '13.5px', marginBottom: '6px' }}>
+            <div className="order-detail-defect-box">
+              <div className="order-detail-defect-header">
                 <Info size={14} />
                 {t('reportedProblemLabel')}
               </div>
-              <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: 'var(--text)' }}>{product.defectNote}</p>
+              <p className="order-detail-defect-text">{product.defectNote}</p>
               {product.defectImage && (
-                <div style={{ width: '100%', height: '140px', borderRadius: '6px', overflow: 'hidden' }}>
-                  <img src={product.defectImage} alt="sorun" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div className="order-detail-defect-image">
+                  <img src={product.defectImage} alt="sorun" />
                 </div>
               )}
             </div>
@@ -282,56 +242,33 @@ export default function OrderDetailPage() {
         </div>
 
         {/* Right Column: Time-Travel Event Log List */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
+        <div className="card order-detail-right-col">
+          <h3>
             {t('timelineTitle')}
           </h3>
 
-          <div style={{
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '24px',
-            paddingLeft: '12px',
-            paddingTop: '8px',
-            paddingBottom: '8px'
-          }}>
+          <div className="order-detail-timeline-container">
             {/* Timeline Vertical line */}
-            <div style={{
-              position: 'absolute', top: '16px', bottom: '16px', left: '23px',
-              width: '2px', background: 'var(--border)', zIndex: 1
-            }} />
+            <div className="order-detail-timeline-line" />
 
             {visibleLogs.map((log, index) => {
               const dateStr = new Date(log.timestamp).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US');
               const isActive = index === visibleLogs.length - 1;
-              const accentThemeColor = user?.role === 'seller' ? 'var(--accent-seller)' : 'var(--accent-mfr)';
 
               return (
-                <div key={index} style={{ display: 'flex', gap: '16px', position: 'relative', zIndex: 2 }}>
+                <div key={index} className="order-detail-timeline-row">
                   {/* Circle Indicator */}
-                  <div style={{
-                    width: '24px', height: '24px', borderRadius: '50%',
-                    background: isActive ? accentThemeColor : 'var(--border)',
-                    border: isActive ? '4px solid var(--surface2)' : '4px solid var(--surface)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: isActive ? `0 0 10px ${accentThemeColor}` : 'none',
-                    flexShrink: 0
-                  }} />
+                  <div className={`order-detail-circle-indicator${isActive ? ' is-active' : ''}`} />
 
                   {/* Log description */}
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: '8px' }}>
-                      <span style={{
-                        fontWeight: isActive ? 700 : 500,
-                        color: isActive ? 'var(--text)' : 'var(--muted)',
-                        fontSize: '13.5px'
-                      }}>
+                  <div className="order-detail-log-details">
+                    <div className="order-detail-log-header">
+                      <span className={`order-detail-log-msg${isActive ? ' is-active' : ''}`}>
                         {log.message}
                       </span>
-                      <span style={{ fontSize: '11px', color: 'var(--muted)' }}>{dateStr}</span>
+                      <span className="order-detail-log-time">{dateStr}</span>
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                    <div className="order-detail-log-user">
                       <span><strong>{t('byLabel')}</strong> {log.userName}</span>
                     </div>
                   </div>
@@ -340,7 +277,7 @@ export default function OrderDetailPage() {
             })}
 
             {visibleLogs.length === 0 && (
-              <p style={{ margin: 0, padding: '20px', textAlign: 'center', color: 'var(--muted)' }}>
+              <p className="order-detail-timeline-empty">
                 {t('noTimelineLogs')}
               </p>
             )}

@@ -304,6 +304,8 @@ export const translations = {
     roleSellerInfo: '(🛍️ Sipariş Veren)',
     roleMfrInfo: '(🏭 Üretici / Atölye)',
     alreadyHaveAccount: 'Zaten hesabınız var mı?',
+    cancelRequestPending: 'İptal Talebi Beklemede',
+    brokenOrderExplanation: 'Bozuk Sipariş Açıklaması',
   },
   en: {
     // Auth Page
@@ -610,6 +612,8 @@ export const translations = {
     roleSellerInfo: '(🛍️ Order Placement)',
     roleMfrInfo: '(🏭 Manufacturer / Workshop)',
     alreadyHaveAccount: 'Already have an account?',
+    cancelRequestPending: 'Cancel Request Pending',
+    brokenOrderExplanation: 'Broken Order Explanation',
   }
 } as const;
 
