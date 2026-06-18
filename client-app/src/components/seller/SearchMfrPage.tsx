@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import useSearchMfr from '../../hooks/useSearchMfr';
 import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle } from 'lucide-react';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 import Lightbox from '../ui/Lightbox';
 
 export default function SearchMfrPage() {
-  const navigate = useNavigate();
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const {
     loading, error,
@@ -19,7 +17,7 @@ export default function SearchMfrPage() {
     handleToggleCity, handleToggleCategory,
     handleResetFilters,
     fetchManufacturers, loadMore,
-    language, t,
+    t,
   } = useSearchMfr();
 
   const hasActiveFilters = selectedCity || selectedCategory || mustHaveGallery || mustHaveAvatar;

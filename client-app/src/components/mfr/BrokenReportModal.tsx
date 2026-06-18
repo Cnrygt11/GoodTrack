@@ -16,7 +16,7 @@ export default function BrokenReportModal({
   onSubmit,
   actionLoading,
 }: BrokenReportModalProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   const [note, setNote] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {

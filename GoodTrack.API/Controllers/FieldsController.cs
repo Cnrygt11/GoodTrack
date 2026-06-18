@@ -1,22 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize(Roles = Roles.Seller)]
 [EnableRateLimiting("api-general")]
-public class FieldsController : ControllerBase
+public class FieldsController : BaseApiController
 {
     private readonly IFieldService _fieldService;
     private readonly ILogger<FieldsController> _logger;
@@ -30,42 +28,79 @@ public class FieldsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
         _logger.LogInformation("Seller user {UserId} is retrieving extra dynamic fields templates", userId);
         var fields = await _fieldService.GetSellerFieldsAsync(userId);
-        return Ok(fields);
+        
+        var response = fields.Select(f => new ExtraFieldDefResponseDto
+        {
+            Id = f.Id,
+            Name = f.Name,
+            Type = f.Type,
+            Options = f.Options,
+            CreatedBy = f.CreatedBy
+        }).ToList();
+
+        return Ok(response);
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ExtraFieldDef field)
+    public async Task<IActionResult> Create([FromBody] CreateExtraFieldDefDto dto)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
+        if (dto == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        var field = new ExtraFieldDef
+        {
+            Name = dto.Name,
+            Type = dto.Type,
+            Options = dto.Options
+        };
+
         _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, field.Name);
         var created = await _fieldService.CreateFieldDefAsync(userId, field);
-        return Ok(new { field = created, message = "Yeni özellik başarıyla eklendi." });
+
+        var response = new ExtraFieldDefResponseDto
+        {
+            Id = created.Id,
+            Name = created.Name,
+            Type = created.Type,
+            Options = created.Options,
+            CreatedBy = created.CreatedBy
+        };
+
+        return Created(string.Empty, new { field = response, message = "Yeni özellik başarıyla eklendi." });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz özellik ID'si." });
+        }
+
         _logger.LogInformation("Seller user {UserId} is deleting dynamic feature template: {Id}", userId, id);
         await _fieldService.DeleteFieldDefAsync(userId, id);
-        return Ok(new { id, message = "Özellik başarıyla silindi." });
+        return NoContent();
     }
 }

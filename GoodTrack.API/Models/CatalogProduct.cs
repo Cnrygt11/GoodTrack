@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 using Google.Cloud.Firestore;
 
 namespace GoodTrack.API.Models;
@@ -24,11 +25,13 @@ public class CatalogProduct
 
     [MaxLength(50)]
     [FirestoreProperty("mfrId")]
-    public string MfrId { get; set; } = string.Empty;
+    [JsonPropertyName("mfrId")]
+    public string ManufacturerId { get; set; } = string.Empty;
 
     [MaxLength(100)]
     [FirestoreProperty("mfrName")]
-    public string MfrName { get; set; } = string.Empty;
+    [JsonPropertyName("mfrName")]
+    public string ManufacturerName { get; set; } = string.Empty;
 
     [MaxLength(1000)]
     [FirestoreProperty("text")]

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
+import { useConfirm } from '../context/ConfirmContext';
 import { api, Product, ExtraFieldValue, CreateProductPayload } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
@@ -54,12 +55,11 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
-  const { products, loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
+  const { loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const confirm = (useSettings() as any).confirm ?? (() => Promise.resolve(false));
+  const confirm = useConfirm();
 
   // --- Form State ---
   const [productCode, setProductCode] = useState('');
@@ -223,10 +223,13 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   }, [newFieldName, newFieldType, newFieldOptions, loadExtraFields, showToast, t]);
 
   const handleRemoveField = useCallback(async (id: string) => {
-    const { useConfirm } = await import('../context/ConfirmContext');
-    // Note: hooks can't be called dynamically — confirm is injected via closure for now
-    void id;
-    // The full confirm logic lives in useSellerOrderActions; this hook just handles field delete
+    const accepted = await confirm({
+      title: language === 'tr' ? 'Özelliği Kaldır' : 'Remove Feature',
+      message: language === 'tr' ? 'Bu özelliği silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this feature template?',
+      confirmText: language === 'tr' ? 'Kaldır' : 'Remove',
+      isDestructive: true,
+    });
+    if (!accepted) return;
     try {
       const data = await api.deleteField(id);
       showToast(data.message || t('featureDelSuccess'));
@@ -235,7 +238,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
-  }, [loadExtraFields, showToast, t]);
+  }, [confirm, language, loadExtraFields, showToast, t]);
 
   const handleDeleteClick = useCallback(async (product: Product) => {
     try {

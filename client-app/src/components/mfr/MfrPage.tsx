@@ -1,11 +1,8 @@
-import React from 'react';
-import { Factory, Package, Info, Clock, AlertTriangle, CheckCircle2, XCircle, Archive, Play } from 'lucide-react';
+import { Factory, Package, Clock, CheckCircle2, XCircle, Archive, Play } from 'lucide-react';
 import useMfrOrders, { MfrTab } from '../../hooks/useMfrOrders';
 import MfrOrderCard from './MfrOrderCard';
 import DefectDetailsModal from './DefectDetailsModal';
 import BrokenReportModal from './BrokenReportModal';
-import { TranslationKey } from '../../services/translations';
-import { Product } from '../../services/api';
 import { ORDER_STATUS } from '../../utils/constants';
 
 function getTabIcon(tab: MfrTab, active: boolean) {

@@ -1,10 +1,8 @@
-import React from 'react';
 import { Camera, Plus, Save, Loader2, X } from 'lucide-react';
 import { CatalogProduct, ConnectionUser, ExtraFieldDef } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
 
 interface CatalogFormProps {
-  language: string;
   t: (key: TranslationKey) => string;
   editingProduct: CatalogProduct | null;
   productCode: string;
@@ -26,7 +24,6 @@ interface CatalogFormProps {
 }
 
 export default function CatalogForm({
-  language,
   t,
   editingProduct,
   productCode,

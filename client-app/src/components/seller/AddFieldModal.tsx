@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, PlusCircle, Loader2 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { TranslationKey } from '../../services/translations';
@@ -6,7 +5,6 @@ import { TranslationKey } from '../../services/translations';
 interface AddFieldModalProps {
   isOpen: boolean;
   onClose: () => void;
-  language: string;
   t: (key: TranslationKey) => string;
   newFieldName: string;
   setNewFieldName: (v: string) => void;
@@ -19,7 +17,7 @@ interface AddFieldModalProps {
 }
 
 export default function AddFieldModal({
-  isOpen, onClose, language, t,
+  isOpen, onClose, t,
   newFieldName, setNewFieldName,
   newFieldType, setNewFieldType,
   newFieldOptions, setNewFieldOptions,

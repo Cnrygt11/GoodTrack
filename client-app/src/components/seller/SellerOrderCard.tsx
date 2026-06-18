@@ -3,13 +3,12 @@ import { Product } from '../../services/api';
 import { ListFilter } from '../../types/orders';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
-import { useToast } from '../../context/ToastContext';
 import Lightbox from '../ui/Lightbox';
 import { ORDER_STATUS } from '../../utils/constants';
-import {
-  Package, Info, MoreVertical, Edit2, Trash2, Send, Archive, Calendar,
-  Factory, Tag, Ruler, CheckCircle2, Ban, AlertTriangle, XCircle,
-} from 'lucide-react';
+import { Package, MoreVertical } from 'lucide-react';
+import OrderDetailsPreview from './OrderDetailsPreview';
+import OrderActionsBar from './OrderActionsBar';
+import OrderMenuDropdown from './OrderMenuDropdown';
 
 interface SellerOrderCardProps {
   product: Product;
@@ -36,8 +35,6 @@ export default function SellerOrderCard({
   onRequestCancel,
 }: SellerOrderCardProps) {
   const { language, t } = useSettings();
-  const { showToast } = useToast();
-
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = p.createdAt
@@ -86,92 +83,15 @@ export default function SellerOrderCard({
         </div>
 
         {/* Info block */}
-        <div className="seller-order-card-info">
-          {/* Code + Status badge */}
-          <div className="seller-order-card-header">
-            <span className="seller-order-card-code">
-              {p.code}
-            </span>
-            <span 
-              className="seller-order-card-status"
-              style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
-            >
-              {sc.icon} {sc.label}
-            </span>
-            {p.cancelRequested && (
-              <span className="seller-order-card-cancel-requested">
-                {t('cancelRequestPending')}
-              </span>
-            )}
-            {status === 'broken' && p.defectNote && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onViewBrokenNote?.(p);
-                }}
-                className="seller-order-card-broken-btn"
-                title={t('brokenOrderExplanation')}
-              >
-                <AlertTriangle size={12} />
-              </button>
-            )}
-          </div>
-
-          {/* Chips */}
-          <div className="seller-order-card-header">
-            {p.text && (
-              <span className="order-chip">
-                <Tag size={10} />
-                <strong>{t('textLabel')}:</strong> {p.text}
-              </span>
-            )}
-            {p.length && (
-              <span className="order-chip">
-                <Ruler size={10} />
-                <strong>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
-              </span>
-            )}
-            {p.mfrName && (
-              <span className="order-chip order-chip--mfr">
-                <Factory size={10} />
-                <strong>{t('mfrLabel')}:</strong> {p.mfrName}
-              </span>
-            )}
-            {Object.entries(p.extras || {}).map(([key, item]) => {
-              if (!item.value) return null;
-              return (
-                <span key={key} className="order-chip">
-                  <strong>{item.name}:</strong> {item.value}
-                </span>
-              );
-            })}
-          </div>
-
-          {/* Dates + Timeline link */}
-          <div className="seller-order-card-header">
-            <span className="seller-order-card-date">
-              <Calendar size={11} />
-              {t('sentDateLabel')}: <strong>{dateStr} {timeStr}</strong>
-            </span>
-            {p.completedAt && (
-              <span className="seller-order-card-date completed">
-                <CheckCircle2 size={11} />
-                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
-              </span>
-            )}
-            {!(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) && (
-              <button
-                type="button"
-                onClick={() => onViewTimeline(p)}
-                className="timeline-link"
-              >
-                <Info size={11} />
-                {t('btnViewTimeline')}
-              </button>
-            )}
-          </div>
-        </div>
+        <OrderDetailsPreview
+          product={p}
+          status={status}
+          dateStr={dateStr}
+          timeStr={timeStr}
+          sc={sc}
+          onViewTimeline={onViewTimeline}
+          onViewBrokenNote={onViewBrokenNote}
+        />
 
         {/* Right: three-dot menu */}
         <div className="seller-order-card-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
@@ -184,74 +104,30 @@ export default function SellerOrderCard({
           </button>
 
           {isDropdownOpen && (
-            <div className="dropdown-menu">
-              {isEditable && (
-                <DropdownItem 
-                  icon={<Edit2 size={13} className="color-accent" />} 
-                  label={language === 'tr' ? 'Düzenle' : 'Edit'} 
-                  onClick={() => { onEdit(p); onDropdownToggle(null); }} 
-                />
-              )}
-              <DropdownItem 
-                icon={<Info size={13} className="color-info" />} 
-                label={t('btnViewTimeline')} 
-                onClick={() => { onViewTimeline(p); onDropdownToggle(null); }} 
-              />
-              {isEditable && (
-                <>
-                  <div className="dropdown-divider" />
-                  <DropdownItem 
-                    icon={<Ban size={13} className="color-danger" />} 
-                    label={t('btnCancelOrder')} 
-                    isDanger 
-                    onClick={() => { onCancel(p.id); onDropdownToggle(null); }} 
-                  />
-                  {status === ORDER_STATUS.AWAITING && (
-                    <DropdownItem 
-                      icon={<Trash2 size={13} className="color-danger" />} 
-                      label={language === 'tr' ? 'Sil' : 'Delete'} 
-                      isDanger 
-                      onClick={() => { onDelete(p); onDropdownToggle(null); }} 
-                    />
-                  )}
-                </>
-              )}
-              {status === ORDER_STATUS.PRODUCTION && !p.cancelRequested && (
-                <>
-                  <div className="dropdown-divider" />
-                  <DropdownItem
-                    icon={<Ban size={13} className="color-danger" />}
-                    label={language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation'}
-                    isDanger
-                    onClick={() => {
-                      onRequestCancel?.(p.id);
-                      onDropdownToggle(null);
-                    }}
-                  />
-                </>
-              )}
-            </div>
+            <OrderMenuDropdown
+              product={p}
+              status={status}
+              isEditable={isEditable}
+              onDropdownToggle={onDropdownToggle}
+              onEdit={onEdit}
+              onViewTimeline={onViewTimeline}
+              onCancel={onCancel}
+              onDelete={onDelete}
+              onRequestCancel={onRequestCancel}
+            />
           )}
         </div>
       </div>
 
       {/* Action Bar */}
       {hasActionBar && (
-        <div className="order-action-bar">
-          {status === 'delivered' && (
-            <>
-              <ActionBtn type="correct" onClick={() => onVerify(p.id, 'correct')}>{t('btnVerifyCorrect')}</ActionBtn>
-              <ActionBtn type="defective" onClick={() => onVerify(p.id, 'defective')}>{t('btnVerifyDefective')}</ActionBtn>
-              <ActionBtn type="missing" onClick={() => onVerify(p.id, 'missing')}>{t('btnVerifyMissing')}</ActionBtn>
-            </>
-          )}
-          {status === 'to_ship' && (
-            <ActionBtn type="ship" icon={<Send size={12} />} onClick={() => onShip(p.id)} fullWidth>{t('btnMarkShipped')}</ActionBtn>
-          )}
-          {(status === 'shipped' || status === 'cancelled') && (
-            <ActionBtn type="archive" bordered icon={<Info size={12} />} onClick={() => onViewTimeline(p)} fullWidth>{t('btnViewTimeline')}</ActionBtn>
-          )}
-        </div>
+        <OrderActionsBar
+          product={p}
+          status={status}
+          onVerify={onVerify}
+          onShip={onShip}
+          onViewTimeline={onViewTimeline}
+        />
       )}
 
       {p.image && (
@@ -263,47 +139,5 @@ export default function SellerOrderCard({
         />
       )}
     </div>
-  );
-}
-
-// --- Helper components ---
-
-interface DropdownItemProps {
-  icon: React.ReactNode;
-  label: string;
-  isDanger?: boolean;
-  onClick: () => void;
-}
-function DropdownItem({ icon, label, isDanger, onClick }: DropdownItemProps) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => { e.stopPropagation(); onClick(); }}
-      className={`dropdown-menu-item ${isDanger ? 'danger' : ''}`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
-
-interface ActionBtnProps {
-  type: 'correct' | 'defective' | 'missing' | 'ship' | 'archive';
-  onClick: () => void;
-  children: React.ReactNode;
-  icon?: React.ReactNode;
-  fullWidth?: boolean;
-  bordered?: boolean;
-}
-function ActionBtn({ type, onClick, children, icon, fullWidth, bordered }: ActionBtnProps) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`action-btn action-btn--${type} ${fullWidth ? 'action-btn--full' : ''} ${bordered ? 'action-btn--bordered' : ''}`}
-    >
-      {icon}
-      {children}
-    </button>
   );
 }

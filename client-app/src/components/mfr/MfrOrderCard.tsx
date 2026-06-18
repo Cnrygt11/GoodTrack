@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User, AlertTriangle } from 'lucide-react';
 import { Product } from '../../services/api';
 import { MfrTab } from '../../hooks/useMfrOrders';
@@ -6,6 +6,17 @@ import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
 import { ORDER_STATUS } from '../../utils/constants';
+
+const ACTION_BAR_STATUSES = [
+  ORDER_STATUS.AWAITING as string,
+  ORDER_STATUS.CORRECTED as string,
+  ORDER_STATUS.PRODUCTION as string,
+  ORDER_STATUS.COMPLETED as string,
+  ORDER_STATUS.DEFECTIVE as string,
+  ORDER_STATUS.MISSING as string,
+  ORDER_STATUS.SHIPPED as string,
+  ORDER_STATUS.CANCELLED as string
+];
 
 interface MfrOrderCardProps {
   product: Product;
@@ -31,18 +42,21 @@ export default function MfrOrderCard({
   const { language, t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
-  const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
-    : '—';
-  const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
-    : '';
+  const dateStr = useMemo(() => {
+    if (!p.createdAt) return '—';
+    return new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+  }, [p.createdAt, language]);
+
+  const timeStr = useMemo(() => {
+    if (!p.createdAt) return '';
+    return new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
+  }, [p.createdAt, language]);
 
   const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr', isReproduction: p.isReproduction });
   const accentColor = getMfrCardAccentColor(status);
 
-  const hasActionBar = [ORDER_STATUS.AWAITING, ORDER_STATUS.CORRECTED, ORDER_STATUS.PRODUCTION, ORDER_STATUS.COMPLETED, ORDER_STATUS.DEFECTIVE, ORDER_STATUS.MISSING, ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED].includes(status as any);
+  const hasActionBar = ACTION_BAR_STATUSES.includes(status);
 
   return (
     <div className="mfr-theme moc-card">

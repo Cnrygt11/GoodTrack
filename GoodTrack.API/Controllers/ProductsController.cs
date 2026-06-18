@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
@@ -20,6 +22,21 @@ public class ProductsController : BaseApiController
     private readonly IProductService _productService;
     private readonly ILogger<ProductsController> _logger;
 
+    private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        OrderStatus.Awaiting,
+        OrderStatus.Production,
+        OrderStatus.Completed,
+        OrderStatus.Delivered,
+        OrderStatus.Broken,
+        OrderStatus.Corrected,
+        OrderStatus.Defective,
+        OrderStatus.Missing,
+        OrderStatus.ToShip,
+        OrderStatus.Shipped,
+        OrderStatus.Cancelled
+    };
+
     public ProductsController(IProductService productService, ILogger<ProductsController> logger)
     {
         _productService = productService;
@@ -27,7 +44,7 @@ public class ProductsController : BaseApiController
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -38,13 +55,14 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Retrieving products list for User: {UserId} with Role: {Role}", userId, role);
-        var products = await _productService.GetUserProductsAsync(userId, role);
-        return Ok(products);
+        var products = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
+        var response = products.Select(MapToResponseDto).ToList();
+        return Ok(response);
     }
 
     [HttpPost]
     [Authorize(Roles = Roles.Seller)]
-    public async Task<IActionResult> Create([FromBody] Product product)
+    public async Task<IActionResult> Create([FromBody] CreateProductDto dto)
     {
         var userId = GetCurrentUserId();
         var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "Satıcı";
@@ -54,67 +72,27 @@ public class ProductsController : BaseApiController
             return Unauthorized();
         }
 
-        _logger.LogInformation("Seller user {UserId} is submitting a new production order: {Code}", userId, product.Code);
-        var created = await _productService.CreateOrderAsync(userId, userName, product);
-        return Ok(new { product = created, message = "Sipariş başarıyla üretime gönderildi." });
-    }
-
-    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
-    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
-    // Currently kept for backwards compatibility.
-    [HttpPut("{id}/complete")]
-    [Authorize(Roles = Roles.Mfr)]
-    public async Task<IActionResult> ToggleComplete(string id, [FromBody] ToggleCompleteRequest request)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("Manufacturer user {UserId} is toggling completion for order {Id} to: {Completed}", userId, id, request.Completed);
-        await _productService.ToggleOrderCompletionAsync(userId, id, request.Completed);
-        return Ok(new { id, completed = request.Completed, message = "Sipariş durumu başarıyla güncellendi." });
-    }
-
-    [HttpPut("{id}/defective")]
-    [Authorize(Roles = Roles.Seller)]
-    public async Task<IActionResult> ToggleDefective(string id, [FromBody] ToggleDefectiveRequest request)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        if (request == null)
+        if (dto == null)
         {
             return BadRequest(new { message = "İstek verisi eksik." });
         }
 
-        _logger.LogInformation("Seller user {UserId} is toggling defective status for order {Id} to: {IsDefective}", userId, id, request.IsDefective);
-        await _productService.ToggleOrderDefectiveAsync(userId, id, request.IsDefective, request.DefectNote, request.DefectImage);
-        return Ok(new { id, isDefective = request.IsDefective, message = request.IsDefective ? "Sipariş hatalı olarak işaretlendi." : "Sipariş hata durumu kaldırıldı." });
-    }
-
-
-    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
-    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
-    // Currently kept for backwards compatibility.
-    [HttpPut("{id}/approval")]
-    public async Task<IActionResult> ToggleApproval(string id, [FromBody] ToggleApprovalRequest request)
-    {
-        var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        if (userId is null || string.IsNullOrEmpty(role))
+        var product = new Product
         {
-            return Unauthorized();
-        }
+            Code = dto.Code,
+            Image = dto.Image,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras,
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName
+        };
 
-        _logger.LogInformation("User {UserId} with role {Role} is toggling approval status for order {Id} to: {IsPendingApproval}", userId, role, id, request.IsPendingApproval);
-        await _productService.ToggleOrderApprovalAsync(userId, role, id, request.IsPendingApproval);
-        return Ok(new { id, isPendingApproval = request.IsPendingApproval, message = "Sipariş onay durumu güncellendi." });
+        _logger.LogInformation("Seller user {UserId} is submitting a new production order: {Code}", userId, product.Code);
+        var created = await _productService.CreateOrderAsync(userId, userName, product);
+        var response = MapToResponseDto(created);
+
+        return CreatedAtAction(nameof(GetById), new { id = created.Id }, new { product = response, message = "Sipariş başarıyla üretime gönderildi." });
     }
 
     [HttpPut("{id}/status")]
@@ -133,30 +111,21 @@ public class ProductsController : BaseApiController
             return BadRequest(new { message = "Hedef durum bilgisi eksik." });
         }
 
+        // Validate Status against OrderStatus constants
+        if (!ValidStatuses.Contains(request.Status.Trim()))
+        {
+            return BadRequest(new { message = $"Geçersiz durum bilgisi: {request.Status}" });
+        }
+
         _logger.LogInformation("User {UserId} with role {Role} is changing status of order {Id} to: {Status}", userId, role, id, request.Status);
 
-        try
-        {
-            await _productService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
-            return Ok(new { id, status = request.Status, message = "Sipariş durumu başarıyla güncellendi." });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return StatusCode(403, new { message = ex.Message });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        await _productService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
+        return Ok(new { id, status = request.Status, message = "Sipariş durumu başarıyla güncellendi." });
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = Roles.Seller)]
-    public async Task<IActionResult> Update(string id, [FromBody] Product product)
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateProductDto dto)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -164,13 +133,36 @@ public class ProductsController : BaseApiController
             return Unauthorized();
         }
 
+        if (dto == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz sipariş ID'si." });
+        }
+
+        var product = new Product
+        {
+            Code = dto.Code,
+            Image = dto.Image,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras,
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName
+        };
+
         _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
         var updated = await _productService.UpdateProductAsync(userId, id, product);
-        return Ok(new { product = updated, message = "Sipariş başarıyla güncellendi." });
+        var response = MapToResponseDto(updated);
+
+        return Ok(new { product = response, message = "Sipariş başarıyla güncellendi." });
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetById(string id)
+    public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         var role = User.FindFirst(ClaimTypes.Role)?.Value;
@@ -180,14 +172,20 @@ public class ProductsController : BaseApiController
             return Unauthorized();
         }
 
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz sipariş ID'si." });
+        }
+
         _logger.LogInformation("User {UserId} is retrieving single production order details: {Id}", userId, id);
-        var product = await _productService.GetProductByIdAsync(userId, role, id);
+        var product = await _productService.GetProductByIdAsync(userId, role, id, cancellationToken);
         if (product == null)
         {
             return NotFound(new { message = "Sipariş bulunamadı veya erişim yetkiniz yok." });
         }
 
-        return Ok(product);
+        var response = MapToResponseDto(product);
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]
@@ -200,12 +198,17 @@ public class ProductsController : BaseApiController
             return Unauthorized();
         }
 
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz sipariş ID'si." });
+        }
+
         _logger.LogInformation("Seller user {UserId} is deleting production order: {Id}", userId, id);
         await _productService.DeleteProductAsync(userId, id);
-        return Ok(new { message = "Sipariş başarıyla silindi." });
+        return NoContent();
     }
 
-    [HttpPost("migrate-statuses")]
+    [HttpPost("status-migrations")]
     [Authorize(Roles = Roles.Admin)]
     public async Task<IActionResult> MigrateStatuses()
     {
@@ -214,35 +217,34 @@ public class ProductsController : BaseApiController
         return Ok(new { message = $"{count} sipariş başarıyla güncellendi." });
     }
 
-    [HttpPost("{id}/cancel-request")]
+    [HttpPost("{id}/cancellation-requests")]
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> RequestCancellation(string id)
     {
         var userId = GetCurrentUserId();
         if (userId is null) return Unauthorized();
 
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz sipariş ID'si." });
+        }
+
         _logger.LogInformation("Seller {UserId} requesting cancellation for order {Id}", userId, id);
-        try
-        {
-            await _productService.RequestOrderCancellationAsync(userId, id);
-            return Ok(new { message = "İptal talebi üreticiye iletildi." });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        await _productService.RequestOrderCancellationAsync(userId, id);
+        return Ok(new { message = "İptal talebi üreticiye iletildi." });
     }
 
-    [HttpPost("{id}/cancel-request/respond")]
+    [HttpPatch("{id}/cancellation-requests")]
     [Authorize(Roles = Roles.Mfr)]
     public async Task<IActionResult> RespondToCancellation(string id, [FromBody] RespondToCancellationRequest request)
     {
         var userId = GetCurrentUserId();
         if (userId is null) return Unauthorized();
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz sipariş ID'si." });
+        }
 
         if (request == null)
         {
@@ -250,19 +252,36 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Manufacturer {UserId} responding to cancellation for order {Id} with: {Approve}", userId, id, request.Approve);
-        try
+        await _productService.RespondToOrderCancellationAsync(userId, id, request.Approve);
+        string msg = request.Approve ? "İptal talebi onaylandı, sipariş iptal edildi." : "İptal talebi reddedildi, üretime devam ediliyor.";
+        return Ok(new { message = msg });
+    }
+
+    private ProductResponseDto MapToResponseDto(Product product)
+    {
+        return new ProductResponseDto
         {
-            await _productService.RespondToOrderCancellationAsync(userId, id, request.Approve);
-            string msg = request.Approve ? "İptal talebi onaylandı, sipariş iptal edildi." : "İptal talebi reddedildi, üretime devam ediliyor.";
-            return Ok(new { message = msg });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+            Id = product.Id,
+            Code = product.Code,
+            Image = product.Image,
+            Text = product.Text,
+            Length = product.Length,
+            Extras = product.Extras,
+            Completed = product.Completed,
+            IsDefective = product.IsDefective,
+            IsPendingApproval = product.IsPendingApproval,
+            IsReproduction = product.IsReproduction,
+            DefectNote = product.DefectNote,
+            DefectImage = product.DefectImage,
+            Status = product.Status,
+            Logs = product.Logs,
+            CreatedAt = product.CreatedAt,
+            CompletedAt = product.CompletedAt,
+            SellerId = product.SellerId,
+            ManufacturerId = product.ManufacturerId,
+            SellerName = product.SellerName,
+            ManufacturerName = product.ManufacturerName,
+            CancelRequested = product.CancelRequested
+        };
     }
 }

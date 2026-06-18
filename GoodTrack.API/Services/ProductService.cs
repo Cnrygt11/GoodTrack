@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
 using GoodTrack.API.Abstractions.Repositories;
@@ -40,15 +41,15 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task<List<Product>> GetUserProductsAsync(string userId, string role)
+    public async Task<List<Product>> GetUserProductsAsync(string userId, string role, CancellationToken cancellationToken = default)
     {
         if (role == Roles.Seller)
         {
-            return await _productRepository.GetProductsBySellerAsync(userId);
+            return await _productRepository.GetProductsBySellerAsync(userId, cancellationToken);
         }
         else if (role == Roles.Mfr)
         {
-            return await _productRepository.GetProductsByManufacturerAsync(userId);
+            return await _productRepository.GetProductsByManufacturerAsync(userId, cancellationToken);
         }
         else
         {
@@ -63,7 +64,7 @@ public class ProductService : IProductService
             throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
         }
 
-        if (string.IsNullOrWhiteSpace(order.MfrId))
+        if (string.IsNullOrWhiteSpace(order.ManufacturerId))
         {
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
@@ -87,55 +88,19 @@ public class ProductService : IProductService
             }
         };
 
-        order.Image = await _imageStorageService.StoreImageAsync(order.Image);
-
         // Validate image size before storing (~5MB limit)
         ValidateImageSize(order.Image, "Sipariş görseli");
+
+        order.Image = await _imageStorageService.StoreImageAsync(order.Image);
 
         await _productRepository.SaveAsync(order);
 
         // Real-time notification: new order created (notify seller and assigned manufacturer)
-        await _hubContext.Clients.Users(order.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
+        await _hubContext.Clients.Users(order.ManufacturerId, sellerId).SendAsync("ReceiveOrderUpdate");
 
         return order;
     }
 
-    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
-    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
-    // Currently kept for backwards compatibility.
-    public async Task ToggleOrderCompletionAsync(string mfrId, string orderId, bool completed)
-    {
-        var product = await _productRepository.GetByIdAsync(orderId);
-        if (product == null)
-        {
-            throw new KeyNotFoundException("Ürün bulunamadı!");
-        }
-
-        if (product.MfrId != mfrId)
-        {
-            throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
-        }
-
-        product.Completed = completed;
-        if (completed)
-        {
-            product.IsDefective = false; // Reset defective status if fixed/completed again
-            product.IsPendingApproval = false; // Reset approval status if completed
-            product.CompletedAt = DateTime.UtcNow.ToString("o");
-            string? oldDefectImage = product.DefectImage;
-            product.DefectNote = null;
-            product.DefectImage = null;
-            await TryDeleteDefectImageAsync(oldDefectImage, product.SellerId, product.Id);
-        }
-        else
-        {
-            product.CompletedAt = null;
-        }
-        await _productRepository.SaveAsync(product);
-
-        // Real-time notification: order status toggled (notify manufacturer and seller)
-        await _hubContext.Clients.Users(mfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
-    }
 
     public async Task<Product> UpdateProductAsync(string sellerId, string orderId, Product updatedOrder)
     {
@@ -144,7 +109,7 @@ public class ProductService : IProductService
             throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
         }
 
-        if (string.IsNullOrWhiteSpace(updatedOrder.MfrId))
+        if (string.IsNullOrWhiteSpace(updatedOrder.ManufacturerId))
         {
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
@@ -160,8 +125,8 @@ public class ProductService : IProductService
             throw new UnauthorizedAccessException("Bu siparişi düzenleme yetkiniz yok!");
         }
 
-        string oldMfrId = existing.MfrId;
-        string newMfrId = updatedOrder.MfrId;
+        string oldMfrId = existing.ManufacturerId;
+        string newMfrId = updatedOrder.ManufacturerId;
 
         // Handle image swapping safely
         string? oldImage = existing.Image;
@@ -196,8 +161,8 @@ public class ProductService : IProductService
         existing.Text = updatedOrder.Text;
         existing.Length = updatedOrder.Length;
         existing.Extras = updatedOrder.Extras;
-        existing.MfrId = newMfrId;
-        existing.MfrName = updatedOrder.MfrName;
+        existing.ManufacturerId = newMfrId;
+        existing.ManufacturerName = updatedOrder.ManufacturerName;
 
         if (existing.Status == OrderStatus.Broken)
         {
@@ -257,7 +222,7 @@ public class ProductService : IProductService
             throw new InvalidOperationException("Sadece bekleyen listesindeki siparişleri silebilirsiniz!");
         }
 
-        string mfrId = existing.MfrId;
+        string mfrId = existing.ManufacturerId;
         string? image = existing.Image;
         string? defectImage = existing.DefectImage;
 
@@ -323,100 +288,6 @@ public class ProductService : IProductService
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
-    public async Task ToggleOrderDefectiveAsync(string sellerId, string orderId, bool isDefective, string? defectNote, string? defectImage)
-    {
-        var product = await _productRepository.GetByIdAsync(orderId);
-        if (product == null)
-        {
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
-        }
-
-        if (product.SellerId != sellerId)
-        {
-            throw new UnauthorizedAccessException("Bu siparişin hata durumunu değiştirme yetkiniz yok!");
-        }
-
-        product.IsDefective = isDefective;
-        if (isDefective)
-        {
-            product.Completed = false; // Set completed to false so manufacturer must fix it
-            product.IsPendingApproval = false; // Reset pending approval if defective
-            product.DefectNote = defectNote;
-
-            // Handle base64 defect image upload
-            if (defectImage != product.DefectImage)
-            {
-                string? oldDefectImage = product.DefectImage;
-                if (!string.IsNullOrEmpty(defectImage) && defectImage.StartsWith("data:image"))
-                {
-                    product.DefectImage = await _imageStorageService.StoreImageAsync(defectImage);
-                    await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
-                }
-                else if (string.IsNullOrEmpty(defectImage))
-                {
-                    product.DefectImage = null;
-                    await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
-                }
-                else
-                {
-                    product.DefectImage = defectImage;
-                    if (oldDefectImage != defectImage)
-                    {
-                        await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
-                    }
-                }
-            }
-        }
-        else
-        {
-            string? oldDefectImage = product.DefectImage;
-            product.DefectNote = null;
-            product.DefectImage = null;
-            await TryDeleteDefectImageAsync(oldDefectImage, sellerId, orderId);
-        }
-
-        await _productRepository.SaveAsync(product);
-
-        // Real-time notification: order defective status toggled (notify seller and assigned manufacturer)
-        await _hubContext.Clients.Users(product.MfrId, sellerId).SendAsync("ReceiveOrderUpdate");
-    }
-
-    // LEGACY: This endpoint predates UpdateOrderStatusAsync.
-    // Consider consolidating into UpdateOrderStatusAsync in a future cleanup.
-    // Currently kept for backwards compatibility.
-    public async Task ToggleOrderApprovalAsync(string userId, string role, string orderId, bool isPendingApproval)
-    {
-        var product = await _productRepository.GetByIdAsync(orderId);
-        if (product == null)
-        {
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
-        }
-
-        if (role == Roles.Mfr)
-        {
-            if (product.MfrId != userId)
-            {
-                throw new UnauthorizedAccessException("Bu siparişin durumunu değiştirme yetkiniz yok!");
-            }
-            product.IsPendingApproval = isPendingApproval;
-            if (isPendingApproval)
-            {
-                product.Completed = false;
-                product.IsDefective = false; // Reset defective status if sent to awaiting approval
-            }
-        }
-        else if (role == Roles.Seller)
-        {
-            throw new UnauthorizedAccessException("Satıcıların onay bekleyen siparişlerin onay durumunu değiştirme veya üretime alma yetkisi yoktur!");
-        }
-        else
-        {
-            throw new UnauthorizedAccessException("Yetkisiz işlem!");
-        }
-
-        await _productRepository.SaveAsync(product);
-        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
-    }
 
     public async Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null)
     {
@@ -427,12 +298,12 @@ public class ProductService : IProductService
         ValidateOwnership(product, userId, role);
 
         string oldStatus = ResolveCurrentStatus(product);
-        string userName = role == Roles.Seller ? product.SellerName : product.MfrName;
+        string userName = role == Roles.Seller ? product.SellerName : product.ManufacturerName;
         string logMsg = await ApplyStatusTransitionAsync(product, newStatus, oldStatus, role, defectNote, defectImage);
 
         AppendLog(product, userId, userName, logMsg);
         await _productRepository.SaveAsync(product);
-        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+        await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
 
     // --- Private helpers for UpdateOrderStatusAsync ---
@@ -446,7 +317,7 @@ public class ProductService : IProductService
         }
         else if (role == Roles.Mfr)
         {
-            if (product.MfrId != userId)
+            if (product.ManufacturerId != userId)
                 throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
         }
         else
@@ -630,6 +501,7 @@ public class ProductService : IProductService
         string? oldDefectImage = p.DefectImage;
         if (!string.IsNullOrEmpty(newDefectImage) && newDefectImage.StartsWith("data:image"))
         {
+            ValidateImageSize(newDefectImage, "Hata görseli");
             p.DefectImage = await _imageStorageService.StoreImageAsync(newDefectImage);
             await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
         }
@@ -659,14 +531,14 @@ public class ProductService : IProductService
         });
     }
 
-    public async Task<Product?> GetProductByIdAsync(string userId, string role, string orderId)
+    public async Task<Product?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
     {
-        var product = await _productRepository.GetByIdAsync(orderId);
+        var product = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (product == null) return null;
 
         // Verify ownership access
         if (role == Roles.Seller && product.SellerId != userId) return null;
-        if (role == Roles.Mfr && product.MfrId != userId) return null;
+        if (role == Roles.Mfr && product.ManufacturerId != userId) return null;
 
         return product;
     }
@@ -695,7 +567,7 @@ public class ProductService : IProductService
         product.CancelRequested = true;
         AppendLog(product, sellerId, product.SellerName, "Sipariş için satıcı tarafından iptal talebi gönderildi.");
         await _productRepository.SaveAsync(product);
-        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+        await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
 
     public async Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve)
@@ -704,7 +576,7 @@ public class ProductService : IProductService
         if (product == null)
             throw new KeyNotFoundException("Sipariş bulunamadı!");
 
-        if (product.MfrId != mfrId)
+        if (product.ManufacturerId != mfrId)
             throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
 
         if (!product.CancelRequested)
@@ -726,8 +598,8 @@ public class ProductService : IProductService
             logMsg = "Sipariş iptal talebi üretici tarafından reddedildi. Üretime devam ediliyor.";
         }
 
-        AppendLog(product, mfrId, product.MfrName, logMsg);
+        AppendLog(product, mfrId, product.ManufacturerName, logMsg);
         await _productRepository.SaveAsync(product);
-        await _hubContext.Clients.Users(product.MfrId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+        await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
 }

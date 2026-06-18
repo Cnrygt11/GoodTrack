@@ -1,13 +1,16 @@
+using System.Threading;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Abstractions.Repositories;
 
 public interface IProductRepository
 {
-    Task<Product?> GetByIdAsync(string id);
-    Task<List<Product>> GetProductsBySellerAsync(string sellerId);
-    Task<List<Product>> GetProductsByManufacturerAsync(string mfrId);
-    Task SaveAsync(Product product);
-    Task DeleteAsync(string id);
+    Task<Product?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+    Task<List<Product>> GetProductsBySellerAsync(string sellerId, CancellationToken cancellationToken = default);
+    Task<List<Product>> GetProductsByManufacturerAsync(string mfrId, CancellationToken cancellationToken = default);
+    Task SaveAsync(Product product, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     Task<int> MigrateStatusesAsync();
 }

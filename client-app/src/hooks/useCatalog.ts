@@ -1,5 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useState, useRef, useCallback } from 'react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';

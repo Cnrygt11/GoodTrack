@@ -1,6 +1,8 @@
+using System.Threading;
 using Google.Cloud.Firestore;
 using GoodTrack.API.Models;
 using GoodTrack.API.Abstractions.Repositories;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -14,34 +16,34 @@ public class FirestoreUserRepository : IUserRepository
         _firestoreDb = firestoreDb;
     }
 
-    public async Task<User?> GetByIdAsync(string id)
+    public async Task<User?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var docSnapshot = await _firestoreDb.Collection(CollectionName).Document(id).GetSnapshotAsync();
+        var docSnapshot = await _firestoreDb.Collection(CollectionName).Document(id).GetSnapshotAsync(cancellationToken);
         return docSnapshot.Exists ? docSnapshot.ConvertTo<User>() : null;
     }
 
-    public async Task<User?> GetByUsernameAsync(string username)
+    public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         var query = _firestoreDb.Collection(CollectionName).WhereEqualTo("username", username);
-        var snapshot = await query.GetSnapshotAsync();
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
         return snapshot.Documents.Count > 0 ? snapshot.Documents[0].ConvertTo<User>() : null;
     }
 
-    public async Task<User?> GetByEmailAsync(string email)
+    public async Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var query = _firestoreDb.Collection(CollectionName).WhereEqualTo("email", email);
-        var snapshot = await query.GetSnapshotAsync();
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
         return snapshot.Documents.Count > 0 ? snapshot.Documents[0].ConvertTo<User>() : null;
     }
 
-    public async Task<List<User>> GetManufacturersAsync()
+    public async Task<List<User>> GetManufacturersAsync(CancellationToken cancellationToken = default)
     {
-        var query = _firestoreDb.Collection(CollectionName).WhereEqualTo("role", "mfr");
-        var snapshot = await query.GetSnapshotAsync();
+        var query = _firestoreDb.Collection(CollectionName).WhereEqualTo("role", Roles.Mfr);
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
         return snapshot.Documents.Select(doc => doc.ConvertTo<User>()).ToList();
     }
 
-    public async Task SaveAsync(User user)
+    public async Task SaveAsync(User user, CancellationToken cancellationToken = default)
     {
         var collection = _firestoreDb.Collection(CollectionName);
         DocumentReference docRef;
@@ -56,14 +58,14 @@ public class FirestoreUserRepository : IUserRepository
             docRef = collection.Document(user.Id);
         }
 
-        await docRef.SetAsync(user);
+        await docRef.SetAsync(user, cancellationToken: cancellationToken);
     }
 
-    public async Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit)
+    public async Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, CancellationToken cancellationToken = default)
     {
         var collection = _firestoreDb.Collection(CollectionName);
         Query query = collection
-            .WhereEqualTo("role", "mfr")
+            .WhereEqualTo("role", Roles.Mfr)
             .WhereEqualTo("isVisibleToSellers", true);
 
         if (!string.IsNullOrEmpty(city))
@@ -81,7 +83,7 @@ public class FirestoreUserRepository : IUserRepository
 
         if (!string.IsNullOrEmpty(cursor))
         {
-            var startAfterDoc = await collection.Document(cursor).GetSnapshotAsync();
+            var startAfterDoc = await collection.Document(cursor).GetSnapshotAsync(cancellationToken);
             if (startAfterDoc.Exists)
             {
                 query = query.StartAfter(startAfterDoc);
@@ -91,7 +93,7 @@ public class FirestoreUserRepository : IUserRepository
         // Fetch limit + 1 items to see if there is a next page
         query = query.Limit(limit + 1);
 
-        var snapshot = await query.GetSnapshotAsync();
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
         var documents = snapshot.Documents;
 
         bool hasNextPage = documents.Count > limit;

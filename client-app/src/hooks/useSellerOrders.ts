@@ -1,9 +1,8 @@
-import { useState, useCallback, ChangeEvent, FormEvent } from 'react';
+import { useState, useCallback, useMemo, FormEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
 import { Product } from '../services/api';
-import { TranslationKey } from '../services/translations';
 import { ListFilter, SellerTabId, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
 import useSellerOrderBadges from './useSellerOrderBadges';
@@ -95,24 +94,28 @@ export default function useSellerOrders() {
   const openTimeline = useCallback((p: Product) => { navigate(`/seller/orders/${p.id}`); }, [navigate]);
 
   // --- Derived filteredProducts ---
-  const sortedProducts = [...products].sort((a, b) => {
-    const dA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return sortOrder === 'desc' ? dB - dA : dA - dB;
-  });
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      const dA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return sortOrder === 'desc' ? dB - dA : dA - dB;
+    });
+  }, [products, sortOrder]);
 
-  const filteredProducts = sortedProducts.filter((p) => {
-    const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
-    if (listFilter === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
-    if (listFilter === ORDER_STATUS.BROKEN) return status === ORDER_STATUS.BROKEN;
-    if (listFilter === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
-    if (listFilter === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
-    if (listFilter === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
-    if (listFilter === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
-    if (listFilter === ORDER_STATUS.TO_SHIP) return status === ORDER_STATUS.TO_SHIP;
-    if (listFilter === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
-    return true;
-  });
+  const filteredProducts = useMemo(() => {
+    return sortedProducts.filter((p) => {
+      const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
+      if (listFilter === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
+      if (listFilter === ORDER_STATUS.BROKEN) return status === ORDER_STATUS.BROKEN;
+      if (listFilter === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
+      if (listFilter === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
+      if (listFilter === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
+      if (listFilter === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+      if (listFilter === ORDER_STATUS.TO_SHIP) return status === ORDER_STATUS.TO_SHIP;
+      if (listFilter === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
+      return true;
+    });
+  }, [sortedProducts, listFilter]);
 
   // Wrap handleEditClick so it receives setActiveTab from this scope
   const handleEditClick = useCallback(

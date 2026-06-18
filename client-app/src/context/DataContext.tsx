@@ -41,7 +41,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const setConnections = useCallback((value: React.SetStateAction<ConnectionUser[]>) => {
     setConnectionsState(prev => {
-      const next = typeof value === 'function' ? (value as Function)(prev) : value;
+      const next = value instanceof Function ? value(prev) : value;
       const now = Date.now();
 
       if (typeof value === 'function') {
@@ -97,7 +97,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getProducts();
       setProducts(data);
     } catch (err: unknown) {
-      console.error('Sipariş yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load products:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -107,7 +107,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getConnections();
       setConnections(data);
     } catch (err: unknown) {
-      console.error('Bağlantı yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load connections:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -117,7 +117,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getIncomingRequests();
       setIncomingRequests(data);
     } catch (err: unknown) {
-      console.error('Gelen istek yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load incoming connection requests:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -127,7 +127,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getSentRequests();
       setSentRequests(data);
     } catch (err: unknown) {
-      console.error('Gönderilen istek yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load sent connection requests:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -137,7 +137,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getCatalog();
       setCatalogProducts(data);
     } catch (err: unknown) {
-      console.error('Katalog yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load catalog:', extractErrorMessage(err));
     }
   }, [user]);
 
@@ -147,7 +147,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const data = await api.getFields();
       setExtraFieldDefs(data);
     } catch (err: unknown) {
-      console.error('Özellik yükleme hatası:', extractErrorMessage(err));
+      console.error('Failed to load extra fields:', extractErrorMessage(err));
     }
   }, [user]);
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Camera, X, Loader2 } from 'lucide-react';
 import Modal from '../ui/Modal';
 import { TranslationKey } from '../../services/translations';
@@ -6,7 +5,6 @@ import { TranslationKey } from '../../services/translations';
 interface DefectReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  language: string;
   t: (key: TranslationKey) => string;
   defectNote: string;
   setDefectNote: (v: string) => void;
@@ -18,7 +16,7 @@ interface DefectReportModalProps {
 }
 
 export default function DefectReportModal({
-  isOpen, onClose, language, t,
+  isOpen, onClose, t,
   defectNote, setDefectNote,
   defectImage, defectImageFileName,
   actionLoading, onImageChange, onSubmit

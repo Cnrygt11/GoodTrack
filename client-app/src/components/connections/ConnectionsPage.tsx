@@ -1,7 +1,7 @@
-import React from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useConnections from '../../hooks/useConnections';
-import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, User, X } from 'lucide-react';
+import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, X } from 'lucide-react';
 import { ConnectionRequest } from '../../services/api';
 
 export default function ConnectionsPage() {
@@ -11,12 +11,11 @@ export default function ConnectionsPage() {
     connections,
     incomingRequests,
     sentRequests,
-    language,
     t,
     addUsername,
     setAddUsername,
-    actionLoading,
     connectionsLoading,
+    error,
     handleAddSubmit,
     handleAccept,
     handleReject,
@@ -24,12 +23,12 @@ export default function ConnectionsPage() {
     handleRemoveConnection
   } = useConnections();
 
-  if (!user) return null;
-
-  const isSeller = user.role === 'seller';
+  const isSeller = user?.role === 'seller';
 
   // Filter out accepted sent requests since they are already active connections
-  const filteredSentRequests = sentRequests.filter(r => r.status !== 'accepted');
+  const filteredSentRequests = useMemo(() => {
+    return sentRequests.filter(r => r.status !== 'accepted');
+  }, [sentRequests]);
 
   const getStatusBadge = (status: ConnectionRequest['status']) => {
     let text = t('statusPending');
@@ -57,6 +56,21 @@ export default function ConnectionsPage() {
   const handleConnectionClick = (username: string) => {
     navigate(isSeller ? `/seller/profile/${username}` : `/mfr/profile/${username}`);
   };
+
+  if (!user) return null;
+
+  if (error) {
+    return (
+      <div className="card connections-error-container" style={{ textAlign: 'center', padding: '40px' }}>
+        <XCircle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
+        <h3>{t('anErrorOccurred')}</h3>
+        <p style={{ color: 'var(--muted)', marginBottom: '24px' }}>{error}</p>
+        <button className="btn-secondary" onClick={() => window.location.reload()}>
+          {t('btnTryAgain')}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="connections-container">

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -19,7 +19,6 @@ export default function useConnections() {
     refreshConnections,
     loadIncomingRequests,
     loadSentRequests,
-    loadProducts,
     setConnections,
     setIncomingRequests,
     setSentRequests,
@@ -34,7 +33,7 @@ export default function useConnections() {
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [connectionsLoading, setConnectionsLoading] = useState(true);
-  const isActionLoading = useRef(false);
+  const [error, setError] = useState('');
 
   // Sub-tab state inside Connections Modal ('manage' vs 'search')
   const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');
@@ -49,11 +48,14 @@ export default function useConnections() {
   useEffect(() => {
     if (user) {
       setConnectionsLoading(true);
+      setError('');
       Promise.all([
         refreshConnections(),
         loadIncomingRequests(),
         loadSentRequests()
-      ]).finally(() => {
+      ]).catch((err: unknown) => {
+        setError(extractErrorMessage(err) || 'Veriler yüklenemedi.');
+      }).finally(() => {
         setConnectionsLoading(false);
       });
     }
@@ -221,6 +223,7 @@ export default function useConnections() {
     setAddUsername,
     actionLoading,
     connectionsLoading,
+    error,
     handleAddSubmit,
     handleAccept,
     handleReject,

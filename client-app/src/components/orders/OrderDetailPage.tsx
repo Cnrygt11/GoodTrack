@@ -1,47 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
-import { api, Product } from '../../services/api';
+import useOrderDetail from '../../hooks/useOrderDetail';
 import { getStatusConfig } from '../../utils/statusConfig';
 import BrokenDetailsModal from '../seller/BrokenDetailsModal';
 import { ORDER_STATUS } from '../../utils/constants';
 import {
-  ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle, XCircle, Ban,
-  Calendar, Factory, Tag, Ruler, Send, Archive, Info, Loader2, User
+  ArrowLeft, Package, CheckCircle2, AlertTriangle,
+  Calendar, Factory, Tag, Ruler, Info, Loader2, User
 } from 'lucide-react';
-
 
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { language, t } = useSettings();
-
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { product, loading, error, user, language, t } = useOrderDetail(id);
   const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchOrder = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await api.getProductById(id);
-        setProduct(data);
-      } catch (err: unknown) {
-        console.error(err);
-        setError(t('failedToLoadOrderDetails'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrder();
-  }, [id, language]);
 
   const handleBack = () => {
     // Navigate back in history if possible, else default to roles dashboard

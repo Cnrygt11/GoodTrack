@@ -6,7 +6,6 @@ import { useConfirm } from '../context/ConfirmContext';
 import { api, Product } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
-import { ListFilter } from '../types/orders';
 
 interface UseSellerOrderActionsReturn {
   // Defect modal state
@@ -63,8 +62,8 @@ export default function useSellerOrderActions(
 
   const handleCancelOrder = useCallback(async (productId: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'Siparişi İptal Et' : 'Cancel Order',
-      message: language === 'tr' ? 'Siparişi iptal etmek istediğinize emin misiniz?' : 'Are you sure you want to cancel this order?',
+      title: t('cancelOrderTitle'),
+      message: t('cancelOrderConfirm'),
       confirmText: language === 'tr' ? 'İptal Et' : 'Cancel',
       isDestructive: true,
     });
@@ -83,8 +82,8 @@ export default function useSellerOrderActions(
 
   const handleRequestCancel = useCallback(async (productId: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation',
-      message: language === 'tr' ? 'Üretimde olan bu sipariş için iptal talebi göndermek istediğinize emin misiniz?' : 'Are you sure you want to request cancellation for this order in production?',
+      title: t('requestCancelTitle'),
+      message: t('requestCancelConfirm'),
       confirmText: language === 'tr' ? 'Talep Gönder' : 'Send Request',
       isDestructive: true,
     });
@@ -109,8 +108,8 @@ export default function useSellerOrderActions(
   ) => {
     if (action === 'correct') {
       const accepted = await confirm({
-        title: language === 'tr' ? 'Siparişi Doğrula' : 'Verify Order',
-        message: language === 'tr' ? 'Bu siparişi DOĞRU olarak onaylamak istediğinize emin misiniz?' : 'Are you sure you want to approve this order as CORRECT?',
+        title: t('verifyOrderTitle'),
+        message: t('verifyOrderConfirm'),
         confirmText: language === 'tr' ? 'Onayla' : 'Approve',
         isDestructive: false,
       });
@@ -138,8 +137,8 @@ export default function useSellerOrderActions(
 
   const handleShipOrder = useCallback(async (productId: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'Kargoya Ver' : 'Ship Order',
-      message: language === 'tr' ? 'Siparişi kargolandı olarak işaretlemek istediğinize emin misiniz?' : 'Are you sure you want to mark this order as shipped?',
+      title: t('shipOrderTitle'),
+      message: t('shipOrderConfirm'),
       confirmText: language === 'tr' ? 'Kargolandı İşaretle' : 'Mark as Shipped',
       isDestructive: false,
     });
