@@ -5,7 +5,7 @@ let rawBaseUrl = '/api';
 if (typeof window !== 'undefined') {
   const hostname = window.location.hostname;
   if (hostname === 'goodtrack-client.onrender.com') {
-    rawBaseUrl = 'https://goodtrack.onrender.com/api';
+    rawBaseUrl = import.meta.env.VITE_PRODUCTION_API_URL || 'https://goodtrack.onrender.com/api';
   } else if (hostname === 'localhost' || hostname === '127.0.0.1') {
     rawBaseUrl = import.meta.env.VITE_API_URL || '/api';
   } else {
@@ -171,12 +171,21 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     throw new Error(errorMessage);
   }
   
+  if (res.status === 204) {
+    return {} as T;
+  }
+  
   try {
-    return await res.json() as T;
+    const text = await res.text();
+    if (!text) {
+      return {} as T;
+    }
+    return JSON.parse(text) as T;
   } catch {
     throw new Error('Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu).');
   }
 }
+
 
 export interface RegisterPayload {
   firstname: string;
@@ -244,43 +253,45 @@ export const api = {
 
   // Connections
   getConnections(): Promise<ConnectionUser[]> {
-    return apiCall<ConnectionUser[]>('/auth/connections');
+    return apiCall<ConnectionUser[]>('/connections');
   },
 
   sendConnectionRequest(username: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/auth/connections/send-request?username=${encodeURIComponent(username)}`, {
+    return apiCall<{ message: string }>(`/connections?username=${encodeURIComponent(username)}`, {
       method: 'POST',
     });
   },
 
   getIncomingRequests(): Promise<ConnectionRequest[]> {
-    return apiCall<ConnectionRequest[]>('/auth/connections/requests/incoming');
+    return apiCall<ConnectionRequest[]>('/connections/requests/incoming');
   },
 
   getSentRequests(): Promise<ConnectionRequest[]> {
-    return apiCall<ConnectionRequest[]>('/auth/connections/requests/sent');
+    return apiCall<ConnectionRequest[]>('/connections/requests/sent');
   },
 
   acceptRequest(requestId: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}/accept`, {
-      method: 'POST',
+    return apiCall<{ message: string }>(`/connections/requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'accepted' }),
     });
   },
 
   rejectRequest(requestId: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}/reject`, {
-      method: 'POST',
+    return apiCall<{ message: string }>(`/connections/requests/${requestId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'rejected' }),
     });
   },
 
   deleteSentRequest(requestId: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/auth/connections/requests/${requestId}`, {
+    return apiCall<{ message: string }>(`/connections/requests/${requestId}`, {
       method: 'DELETE',
     });
   },
 
   removeConnection(targetId: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/auth/connections/${targetId}`, {
+    return apiCall<{ message: string }>(`/connections/${targetId}`, {
       method: 'DELETE',
     });
   },
@@ -330,14 +341,14 @@ export const api = {
   },
 
   requestOrderCancellation(productId: string): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/products/${productId}/cancel-request`, {
+    return apiCall<{ message: string }>(`/products/${productId}/cancellation-requests`, {
       method: 'POST',
     });
   },
 
   respondToOrderCancellation(productId: string, approve: boolean): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/products/${productId}/cancel-request/respond`, {
-      method: 'POST',
+    return apiCall<{ message: string }>(`/products/${productId}/cancellation-requests`, {
+      method: 'PATCH',
       body: JSON.stringify({ approve }),
     });
   },
@@ -392,11 +403,11 @@ export const api = {
   },
 
   getProfile(): Promise<UserProfile> {
-    return apiCall<UserProfile>('/auth/profile');
+    return apiCall<UserProfile>('/profile');
   },
 
   getProfileByUsername(username: string): Promise<UserProfile> {
-    return apiCall<UserProfile>(`/auth/profile/${encodeURIComponent(username)}`);
+    return apiCall<UserProfile>(`/profile/${encodeURIComponent(username)}`);
   },
 
   verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
@@ -414,7 +425,7 @@ export const api = {
   },
 
   updateProfile(profileData: Partial<UserProfile>): Promise<{ message: string }> {
-    return apiCall<{ message: string }>('/auth/profile', {
+    return apiCall<{ message: string }>('/profile', {
       method: 'PUT',
       body: JSON.stringify(profileData)
     });
@@ -431,6 +442,6 @@ export const api = {
     if (keyword) params.append('keyword', keyword);
     if (cursor) params.append('cursor', cursor);
     if (limit) params.append('limit', limit.toString());
-    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(`/auth/manufacturers/search?${params.toString()}`);
+    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(`/manufacturers/search?${params.toString()}`);
   }
 };

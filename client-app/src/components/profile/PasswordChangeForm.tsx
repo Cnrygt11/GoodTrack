@@ -1,54 +1,41 @@
 import React from 'react';
-import { TranslationKey } from '../../services/translations';
 import { ShieldCheck, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
+import usePasswordChange from '../../hooks/usePasswordChange';
+import { useSettings } from '../../context/SettingsContext';
 
 interface PasswordChangeFormProps {
-  flowStep: 'verify-password' | 'new-password';
-  language: string;
-  t: (key: TranslationKey) => string;
+  passwordFlow: ReturnType<typeof usePasswordChange>;
   accentColor: string;
   glowBg: string;
-  oldPassword: string;
-  setOldPassword: (v: string) => void;
-  showOld: boolean;
-  setShowOld: (v: boolean) => void;
-  newPassword: string;
-  setNewPassword: (v: string) => void;
-  showNew: boolean;
-  setShowNew: (v: boolean) => void;
-  confirmNewPassword: string;
-  setConfirmNewPassword: (v: string) => void;
-  showConfirm: boolean;
-  setShowConfirm: (v: boolean) => void;
-  passwordLoading: boolean;
-  onVerifyPassword: (e: React.FormEvent) => void;
-  onChangePassword: (e: React.FormEvent) => void;
-  onCancelFlow: () => void;
 }
 
 export default function PasswordChangeForm({
-  flowStep,
-  language,
-  t,
+  passwordFlow,
   accentColor,
   glowBg,
-  oldPassword,
-  setOldPassword,
-  showOld,
-  setShowOld,
-  newPassword,
-  setNewPassword,
-  showNew,
-  setShowNew,
-  confirmNewPassword,
-  setConfirmNewPassword,
-  showConfirm,
-  setShowConfirm,
-  passwordLoading,
-  onVerifyPassword,
-  onChangePassword,
-  onCancelFlow
 }: PasswordChangeFormProps) {
+  const { language, t } = useSettings();
+
+  const {
+    flowStep,
+    oldPassword,
+    setOldPassword,
+    newPassword,
+    setNewPassword,
+    confirmNewPassword,
+    setConfirmNewPassword,
+    showOld,
+    setShowOld,
+    showNew,
+    setShowNew,
+    showConfirm,
+    setShowConfirm,
+    actionLoading: passwordLoading,
+    handleVerifyPassword,
+    handleChangePassword,
+    handleCancelFlow,
+  } = passwordFlow;
+
   return (
     <>
       {flowStep === 'verify-password' && (
@@ -70,7 +57,7 @@ export default function PasswordChangeForm({
             <div>
               <h2 style={{ margin: 0, fontSize: '20px', letterSpacing: '0.5px' }}>{t('passwordChangeTitle')}</h2>
               <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                {language === 'tr' ? 'Aşama 1 / 2: Mevcut Şifre Doğrulama' : 'Step 1 / 2: Verify Current Password'}
+                {t('passwordStep1')}
               </span>
             </div>
           </div>
@@ -79,7 +66,7 @@ export default function PasswordChangeForm({
             {t('enterOldPassword')}
           </p>
 
-          <form onSubmit={onVerifyPassword} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleVerifyPassword} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div className="form-group">
               <label>{t('oldPassword')}</label>
               <div style={{ position: 'relative' }}>
@@ -113,7 +100,7 @@ export default function PasswordChangeForm({
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button type="button" className="btn-secondary" onClick={onCancelFlow} disabled={passwordLoading}>
+              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
                 {t('cancelBtn')}
               </button>
               <button 
@@ -156,7 +143,7 @@ export default function PasswordChangeForm({
             <div>
               <h2 style={{ margin: 0, fontSize: '20px', letterSpacing: '0.5px' }}>{t('passwordChangeTitle')}</h2>
               <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                {language === 'tr' ? 'Aşama 2 / 2: Yeni Şifre Tanımlama' : 'Step 2 / 2: Define New Password'}
+                {t('passwordStep2')}
               </span>
             </div>
           </div>
@@ -165,7 +152,7 @@ export default function PasswordChangeForm({
             {t('enterNewPassword')}
           </p>
 
-          <form onSubmit={onChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div className="form-group">
               <label>{t('newPassword')}</label>
               <div style={{ position: 'relative' }}>
@@ -231,7 +218,7 @@ export default function PasswordChangeForm({
             </div>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-              <button type="button" className="btn-secondary" onClick={onCancelFlow} disabled={passwordLoading}>
+              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
                 {t('btnBackToProfile')}
               </button>
               <button 
@@ -248,7 +235,7 @@ export default function PasswordChangeForm({
                 disabled={passwordLoading}
               >
                 {passwordLoading && <Loader2 className="animate-spin" size={14} />}
-                {language === 'tr' ? 'Şifreyi Güncelle' : 'Update Password'}
+                {t('updatePasswordBtn')}
               </button>
             </div>
           </form>

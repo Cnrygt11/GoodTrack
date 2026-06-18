@@ -34,6 +34,7 @@ export default function useConnections() {
   const [addUsername, setAddUsername] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [connectionsLoading, setConnectionsLoading] = useState(true);
+  const [error, setError] = useState('');
   const isActionLoading = useRef(false);
 
   // Sub-tab state inside Connections Modal ('manage' vs 'search')
@@ -49,11 +50,14 @@ export default function useConnections() {
   useEffect(() => {
     if (user) {
       setConnectionsLoading(true);
+      setError('');
       Promise.all([
         refreshConnections(),
         loadIncomingRequests(),
         loadSentRequests()
-      ]).finally(() => {
+      ]).catch((err: unknown) => {
+        setError(extractErrorMessage(err) || 'Veriler yüklenemedi.');
+      }).finally(() => {
         setConnectionsLoading(false);
       });
     }
@@ -221,6 +225,7 @@ export default function useConnections() {
     setAddUsername,
     actionLoading,
     connectionsLoading,
+    error,
     handleAddSubmit,
     handleAccept,
     handleReject,

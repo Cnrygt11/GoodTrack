@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -128,9 +128,7 @@ export default function useMfrOrders() {
   }, []);
 
   const handleUpdateStatus = useCallback(async (productId: string, status: string, defectNote?: string) => {
-    console.log('[useMfrOrders] handleUpdateStatus:', { productId, status, defectNote });
     if (status === 'broken' && !defectNote) {
-      console.log('[useMfrOrders] Intercepted broken status without note. Opening BrokenReportModal...');
       setBrokenProductId(productId);
       setIsBrokenModalOpen(true);
       return;
@@ -148,7 +146,6 @@ export default function useMfrOrders() {
   }, [showToast, t]);
 
   const handleBrokenSubmit = useCallback(async (note: string) => {
-    console.log('[useMfrOrders] handleBrokenSubmit:', { brokenProductId, note });
     if (!brokenProductId) return;
     try {
       setActionLoading(true);
@@ -164,7 +161,6 @@ export default function useMfrOrders() {
   }, [brokenProductId, showToast, t]);
 
   const handleRespondCancel = useCallback(async (productId: string, approve: boolean) => {
-    console.log('[useMfrOrders] handleRespondCancel:', { productId, approve });
     try {
       setActionLoading(true);
       const data = await api.respondToOrderCancellation(productId, approve);
@@ -186,24 +182,28 @@ export default function useMfrOrders() {
   }, []);
 
   // Computed: sorted products
-  const sortedProducts = [...products].sort((a, b) => {
-    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-    return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
-  });
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+  }, [products, sortOrder]);
 
   // Computed: filtered products based on active tab
-  const filteredProducts = sortedProducts.filter(p => {
-    const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : (p.completed ? ORDER_STATUS.COMPLETED : (p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
-    if (activeTab === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING;
-    if (activeTab === ORDER_STATUS.CORRECTED) return status === ORDER_STATUS.CORRECTED;
-    if (activeTab === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
-    if (activeTab === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
-    if (activeTab === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
-    if (activeTab === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
-    if (activeTab === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
-    return true;
-  });
+  const filteredProducts = useMemo(() => {
+    return sortedProducts.filter(p => {
+      const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : (p.completed ? ORDER_STATUS.COMPLETED : (p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
+      if (activeTab === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING;
+      if (activeTab === ORDER_STATUS.CORRECTED) return status === ORDER_STATUS.CORRECTED;
+      if (activeTab === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
+      if (activeTab === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
+      if (activeTab === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
+      if (activeTab === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+      if (activeTab === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
+      return true;
+    });
+  }, [sortedProducts, activeTab]);
 
   return {
     language,

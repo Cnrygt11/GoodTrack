@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { api, UserProfile, ConnectionRequest } from '../services/api';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -32,11 +32,9 @@ export default function useSearchMfr() {
   const [error, setError] = useState('');
   const [actionLoadingMap, setActionLoadingMap] = useState<Record<string, boolean>>({});
 
-  // Pagination & Cursor State
-  const [lastCursor, setLastCursor] = useState<string | null>(null);
+  // Pagination & Cursor State (managed via useRef to prevent useEffect infinite loops)
+  const lastCursorRef = useRef<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
-
-
 
   // Load B2B connections and sent requests on mount to ensure fresh state
   useEffect(() => {
@@ -56,9 +54,10 @@ export default function useSearchMfr() {
       setError('');
       if (reset) {
         setManufacturers([]);
+        lastCursorRef.current = null;
       }
       
-      const currentCursor = reset ? null : lastCursor;
+      const currentCursor = reset ? null : lastCursorRef.current;
       const data = await api.searchManufacturers(
         selectedCity || undefined,
         selectedCategory || undefined,
@@ -67,19 +66,19 @@ export default function useSearchMfr() {
       );
 
       setManufacturers(prev => reset ? data.items : [...prev, ...data.items]);
-      setLastCursor(data.nextCursor);
+      lastCursorRef.current = data.nextCursor;
       setHasMore(data.items.length === 10);
     } catch (err: unknown) {
       setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
     } finally {
       setLoading(false);
     }
-  }, [selectedCity, selectedCategory, lastCursor]);
+  }, [selectedCity, selectedCategory]);
 
   // Initial fetch or fetch on filter change
   useEffect(() => {
     fetchManufacturers(true);
-  }, [selectedCity, selectedCategory]);
+  }, [fetchManufacturers]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {

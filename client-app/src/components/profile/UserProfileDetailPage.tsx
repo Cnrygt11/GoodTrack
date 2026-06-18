@@ -1,42 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import { useSettings } from '../../context/SettingsContext';
-import { api, UserProfile } from '../../services/api';
-import { extractErrorMessage } from '../../utils/errorUtils';
+import useUserProfileDetail from '../../hooks/useUserProfileDetail';
 import { ArrowLeft, Loader2, AlertTriangle, Mail, Phone, MapPin, Globe, Award, Image as ImageIcon } from 'lucide-react';
 import Lightbox from '../ui/Lightbox';
 
 export default function UserProfileDetailPage() {
   const { username } = useParams<{ username: string }>();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
-  const { language, t } = useSettings();
-
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const { profile, loading, error, currentUser, t } = useUserProfileDetail(username);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!username) return;
-
-    const fetchUserProfile = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await api.getProfileByUsername(username);
-        setProfile(data);
-      } catch (err: unknown) {
-        console.error(err);
-        setError(extractErrorMessage(err));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserProfile();
-  }, [username, language]);
 
   const handleBack = () => {
     if (window.history.length > 1) {

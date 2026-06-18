@@ -47,7 +47,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
             console.error('[SignalR]', message);
           } else if (logLevel === LogLevel.Warning) {
             console.warn('[SignalR]', message);
-          } else if (logLevel === LogLevel.Information) {
+          } else if (logLevel === LogLevel.Information && import.meta.env.DEV) {
             console.log('[SignalR]', message);
           }
         }
@@ -57,12 +57,12 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
 
     // Setup event listeners — always call the latest version via ref
     newConnection.on('ReceiveOrderUpdate', () => {
-      console.log('[SignalR] Received Order Update Notification.');
+      if (import.meta.env.DEV) console.log('[SignalR] Received Order Update Notification.');
       loadProductsRef.current();
     });
 
     newConnection.on('ReceiveConnectionRequest', () => {
-      console.log('[SignalR] Received Connection Request List Notification. Scheduling fetch...');
+      if (import.meta.env.DEV) console.log('[SignalR] Received Connection Request List Notification. Scheduling fetch...');
       setTimeout(() => {
         loadIncomingRequestsRef.current();
         loadSentRequestsRef.current();
@@ -70,7 +70,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     });
 
     newConnection.on('ReceiveConnectionUpdate', () => {
-      console.log('[SignalR] Received Connection Listing Notification. Scheduling fetch...');
+      if (import.meta.env.DEV) console.log('[SignalR] Received Connection Listing Notification. Scheduling fetch...');
       setTimeout(() => {
         refreshConnectionsRef.current();
       }, 1000);
@@ -79,7 +79,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     // Start connection
     newConnection.start()
       .then(() => {
-        console.log('[SignalR] Connected to Tracking Hub.');
+        if (import.meta.env.DEV) console.log('[SignalR] Connected to Tracking Hub.');
         setConnection(newConnection);
       })
       .catch(err => {
@@ -93,7 +93,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       newConnection.stop().then(() => {
-        console.log('[SignalR] Stopped Tracking Hub Connection.');
+        if (import.meta.env.DEV) console.log('[SignalR] Stopped Tracking Hub Connection.');
       });
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
