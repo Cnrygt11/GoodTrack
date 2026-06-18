@@ -1,11 +1,10 @@
-import React from 'react';
 import { Camera, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 
 interface ProductShowcaseGalleryProps {
   t: (key: TranslationKey) => string;
   productImages: string[];
-  galleryInputRef: React.RefObject<HTMLInputElement>;
+  galleryInputRef: React.RefObject<HTMLInputElement | null>;
   replaceInputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
   handleAddProductImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveProductImage: (index: number) => void;

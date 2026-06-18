@@ -86,7 +86,6 @@ export default function SellerOrderCard({
         <OrderDetailsPreview
           product={p}
           status={status}
-          isDropdownOpen={isDropdownOpen}
           dateStr={dateStr}
           timeStr={timeStr}
           sc={sc}

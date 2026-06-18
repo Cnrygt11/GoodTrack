@@ -180,8 +180,16 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
     if (!text) {
       return {} as T;
     }
-    return JSON.parse(text) as T;
-  } catch {
+    try {
+      return JSON.parse(text) as T;
+    } catch (parseErr) {
+      console.error("JSON parse failed. Raw response text:", text, parseErr);
+      throw new Error(`Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu). Yanıt: ${text.slice(0, 100)}`);
+    }
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('Sunucudan geçersiz veri biçimi')) {
+      throw err;
+    }
     throw new Error('Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu).');
   }
 }
@@ -312,19 +320,6 @@ export const api = {
     });
   },
 
-  toggleProductDefective(productId: string, isDefective: boolean, defectNote?: string, defectImage?: string | null): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/products/${productId}/defective`, {
-      method: 'PUT',
-      body: JSON.stringify({ isDefective, defectNote, defectImage }),
-    });
-  },
-
-  toggleProductApproval(productId: string, isPendingApproval: boolean): Promise<{ message: string }> {
-    return apiCall<{ message: string }>(`/products/${productId}/approval`, {
-      method: 'PUT',
-      body: JSON.stringify({ isPendingApproval }),
-    });
-  },
 
   updateOrderStatus(productId: string, status: string, defectNote?: string | null, defectImage?: string | null): Promise<{ message: string }> {
     return apiCall<{ message: string }>(`/products/${productId}/status`, {

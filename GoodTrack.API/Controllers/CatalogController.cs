@@ -1,22 +1,20 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Controllers;
 
-[ApiController]
-[Route("api/[controller]")]
 [Authorize(Roles = Roles.Seller)]
 [EnableRateLimiting("api-general")]
-public class CatalogController : ControllerBase
+public class CatalogController : BaseApiController
 {
     private readonly ICatalogService _catalogService;
     private readonly ILogger<CatalogController> _logger;
@@ -30,57 +28,120 @@ public class CatalogController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetCatalog()
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
         _logger.LogInformation("Fetching catalog products for Seller user: {UserId}", userId);
         var catalog = await _catalogService.GetSellerCatalogAsync(userId);
-        return Ok(catalog);
+        var response = catalog.Select(MapToResponseDto).ToList();
+        return Ok(response);
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddCatalogProduct([FromBody] CatalogProduct product)
+    public async Task<IActionResult> AddCatalogProduct([FromBody] CreateCatalogProductDto dto)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
+
+        if (dto == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        var product = new CatalogProduct
+        {
+            ProductCode = dto.ProductCode,
+            Image = dto.Image,
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras
+        };
 
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, product.ProductCode);
         var created = await _catalogService.AddCatalogProductAsync(userId, product);
-        return Ok(new { product = created, message = "Ürün başarıyla kataloğa eklendi." });
+        var response = MapToResponseDto(created);
+        
+        return Created(string.Empty, new { product = response, message = "Ürün başarıyla kataloğa eklendi." });
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateCatalogProduct(string id, [FromBody] CatalogProduct product)
+    public async Task<IActionResult> UpdateCatalogProduct(string id, [FromBody] CreateCatalogProductDto dto)
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
+        if (dto == null)
+        {
+            return BadRequest(new { message = "İstek verisi eksik." });
+        }
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz ürün ID'si." });
+        }
+
+        var product = new CatalogProduct
+        {
+            ProductCode = dto.ProductCode,
+            Image = dto.Image,
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras
+        };
+
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
         var updated = await _catalogService.UpdateCatalogProductAsync(userId, id, product);
-        return Ok(new { product = updated, message = "Katalog ürünü başarıyla güncellendi." });
+        var response = MapToResponseDto(updated);
+
+        return Ok(new { product = response, message = "Katalog ürünü başarıyla güncellendi." });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteCatalogProduct(string id)
-
     {
-        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        if (string.IsNullOrEmpty(userId))
+        var userId = GetCurrentUserId();
+        if (userId is null)
         {
             return Unauthorized();
         }
 
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new { message = "Geçersiz ürün ID'si." });
+        }
+
         _logger.LogInformation("Seller user {UserId} is deleting catalog product: {Id}", userId, id);
         await _catalogService.DeleteCatalogProductAsync(userId, id);
-        return Ok(new { message = "Katalog ürünü başarıyla silindi." });
+        return NoContent();
+    }
+
+    private CatalogProductResponseDto MapToResponseDto(CatalogProduct product)
+    {
+        return new CatalogProductResponseDto
+        {
+            Id = product.Id,
+            SellerId = product.SellerId,
+            ProductCode = product.ProductCode,
+            Image = product.Image,
+            ManufacturerId = product.ManufacturerId,
+            ManufacturerName = product.ManufacturerName,
+            Text = product.Text,
+            Length = product.Length,
+            Extras = product.Extras,
+            CreatedAt = product.CreatedAt
+        };
     }
 }

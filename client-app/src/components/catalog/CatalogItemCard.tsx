@@ -15,7 +15,7 @@ export default function CatalogItemCard({
   onEdit,
   onDelete
 }: CatalogItemCardProps) {
-  const { t, language } = useSettings();
+  const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
   return (
     <div className="product-card">

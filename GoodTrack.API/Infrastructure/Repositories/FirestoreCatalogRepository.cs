@@ -1,3 +1,4 @@
+using System.Threading;
 using Google.Cloud.Firestore;
 using GoodTrack.API.Models;
 using GoodTrack.API.Abstractions.Repositories;
@@ -14,16 +15,16 @@ public class FirestoreCatalogRepository : ICatalogRepository
         _firestoreDb = firestoreDb;
     }
 
-    public async Task<CatalogProduct?> GetByIdAsync(string id)
+    public async Task<CatalogProduct?> GetByIdAsync(string id, CancellationToken cancellationToken = default)
     {
-        var docSnapshot = await _firestoreDb.Collection(CollectionName).Document(id).GetSnapshotAsync();
+        var docSnapshot = await _firestoreDb.Collection(CollectionName).Document(id).GetSnapshotAsync(cancellationToken);
         return docSnapshot.Exists ? docSnapshot.ConvertTo<CatalogProduct>() : null;
     }
 
-    public async Task<List<CatalogProduct>> GetCatalogBySellerAsync(string sellerId)
+    public async Task<List<CatalogProduct>> GetCatalogBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
     {
         var query = _firestoreDb.Collection(CollectionName).WhereEqualTo("sellerId", sellerId);
-        var snapshot = await query.GetSnapshotAsync();
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
         return snapshot.Documents.Select(doc => doc.ConvertTo<CatalogProduct>()).ToList();
     }
 
@@ -36,7 +37,7 @@ public class FirestoreCatalogRepository : ICatalogRepository
         return snapshot.Documents.Count > 0;
     }
 
-    public async Task SaveAsync(CatalogProduct product)
+    public async Task SaveAsync(CatalogProduct product, CancellationToken cancellationToken = default)
     {
         var collection = _firestoreDb.Collection(CollectionName);
         DocumentReference docRef;
@@ -51,11 +52,11 @@ public class FirestoreCatalogRepository : ICatalogRepository
             docRef = collection.Document(product.Id);
         }
 
-        await docRef.SetAsync(product);
+        await docRef.SetAsync(product, cancellationToken: cancellationToken);
     }
 
-    public async Task DeleteAsync(string id)
+    public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
-        await _firestoreDb.Collection(CollectionName).Document(id).DeleteAsync();
+        await _firestoreDb.Collection(CollectionName).Document(id).DeleteAsync(cancellationToken: cancellationToken);
     }
 }

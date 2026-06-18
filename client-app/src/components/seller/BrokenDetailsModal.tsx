@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { Product } from '../../services/api';
 import Modal from '../ui/Modal';
@@ -11,7 +10,7 @@ interface BrokenDetailsModalProps {
 }
 
 export default function BrokenDetailsModal({ isOpen, onClose, product }: BrokenDetailsModalProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="modal-header">

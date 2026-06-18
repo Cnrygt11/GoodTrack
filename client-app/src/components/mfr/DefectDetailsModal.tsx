@@ -10,7 +10,7 @@ interface DefectDetailsModalProps {
 }
 
 export default function DefectDetailsModal({ isOpen, onClose, product }: DefectDetailsModalProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="modal-header">

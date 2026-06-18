@@ -6,7 +6,6 @@ import { useConfirm } from '../context/ConfirmContext';
 import { api, Product } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
-import { ListFilter } from '../types/orders';
 
 interface UseSellerOrderActionsReturn {
   // Defect modal state

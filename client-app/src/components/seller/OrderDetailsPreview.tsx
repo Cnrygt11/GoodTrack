@@ -1,4 +1,3 @@
-import React from 'react';
 import { Product } from '../../services/api';
 import { useSettings } from '../../context/SettingsContext';
 import { getStatusConfig } from '../../utils/statusConfig';
@@ -8,7 +7,6 @@ import { Tag, Ruler, Factory, CheckCircle2, Calendar, Info, AlertTriangle } from
 interface OrderDetailsPreviewProps {
   product: Product;
   status: string;
-  isDropdownOpen: boolean;
   dateStr: string;
   timeStr: string;
   sc: ReturnType<typeof getStatusConfig>;
@@ -19,7 +17,6 @@ interface OrderDetailsPreviewProps {
 export default function OrderDetailsPreview({
   product: p,
   status,
-  isDropdownOpen,
   dateStr,
   timeStr,
   sc,

@@ -55,7 +55,7 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
-  const { products, loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
+  const { loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 

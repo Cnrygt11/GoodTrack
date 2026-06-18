@@ -1,5 +1,4 @@
 import { Package } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
@@ -16,11 +15,9 @@ export default function CatalogPage({
   onOpenFieldModal,
   onRemoveField
 }: CatalogPageProps) {
-  const navigate = useNavigate();
   const {
     connections,
     catalogProducts,
-    language,
     t,
     editingProduct,
     productCode,
@@ -48,7 +45,6 @@ export default function CatalogPage({
       </div>
 
       <CatalogForm
-        language={language}
         t={t}
         editingProduct={editingProduct}
         productCode={productCode}

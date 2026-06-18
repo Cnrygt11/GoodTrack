@@ -1,5 +1,5 @@
 import React from 'react';
-import { ClipboardList, PlusCircle, Package, Clock, AlertTriangle, CheckCircle2, XCircle, Send, Archive, Ban } from 'lucide-react';
+import { ClipboardList, PlusCircle, Package, Clock, AlertTriangle, CheckCircle2, XCircle, Send, Archive } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
 import OrderForm from './OrderForm';
 import SellerOrderCard from './SellerOrderCard';
@@ -7,7 +7,7 @@ import AddFieldModal from './AddFieldModal';
 import DefectReportModal from './DefectReportModal';
 import BrokenDetailsModal from './BrokenDetailsModal';
 import CatalogPage from '../catalog/CatalogPage';
-import { ListFilter, SellerTabId } from '../../types/orders';
+import { ListFilter } from '../../types/orders';
 import { ORDER_STATUS } from '../../utils/constants';
 
 function getTabIcon(tab: ListFilter) {
@@ -181,7 +181,7 @@ export default function SellerPage() {
       {/* Modals */}
       <AddFieldModal
         isOpen={isFieldModalOpen} onClose={() => setIsFieldModalOpen(false)}
-        language={language} t={t}
+        t={t}
         newFieldName={newFieldName} setNewFieldName={setNewFieldName}
         newFieldType={newFieldType} setNewFieldType={setNewFieldType}
         newFieldOptions={newFieldOptions} setNewFieldOptions={setNewFieldOptions}
@@ -190,7 +190,7 @@ export default function SellerPage() {
 
       <DefectReportModal
         isOpen={isDefectModalOpen} onClose={() => setIsDefectModalOpen(false)}
-        language={language} t={t}
+        t={t}
         defectNote={defectNote} setDefectNote={setDefectNote}
         defectImage={defectImage} defectImageFileName={defectImageFileName}
         actionLoading={actionLoading}

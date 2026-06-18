@@ -57,18 +57,7 @@ public class User
     [FirestoreProperty("associatedUserIds")]
     public List<string> AssociatedUserIds { get; set; } = new();
 
-    [FirestoreProperty("isActive")]
-    public object IsActiveRaw 
-    { 
-        get => IsActive ? 1 : 0;
-        set 
-        {
-            if (value is bool b) IsActive = b;
-            else if (value is long l) IsActive = l == 1;
-            else if (value is int i) IsActive = i == 1;
-        }
-    }
-
+    [FirestoreProperty("isActive", ConverterType = typeof(GoodTrack.API.Infrastructure.Converters.FirestoreIsActiveConverter))]
     public bool IsActive { get; set; } = true;
 
     [FirestoreProperty("verificationToken")]

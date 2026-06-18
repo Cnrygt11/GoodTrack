@@ -35,7 +35,7 @@ public class CatalogService : ICatalogService
             throw new ArgumentException("Ürün kodu zorunludur!");
         }
 
-        if (string.IsNullOrWhiteSpace(product.MfrId) || string.IsNullOrWhiteSpace(product.MfrName))
+        if (string.IsNullOrWhiteSpace(product.ManufacturerId) || string.IsNullOrWhiteSpace(product.ManufacturerName))
         {
             throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
         }
@@ -66,7 +66,7 @@ public class CatalogService : ICatalogService
             throw new ArgumentException("Ürün kodu zorunludur!");
         }
 
-        if (string.IsNullOrWhiteSpace(updatedProduct.MfrId) || string.IsNullOrWhiteSpace(updatedProduct.MfrName))
+        if (string.IsNullOrWhiteSpace(updatedProduct.ManufacturerId) || string.IsNullOrWhiteSpace(updatedProduct.ManufacturerName))
         {
             throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
         }
@@ -108,8 +108,8 @@ public class CatalogService : ICatalogService
         }
 
         existing.ProductCode = cleanCode;
-        existing.MfrId = updatedProduct.MfrId;
-        existing.MfrName = updatedProduct.MfrName;
+        existing.ManufacturerId = updatedProduct.ManufacturerId;
+        existing.ManufacturerName = updatedProduct.ManufacturerName;
         existing.Image = updatedProduct.Image;
         existing.Text = updatedProduct.Text;
         existing.Length = updatedProduct.Length;

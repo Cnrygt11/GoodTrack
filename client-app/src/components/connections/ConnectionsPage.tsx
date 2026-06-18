@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useConnections from '../../hooks/useConnections';
 import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, X } from 'lucide-react';

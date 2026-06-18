@@ -1,4 +1,3 @@
-import React from 'react';
 import { ShieldCheck, Key, Eye, EyeOff, Loader2 } from 'lucide-react';
 import usePasswordChange from '../../hooks/usePasswordChange';
 import { useSettings } from '../../context/SettingsContext';
@@ -14,7 +13,7 @@ export default function PasswordChangeForm({
   accentColor,
   glowBg,
 }: PasswordChangeFormProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   const {
     flowStep,

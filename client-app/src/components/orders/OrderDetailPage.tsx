@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useOrderDetail from '../../hooks/useOrderDetail';
 import { getStatusConfig } from '../../utils/statusConfig';
 import BrokenDetailsModal from '../seller/BrokenDetailsModal';
 import { ORDER_STATUS } from '../../utils/constants';
 import {
-  ArrowLeft, Package, Clock, CheckCircle2, AlertTriangle,
-  Calendar, Factory, Tag, Ruler, Send, Archive, Info, Loader2, User
+  ArrowLeft, Package, CheckCircle2, AlertTriangle,
+  Calendar, Factory, Tag, Ruler, Info, Loader2, User
 } from 'lucide-react';
 
 export default function OrderDetailPage() {

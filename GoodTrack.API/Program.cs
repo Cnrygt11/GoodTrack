@@ -51,42 +51,72 @@ builder.Services.AddSingleton(sp =>
 {
     var env = sp.GetRequiredService<IWebHostEnvironment>();
     
-    // Check if credentials JSON is provided via environment variable (recommended for cloud deploys)
+    // 1. Try environment variable FIREBASE_CREDENTIALS_JSON
     var envJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
     if (!string.IsNullOrEmpty(envJson))
     {
-        Console.WriteLine("Initializing Firestore with credentials from environment variable...");
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(envJson));
-        var credential = Google.Apis.Auth.OAuth2.CredentialFactory.FromStream<Google.Apis.Auth.OAuth2.ServiceAccountCredential>(stream).ToGoogleCredential();
-        return new FirestoreDbBuilder
+        Console.WriteLine("Attempting to initialize Firestore with credentials from environment variable (FIREBASE_CREDENTIALS_JSON)...");
+        var credential = TryLoadCredentialFromJson(envJson, out var err);
+        if (credential != null)
         {
-            ProjectId = projectId,
-            Credential = credential
-        }.Build();
+            Console.WriteLine("Firestore initialized successfully using environment variable credentials.");
+            return new FirestoreDbBuilder
+            {
+                ProjectId = projectId,
+                Credential = credential
+            }.Build();
+        }
+        else
+        {
+            Console.WriteLine($"WARNING: Failed to parse FIREBASE_CREDENTIALS_JSON environment variable. Error: {err}");
+        }
     }
 
-    // Resolve credentials path
+    // 2. Try file-based credentials
     var fullCredentialPath = Path.IsPathRooted(credentialPath) 
         ? credentialPath 
         : Path.Combine(env.ContentRootPath, credentialPath ?? "firebase-key.json");
 
     if (File.Exists(fullCredentialPath))
     {
-        Console.WriteLine($"Initializing Firestore with service account credentials from: {fullCredentialPath}");
-        var credential = Google.Apis.Auth.OAuth2.CredentialFactory.FromFile<Google.Apis.Auth.OAuth2.ServiceAccountCredential>(fullCredentialPath)
-            .ToGoogleCredential();
-        return new FirestoreDbBuilder
+        Console.WriteLine($"Attempting to initialize Firestore with credentials from file: {fullCredentialPath}");
+        var fileContent = File.ReadAllText(fullCredentialPath);
+        var credential = TryLoadCredentialFromJson(fileContent, out var err);
+        if (credential != null)
         {
-            ProjectId = projectId,
-            Credential = credential
-        }.Build();
+            Console.WriteLine($"Firestore initialized successfully using credentials from: {fullCredentialPath}");
+            return new FirestoreDbBuilder
+            {
+                ProjectId = projectId,
+                Credential = credential
+            }.Build();
+        }
+        else
+        {
+            Console.WriteLine($"WARNING: Credentials file at {fullCredentialPath} could not be loaded. Error: {err}");
+            Console.WriteLine("Attempting to fallback to Application Default Credentials (ADC).");
+        }
     }
     else
     {
-        Console.WriteLine($"Credentials file not found at: {fullCredentialPath}. Attempting to initialize Firestore Db with default credentials.");
+        Console.WriteLine($"Credentials file not found at: {fullCredentialPath}. Attempting to initialize Firestore Db with Application Default Credentials (ADC).");
+    }
+
+    // 3. Fallback to Application Default Credentials
+    try
+    {
         return FirestoreDb.Create(projectId);
     }
+    catch (Exception ex)
+    {
+        throw new InvalidOperationException(
+            $"FATAL: Failed to initialize FirestoreDb using service account file or Application Default Credentials (ADC). " +
+            $"Please ensure a valid service account JSON file is placed at '{fullCredentialPath}' or set via 'FIREBASE_CREDENTIALS_JSON' env var. " +
+            $"Inner Error: {ex.Message}", ex);
+    }
 });
+
+const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
 
 // Configure JWT Authentication
 var jwtSection = builder.Configuration.GetSection("Jwt");
@@ -98,7 +128,7 @@ if (string.IsNullOrEmpty(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
 }
 
 // Ensure default development key is not used in production
-if (builder.Environment.IsProduction() && jwtKey == "GoodTrackProductionTrackingSystemSuperSecretKey2026!")
+if (builder.Environment.IsProduction() && jwtKey == DefaultDevelopmentJwtKey)
 {
     throw new InvalidOperationException("FATAL: Default JWT signing key cannot be used in a production environment. Please set a secure 'Jwt:Key' via environment variable.");
 }
@@ -227,10 +257,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Enable default files (index.html) and static files serving from wwwroot
-app.UseDefaultFiles();
-app.UseStaticFiles();
-
 app.UseRouting();
 
 app.UseCors("AllowFrontend");
@@ -245,6 +271,98 @@ app.MapControllers();
 // Map SignalR Connections Hub
 app.MapHub<GoodTrack.API.Hubs.TrackingHub>("/hubs/tracking");
 
+// Serve static files from wwwroot (React build output)
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+// SPA fallback: serve index.html for all unmatched routes (API controllers are matched first above)
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+#region Helper Methods
+static string SanitizePrivateKey(string rawKey)
+{
+    if (string.IsNullOrEmpty(rawKey)) return rawKey;
+
+    // Replace escaped newlines
+    var key = rawKey.Replace("\\n", "\n").Trim();
+
+    // Normalize newlines
+    key = key.Replace("\r\n", "\n").Replace("\r", "\n");
+
+    // If it doesn't contain the header/footer, wrap it
+    if (!key.Contains("-----BEGIN PRIVATE KEY-----"))
+    {
+        key = $"-----BEGIN PRIVATE KEY-----\n{key}\n-----END PRIVATE KEY-----\n";
+    }
+    else
+    {
+        // Ensure header and footer are separated by actual newlines
+        if (!key.StartsWith("-----BEGIN PRIVATE KEY-----\n"))
+        {
+            key = key.Replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n");
+        }
+        if (!key.EndsWith("\n-----END PRIVATE KEY-----\n") && !key.EndsWith("\n-----END PRIVATE KEY-----"))
+        {
+            key = key.Replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----\n");
+        }
+    }
+
+    // Clean up any double newlines
+    while (key.Contains("\n\n"))
+    {
+        key = key.Replace("\n\n", "\n");
+    }
+
+    return key;
+}
+
+static Google.Apis.Auth.OAuth2.GoogleCredential? TryLoadCredentialFromJson(string jsonContent, out string? errorMessage)
+{
+    errorMessage = null;
+    try
+    {
+        // Parse the JSON to inspect/sanitize the private key
+        var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(jsonContent);
+        if (jsonNode == null)
+        {
+            errorMessage = "JSON content is empty or invalid.";
+            return null;
+        }
+
+        var privateKeyNode = jsonNode["private_key"];
+        if (privateKeyNode != null)
+        {
+            var rawKey = privateKeyNode.ToString();
+            if (rawKey.Contains("YOUR_PRIVATE_KEY") || string.IsNullOrWhiteSpace(rawKey))
+            {
+                errorMessage = "Private key contains default placeholder values.";
+                return null;
+            }
+
+            var sanitizedKey = SanitizePrivateKey(rawKey);
+            jsonNode["private_key"] = sanitizedKey;
+        }
+
+        var projectIdNode = jsonNode["project_id"];
+        if (projectIdNode != null && projectIdNode.ToString().Contains("YOUR_PROJECT_ID"))
+        {
+            errorMessage = "Project ID contains default placeholder values.";
+            return null;
+        }
+
+        var updatedJson = jsonNode.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(updatedJson));
+        
+        return Google.Apis.Auth.OAuth2.CredentialFactory.FromStream<Google.Apis.Auth.OAuth2.ServiceAccountCredential>(stream)
+            .ToGoogleCredential();
+    }
+    catch (Exception ex)
+    {
+        errorMessage = ex.Message;
+        return null;
+    }
+}
+#endregion
+

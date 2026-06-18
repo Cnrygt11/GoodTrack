@@ -161,53 +161,10 @@ public class AuthService : IAuthService
             LastName = request.LastName.Trim(),
             Role = request.Role,
             CreatedAt = DateTime.UtcNow.ToString("o"),
-            // NOTE: Email verification is disabled. Set IsActive = false and call
-            // VerifyEmailAsync flow to re-enable. See TODO in VerifyEmailAsync.
             IsActive = true
         };
 
         user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
-
-        await _userRepository.SaveAsync(user);
-    }
-
-    // TODO: Email verification is currently inactive.
-    // RegisterAsync sets IsActive = true unconditionally.
-    // To activate: remove IsActive = true from RegisterAsync, re-inject IEmailService,
-    // and call SendVerificationEmailAsync here.
-    public async Task VerifyEmailAsync(string username, string token)
-    {
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(token))
-        {
-            throw new ArgumentException("Kullanıcı adı ve doğrulama bağlantısı geçersiz!");
-        }
-
-        var usernameClean = username.Trim().ToLower();
-        var user = await _userRepository.GetByUsernameAsync(usernameClean);
-        if (user == null)
-        {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
-        }
-
-        if (user.IsActive)
-        {
-            return; // Already active, no further action needed
-        }
-
-        if (user.VerificationToken != token.Trim())
-        {
-            throw new ArgumentException("Doğrulama bağlantısı geçersiz veya hatalı!");
-        }
-
-        if (string.IsNullOrEmpty(user.VerificationTokenExpiresAt) || 
-            DateTime.Parse(user.VerificationTokenExpiresAt) < DateTime.UtcNow)
-        {
-            throw new ArgumentException("Doğrulama bağlantısının süresi dolmuş!");
-        }
-
-        user.IsActive = true;
-        user.VerificationToken = string.Empty;
-        user.VerificationTokenExpiresAt = string.Empty;
 
         await _userRepository.SaveAsync(user);
     }
@@ -225,16 +182,16 @@ public class AuthService : IAuthService
             return new List<UserDto>();
         }
 
-        var list = new List<UserDto>();
-        foreach (var connectedId in user.AssociatedUserIds)
-        {
-            var target = await _userRepository.GetByIdAsync(connectedId);
-            if (target != null)
-            {
-                list.Add(new UserDto { Id = target.Id, Username = target.Username, Role = target.Role });
-            }
-        }
-        return list;
+        var fetchTasks = user.AssociatedUserIds
+            .Select(id => _userRepository.GetByIdAsync(id))
+            .ToList();
+
+        var targets = await Task.WhenAll(fetchTasks);
+
+        return targets
+            .Where(t => t != null)
+            .Select(t => new UserDto { Id = t!.Id, Username = t.Username, Role = t.Role })
+            .ToList();
     }
 
     public async Task RemoveConnectionAsync(string userId, string targetId)

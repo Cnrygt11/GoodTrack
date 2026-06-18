@@ -1,9 +1,8 @@
-import { useState, useCallback, useMemo, ChangeEvent, FormEvent } from 'react';
+import { useState, useCallback, useMemo, FormEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
 import { Product } from '../services/api';
-import { TranslationKey } from '../services/translations';
 import { ListFilter, SellerTabId, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
 import useSellerOrderBadges from './useSellerOrderBadges';

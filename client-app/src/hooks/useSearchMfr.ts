@@ -30,7 +30,7 @@ export default function useSearchMfr() {
   const [manufacturers, setManufacturers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [actionLoadingMap, setActionLoadingMap] = useState<Record<string, boolean>>({});
+
 
   // Pagination & Cursor State (managed via useRef to prevent useEffect infinite loops)
   const lastCursorRef = useRef<string | null>(null);
@@ -140,7 +140,7 @@ export default function useSearchMfr() {
     }
   }, [showToast, sentRequests, setSentRequests]);
 
-  const handleCancelConnection = useCallback(async (requestId: string, username: string) => {
+  const handleCancelConnection = useCallback(async (requestId: string) => {
     const prevSent = [...sentRequests];
 
     // Optimistic Update
@@ -158,7 +158,7 @@ export default function useSearchMfr() {
   return {
     loading,
     error,
-    actionLoadingMap,
+
 
     selectedCity,
     selectedCategory,

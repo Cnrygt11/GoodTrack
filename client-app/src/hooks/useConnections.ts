@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
@@ -19,7 +19,6 @@ export default function useConnections() {
     refreshConnections,
     loadIncomingRequests,
     loadSentRequests,
-    loadProducts,
     setConnections,
     setIncomingRequests,
     setSentRequests,
@@ -35,7 +34,6 @@ export default function useConnections() {
   const [actionLoading, setActionLoading] = useState(false);
   const [connectionsLoading, setConnectionsLoading] = useState(true);
   const [error, setError] = useState('');
-  const isActionLoading = useRef(false);
 
   // Sub-tab state inside Connections Modal ('manage' vs 'search')
   const [activeTab, setActiveTab] = useState<'manage' | 'search'>('manage');

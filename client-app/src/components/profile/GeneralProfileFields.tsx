@@ -1,4 +1,3 @@
-import React from 'react';
 import { Mail, Phone } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 

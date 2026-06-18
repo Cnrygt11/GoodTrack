@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
 
@@ -35,52 +36,9 @@ public class AuthController : BaseApiController
         _logger.LogInformation("Processing register request for username: {Username}", request.Username);
         string baseUrl = $"{Request.Scheme}://{Request.Host}";
         await _authService.RegisterAsync(request, baseUrl);
-        return Ok(new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
-    }
-
-    // TODO: Email verification is currently inactive.
-    // RegisterAsync sets IsActive = true unconditionally.
-    // To activate: remove IsActive = true from RegisterAsync, re-inject IEmailService,
-    // and call SendVerificationEmailAsync here.
-    [HttpGet("verify-email")]
-    public async Task<IActionResult> VerifyEmail([FromQuery] string username, [FromQuery] string token)
-    {
-        _logger.LogInformation("Processing email verification link for username: {Username}", username);
         
-        // Resolve frontend URL
-        string frontendUrl = "http://localhost:5173";
-        var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
-        if (!string.IsNullOrEmpty(envOrigins))
-        {
-            var split = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-            if (split.Length > 0)
-            {
-                frontendUrl = split[0];
-            }
-        }
-        else
-        {
-            var configOrigins = _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
-            if (configOrigins != null && configOrigins.Length > 0)
-            {
-                frontendUrl = configOrigins[0];
-            }
-        }
-        
-        frontendUrl = frontendUrl.TrimEnd('/');
-
-        try
-        {
-            await _authService.VerifyEmailAsync(username, token);
-            return Redirect($"{frontendUrl}/login?verified=true");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning("Email verification link failed for {Username}: {Message}", username, ex.Message);
-            return Redirect($"{frontendUrl}/login?verificationError={Uri.EscapeDataString(ex.Message)}");
-        }
+        return Created(string.Empty, new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
     }
-
 
     [EnableRateLimiting("auth-strict")]
     [HttpPost("login")]
@@ -93,257 +51,6 @@ public class AuthController : BaseApiController
         _logger.LogInformation("Processing login request for username: {Username}", request.Username);
         var response = await _authService.LoginAsync(request);
         return Ok(new { token = response.Token, username = response.Username, role = response.Role, userId = response.UserId, message = "Giriş başarılı." });
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("connections")]
-    public async Task<IActionResult> GetConnections()
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is retrieving active connections list", userId);
-        var connections = await _authService.GetConnectionsAsync(userId);
-        return Ok(connections);
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpPost("connections/send-request")]
-    public async Task<IActionResult> SendConnectionRequest([FromQuery] string username)
-    {
-        var senderId = GetCurrentUserId();
-        var senderUsername = User.FindFirst(ClaimTypes.Name)?.Value;
-        var senderRole = User.FindFirst(ClaimTypes.Role)?.Value;
-
-        if (senderId is null || string.IsNullOrEmpty(senderUsername) || string.IsNullOrEmpty(senderRole))
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {SenderId} ({Username}) is sending a connection request to user: {Target}", senderId, senderUsername, username);
-        await _authService.SendConnectionRequestAsync(senderId, senderUsername, senderRole, username);
-        return Ok(new { message = "Bağlantı isteği gönderildi." });
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("connections/requests/incoming")]
-    public async Task<IActionResult> GetIncomingRequests()
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is fetching pending incoming connection requests", userId);
-        var requests = await _authService.GetIncomingRequestsAsync(userId);
-        return Ok(requests);
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("connections/requests/sent")]
-    public async Task<IActionResult> GetSentRequests()
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is fetching sent connection requests history", userId);
-        var requests = await _authService.GetSentRequestsAsync(userId);
-        return Ok(requests);
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpPost("connections/requests/{requestId}/accept")]
-    public async Task<IActionResult> AcceptRequest(string requestId)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is accepting connection request {RequestId}", userId, requestId);
-        await _authService.AcceptConnectionRequestAsync(userId, requestId);
-        return Ok(new { message = "Bağlantı başarıyla kuruldu." });
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpPost("connections/requests/{requestId}/reject")]
-    public async Task<IActionResult> RejectRequest(string requestId)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is rejecting connection request {RequestId}", userId, requestId);
-        await _authService.RejectConnectionRequestAsync(userId, requestId);
-        return Ok(new { message = "Bağlantı isteği reddedildi." });
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpDelete("connections/requests/{requestId}")]
-    public async Task<IActionResult> DeleteRequest(string requestId)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is clearing connection request log: {RequestId}", userId, requestId);
-        await _authService.DeleteConnectionRequestAsync(userId, requestId);
-        return Ok(new { message = "İstek geçmişten temizlendi." });
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpDelete("connections/{targetId}")]
-    public async Task<IActionResult> RemoveConnection(string targetId)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        _logger.LogInformation("User {UserId} is removing active connection with user: {TargetId}", userId, targetId);
-        await _authService.RemoveConnectionAsync(userId, targetId);
-        return Ok(new { message = "Bağlantı başarıyla kaldırıldı." });
-    }
-
-    [EnableRateLimiting("api-general")]
-    [HttpGet("manufacturers")]
-    public async Task<IActionResult> GetManufacturers()
-    {
-        _logger.LogInformation("Fetching list of all registered manufacturer accounts");
-        var manufacturers = await _authService.GetAvailableManufacturersAsync();
-        return Ok(manufacturers);
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("profile")]
-    public async Task<IActionResult> GetProfile()
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        try
-        {
-            var profile = await _authService.GetProfileAsync(userId);
-            return Ok(profile);
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("profile/{username}")]
-    public async Task<IActionResult> GetProfileByUsername(string username)
-    {
-        var currentUserId = GetCurrentUserId();
-        var currentUserUsername = User.FindFirst(ClaimTypes.Name)?.Value;
-        if (currentUserId == null || string.IsNullOrEmpty(currentUserUsername))
-        {
-            return Unauthorized();
-        }
-
-        bool isSelf = currentUserUsername.Equals(username, StringComparison.OrdinalIgnoreCase);
-        bool isConnected = false;
-
-        if (!isSelf)
-        {
-            var connections = await _authService.GetConnectionsAsync(currentUserId);
-            isConnected = System.Linq.Enumerable.Any(connections, c => c.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
-        }
-
-        if (!isSelf && !isConnected)
-        {
-            return BadRequest(new { message = "Sadece bağlantınız olan kullanıcıların profillerini görüntüleyebilirsiniz." });
-        }
-
-        try
-        {
-            var profile = await _authService.GetProfileByUsernameAsync(username);
-            return Ok(profile);
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpPut("profile")]
-    public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
-    {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized();
-        }
-
-        try
-        {
-            await _authService.UpdateProfileAsync(userId, dto);
-            return Ok(new { message = "Profil başarıyla güncellendi." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-    }
-
-    [Authorize]
-    [EnableRateLimiting("api-general")]
-    [HttpGet("manufacturers/search")]
-    public async Task<IActionResult> SearchManufacturers(
-        [FromQuery] string? city, 
-        [FromQuery] string? keyword,
-        [FromQuery] string? cursor,
-        [FromQuery] int limit = 10)
-    {
-        // Cap limit between 1 and 50 to prevent Firestore overload
-        limit = Math.Clamp(limit, 1, 50);
-        try
-        {
-            var results = await _authService.SearchManufacturersAsync(city, keyword, cursor, limit);
-            return Ok(results);
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
     }
 
     [Authorize]
@@ -365,7 +72,7 @@ public class AuthController : BaseApiController
         var isValid = await _authService.VerifyPasswordAsync(userId, request.Password);
         if (!isValid)
         {
-            return BadRequest(new { message = "Eski şifre hatalı!" });
+            return Unauthorized(new { message = "Eski şifre hatalı!" });
         }
 
         return Ok(new { success = true, message = "Şifre doğrulandı." });
@@ -387,20 +94,7 @@ public class AuthController : BaseApiController
             return BadRequest(new { message = "İstek verisi eksik." });
         }
 
-        try
-        {
-            await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
-            return Ok(new { message = "Şifreniz başarıyla güncellendi." });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
+        await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
+        return Ok(new { message = "Şifreniz başarıyla güncellendi." });
     }
-
 }
-

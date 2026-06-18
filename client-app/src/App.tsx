@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { SettingsProvider } from './context/SettingsContext';
 import { ConfirmProvider } from './context/ConfirmContext';

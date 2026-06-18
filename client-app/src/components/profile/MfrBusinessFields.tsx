@@ -1,4 +1,3 @@
-import React from 'react';
 import { Building2, MapPin } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';

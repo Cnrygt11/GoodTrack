@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
 import usePasswordChange from '../../hooks/usePasswordChange';
@@ -14,12 +14,10 @@ export default function MyAccountPage() {
   const navigate = useNavigate();
   
   const {
-    user,
     profile,
     loading,
     error,
     actionLoading: profileLoading,
-    language,
     t,
     profilePicture,
     firstName,

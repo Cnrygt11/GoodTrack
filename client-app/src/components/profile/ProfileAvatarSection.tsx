@@ -1,4 +1,3 @@
-import React from 'react';
 import { Camera } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 
@@ -9,7 +8,7 @@ interface ProfileAvatarSectionProps {
   lastName: string;
   role: string;
   roleLabel: string;
-  avatarInputRef: React.RefObject<HTMLInputElement>;
+  avatarInputRef: React.RefObject<HTMLInputElement | null>;
   handleProfilePictureChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveProfilePicture: () => void;
 }

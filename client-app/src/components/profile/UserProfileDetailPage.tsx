@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import useUserProfileDetail from '../../hooks/useUserProfileDetail';
 import { ArrowLeft, Loader2, AlertTriangle, Mail, Phone, MapPin, Globe, Award, Image as ImageIcon } from 'lucide-react';
