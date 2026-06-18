@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ using GoodTrack.API.Constants;
 namespace GoodTrack.API.Controllers;
 
 [Authorize]
+[EnableRateLimiting("api-general")]
 public class ProductsController : BaseApiController
 {
     private readonly IProductService _productService;

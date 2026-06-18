@@ -527,8 +527,28 @@ public class AuthService : IAuthService
         // Basic fields
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
-        user.Email = dto.Email;
-        user.PhoneNumber = dto.PhoneNumber;
+
+        // Email format validation on update (same rules as registration)
+        if (!string.IsNullOrWhiteSpace(dto.Email))
+        {
+            var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
+            if (!emailRegex.IsMatch(dto.Email.Trim().ToLower()))
+            {
+                throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+            }
+            user.Email = dto.Email.Trim().ToLower();
+        }
+
+        // Phone format validation on update
+        if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
+        {
+            var phoneRegex = new Regex(@"^\+?[0-9\s\-()]{10,20}$");
+            if (!phoneRegex.IsMatch(dto.PhoneNumber.Trim()))
+            {
+                throw new ArgumentException("Geçersiz telefon numarası formatı!");
+            }
+            user.PhoneNumber = dto.PhoneNumber.Trim();
+        }
 
         // Profile Picture
         if (!string.IsNullOrEmpty(dto.ProfilePicture))

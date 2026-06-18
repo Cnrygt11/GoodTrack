@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace GoodTrack.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(Roles = Roles.Seller)]
+[EnableRateLimiting("api-general")]
 public class FieldsController : ControllerBase
 {
     private readonly IFieldService _fieldService;

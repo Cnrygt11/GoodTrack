@@ -29,6 +29,17 @@ public class ProductService : IProductService
         _imageStorageService = imageStorageService;
     }
 
+    // ~5MB binary = ~6.8MB base64; we use 7_000_000 chars as the hard cap
+    private const int MaxImageBase64Length = 7_000_000;
+
+    private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
+    {
+        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > MaxImageBase64Length)
+        {
+            throw new ArgumentException($"{fieldName} boyutu çok büyük! Maksimum 5MB desteklenmektedir.");
+        }
+    }
+
     public async Task<List<Product>> GetUserProductsAsync(string userId, string role)
     {
         if (role == Roles.Seller)
@@ -77,6 +88,9 @@ public class ProductService : IProductService
         };
 
         order.Image = await _imageStorageService.StoreImageAsync(order.Image);
+
+        // Validate image size before storing (~5MB limit)
+        ValidateImageSize(order.Image, "Sipariş görseli");
 
         await _productRepository.SaveAsync(order);
 
@@ -157,6 +171,8 @@ public class ProductService : IProductService
         {
             if (!string.IsNullOrEmpty(newImage) && newImage.StartsWith("data:image"))
             {
+                // Validate image size before storing (~5MB limit)
+                ValidateImageSize(newImage, "Sipariş görseli");
                 existing.Image = await _imageStorageService.StoreImageAsync(newImage);
                 await TryDeleteImageAsync(oldImage, sellerId, orderId);
             }

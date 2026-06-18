@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -23,6 +24,7 @@ public class AuthController : BaseApiController
         _configuration = configuration;
     }
 
+    [EnableRateLimiting("auth-strict")]
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
@@ -80,6 +82,7 @@ public class AuthController : BaseApiController
     }
 
 
+    [EnableRateLimiting("auth-strict")]
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
@@ -93,6 +96,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("connections")]
     public async Task<IActionResult> GetConnections()
     {
@@ -108,6 +112,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpPost("connections/send-request")]
     public async Task<IActionResult> SendConnectionRequest([FromQuery] string username)
     {
@@ -126,6 +131,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("connections/requests/incoming")]
     public async Task<IActionResult> GetIncomingRequests()
     {
@@ -141,6 +147,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("connections/requests/sent")]
     public async Task<IActionResult> GetSentRequests()
     {
@@ -156,6 +163,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpPost("connections/requests/{requestId}/accept")]
     public async Task<IActionResult> AcceptRequest(string requestId)
     {
@@ -171,6 +179,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpPost("connections/requests/{requestId}/reject")]
     public async Task<IActionResult> RejectRequest(string requestId)
     {
@@ -186,6 +195,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpDelete("connections/requests/{requestId}")]
     public async Task<IActionResult> DeleteRequest(string requestId)
     {
@@ -201,6 +211,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpDelete("connections/{targetId}")]
     public async Task<IActionResult> RemoveConnection(string targetId)
     {
@@ -215,6 +226,7 @@ public class AuthController : BaseApiController
         return Ok(new { message = "Bağlantı başarıyla kaldırıldı." });
     }
 
+    [EnableRateLimiting("api-general")]
     [HttpGet("manufacturers")]
     public async Task<IActionResult> GetManufacturers()
     {
@@ -224,6 +236,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("profile")]
     public async Task<IActionResult> GetProfile()
     {
@@ -245,6 +258,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("profile/{username}")]
     public async Task<IActionResult> GetProfileByUsername(string username)
     {
@@ -285,6 +299,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
     {
@@ -310,6 +325,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("api-general")]
     [HttpGet("manufacturers/search")]
     public async Task<IActionResult> SearchManufacturers(
         [FromQuery] string? city, 
@@ -317,6 +333,8 @@ public class AuthController : BaseApiController
         [FromQuery] string? cursor,
         [FromQuery] int limit = 10)
     {
+        // Cap limit between 1 and 50 to prevent Firestore overload
+        limit = Math.Clamp(limit, 1, 50);
         try
         {
             var results = await _authService.SearchManufacturersAsync(city, keyword, cursor, limit);
@@ -329,6 +347,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("auth-strict")]
     [HttpPost("verify-password")]
     public async Task<IActionResult> VerifyPassword([FromBody] VerifyPasswordRequest request)
     {
@@ -353,6 +372,7 @@ public class AuthController : BaseApiController
     }
 
     [Authorize]
+    [EnableRateLimiting("auth-strict")]
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
