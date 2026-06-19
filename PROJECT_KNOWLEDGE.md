@@ -385,8 +385,9 @@ BrowserRouter
 - `optimisticAddSentRequest(req)` / `optimisticRemoveSentRequest(id)` / `rollbackSentRequests(prev)`
 - `optimisticAddConnection(conn)` / `optimisticRemoveConnection(id)` / `rollbackConnections(prev)`
 - `optimisticRemoveIncoming(id)` / `rollbackIncomingRequests(prev)`
+- `optimisticAddProduct(prod)` / `optimisticUpdateProduct(prod)` / `optimisticRemoveProduct(id)` / `rollbackProducts(prev)`
 
-**Optimistic UI:** `setConnections` (context-içi wrapper) — optimistic add/remove için 15 saniyelik TTL'li `Map` kullanır; `optimisticConnections`/`optimisticRemovals` ref'leri artık context dışına sızdırılmıyor.  
+**Optimistic UI:** `setConnections` ve `setProducts` (context-içi wrapper'lar) — iyimser ekleme/güncelleme/silme durumlarını 15 saniyelik TTL (zaman aşımı) ile hafızada (`Map`) tutarak SignalR veya backend yükleme isteklerinin arayüzde kırpışma (flicker) yapmasını önler.  
 **Initial Load:** `user` değiştiğinde tüm data yüklenir; logout'ta temizlenir.
 
 ---
@@ -443,7 +444,7 @@ BrowserRouter
 
 ### `useMfrOrders` (`hooks/useMfrOrders.ts`)
 - **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`
-- **Sorumluluğu:** MfrPage için tüm state ve logic. Tab yönetimi, sıralama, defect modal, unseen badge sayısı (`localStorage` ile: `seen_mfr_{id}` key'i).
+- **Sorumluluğu:** MfrPage için tüm state ve logic. Tab yönetimi, sıralama, defect modal, unseen badge yönetimi. Durum geçişleri, broken raporu ve iptal talebi cevapları Optimistic UI + Rollback ile entegredir.
 - **Return:** `activeTab`, `sortOrder`, `filteredProducts`, `sortedProducts`, `badgeCounts`, `selectedDefectProduct`, `isDetailsModalOpen`, modal handler'ları, `handleToggleComplete`, `handleMarkSingleAsSeen`, `onRespondCancel`.
 
 ### `useOrderDetail` (`hooks/useOrderDetail.ts`)
@@ -465,14 +466,14 @@ BrowserRouter
 
 ### `useSellerOrderActions` (`hooks/useSellerOrderActions.ts`)
 - **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Defect modal state, defect/missing bildirim, iptal talebi, iptal yanıtı, onay toggle.
+- **Sorumluluğu:** Defect modal state, defect/missing bildirim, iptal talebi, iptal yanıtı, onay toggle. Tüm aksiyonlar Optimistic UI + Rollback ile anlık tepki verecek şekilde entegredir.
 
 ### `useSellerOrderBadges` (`hooks/useSellerOrderBadges.ts`)
 - **Sorumluluğu:** Seller dashboard tab'larındaki badge sayılarını hesaplar.
 
 ### `useSellerOrderForm` (`hooks/useSellerOrderForm.ts`)
 - **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Sipariş oluşturma/düzenleme formu. Katalog auto-fill, görsel compression, field yönetimi, CRUD.
+- **Sorumluluğu:** Sipariş oluşturma/düzenleme formu. Katalog auto-fill, görsel compression, field yönetimi, CRUD (Oluşturma, Güncelleme, Silme işlemleri Optimistic UI + Rollback ile entegredir; hata durumunda form verileri otomatik kurtarılır).
 
 ### `useSellerOrders` (`hooks/useSellerOrders.ts`)
 - **Sorumluluğu:** SellerPage için coordinator hook. Diğer hook'ları (Form, Actions, Badges) bir araya getirir. Tab ve sort state yönetimi, URL query params.
@@ -595,7 +596,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 ### `AuthService.cs` (652 satır)
 **Sorumluluklar:**
 - `RegisterAsync` — Kullanıcı kaydı, duplicate kontrol, hash
-- `LoginAsync` — Şifre doğrulama, Access Token ve Refresh Token üretimi (Access Token: 15 dakika, Refresh Token: 7 gün)
+- `LoginAsync` — Şifre doğrulama, Access Token ve Refresh Token üretimi (Access Token: 12 saat, Refresh Token: 7 gün)
 - `RefreshTokenAsync` — Süresi geçmiş Access Token ve geçerli Refresh Token ile yeni bir token çifti üretme
 - `GetConnectionsAsync` / `RemoveConnectionAsync`
 - `SendConnectionRequestAsync` — Sadece seller → mfr veya mfr → seller gönderebilir
@@ -644,7 +645,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 
 | Katman | Mekanizma |
 |--------|-----------|
-| Kimlik Doğrulama | JWT Bearer Token (Access: 15 dk, Refresh: 7 gün) |
+| Kimlik Doğrulama | JWT Bearer Token (Access: 12 saat, Refresh: 7 gün) |
 | Yetkilendirme | `[Authorize]` + `[Authorize(Roles="seller"/"mfr")]` |
 | IDOR Koruması | `ProductService` ve `AuthService`'de `userId` sahiplik kontrolü |
 | Rate Limiting | `auth-strict`: 5/dk, `api-general`: 60/dk |
@@ -686,7 +687,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 
 5. **`CreateCatalogProductPayload` ve `UpdateCatalogProductPayload`:** Özdeş interface'ler, birleştirilebilir.
 
-6. ~~**JWT Token Süresi:** 7 gün — refresh token mekanizması yok.~~ **✅ Düzeltildi:** Access Token süresi 15 dakikaya düşürüldü ve 7 günlük Refresh Token mekanizması eklendi. İstemci 401 hatası aldığında sessizce token yenileyen interceptor entegre edildi.
+6. **JWT Token Süresi:** 7 gün — refresh token mekanizması yok. **✅ Düzeltildi:** 7 günlük Refresh Token mekanizması eklendi. Access Token süresi güvenlik ve oturum stabilitesi (race condition ve rate limit aşımını önlemek) doğrultusunda 12 saat olarak ayarlandı. İstemci 401 hatası aldığında sessizce token yenileyen interceptor entegre edildi.
 
 7. **Base64 Görsel Boyut Kontrolü Eksik:** Backend'de max boyut kontrolü yapılmıyor.
 
@@ -725,7 +726,8 @@ Tip aralığı: `font-family: 'Bebas Neue'` (logo/başlıklar), `'Inter'` veya `
 - ✅ TypeScript: 0 derleme hatası
 - ✅ Production build: Başarılı
 - ✅ Güvenlik: Kritik açık yok
-- ✅ Git branch: `develop` (Render.com'a deploy edilmiş)
+- ✅ Git branch: `main` (Uzak sunucuya pushlandı)
 - ✅ Refactoring: 14 adımlık inline style ve translation cleanup tamamlandı
+- ✅ Optimistic UI: Tüm sipariş CRUD ve durum geçişi aksiyonları için iyimser güncellemeler ve rollback mekanizmaları entegre edildi
 - ⚠️ JWT key production'da env var olarak set edilmeli (`JWT_KEY`)
 - ⚠️ CORS `CORS_ALLOWED_ORIGINS` production URL'leri ile set edilmeli
