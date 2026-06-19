@@ -4,7 +4,6 @@ import { TranslationKey } from '../../services/translations';
 import { Camera, Plus, Send, CheckCircle2, X, Loader2 } from 'lucide-react';
 
 interface OrderFormProps {
-  language: string;
   t: (key: TranslationKey) => string;
   editingProduct: { code: string } | null;
   productCode: string;
@@ -30,7 +29,7 @@ interface OrderFormProps {
 }
 
 export default function OrderForm({
-  language, t, editingProduct,
+  t, editingProduct,
   productCode, setProductCode, autofillSuccess,
   orderImage, imageFileName, onImageChange,
   orderText, setOrderText,
@@ -41,10 +40,7 @@ export default function OrderForm({
   return (
     <>
       <h2>
-        {editingProduct
-          ? (language === 'tr' ? <>SİPARİŞİ <span>DÜZENLE</span></> : <>EDIT <span>ORDER</span></>)
-          : (language === 'tr' ? <>YENİ <span>SİPARİŞ</span> OLUŞTUR</> : <>CREATE NEW <span>ORDER</span></>)
-        }
+        {editingProduct ? t('editOrderHeading') : t('createOrderHeading')}
       </h2>
 
       <div className="form-card">
@@ -55,7 +51,7 @@ export default function OrderForm({
               <label>{t('productCode')}</label>
               <input
                 type="text"
-                placeholder={language === 'tr' ? 'Örn: A31' : 'e.g. A31'}
+                placeholder={t('placeholderProductCode')}
                 value={productCode}
                 onChange={(e) => setProductCode(e.target.value)}
                 required
@@ -98,7 +94,7 @@ export default function OrderForm({
               <label>{t('customText')}</label>
               <input
                 type="text"
-                placeholder={language === 'tr' ? 'Metin giriniz' : 'Enter text'}
+                placeholder={t('enterTextPlaceholder')}
                 value={orderText}
                 onChange={(e) => setOrderText(e.target.value)}
               />
@@ -125,14 +121,14 @@ export default function OrderForm({
               <div className="extra-field-row" key={def.id}>
                 <span className="field-label">{def.name}</span>
                 <span className="field-type">
-                  {def.type === 'text' ? (language === 'tr' ? 'Metin' : 'Text') : (language === 'tr' ? 'Liste' : 'List')}
+                  {def.type === 'text' ? t('orderFormFieldTypeText') : t('orderFormFieldTypeList')}
                 </span>
 
                 <div className="field-input">
                   {def.type === 'text' ? (
                     <input
                       type="text"
-                      placeholder={language === 'tr' ? `${def.name} giriniz` : `Enter ${def.name}`}
+                      placeholder={t('enterField').replace('{name}', def.name)}
                       value={extraValues[def.id] || ''}
                       onChange={(e) => onExtraValueChange(def.id, e.target.value)}
                     />
@@ -153,7 +149,7 @@ export default function OrderForm({
                   type="button"
                   className="del-btn"
                   onClick={() => onRemoveField(def.id)}
-                  title={language === 'tr' ? 'Kaldır' : 'Remove'}
+                  title={t('removeTitle')}
                 >
                   <X size={12} />
                 </button>

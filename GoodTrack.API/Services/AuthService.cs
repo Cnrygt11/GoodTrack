@@ -74,10 +74,16 @@ public class AuthService : IAuthService
         }
 
         var token = GenerateJwtToken(user);
+        var refreshToken = GenerateRefreshToken();
+
+        user.RefreshToken = refreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7).ToString("o");
+        await _userRepository.SaveAsync(user);
 
         return new LoginResponse
         {
             Token = token,
+            RefreshToken = refreshToken,
             Username = user.Username,
             Role = user.Role,
             UserId = user.Id
@@ -406,7 +412,7 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role)
             }),
-            Expires = DateTime.UtcNow.AddMinutes(60),
+            Expires = DateTime.UtcNow.AddHours(12),
             Issuer = issuer,
             Audience = audience,
             SigningCredentials = new SigningCredentials(
@@ -416,6 +422,103 @@ public class AuthService : IAuthService
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
         return tokenHandler.WriteToken(token);
+    }
+
+    private string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[64];
+        using var rng = System.Security.Cryptography.RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+
+    private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
+    {
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException(
+                "JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
+
+        var issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API";
+        var audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client";
+
+        var tokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateAudience = true,
+            ValidateIssuer = true,
+            ValidAudience = audience,
+            ValidIssuer = issuer,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateLifetime = false // Ignore lifetime
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
+        
+        if (securityToken is not JwtSecurityToken jwtSecurityToken || 
+            !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+        {
+            throw new SecurityTokenException("Geçersiz token / Invalid token");
+        }
+
+        return principal;
+    }
+
+    public async Task<LoginResponse> RefreshTokenAsync(TokenRefreshRequest request)
+    {
+        if (request == null || string.IsNullOrWhiteSpace(request.Token) || string.IsNullOrWhiteSpace(request.RefreshToken))
+        {
+            throw new ArgumentException("Token ve Refresh Token zorunludur!");
+        }
+
+        ClaimsPrincipal principal;
+        try
+        {
+            principal = GetPrincipalFromExpiredToken(request.Token);
+        }
+        catch (Exception ex)
+        {
+            throw new SecurityTokenException("Geçersiz access token / Invalid access token", ex);
+        }
+
+        var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userId))
+        {
+            throw new SecurityTokenException("Token geçersiz kullanıcı kimliği içeriyor / Token contains invalid user identity");
+        }
+
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new UnauthorizedAccessException("Kullanıcı bulunamadı / User not found");
+        }
+
+        if (user.RefreshToken != request.RefreshToken)
+        {
+            throw new UnauthorizedAccessException("Geçersiz refresh token / Invalid refresh token");
+        }
+
+        if (!DateTime.TryParse(user.RefreshTokenExpiryTime, out var expiryTime) || expiryTime <= DateTime.UtcNow)
+        {
+            throw new UnauthorizedAccessException("Refresh token süresi dolmuş / Refresh token has expired");
+        }
+
+        var newAccessToken = GenerateJwtToken(user);
+        var newRefreshToken = GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7).ToString("o");
+        await _userRepository.SaveAsync(user);
+
+        return new LoginResponse
+        {
+            Token = newAccessToken,
+            RefreshToken = newRefreshToken,
+            Username = user.Username,
+            Role = user.Role,
+            UserId = user.Id
+        };
     }
 
     private static ConnectionRequestDto MapToConnectionRequestDto(ConnectionRequest r) => new()

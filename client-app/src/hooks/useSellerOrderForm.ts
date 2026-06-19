@@ -55,7 +55,18 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
-  const { loadProducts, extraFieldDefs, loadExtraFields, catalogProducts, connections } = useData();
+  const { 
+    products,
+    loadProducts, 
+    extraFieldDefs, 
+    loadExtraFields, 
+    catalogProducts, 
+    connections,
+    optimisticAddProduct,
+    optimisticUpdateProduct,
+    optimisticRemoveProduct,
+    rollbackProducts
+  } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
@@ -168,31 +179,108 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       formattedExtras[def.id] = { name: def.name, type: def.type, value: extraValues[def.id] || '' };
     });
 
-    try {
-      isActionLoadingRef.current = true;
-      setActionLoading(true);
-      if (editingProduct) {
-        const payload: Product = { ...editingProduct, code, image: orderImage, text: orderText, extras: formattedExtras, mfrId, mfrName };
+    const prevProducts = [...products];
+
+    if (editingProduct) {
+      const payload: Product = { ...editingProduct, code, image: orderImage, text: orderText, extras: formattedExtras, mfrId, mfrName };
+      optimisticUpdateProduct(payload);
+      setActiveTab('list');
+      handleClearForm();
+
+      try {
+        isActionLoadingRef.current = true;
+        setActionLoading(true);
         const data = await api.updateProduct(editingProduct.id, payload);
         showToast(data.message || t('orderUpdatedSuccess'));
+        optimisticUpdateProduct(data.product);
         await loadProducts();
-        handleClearForm();
-        setActiveTab('list');
-      } else {
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        showToast(extractErrorMessage(err));
+        setEditingProduct(editingProduct);
+        setProductCode(code);
+        setOrderText(orderText || '');
+        setMfrId(mfrId);
+        setOrderImage(orderImage);
+        setImageFileName(orderImage ? 'Mevcut Görsel' : '');
+        const initialExtras: Record<string, string> = {};
+        extraFieldDefs.forEach((def) => { initialExtras[def.id] = formattedExtras[def.id]?.value || ''; });
+        setExtraValues(initialExtras);
+        setActiveTab('create');
+      } finally {
+        isActionLoadingRef.current = false;
+        setActionLoading(false);
+      }
+    } else {
+      const tempId = `temp_${Date.now()}`;
+      const tempProduct: Product = {
+        id: tempId,
+        code,
+        image: orderImage,
+        text: orderText,
+        length: '',
+        extras: formattedExtras,
+        completed: false,
+        cancelRequested: false,
+        status: 'pending',
+        mfrId,
+        mfrName,
+        sellerId: '',
+        sellerName: '',
+        createdAt: new Date().toISOString(),
+        isReadBySeller: true,
+        isReadByMfr: false,
+      };
+
+      optimisticAddProduct(tempProduct);
+      setActiveTab('list');
+      handleClearForm();
+
+      try {
+        isActionLoadingRef.current = true;
+        setActionLoading(true);
         const payload: CreateProductPayload = { code, image: orderImage, text: orderText, extras: formattedExtras, completed: false, mfrId, mfrName };
         const data = await api.createProduct(payload);
         showToast(data.message || t('orderSentSuccess'));
+        optimisticRemoveProduct(tempId);
+        optimisticAddProduct(data.product);
         await loadProducts();
-        handleClearForm();
-        setActiveTab('list');
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        showToast(extractErrorMessage(err));
+        setProductCode(code);
+        setOrderText(orderText || '');
+        setMfrId(mfrId);
+        setOrderImage(orderImage);
+        setImageFileName(orderImage ? 'Katalog Görseli' : '');
+        const initialExtras: Record<string, string> = {};
+        extraFieldDefs.forEach((def) => { initialExtras[def.id] = formattedExtras[def.id]?.value || ''; });
+        setExtraValues(initialExtras);
+        setActiveTab('create');
+      } finally {
+        isActionLoadingRef.current = false;
+        setActionLoading(false);
       }
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    } finally {
-      isActionLoadingRef.current = false;
-      setActionLoading(false);
     }
-  }, [productCode, mfrId, connections, extraFieldDefs, extraValues, editingProduct, orderImage, orderText, loadProducts, showToast, t, handleClearForm]);
+  }, [
+    productCode,
+    mfrId,
+    connections,
+    extraFieldDefs,
+    extraValues,
+    editingProduct,
+    orderImage,
+    orderText,
+    products,
+    optimisticAddProduct,
+    optimisticUpdateProduct,
+    optimisticRemoveProduct,
+    rollbackProducts,
+    loadProducts,
+    showToast,
+    t,
+    handleClearForm,
+  ]);
 
   const handleAddFieldSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
@@ -241,15 +329,40 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   }, [confirm, language, loadExtraFields, showToast, t]);
 
   const handleDeleteClick = useCallback(async (product: Product) => {
+    const prevProducts = [...products];
+    optimisticRemoveProduct(product.id);
+    if (editingProduct?.id === product.id) handleClearForm();
+
     try {
       const data = await api.deleteProduct(product.id);
       showToast(data.message || t('deleteSuccess'));
       await loadProducts();
-      if (editingProduct?.id === product.id) handleClearForm();
     } catch (err: unknown) {
+      rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
+      if (editingProduct?.id === product.id) {
+        setEditingProduct(product);
+        setProductCode(product.code);
+        setOrderText(product.text || '');
+        setMfrId(product.mfrId);
+        setOrderImage(product.image);
+        setImageFileName(product.image ? 'Mevcut Görsel' : '');
+        const initialExtras: Record<string, string> = {};
+        extraFieldDefs.forEach((def) => { initialExtras[def.id] = product.extras?.[def.id]?.value || ''; });
+        setExtraValues(initialExtras);
+      }
     }
-  }, [editingProduct, loadProducts, showToast, t, handleClearForm]);
+  }, [
+    editingProduct,
+    products,
+    extraFieldDefs,
+    loadProducts,
+    optimisticRemoveProduct,
+    rollbackProducts,
+    showToast,
+    t,
+    handleClearForm,
+  ]);
 
   return {
     productCode, setProductCode,

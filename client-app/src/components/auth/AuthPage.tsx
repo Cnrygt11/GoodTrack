@@ -84,7 +84,7 @@ export default function AuthPage({ mode = 'login' }: AuthPageProps) {
           className="btn-secondary auth-lang-btn"
           onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
         >
-          {language === 'tr' ? 'EN' : 'TR'}
+          {t('langToggleLabel')}
         </button>
       </div>
 

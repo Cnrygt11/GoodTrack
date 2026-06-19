@@ -65,4 +65,10 @@ public class User
 
     [FirestoreProperty("verificationTokenExpiresAt")]
     public string VerificationTokenExpiresAt { get; set; } = string.Empty;
+
+    [FirestoreProperty("refreshToken")]
+    public string RefreshToken { get; set; } = string.Empty;
+
+    [FirestoreProperty("refreshTokenExpiryTime")]
+    public string RefreshTokenExpiryTime { get; set; } = string.Empty;
 }

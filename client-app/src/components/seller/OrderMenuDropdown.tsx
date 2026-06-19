@@ -27,14 +27,14 @@ export default function OrderMenuDropdown({
   onDelete,
   onRequestCancel,
 }: OrderMenuDropdownProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   return (
     <div className="dropdown-menu">
       {isEditable && (
         <DropdownItem 
           icon={<Edit2 size={13} className="color-accent" />} 
-          label={language === 'tr' ? 'Düzenle' : 'Edit'} 
+          label={t('editBtn')} 
           onClick={() => { onEdit(p); onDropdownToggle(null); }} 
         />
       )}
@@ -55,7 +55,7 @@ export default function OrderMenuDropdown({
           {status === ORDER_STATUS.AWAITING && (
             <DropdownItem 
               icon={<Trash2 size={13} className="color-danger" />} 
-              label={language === 'tr' ? 'Sil' : 'Delete'} 
+              label={t('deleteBtn')} 
               isDanger 
               onClick={() => { onDelete(p); onDropdownToggle(null); }} 
             />
@@ -67,7 +67,7 @@ export default function OrderMenuDropdown({
           <div className="dropdown-divider" />
           <DropdownItem
             icon={<Ban size={13} className="color-danger" />}
-            label={language === 'tr' ? 'İptal Talebi Gönder' : 'Request Cancellation'}
+            label={t('requestCancelTitle')}
             isDanger
             onClick={() => {
               onRequestCancel?.(p.id);

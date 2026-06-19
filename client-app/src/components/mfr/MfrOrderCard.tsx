@@ -39,18 +39,18 @@ export default function MfrOrderCard({
   onOpenTimeline,
   onRespondCancel,
 }: MfrOrderCardProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = useMemo(() => {
     if (!p.createdAt) return '—';
-    return new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' });
-  }, [p.createdAt, language]);
+    return new Date(p.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' });
+  }, [p.createdAt, t]);
 
   const timeStr = useMemo(() => {
     if (!p.createdAt) return '';
-    return new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' });
-  }, [p.createdAt, language]);
+    return new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' });
+  }, [p.createdAt, t]);
 
   const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
   const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr', isReproduction: p.isReproduction });
@@ -107,7 +107,7 @@ export default function MfrOrderCard({
                 className="moc-status-badge"
                 style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
               >
-                {language === 'tr' ? 'İptal Talebi Beklemede' : 'Cancel Request Pending'}
+                {t('cancelRequestPending')}
               </span>
             )}
           </div>
@@ -151,7 +151,7 @@ export default function MfrOrderCard({
             {p.completedAt && (
               <span className="moc-completed-span">
                 <CheckCircle2 size={11} />
-                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
+                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short' })}</strong>
               </span>
             )}
             {!(status === 'shipped' || status === 'cancelled') && (
@@ -171,11 +171,11 @@ export default function MfrOrderCard({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
               <div style={{ color: 'var(--danger)', fontSize: '12.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                 <AlertTriangle size={14} />
-                {language === 'tr' ? 'Satıcı İptal Talebi Gönderdi!' : 'Seller Requested Cancellation!'}
+                {t('sellerRequestedCancellation')}
               </div>
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>{language === 'tr' ? 'İptal Talebini Onayla' : 'Approve Request'}</MfrBtn>
-                <MfrBtn color="#ef4444" onClick={() => onRespondCancel?.(p.id, false)}>{language === 'tr' ? 'İptal Talebini Reddet' : 'Reject Request'}</MfrBtn>
+                <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>{t('cancelReqApprove')}</MfrBtn>
+                <MfrBtn color="#ef4444" onClick={() => onRespondCancel?.(p.id, false)}>{t('cancelReqReject')}</MfrBtn>
               </div>
             </div>
           ) : (

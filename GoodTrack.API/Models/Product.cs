@@ -84,6 +84,12 @@ public class Product
 
     [FirestoreProperty("cancelRequested")]
     public bool CancelRequested { get; set; }
+
+    [FirestoreProperty("isReadBySeller")]
+    public bool IsReadBySeller { get; set; } = true;
+
+    [FirestoreProperty("isReadByMfr")]
+    public bool IsReadByMfr { get; set; } = true;
 }
 
 [FirestoreData]

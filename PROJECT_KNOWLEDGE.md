@@ -169,6 +169,8 @@ GoodTrack/
 | IsActive | bool | `isActive` | Hesap aktif mi? (şu an her zaman true) |
 | VerificationToken | string | `verificationToken` | Ölü kod — kullanılmıyor |
 | VerificationTokenExpiresAt | string | `verificationTokenExpiresAt` | Ölü kod |
+| RefreshToken | string | `refreshToken` | Yenileme anahtarı (Refresh Token) |
+| RefreshTokenExpiryTime | string | `refreshTokenExpiryTime` | Refresh Token son geçerlilik zamanı (ISO 8601) |
 
 ---
 
@@ -248,7 +250,8 @@ cancelled      → İptal edildi (cancel request flow ile)
 | Method | Endpoint | Rate Limit | Yetki | Açıklama |
 |--------|----------|------------|-------|----------|
 | POST | `/auth/register` | `auth-strict` (5/dk) | Public | Kullanıcı kaydı. Body: `{username, password, confirmPassword, firstname, lastname, email, phoneNumber, role}` |
-| POST | `/auth/login` | `auth-strict` | Public | Login. Response: `{token, username, role, userId, message}` |
+| POST | `/auth/login` | `auth-strict` | Public | Login. Response: `{token, refreshToken, username, role, userId, message}` |
+| POST | `/auth/refresh` | | Public | Access token yenileme. Body: `{token, refreshToken}`. Response: `{token, refreshToken, username, role, userId, message}` |
 | POST | `/auth/verify-password` | `auth-strict` | Authenticated | Şifre doğrula. Body: `{password}`. Response: `{success, message}` |
 | POST | `/auth/change-password` | `auth-strict` | Authenticated | Şifre değiştir. Body: `{oldPassword, newPassword, confirmNewPassword}` |
 
@@ -378,10 +381,12 @@ BrowserRouter
 
 **Actions:** `loadProducts()`, `refreshConnections()`, `loadIncomingRequests()`, `loadSentRequests()`, `loadCatalog()`, `loadExtraFields()`
 
-**Raw Setter'lar (exposed):** `setConnections`, `setIncomingRequests`, `setSentRequests`, `setProducts`  
-> ⚠️ Teknik borç: Raw setter'lar dışarıya açık, iş mantığını bypass edebilir.
+**Semantik Optimistic Aksiyonlar (context'ten erişilebilir):**
+- `optimisticAddSentRequest(req)` / `optimisticRemoveSentRequest(id)` / `rollbackSentRequests(prev)`
+- `optimisticAddConnection(conn)` / `optimisticRemoveConnection(id)` / `rollbackConnections(prev)`
+- `optimisticRemoveIncoming(id)` / `rollbackIncomingRequests(prev)`
 
-**Optimistic UI:** `setConnections` akıllı bir wrapper ile çalışır — optimistic add/remove için 15 saniyelik TTL'li `Map` kullanır.  
+**Optimistic UI:** `setConnections` (context-içi wrapper) — optimistic add/remove için 15 saniyelik TTL'li `Map` kullanır; `optimisticConnections`/`optimisticRemovals` ref'leri artık context dışına sızdırılmıyor.  
 **Initial Load:** `user` değiştiğinde tüm data yüklenir; logout'ta temizlenir.
 
 ---
@@ -538,7 +543,7 @@ BrowserRouter
 - `api` object: Tüm API metodları (login, register, connections, products, catalog, fields, profile, manufacturers)
 
 **TypeScript Interface'leri (api.ts içinde tanımlı):**
-- `User` — `{token, username, role, userId}`
+- `User` — `{token, refreshToken, username, role, userId}`
 - `UserProfile` — Tam profil verisi
 - `ConnectionUser` — `{id, username, role}`
 - `ConnectionRequest` — Bağlantı isteği
@@ -590,7 +595,8 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 ### `AuthService.cs` (652 satır)
 **Sorumluluklar:**
 - `RegisterAsync` — Kullanıcı kaydı, duplicate kontrol, hash
-- `LoginAsync` — Şifre doğrulama, JWT üretimi (7 günlük)
+- `LoginAsync` — Şifre doğrulama, Access Token ve Refresh Token üretimi (Access Token: 15 dakika, Refresh Token: 7 gün)
+- `RefreshTokenAsync` — Süresi geçmiş Access Token ve geçerli Refresh Token ile yeni bir token çifti üretme
 - `GetConnectionsAsync` / `RemoveConnectionAsync`
 - `SendConnectionRequestAsync` — Sadece seller → mfr veya mfr → seller gönderebilir
 - `GetIncomingRequestsAsync` / `GetSentRequestsAsync`
@@ -603,7 +609,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 - `MapToProfileDto()` — private helper (tekrar azaltmak için extract edildi)
 - `MapToConnectionRequestDto()` — private helper
 
-**JWT:** `Expires = DateTime.UtcNow.AddDays(7)`, signing key `JWT_KEY` env var'dan okunur, yoksa `Jwt:Key` config'den. Production'da default key kullanılırsa startup'ta throw atılır.
+**JWT:** Access token süresi `AddMinutes(15)` olarak tanımlıdır. Signing key `JWT_KEY` env var'dan okunur, yoksa `Jwt:Key` config'den. Production'da default key kullanılırsa startup'ta throw atılır.
 
 ---
 
@@ -638,7 +644,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 
 | Katman | Mekanizma |
 |--------|-----------|
-| Kimlik Doğrulama | JWT Bearer Token (7 günlük) |
+| Kimlik Doğrulama | JWT Bearer Token (Access: 15 dk, Refresh: 7 gün) |
 | Yetkilendirme | `[Authorize]` + `[Authorize(Roles="seller"/"mfr")]` |
 | IDOR Koruması | `ProductService` ve `AuthService`'de `userId` sahiplik kontrolü |
 | Rate Limiting | `auth-strict`: 5/dk, `api-general`: 60/dk |
@@ -672,15 +678,15 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 ### Kritik Değil, Ama Bilinmeli
 1. **Ölü Email Verification Kodu:** `User.VerificationToken`, `User.VerificationTokenExpiresAt` alanları var; `VerifyEmailAsync` metodu var; ancak hiç çağrılmıyor. `IsActive` her zaman `true` set ediliyor. E-posta doğrulama sistemi devre dışı.
 
-2. **`useSearchMfr.ts` — Client-Side Filtering:** Backend'in arama parametrelerini kullanmıyor; tüm üreticileri çekip browser'da filtreli gösteriyor. Çok sayıda üretici olursa performans sorunu yaratır.
+2. ~~**`useSearchMfr.ts` — Client-Side Filtering:** Backend'in arama parametrelerini kullanmıyor; tüm üreticileri çekip browser'da filtreli gösteriyor. Çok sayıda üretici olursa performans sorunu yaratır.~~ **✅ Düzeltildi:** `city` ve `keyword` parametreleri backend'e gönderiliyor; `hasMore` artık backend `nextCursor`'una göre hesaplanıyor. `mustHaveGallery` / `mustHaveAvatar` toggle filtreleri client-side kalmaya devam ediyor (Firestore sorgusu yapılamaz).
 
-3. **`DataContext` Raw Setter'lar:** `setProducts`, `setConnections` vb. context'ten direkt erişilebilir, iş mantığını bypass edebilir.
+3. ~~**`DataContext` Raw Setter'lar:** `setProducts`, `setConnections` vb. context'ten direkt erişilebilir, iş mantığını bypass edebilir.~~ **✅ Düzeltildi:** Raw dispatcher'lar (`setConnections`, `setIncomingRequests`, `setSentRequests`, `setProducts`) context type'ından kaldırıldı. Her optimistic senaryo için semantik aksiyonlar eklendi (`optimisticAddSentRequest`, `optimisticRemoveConnection`, `rollbackConnections` vb.). `optimisticConnections`/`optimisticRemovals` ref'leri de artık context dışına sızdırılmıyor.
 
-4. **Inline `language === 'tr' ? ... : ...` Ternary'ler:** `MfrOrderCard`, `OrderForm`, `SellerOrderCard`, `OrderMenuDropdown`, `ConfirmContext` gibi dosyalarda tarih formatlama ve bazı UI metinleri için `t()` sistemi yerine inline ternary kullanılıyor. İşlevsel olarak çalışır.
+4. ~~**Inline `language === 'tr' ? ... : ...` Ternary'ler:** `MfrOrderCard`, `OrderForm`, `SellerOrderCard`, `OrderMenuDropdown`, `ConfirmContext` gibi dosyalarda tarih formatlama ve bazı UI metinleri için `t()` sistemi yerine inline ternary kullanılıyor.~~ **✅ Düzeltildi:** Tüm inline `language ===` ternary'ler `t()` çağrılarıyla değiştirildi. `dateLocale` (`tr-TR`/`en-US`), `langToggleLabel`, `fieldRequired`, `editOrderHeading`, `cancelReqApprove`, `rejectRequestTitle`, `removeConnectionTitle` vb. 20+ yeni anahtar `translations.ts`'e eklendi. `language` artık kullanılmayan bileşenlerden (`MfrOrderCard`, `SellerOrderCard`, `OrderDetailsPreview`, `OrderMenuDropdown`, `OrderForm`, `ConfirmContext`, `useOrderDetail`) temizlendi.
 
 5. **`CreateCatalogProductPayload` ve `UpdateCatalogProductPayload`:** Özdeş interface'ler, birleştirilebilir.
 
-6. **JWT Token Süresi:** 7 gün — refresh token mekanizması yok.
+6. ~~**JWT Token Süresi:** 7 gün — refresh token mekanizması yok.~~ **✅ Düzeltildi:** Access Token süresi 15 dakikaya düşürüldü ve 7 günlük Refresh Token mekanizması eklendi. İstemci 401 hatası aldığında sessizce token yenileyen interceptor entegre edildi.
 
 7. **Base64 Görsel Boyut Kontrolü Eksik:** Backend'de max boyut kontrolü yapılmıyor.
 

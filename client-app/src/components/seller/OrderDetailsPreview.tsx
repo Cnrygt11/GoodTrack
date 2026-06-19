@@ -23,7 +23,7 @@ export default function OrderDetailsPreview({
   onViewTimeline,
   onViewBrokenNote,
 }: OrderDetailsPreviewProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   return (
     <div className="seller-order-card-info">
@@ -69,7 +69,7 @@ export default function OrderDetailsPreview({
         {p.length && (
           <span className="order-chip">
             <Ruler size={10} />
-            <strong>{t('lengthLabel')}:</strong> {p.length} {language === 'tr' ? 'inç' : 'in'}
+            <strong>{t('lengthLabel')}:</strong> {p.length} {t('inchSuffix')}
           </span>
         )}
         {p.mfrName && (
@@ -97,7 +97,7 @@ export default function OrderDetailsPreview({
         {p.completedAt && (
           <span className="seller-order-card-date completed">
             <CheckCircle2 size={11} />
-            {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short' })}</strong>
+            {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short' })}</strong>
           </span>
         )}
         {!(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) && (

@@ -12,7 +12,7 @@ import {
 export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { product, loading, error, user, language, t } = useOrderDetail(id);
+  const { product, loading, error, user, t } = useOrderDetail(id);
   const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
 
   const handleBack = () => {
@@ -55,8 +55,8 @@ export default function OrderDetailPage() {
   const toShipIndex = allLogs.findIndex(log => log.status === ORDER_STATUS.TO_SHIP);
   const visibleLogs = (user?.role === 'mfr' && toShipIndex !== -1) ? allLogs.slice(0, toShipIndex + 1) : allLogs;
 
-  const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+  const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' }) : '';
 
   return (
     <div className="order-detail-container">
@@ -191,7 +191,7 @@ export default function OrderDetailPage() {
                   <CheckCircle2 size={13} />
                   {t('completedDateLabel')}
                 </span>
-                <span className="order-detail-spec-val">{new Date(product.completedAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US')}</span>
+                <span className="order-detail-spec-val">{new Date(product.completedAt).toLocaleDateString(t('dateLocale'))}</span>
               </div>
             )}
           </div>
@@ -224,7 +224,7 @@ export default function OrderDetailPage() {
             <div className="order-detail-timeline-line" />
 
             {visibleLogs.map((log, index) => {
-              const dateStr = new Date(log.timestamp).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US');
+              const dateStr = new Date(log.timestamp).toLocaleString(t('dateLocale'));
               const isActive = index === visibleLogs.length - 1;
 
               return (

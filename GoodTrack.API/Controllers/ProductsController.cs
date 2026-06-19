@@ -217,6 +217,27 @@ public class ProductsController : BaseApiController
         return Ok(new { message = $"{count} sipariş başarıyla güncellendi." });
     }
 
+    [HttpPost("read-status")]
+    public async Task<IActionResult> MarkStatusAsRead([FromBody] MarkStatusReadRequest request)
+    {
+        var userId = GetCurrentUserId();
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (userId is null || string.IsNullOrEmpty(role))
+        {
+            return Unauthorized(new { message = "Kullanıcı kimliği bulunamadı." });
+        }
+
+        if (request == null || string.IsNullOrWhiteSpace(request.Status))
+        {
+            return BadRequest(new { message = "Geçersiz istek veya eksik durum (status) alanı." });
+        }
+
+        _logger.LogInformation("Marking status {Status} as read for User: {UserId} with Role: {Role}", request.Status, userId, role);
+        await _productService.MarkStatusAsReadAsync(userId, role, request.Status);
+        return Ok(new { message = "Siparişler başarıyla okundu olarak işaretlendi." });
+    }
+
     [HttpPost("{id}/cancellation-requests")]
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> RequestCancellation(string id)
@@ -281,7 +302,9 @@ public class ProductsController : BaseApiController
             ManufacturerId = product.ManufacturerId,
             SellerName = product.SellerName,
             ManufacturerName = product.ManufacturerName,
-            CancelRequested = product.CancelRequested
+            CancelRequested = product.CancelRequested,
+            IsReadBySeller = product.IsReadBySeller,
+            IsReadByMfr = product.IsReadByMfr
         };
     }
 }

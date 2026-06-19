@@ -76,6 +76,8 @@ public class ProductService : IProductService
         order.IsPendingApproval = true;
         order.Completed = false;
         order.IsDefective = false;
+        order.IsReadBySeller = true;
+        order.IsReadByMfr = false;
         order.Logs = new List<OrderLog>
         {
             new OrderLog
@@ -191,6 +193,8 @@ public class ProductService : IProductService
             UserName = existing.SellerName
         });
 
+        existing.IsReadBySeller = true;
+        existing.IsReadByMfr = false;
         await _productRepository.SaveAsync(existing);
 
         // Real-time notification: order updated. Notify seller, old manufacturer and new manufacturer
@@ -302,6 +306,16 @@ public class ProductService : IProductService
         string logMsg = await ApplyStatusTransitionAsync(product, newStatus, oldStatus, role, defectNote, defectImage);
 
         AppendLog(product, userId, userName, logMsg);
+        if (role == Roles.Seller)
+        {
+            product.IsReadBySeller = true;
+            product.IsReadByMfr = false;
+        }
+        else if (role == Roles.Mfr)
+        {
+            product.IsReadByMfr = true;
+            product.IsReadBySeller = false;
+        }
         await _productRepository.SaveAsync(product);
         await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
     }
@@ -565,6 +579,8 @@ public class ProductService : IProductService
             throw new InvalidOperationException("Bu sipariş için zaten aktif bir iptal talebi bulunuyor.");
 
         product.CancelRequested = true;
+        product.IsReadBySeller = true;
+        product.IsReadByMfr = false;
         AppendLog(product, sellerId, product.SellerName, "Sipariş için satıcı tarafından iptal talebi gönderildi.");
         await _productRepository.SaveAsync(product);
         await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
@@ -599,7 +615,66 @@ public class ProductService : IProductService
         }
 
         AppendLog(product, mfrId, product.ManufacturerName, logMsg);
+        product.IsReadByMfr = true;
+        product.IsReadBySeller = false;
         await _productRepository.SaveAsync(product);
         await _hubContext.Clients.Users(product.ManufacturerId, product.SellerId).SendAsync("ReceiveOrderUpdate");
+    }
+
+    public async Task MarkStatusAsReadAsync(string userId, string role, string status)
+    {
+        var products = await GetUserProductsAsync(userId, role);
+        var targetProducts = products.Where(p => {
+            string currentStatus = ResolveCurrentStatus(p);
+            
+            bool statusMatches = false;
+            if (status.Equals("defective", StringComparison.OrdinalIgnoreCase))
+            {
+                statusMatches = currentStatus.Equals(OrderStatus.Defective, StringComparison.OrdinalIgnoreCase) ||
+                                currentStatus.Equals(OrderStatus.Missing, StringComparison.OrdinalIgnoreCase);
+            }
+            else if (status.Equals("shipped", StringComparison.OrdinalIgnoreCase))
+            {
+                statusMatches = currentStatus.Equals(OrderStatus.Shipped, StringComparison.OrdinalIgnoreCase) ||
+                                currentStatus.Equals(OrderStatus.Cancelled, StringComparison.OrdinalIgnoreCase);
+            }
+            else if (status.Equals("awaiting", StringComparison.OrdinalIgnoreCase))
+            {
+                statusMatches = currentStatus.Equals(OrderStatus.Awaiting, StringComparison.OrdinalIgnoreCase) ||
+                                currentStatus.Equals(OrderStatus.Corrected, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                statusMatches = currentStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!statusMatches) return false;
+
+            if (role == Roles.Seller)
+            {
+                return !p.IsReadBySeller;
+            }
+            else
+            {
+                return !p.IsReadByMfr;
+            }
+        }).ToList();
+
+        if (targetProducts.Count == 0) return;
+
+        foreach (var p in targetProducts)
+        {
+            if (role == Roles.Seller)
+            {
+                p.IsReadBySeller = true;
+            }
+            else
+            {
+                p.IsReadByMfr = true;
+            }
+            await _productRepository.SaveAsync(p);
+        }
+
+        await _hubContext.Clients.User(userId).SendAsync("ReceiveOrderUpdate");
     }
 }

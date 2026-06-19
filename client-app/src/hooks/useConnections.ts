@@ -19,11 +19,14 @@ export default function useConnections() {
     refreshConnections,
     loadIncomingRequests,
     loadSentRequests,
-    setConnections,
-    setIncomingRequests,
-    setSentRequests,
-    optimisticConnections,
-    optimisticRemovals
+    optimisticAddSentRequest,
+    optimisticRemoveSentRequest,
+    rollbackSentRequests,
+    optimisticAddConnection,
+    optimisticRemoveConnection,
+    rollbackConnections,
+    optimisticRemoveIncoming,
+    rollbackIncomingRequests,
   } = useData();
 
   const { showToast } = useToast();
@@ -65,7 +68,7 @@ export default function useConnections() {
     e.preventDefault();
     const username = addUsername.trim();
     if (!username) {
-      showToast(language === 'tr' ? 'Lütfen eklenecek kullanıcı adını yazın!' : 'Please write the username to add!');
+      showToast(t('addUsernamePrompt'));
       return;
     }
 
@@ -81,18 +84,18 @@ export default function useConnections() {
       createdAt: new Date().toISOString()
     };
     const prevSent = [...sentRequests];
-    setSentRequests(prev => [...prev, tempRequest]);
+    optimisticAddSentRequest(tempRequest);
     setAddUsername('');
 
     try {
       await api.sendConnectionRequest(username);
     } catch (err: unknown) {
       // Rollback on failure
-      setSentRequests(prevSent);
+      rollbackSentRequests(prevSent);
       setAddUsername(username);
       showToast(extractErrorMessage(err));
     }
-  }, [addUsername, language, showToast, user, sentRequests, setSentRequests]);
+  }, [addUsername, t, showToast, user, sentRequests, optimisticAddSentRequest, rollbackSentRequests]);
 
   const handleAccept = useCallback(async (requestId: string) => {
     // Find the request to get sender username/id
@@ -103,30 +106,29 @@ export default function useConnections() {
     const prevConnections = [...connections];
 
     // Optimistic Update
-    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+    optimisticRemoveIncoming(requestId);
     const newConn: ConnectionUser = {
       id: req.senderId,
       username: req.senderUsername,
       role: user?.role === 'seller' ? 'mfr' : 'seller'
     };
-    setConnections(prev => [...prev, newConn]);
+    optimisticAddConnection(newConn);
 
     try {
       await api.acceptRequest(requestId);
     } catch (err: unknown) {
       // Rollback on failure
-      optimisticConnections.current.delete(req.senderId);
-      setIncomingRequests(prevIncoming);
-      setConnections(prevConnections);
+      rollbackIncomingRequests(prevIncoming);
+      rollbackConnections(prevConnections);
       showToast(extractErrorMessage(err));
     }
-  }, [incomingRequests, connections, setIncomingRequests, setConnections, user, showToast, optimisticConnections]);
+  }, [incomingRequests, connections, optimisticRemoveIncoming, optimisticAddConnection, rollbackIncomingRequests, rollbackConnections, user, showToast]);
 
   const handleReject = useCallback(async (requestId: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'İsteği Reddet' : 'Reject Request',
-      message: language === 'tr' ? 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?' : 'Are you sure you want to reject this connection request?',
-      confirmText: language === 'tr' ? 'Reddet' : 'Reject',
+      title: t('rejectRequestTitle'),
+      message: t('rejectRequestConfirm'),
+      confirmText: t('rejectBtn'),
       isDestructive: true
     });
     if (!accepted) return;
@@ -134,37 +136,37 @@ export default function useConnections() {
     const prevIncoming = [...incomingRequests];
 
     // Optimistic Update
-    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
+    optimisticRemoveIncoming(requestId);
 
     try {
       await api.rejectRequest(requestId);
     } catch (err: unknown) {
       // Rollback on failure
-      setIncomingRequests(prevIncoming);
+      rollbackIncomingRequests(prevIncoming);
       showToast(extractErrorMessage(err));
     }
-  }, [language, confirm, incomingRequests, setIncomingRequests, showToast]);
+  }, [confirm, incomingRequests, optimisticRemoveIncoming, rollbackIncomingRequests, showToast]);
 
   const handleDeleteSent = useCallback(async (requestId: string) => {
     const prevSent = [...sentRequests];
-    
+
     // Optimistic Update
-    setSentRequests(prev => prev.filter(r => r.id !== requestId));
+    optimisticRemoveSentRequest(requestId);
 
     try {
       await api.deleteSentRequest(requestId);
     } catch (err: unknown) {
       // Rollback on failure
-      setSentRequests(prevSent);
+      rollbackSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [sentRequests, setSentRequests, showToast]);
+  }, [sentRequests, optimisticRemoveSentRequest, rollbackSentRequests, showToast]);
 
   const handleRemoveConnection = useCallback(async (targetId: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'Bağlantıyı Kaldır' : 'Remove Connection',
-      message: language === 'tr' ? 'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)' : 'Are you sure you want to disconnect? (Current orders will be kept)',
-      confirmText: language === 'tr' ? 'Bağlantıyı Kes' : 'Disconnect',
+      title: t('removeConnectionTitle'),
+      message: t('removeConnectionConfirm'),
+      confirmText: t('disconnectConfirmBtn'),
       isDestructive: true
     });
     if (!accepted) return;
@@ -172,17 +174,16 @@ export default function useConnections() {
     const prevConnections = [...connections];
 
     // Optimistic Update
-    setConnections(prev => prev.filter(c => c.id !== targetId));
+    optimisticRemoveConnection(targetId);
 
     try {
       await api.removeConnection(targetId);
     } catch (err: unknown) {
       // Rollback on failure
-      optimisticRemovals.current.delete(targetId);
-      setConnections(prevConnections);
+      rollbackConnections(prevConnections);
       showToast(extractErrorMessage(err));
     }
-  }, [language, confirm, connections, setConnections, showToast, optimisticRemovals]);
+  }, [confirm, t, connections, optimisticRemoveConnection, rollbackConnections, showToast]);
 
   // Handle B2B directory search
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {

@@ -97,4 +97,39 @@ public class AuthController : BaseApiController
         await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
         return Ok(new { message = "Şifreniz başarıyla güncellendi." });
     }
+
+    [HttpPost("refresh")]
+    public async Task<IActionResult> Refresh([FromBody] TokenRefreshRequest request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new { message = "Yenileme isteği verisi eksik." });
+        }
+
+        try
+        {
+            var response = await _authService.RefreshTokenAsync(request);
+            return Ok(new
+            {
+                token = response.Token,
+                refreshToken = response.RefreshToken,
+                username = response.Username,
+                role = response.Role,
+                userId = response.UserId,
+                message = "Token başarıyla yenilendi."
+            });
+        }
+        catch (Microsoft.IdentityModel.Tokens.SecurityTokenException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
 }

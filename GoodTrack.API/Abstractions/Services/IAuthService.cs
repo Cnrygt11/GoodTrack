@@ -21,5 +21,6 @@ public interface IAuthService
     Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit);
     Task<bool> VerifyPasswordAsync(string userId, string password);
     Task ChangePasswordAsync(string userId, string oldPassword, string newPassword, string confirmNewPassword);
+    Task<LoginResponse> RefreshTokenAsync(TokenRefreshRequest request);
 }
 

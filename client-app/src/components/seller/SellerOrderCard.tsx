@@ -34,14 +34,14 @@ export default function SellerOrderCard({
   onViewBrokenNote,
   onRequestCancel,
 }: SellerOrderCardProps) {
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
 
   const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(p.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' })
     : '—';
   const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString(language === 'tr' ? 'tr-TR' : 'en-US', { hour: '2-digit', minute: '2-digit' })
+    ? new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' })
     : '';
 
   const status =

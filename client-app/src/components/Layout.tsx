@@ -80,7 +80,7 @@ export default function Layout({ children }: LayoutProps) {
               className="btn-secondary btn-lang"
               onClick={() => setLanguage(language === 'tr' ? 'en' : 'tr')}
             >
-              {language === 'tr' ? 'EN' : 'TR'}
+              {t('langToggleLabel')}
             </button>
           </div>
 

@@ -27,7 +27,7 @@ function getTabIcon(tab: ListFilter) {
 
 export default function SellerPage() {
   const {
-    language, t, connections, extraFieldDefs,
+    t, connections, extraFieldDefs,
     activeTab, setActiveTab, listFilter, setListFilter, sortOrder, setSortOrder,
     productCode, setProductCode, orderText, setOrderText,
     mfrId, setMfrId, orderImage, imageFileName, autofillSuccess, extraValues,
@@ -69,7 +69,7 @@ export default function SellerPage() {
       {/* Tab panels */}
       {activeTab === 'create' ? (
         <OrderForm
-          language={language} t={t}
+          t={t}
           editingProduct={editingProduct}
           productCode={productCode} setProductCode={setProductCode}
           autofillSuccess={autofillSuccess}

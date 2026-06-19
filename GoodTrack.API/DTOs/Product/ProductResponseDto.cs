@@ -33,4 +33,6 @@ public class ProductResponseDto
     public string ManufacturerName { get; set; } = string.Empty;
 
     public bool CancelRequested { get; set; }
+    public bool IsReadBySeller { get; set; }
+    public bool IsReadByMfr { get; set; }
 }

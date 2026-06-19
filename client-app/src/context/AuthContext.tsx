@@ -5,7 +5,7 @@ import { AUTH_STORAGE_KEYS, AUTH_EVENTS } from '../constants/authKeys';
 
 interface AuthContextType {
   user: User | null;
-  login: (token: string, username: string, role: 'seller' | 'mfr', userId: string) => void;
+  login: (token: string, refreshToken: string, username: string, role: 'seller' | 'mfr', userId: string) => void;
   logout: () => void;
 }
 
@@ -16,24 +16,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   
   const [user, setUser] = useState<User | null>(() => {
     const token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
+    const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
     const username = localStorage.getItem(AUTH_STORAGE_KEYS.username);
     const role = localStorage.getItem(AUTH_STORAGE_KEYS.role) as 'seller' | 'mfr' | null;
     const userId = localStorage.getItem(AUTH_STORAGE_KEYS.userId);
-    return token && username && role && userId ? { token, username, role, userId } : null;
+    return token && refreshToken && username && role && userId ? { token, refreshToken, username, role, userId } : null;
   });
 
 
 
-  const login = useCallback((token: string, username: string, role: 'seller' | 'mfr', userId: string) => {
+  const login = useCallback((token: string, refreshToken: string, username: string, role: 'seller' | 'mfr', userId: string) => {
     localStorage.setItem(AUTH_STORAGE_KEYS.token, token);
+    localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, refreshToken);
     localStorage.setItem(AUTH_STORAGE_KEYS.username, username);
     localStorage.setItem(AUTH_STORAGE_KEYS.role, role);
     localStorage.setItem(AUTH_STORAGE_KEYS.userId, userId);
-    setUser({ token, username, role, userId });
+    setUser({ token, refreshToken, username, role, userId });
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem(AUTH_STORAGE_KEYS.token);
+    localStorage.removeItem(AUTH_STORAGE_KEYS.refreshToken);
     localStorage.removeItem(AUTH_STORAGE_KEYS.username);
     localStorage.removeItem(AUTH_STORAGE_KEYS.role);
     localStorage.removeItem(AUTH_STORAGE_KEYS.userId);

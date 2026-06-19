@@ -43,7 +43,7 @@ export default function useSellerOrderActions(
   /** Shared loading ref from useSellerOrderForm so both hooks control the same flag. */
   externalLoading: { isRef: React.MutableRefObject<boolean>; set: (v: boolean) => void },
 ): UseSellerOrderActionsReturn {
-  const { loadProducts } = useData();
+  const { products, loadProducts, optimisticUpdateProduct, rollbackProducts } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
   const confirm = useConfirm();
@@ -68,17 +68,28 @@ export default function useSellerOrderActions(
       isDestructive: true,
     });
     if (!accepted) return;
+
+    const prevProducts = [...products];
+    const target = products.find(p => p.id === productId);
+    if (target) {
+      optimisticUpdateProduct({
+        ...target,
+        status: 'cancelled'
+      });
+    }
+
     try {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'cancelled');
       showToast(data.message || t('statusUpdatedSuccess'));
       await loadProducts();
     } catch (err: unknown) {
+      rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
-  }, [confirm, language, loadProducts, showToast, t]);
+  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleRequestCancel = useCallback(async (productId: string) => {
     const accepted = await confirm({
@@ -88,17 +99,28 @@ export default function useSellerOrderActions(
       isDestructive: true,
     });
     if (!accepted) return;
+
+    const prevProducts = [...products];
+    const target = products.find(p => p.id === productId);
+    if (target) {
+      optimisticUpdateProduct({
+        ...target,
+        cancelRequested: true
+      });
+    }
+
     try {
       setActionLoading(true);
       const data = await api.requestOrderCancellation(productId);
       showToast(data.message || t('statusUpdatedSuccess'));
       await loadProducts();
     } catch (err: unknown) {
+      rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
-  }, [confirm, language, loadProducts, showToast, t]);
+  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleVerifyOrder = useCallback(async (
     productId: string,
@@ -114,12 +136,23 @@ export default function useSellerOrderActions(
         isDestructive: false,
       });
       if (!accepted) return;
+
+      const prevProducts = [...products];
+      const target = products.find(p => p.id === productId);
+      if (target) {
+        optimisticUpdateProduct({
+          ...target,
+          status: 'to_ship'
+        });
+      }
+
       try {
         setActionLoading(true);
         const data = await api.updateOrderStatus(productId, 'to_ship');
         showToast(data.message || t('statusUpdatedSuccess'));
         await loadProducts();
       } catch (err: unknown) {
+        rollbackProducts(prevProducts);
         showToast(extractErrorMessage(err));
       } finally {
         setActionLoading(false);
@@ -133,7 +166,7 @@ export default function useSellerOrderActions(
       setDefectImageFileName(image ? 'Mevcut Görsel' : '');
       setIsDefectModalOpen(true);
     }
-  }, [confirm, language, loadProducts, showToast, t]);
+  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
     const accepted = await confirm({
@@ -143,17 +176,28 @@ export default function useSellerOrderActions(
       isDestructive: false,
     });
     if (!accepted) return;
+
+    const prevProducts = [...products];
+    const target = products.find(p => p.id === productId);
+    if (target) {
+      optimisticUpdateProduct({
+        ...target,
+        status: 'shipped'
+      });
+    }
+
     try {
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'shipped');
       showToast(data.message || t('statusUpdatedSuccess'));
       await loadProducts();
     } catch (err: unknown) {
+      rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
-  }, [confirm, language, loadProducts, showToast, t]);
+  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
     setDefectType(type);
@@ -180,6 +224,19 @@ export default function useSellerOrderActions(
   const handleDefectReportSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     if (!defectProductId || isLoading.current) return;
+
+    const prevProducts = [...products];
+    const target = products.find(p => p.id === defectProductId);
+    if (target) {
+      optimisticUpdateProduct({
+        ...target,
+        status: defectType,
+        defectNote: defectNote || undefined,
+        defectImage: defectImage || null
+      });
+    }
+    setIsDefectModalOpen(false);
+
     try {
       isLoading.current = true;
       setActionLoading(true);
@@ -187,15 +244,28 @@ export default function useSellerOrderActions(
       const data = await api.updateOrderStatus(defectProductId, defectType, defectNote, defectImage);
       showToast(data.message || t('statusUpdatedSuccess'));
       await loadProducts();
-      setIsDefectModalOpen(false);
     } catch (err: unknown) {
+      rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
+      setIsDefectModalOpen(true);
     } finally {
       isLoading.current = false;
       setActionLoading(false);
       externalLoading.set(false);
     }
-  }, [defectProductId, defectType, defectNote, defectImage, externalLoading, loadProducts, showToast, t]);
+  }, [
+    defectProductId,
+    defectType,
+    defectNote,
+    defectImage,
+    externalLoading,
+    products,
+    optimisticUpdateProduct,
+    rollbackProducts,
+    loadProducts,
+    showToast,
+    t,
+  ]);
 
   return {
     isDefectModalOpen, setIsDefectModalOpen,

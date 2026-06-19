@@ -44,9 +44,9 @@ export default function useCatalog() {
       setCatalogImage(compressed);
     } catch (err: unknown) {
       console.error(err);
-      showToast(language === 'tr' ? 'Resim sıkıştırılırken hata oluştu!' : 'Error compressing image!');
+      showToast(t('imageCompressionError'));
     }
-  }, [language, showToast]);
+  }, [showToast, t]);
 
   const handleClearForm = useCallback(() => {
     setProductCode('');
@@ -91,12 +91,12 @@ export default function useCatalog() {
     }
 
     if (!mfrId) {
-      showToast(language === 'tr' ? 'Lütfen atanacak üreticiyi seçin!' : 'Please select a manufacturer to assign!');
+      showToast(t('catalogSelectMfrRequired'));
       return;
     }
 
     if (!catalogImage) {
-      showToast(language === 'tr' ? 'Lütfen ürün resmi yükleyin!' : 'Please upload a product image!');
+      showToast(t('catalogImageRequired'));
       return;
     }
 
@@ -145,13 +145,13 @@ export default function useCatalog() {
       isActionLoading.current = false;
       setActionLoading(false);
     }
-  }, [productCode, mfrId, catalogImage, extraValues, extraFieldDefs, editingProduct, connections, loadCatalog, handleClearForm, showToast, t, language]);
+  }, [productCode, mfrId, catalogImage, extraValues, extraFieldDefs, editingProduct, connections, loadCatalog, handleClearForm, showToast, t]);
 
   const handleDelete = useCallback(async (id: string) => {
     const accepted = await confirm({
-      title: language === 'tr' ? 'Katalogdan Sil' : 'Delete from Catalog',
-      message: language === 'tr' ? 'Bu ürünü katalogdan silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this product from the catalog?',
-      confirmText: language === 'tr' ? 'Sil' : 'Delete',
+      title: t('catalogDeleteTitle'),
+      message: t('catalogDeleteMsgFull'),
+      confirmText: t('catalogDeleteConfirmBtn'),
       isDestructive: true
     });
     if (!accepted) return;
@@ -166,7 +166,7 @@ export default function useCatalog() {
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
-  }, [language, showToast, t, loadCatalog, editingProduct, handleClearForm]);
+  }, [t, showToast, loadCatalog, editingProduct, handleClearForm]);
 
   return {
     connections,

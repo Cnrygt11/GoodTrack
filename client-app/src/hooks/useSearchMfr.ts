@@ -23,7 +23,7 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { connections, sentRequests, loadSentRequests, refreshConnections, setSentRequests } = useData();
+  const { connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
   const { showToast } = useToast();
   const { t, language } = useSettings();
 
@@ -67,7 +67,7 @@ export default function useSearchMfr() {
 
       setManufacturers(prev => reset ? data.items : [...prev, ...data.items]);
       lastCursorRef.current = data.nextCursor;
-      setHasMore(data.items.length === 10);
+      setHasMore(data.nextCursor !== null);
     } catch (err: unknown) {
       setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
     } finally {
@@ -129,31 +129,31 @@ export default function useSearchMfr() {
     const prevSent = [...sentRequests];
     
     // Optimistic Update
-    setSentRequests(prev => [...prev, tempRequest]);
+    optimisticAddSentRequest(tempRequest);
 
     try {
       await api.sendConnectionRequest(username);
     } catch (err: unknown) {
       // Rollback on failure
-      setSentRequests(prevSent);
+      rollbackSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [showToast, sentRequests, setSentRequests]);
+  }, [showToast, sentRequests, optimisticAddSentRequest, rollbackSentRequests]);
 
   const handleCancelConnection = useCallback(async (requestId: string) => {
     const prevSent = [...sentRequests];
 
     // Optimistic Update
-    setSentRequests(prev => prev.filter(r => r.id !== requestId));
+    optimisticRemoveSentRequest(requestId);
 
     try {
       await api.deleteSentRequest(requestId);
     } catch (err: unknown) {
       // Rollback on failure
-      setSentRequests(prevSent);
+      rollbackSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [showToast, sentRequests, setSentRequests]);
+  }, [showToast, sentRequests, optimisticRemoveSentRequest, rollbackSentRequests]);
 
   return {
     loading,

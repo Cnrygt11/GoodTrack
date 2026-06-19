@@ -16,5 +16,6 @@ public interface IProductService
     Task<int> MigrateProductStatusesAsync();
     Task RequestOrderCancellationAsync(string sellerId, string orderId);
     Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve);
+    Task MarkStatusAsReadAsync(string userId, string role, string status);
 }
 

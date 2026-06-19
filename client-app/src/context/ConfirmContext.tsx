@@ -16,7 +16,7 @@ interface ConfirmContextType {
 const ConfirmContext = createContext<ConfirmContextType | null>(null);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
-  const { language } = useSettings();
+  const { t } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
   const [options, setOptions] = useState<ConfirmOptions>({ title: '', message: '', isDestructive: true });
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
@@ -67,7 +67,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                 onClick={handleCancel}
                 style={{ padding: '8px 16px', borderRadius: '7px', fontSize: '13px' }}
               >
-                {options.cancelText || (language === 'tr' ? 'İptal' : 'Cancel')}
+                {options.cancelText || t('cancelDefaultBtn')}
               </button>
               <button 
                 type="button" 
@@ -83,7 +83,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                   boxShadow: 'none'
                 }}
               >
-                {options.confirmText || (language === 'tr' ? 'Onayla' : 'Confirm')}
+                {options.confirmText || t('confirmDefaultBtn')}
               </button>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { api, Product } from '../services/api';
 
 export default function useOrderDetail(id: string | undefined) {
   const { user } = useAuth();
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,14 +29,13 @@ export default function useOrderDetail(id: string | undefined) {
     };
 
     fetchOrder();
-  }, [id, language, t]);
+  }, [id, t]);
 
   return {
     product,
     loading,
     error,
     user,
-    language,
     t,
     setProduct,
   };

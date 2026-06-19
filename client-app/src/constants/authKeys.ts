@@ -1,8 +1,9 @@
 export const AUTH_STORAGE_KEYS = {
-  token:    'token',
-  username: 'username',
-  role:     'role',
-  userId:   'userId',
+  token:        'token',
+  refreshToken: 'refreshToken',
+  username:     'username',
+  role:         'role',
+  userId:       'userId',
 } as const;
 
 export const AUTH_EVENTS = {

@@ -103,10 +103,10 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
 
     const errors: Record<string, string> = {};
     if (!loginUsername.trim()) {
-      errors.loginUsername = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.loginUsername = t('fieldRequired');
     }
     if (!loginPassword) {
-      errors.loginPassword = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.loginPassword = t('fieldRequired');
     }
 
     setFormErrors(errors);
@@ -121,7 +121,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       setSubmitting(true);
       const data = await api.login(loginUsername.trim(), loginPassword);
       showToast(t('loginSuccess'));
-      login(data.token, data.username, data.role, data.userId);
+      login(data.token, data.refreshToken, data.username, data.role, data.userId);
     } catch (err: unknown) {
       const errorMessage = extractErrorMessage(err);
       if (errorMessage.includes('doğrulayın') || errorMessage.includes('verify your email')) {
@@ -133,7 +133,7 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
       isSubmitting.current = false;
       setSubmitting(false);
     }
-  }, [loginUsername, loginPassword, t, login, showToast, language]);
+  }, [loginUsername, loginPassword, t, login, showToast]);
 
   const handleRegisterSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,25 +141,25 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
 
     const errors: Record<string, string> = {};
     if (!firstName.trim()) {
-      errors.firstName = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.firstName = t('fieldRequired');
     }
     if (!lastName.trim()) {
-      errors.lastName = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.lastName = t('fieldRequired');
     }
     if (!regUsername.trim()) {
-      errors.regUsername = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.regUsername = t('fieldRequired');
     }
     if (!regEmail.trim()) {
-      errors.regEmail = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.regEmail = t('fieldRequired');
     }
     if (!phoneBody.trim()) {
-      errors.phoneBody = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.phoneBody = t('fieldRequired');
     }
     if (!regPassword) {
-      errors.regPassword = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.regPassword = t('fieldRequired');
     }
     if (!regConfirm) {
-      errors.regConfirm = language === 'tr' ? 'Bu alan boş bırakılamaz.' : 'This field cannot be empty.';
+      errors.regConfirm = t('fieldRequired');
     }
 
     // Regex / length / match checks

@@ -28,6 +28,7 @@ export function getHubUrl(hubPath: string) {
 
 export interface User {
   token: string;
+  refreshToken: string;
   username: string;
   role: 'seller' | 'mfr';
   userId: string;
@@ -119,10 +120,14 @@ export interface Product {
   sellerName: string;  // Backend always sends empty string, never undefined
   createdAt?: string;
   completedAt?: string;
+  isReadBySeller?: boolean;
+  isReadByMfr?: boolean;
 }
 
+let refreshPromise: Promise<string | null> | null = null;
+
 async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
-  const token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
+  let token = localStorage.getItem(AUTH_STORAGE_KEYS.token);
   
   if (!options.headers) {
     options.headers = {};
@@ -138,9 +143,53 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, options);
+  let response = await fetch(`${BASE_URL}${endpoint}`, options);
 
   if (response.status === 401) {
+    if (endpoint === '/auth/refresh' || endpoint === '/auth/login') {
+      window.dispatchEvent(new Event(AUTH_EVENTS.unauthorized));
+      throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
+    }
+
+    const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
+    if (token && refreshToken) {
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          try {
+            const res = await fetch(`${BASE_URL}/auth/refresh`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ token, refreshToken })
+            });
+
+            if (res.ok) {
+              const data = await res.json() as User;
+              localStorage.setItem(AUTH_STORAGE_KEYS.token, data.token);
+              localStorage.setItem(AUTH_STORAGE_KEYS.refreshToken, data.refreshToken);
+              localStorage.setItem(AUTH_STORAGE_KEYS.username, data.username);
+              localStorage.setItem(AUTH_STORAGE_KEYS.role, data.role);
+              localStorage.setItem(AUTH_STORAGE_KEYS.userId, data.userId);
+              return data.token;
+            }
+          } catch (err) {
+            console.error('Token refresh request failed:', err);
+          }
+          return null;
+        })();
+      }
+
+      const newToken = await refreshPromise;
+      refreshPromise = null;
+
+      if (newToken) {
+        headers['Authorization'] = `Bearer ${newToken}`;
+        response = await fetch(`${BASE_URL}${endpoint}`, options);
+        return response;
+      }
+    }
+
     window.dispatchEvent(new Event(AUTH_EVENTS.unauthorized));
     throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
   }
@@ -252,6 +301,13 @@ export const api = {
     });
   },
 
+  refreshToken(token: string, refreshToken: string): Promise<User> {
+    return apiCall<User>('/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ token, refreshToken }),
+    });
+  },
+
   register(registrationData: RegisterPayload): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/auth/register', {
       method: 'POST',
@@ -325,6 +381,13 @@ export const api = {
     return apiCall<{ message: string }>(`/products/${productId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status, defectNote, defectImage }),
+    });
+  },
+
+  markStatusAsRead(status: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/products/read-status', {
+      method: 'POST',
+      body: JSON.stringify({ status })
     });
   },
 
