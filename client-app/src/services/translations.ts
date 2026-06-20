@@ -203,6 +203,15 @@ export const translations = {
     tabProduction: 'Üretimde',
     tabCompleted: 'Üretimi Tamamlananlar',
     tabDelivered: 'Teslim Edilenler',
+    tabDeliveredSeller: 'Teslim Alınanlar',
+    category_Deri: 'Deri',
+    category_Gümüş: 'Gümüş',
+    category_Altın: 'Altın',
+    category_Ahşap: 'Ahşap',
+    category_Takı: 'Takı',
+    category_Bijuteri: 'Bijuteri',
+    category_Terzi: 'Terzi',
+    category_Lazer_Kesim: 'Lazer Kesim',
     tabReportedIssues: 'Sorun Bildirdiklerim',
     tabToShip: 'Kargolanacaklar',
     tabShipped: 'Kargolananlar',
@@ -597,6 +606,15 @@ export const translations = {
     tabProduction: 'In Production',
     tabCompleted: 'Completed Production',
     tabDelivered: 'Delivered',
+    tabDeliveredSeller: 'Received',
+    category_Deri: 'Leather',
+    category_Gümüş: 'Silver',
+    category_Altın: 'Gold',
+    category_Ahşap: 'Wood',
+    category_Takı: 'Jewelry',
+    category_Bijuteri: 'Bijouterie',
+    category_Terzi: 'Tailor',
+    category_Lazer_Kesim: 'Laser Cutting',
     tabReportedIssues: 'My Reported Issues',
     tabToShip: 'To Ship',
     tabShipped: 'Shipped',
@@ -791,3 +809,44 @@ export const translations = {
 
 export type Language = 'tr' | 'en';
 export type TranslationKey = keyof typeof translations.tr;
+
+export function translateLogMessage(msg: string, lang: Language): string {
+  if (lang === 'tr') return msg;
+
+  if (msg.startsWith("Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.")) {
+    const note = msg.replace("Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.", "").trim();
+    const descLabel = "Açıklama:";
+    if (note.startsWith(descLabel)) {
+      return "Order marked as Broken by manufacturer due to insufficient or unclear details. Description: " + note.substring(descLabel.length).trim();
+    }
+    return "Order marked as Broken by manufacturer due to insufficient or unclear details. " + note;
+  }
+
+  if (msg.startsWith("Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama:")) {
+    return "Order marked as DEFECTIVE by seller. Description: " + msg.substring("Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama:".length).trim();
+  }
+
+  if (msg.startsWith("Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama:")) {
+    return "Order marked as MISSING by seller. Description: " + msg.substring("Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama:".length).trim();
+  }
+
+  const staticTranslations: Record<string, string> = {
+    "Sipariş oluşturuldu ve üretici onayına gönderildi.": "Order created and sent to manufacturer for approval.",
+    "Sipariş detayları satıcı tarafından düzeltildi ve tekrar gönderildi.": "Order details corrected by seller and resent.",
+    "Sipariş detayları satıcı tarafından güncellendi.": "Order details updated by seller.",
+    "Sipariş satıcı tarafından iptal edildi.": "Order cancelled by seller.",
+    "Sipariş üretici tarafından onaylandı ve üretime alındı.": "Order approved by manufacturer and moved to production.",
+    "Sorunlu sipariş üretici tarafından tekrar üretime alındı.": "Defective order moved back to production by manufacturer.",
+    "Üretici siparişin üretimini tamamladı.": "Manufacturer completed the production of the order.",
+    "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.": "Order delivered by manufacturer. Awaiting seller inspection.",
+    "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.": "Corrected/missing order delivered by manufacturer. Awaiting seller inspection.",
+    "Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.": "Order inspected by seller and approved as CORRECT.",
+    "Sipariş satıcı tarafından kargolandı.": "Order shipped by seller.",
+    "Sipariş için satıcı tarafından iptal talebi gönderildi.": "Cancellation request sent by seller.",
+    "Sipariş iptal talebi üretici tarafından onaylandı ve sipariş iptal edildi.": "Cancellation request approved by manufacturer; order cancelled.",
+    "Sipariş iptal talebi üretici tarafından reddedildi. Üretime devam ediliyor.": "Cancellation request rejected by manufacturer. Production continues.",
+    "Sipariş durumu otomatik olarak eşleştirildi.": "Order status matched automatically."
+  };
+
+  return staticTranslations[msg] || msg;
+}

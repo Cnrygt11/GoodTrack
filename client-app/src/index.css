@@ -2448,7 +2448,7 @@ h2 span.mfr-accent {
   box-shadow: 0 0 16px rgba(6, 182, 212, 0.1);
 }
 
-.auth-input-field {
+.form-group input.auth-input-field {
   height: 42px;
   box-sizing: border-box;
   width: 100%;
@@ -2463,16 +2463,16 @@ h2 span.mfr-accent {
   transition: all 0.2s ease;
 }
 
-.auth-input-field.password-input {
+.form-group input.auth-input-field.password-input {
   padding-right: 40px;
 }
 
-.auth-input-field.has-error {
+.form-group input.auth-input-field.has-error {
   border: 1.5px solid var(--danger);
   box-shadow: 0 0 8px rgba(239, 68, 68, 0.15);
 }
 
-.auth-input-field:focus {
+.form-group input.auth-input-field:focus {
   border-color: var(--accent-seller);
 }
 

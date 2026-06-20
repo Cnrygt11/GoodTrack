@@ -37,5 +37,7 @@ public class RegisterRequest
 
     [Required]
     [MaxLength(10)]
-    public string Role { get; set; } = string.Empty; // "seller" or "mfr"
+    public string Role { get; set; } = string.Empty; // "seller" or "mfr" or "admin"
+
+    public string? AdminSecret { get; set; }
 }

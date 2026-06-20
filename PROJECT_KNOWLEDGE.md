@@ -461,8 +461,7 @@ BrowserRouter
 
 ### `useSearchMfr` (`hooks/useSearchMfr.ts`)
 - **Kullandığı Context'ler:** `useData`, `useSettings`, `useAuth`, `useToast`
-- **Sorumluluğu:** Üretici arama (city, keyword filtreleri), pagination (cursor-based), bağlantı isteği gönderme.
-- **⚠️ Teknik Borç:** Şu an backend'deki `SearchManufacturersAsync(city, keyword)` parametrelerini kullanmıyor, tüm listeyi çekip client'ta filtreli gösteriyor.
+- **Sorumluluğu:** Üretici arama (çoklu şehir ve kategori filtreleri), bağlantı isteği gönderme. Hibrit arama mimarisi sayesinde tüm aktif üretici listesini veritabanından çekip istemci tarafında anlık filtreler ve eşleşme sayısına göre akıllıca sıralar.
 
 ### `useSellerOrderActions` (`hooks/useSellerOrderActions.ts`)
 - **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
@@ -679,7 +678,7 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 ### Kritik Değil, Ama Bilinmeli
 1. **Ölü Email Verification Kodu:** `User.VerificationToken`, `User.VerificationTokenExpiresAt` alanları var; `VerifyEmailAsync` metodu var; ancak hiç çağrılmıyor. `IsActive` her zaman `true` set ediliyor. E-posta doğrulama sistemi devre dışı.
 
-2. ~~**`useSearchMfr.ts` — Client-Side Filtering:** Backend'in arama parametrelerini kullanmıyor; tüm üreticileri çekip browser'da filtreli gösteriyor. Çok sayıda üretici olursa performans sorunu yaratır.~~ **✅ Düzeltildi:** `city` ve `keyword` parametreleri backend'e gönderiliyor; `hasMore` artık backend `nextCursor`'una göre hesaplanıyor. `mustHaveGallery` / `mustHaveAvatar` toggle filtreleri client-side kalmaya devam ediyor (Firestore sorgusu yapılamaz).
+2. ~~**`useSearchMfr.ts` — Client-Side Filtering:** Çoklu şehir (`selectedCities`) ve çoklu kategori (`selectedCategories`) filtreleri eklendi. Firestore limitasyonları sebebiyle (birden fazla `WhereIn` ve `WhereArrayContainsAny` sorgusunun birleştirilememesi), ilk açılışta tüm üreticiler 50'şerli chunks halinde istemciye çekilip instant (0ms) filtrelenecek şekilde hibrit arama mimarisi kuruldu. En çok kategori eşleşmesine sahip üreticiyi en üstte listeleyen akıllı sıralama yapıldı.
 
 3. ~~**`DataContext` Raw Setter'lar:** `setProducts`, `setConnections` vb. context'ten direkt erişilebilir, iş mantığını bypass edebilir.~~ **✅ Düzeltildi:** Raw dispatcher'lar (`setConnections`, `setIncomingRequests`, `setSentRequests`, `setProducts`) context type'ından kaldırıldı. Her optimistic senaryo için semantik aksiyonlar eklendi (`optimisticAddSentRequest`, `optimisticRemoveConnection`, `rollbackConnections` vb.). `optimisticConnections`/`optimisticRemovals` ref'leri de artık context dışına sızdırılmıyor.
 
@@ -723,11 +722,12 @@ Tip aralığı: `font-family: 'Bebas Neue'` (logo/başlıklar), `'Inter'` veya `
 
 ## 18. Proje Durumu (Haziran 2026)
 
-- ✅ TypeScript: 0 derleme hatası
+- ✅ TypeScript: 0 derleme hatası (Hem `client-app` hem de `client-app-redesign` sıfır hata ile derlenmektedir)
 - ✅ Production build: Başarılı
 - ✅ Güvenlik: Kritik açık yok
 - ✅ Git branch: `main` (Uzak sunucuya pushlandı)
-- ✅ Refactoring: 14 adımlık inline style ve translation cleanup tamamlandı
-- ✅ Optimistic UI: Tüm sipariş CRUD ve durum geçişi aksiyonları için iyimser güncellemeler ve rollback mekanizmaları entegre edildi
+- ✅ B2B Rehberi ("Üretici Bul"): Çoklu şehir ve kategori seçimi, en iyi eşleşmeyi en üstte listeleyen akıllı sıralama ve istemci tarafı hibrit filtreleme modeli tamamlandı.
+- ✅ Arayüz Düzeltmeleri & Cilalamaları: Sembollerin yazı ile çakışması, şifre göz ikonunun taşması, kronoloji satırlarının hover kayması, kronoloji detaylarının dikey hizalanması, hatalı/eksik siparişlerin açıklamasını gösteren ünlemli açılır kutular (AlertTriangle toggle) ve seçilemez (readonly) kronoloji metinleri tamamlandı.
+- ✅ Dil Çevirileri: Üretici uzmanlık alanları ve veritabanı kaynaklı Türkçe zaman geçmişi logları için anlık İngilizce çeviri desteği kuruldu.
 - ⚠️ JWT key production'da env var olarak set edilmeli (`JWT_KEY`)
 - ⚠️ CORS `CORS_ALLOWED_ORIGINS` production URL'leri ile set edilmeli

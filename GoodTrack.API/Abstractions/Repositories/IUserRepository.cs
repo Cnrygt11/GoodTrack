@@ -13,4 +13,6 @@ public interface IUserRepository
     Task<List<User>> GetManufacturersAsync(CancellationToken cancellationToken = default);
     Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, CancellationToken cancellationToken = default);
     Task SaveAsync(User user, CancellationToken cancellationToken = default);
+    Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default);
+    Task DeleteUserAsync(string id, CancellationToken cancellationToken = default);
 }

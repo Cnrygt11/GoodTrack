@@ -4,6 +4,8 @@ import useOrderDetail from '../../hooks/useOrderDetail';
 import { getStatusConfig } from '../../utils/statusConfig';
 import BrokenDetailsModal from '../seller/BrokenDetailsModal';
 import { ORDER_STATUS } from '../../utils/constants';
+import { useSettings } from '../../context/SettingsContext';
+import { translateLogMessage } from '../../services/translations';
 import {
   ArrowLeft, Package, CheckCircle2, AlertTriangle,
   Calendar, Factory, Tag, Ruler, Info, Loader2, User
@@ -14,6 +16,7 @@ export default function OrderDetailPage() {
   const navigate = useNavigate();
   const { product, loading, error, user, t } = useOrderDetail(id);
   const [isBrokenModalOpen, setIsBrokenModalOpen] = useState(false);
+  const { language } = useSettings();
 
   const handleBack = () => {
     // Navigate back in history if possible, else default to roles dashboard
@@ -236,7 +239,7 @@ export default function OrderDetailPage() {
                   <div className="order-detail-log-details">
                     <div className="order-detail-log-header">
                       <span className={`order-detail-log-msg${isActive ? ' is-active' : ''}`}>
-                        {log.message}
+                        {translateLogMessage(log.message, language)}
                       </span>
                       <span className="order-detail-log-time">{dateStr}</span>
                     </div>

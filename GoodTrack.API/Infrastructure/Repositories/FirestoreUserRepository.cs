@@ -110,4 +110,15 @@ public class FirestoreUserRepository : IUserRepository
 
         return (items, nextCursor);
     }
+
+    public async Task<List<User>> GetAllUsersAsync(CancellationToken cancellationToken = default)
+    {
+        var snapshot = await _firestoreDb.Collection(CollectionName).GetSnapshotAsync(cancellationToken);
+        return snapshot.Documents.Select(doc => doc.ConvertTo<User>()).ToList();
+    }
+
+    public async Task DeleteUserAsync(string id, CancellationToken cancellationToken = default)
+    {
+        await _firestoreDb.Collection(CollectionName).Document(id).DeleteAsync(cancellationToken: cancellationToken);
+    }
 }

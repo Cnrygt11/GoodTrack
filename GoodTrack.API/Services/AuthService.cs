@@ -139,9 +139,23 @@ public class AuthService : IAuthService
             throw new ArgumentException("Şifreler uyuşmuyor!");
         }
 
-        if (request.Role != Roles.Seller && request.Role != Roles.Mfr)
+        if (request.Role != Roles.Seller && request.Role != Roles.Mfr && request.Role != Roles.Admin)
         {
-            throw new ArgumentException("Geçersiz rol! Sadece 'seller' veya 'mfr' olabilir.");
+            throw new ArgumentException("Geçersiz rol! Sadece 'seller', 'mfr' veya 'admin' olabilir.");
+        }
+
+        if (request.Role == Roles.Admin)
+        {
+            var adminSecret = _configuration["ADMIN_REGISTRATION_SECRET"] ?? Environment.GetEnvironmentVariable("ADMIN_REGISTRATION_SECRET");
+            if (string.IsNullOrEmpty(adminSecret))
+            {
+                throw new ArgumentException("Yönetici kaydı şu anda sunucuda devre dışı bırakılmıştır.");
+            }
+
+            if (request.AdminSecret != adminSecret)
+            {
+                throw new ArgumentException("Yönetici kaydı için geçersiz güvenlik anahtarı!");
+            }
         }
 
         // Check unique username

@@ -26,6 +26,7 @@ builder.Services.AddScoped<IConnectionRequestRepository, FirestoreConnectionRequ
 builder.Services.AddScoped<IProductRepository, FirestoreProductRepository>();
 builder.Services.AddScoped<ICatalogRepository, FirestoreCatalogRepository>();
 builder.Services.AddScoped<IFieldRepository, FirestoreFieldRepository>();
+builder.Services.AddScoped<IFeedbackRepository, FirestoreFeedbackRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();

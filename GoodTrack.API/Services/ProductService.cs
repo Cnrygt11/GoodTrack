@@ -309,7 +309,14 @@ public class ProductService : IProductService
         if (role == Roles.Seller)
         {
             product.IsReadBySeller = true;
-            product.IsReadByMfr = false;
+            if (newStatus.Equals(OrderStatus.Shipped, StringComparison.OrdinalIgnoreCase))
+            {
+                product.IsReadByMfr = true;
+            }
+            else
+            {
+                product.IsReadByMfr = false;
+            }
         }
         else if (role == Roles.Mfr)
         {
@@ -636,7 +643,8 @@ public class ProductService : IProductService
             else if (status.Equals("shipped", StringComparison.OrdinalIgnoreCase))
             {
                 statusMatches = currentStatus.Equals(OrderStatus.Shipped, StringComparison.OrdinalIgnoreCase) ||
-                                currentStatus.Equals(OrderStatus.Cancelled, StringComparison.OrdinalIgnoreCase);
+                                currentStatus.Equals(OrderStatus.Cancelled, StringComparison.OrdinalIgnoreCase) ||
+                                (role.Equals(Roles.Mfr, StringComparison.OrdinalIgnoreCase) && currentStatus.Equals(OrderStatus.ToShip, StringComparison.OrdinalIgnoreCase));
             }
             else if (status.Equals("awaiting", StringComparison.OrdinalIgnoreCase))
             {
