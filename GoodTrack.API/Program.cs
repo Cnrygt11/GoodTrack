@@ -56,6 +56,14 @@ builder.Services.AddSingleton(sp =>
     var envJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
     if (!string.IsNullOrEmpty(envJson))
     {
+        try 
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(envJson);
+            var email = doc.RootElement.GetProperty("client_email").GetString();
+            Console.WriteLine($"[DEBUG] Requesting access for Service Account: {email}");
+        } 
+        catch { }
+
         Console.WriteLine("Attempting to initialize Firestore with credentials from environment variable (FIREBASE_CREDENTIALS_JSON)...");
         var credential = TryLoadCredentialFromJson(envJson, out var err);
         if (credential != null)
