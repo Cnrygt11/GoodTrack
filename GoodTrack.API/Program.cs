@@ -61,6 +61,8 @@ builder.Services.AddSingleton(sp =>
         if (credential != null)
         {
             Console.WriteLine("Firestore initialized successfully using environment variable credentials.");
+            Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
+            Console.WriteLine($"[DEBUG] Credential is UnderlyingType: {credential?.UnderlyingCredential?.GetType().Name}");
             return new FirestoreDbBuilder
             {
                 ProjectId = projectId,
@@ -86,6 +88,8 @@ builder.Services.AddSingleton(sp =>
         if (credential != null)
         {
             Console.WriteLine($"Firestore initialized successfully using credentials from: {fullCredentialPath}");
+            Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
+            Console.WriteLine($"[DEBUG] Credential is UnderlyingType: {credential?.UnderlyingCredential?.GetType().Name}");
             return new FirestoreDbBuilder
             {
                 ProjectId = projectId,
