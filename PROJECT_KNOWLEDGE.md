@@ -1,6 +1,6 @@
 # GoodTrack — Proje Bilgi Belgesi (PROJECT_KNOWLEDGE)
 
-> **Son Güncelleme:** 18 Haziran 2026  
+> **Son Güncelleme:** 26 Haziran 2026  
 > **Amaç:** Bu belge bir yapay zeka ajanının GoodTrack projesini kaynak kodunu tek tek analiz etmek zorunda kalmadan tam olarak anlaması için hazırlanmıştır. Bu belgeyi okuduktan sonra proje mimarisini, tüm dosya sorumluluklarını, API endpoint'lerini, veri modellerini ve bilinen teknik borçları tam olarak bilmeniz gerekir.
 
 ---
@@ -22,7 +22,8 @@
 
 ### Backend
 - **Framework:** ASP.NET Core (.NET, C#)
-- **Veritabanı:** Google Cloud Firestore (NoSQL)
+- **Veritabanı:** Supabase (PostgreSQL 17) — Entity Framework Core 9 + Npgsql
+- **ORM:** `Npgsql.EntityFrameworkCore.PostgreSQL` v9.0.4 + `EFCore.NamingConventions` (snake_case)
 - **Kimlik Doğrulama:** JWT Bearer Token
 - **Gerçek Zamanlı:** SignalR (`/hubs/tracking`)
 - **Rate Limiting:** ASP.NET Core built-in (`Microsoft.AspNetCore.RateLimiting`)
@@ -56,15 +57,15 @@ GoodTrack/
 │   ├── Hubs/
 │   │   └── TrackingHub.cs      ← SignalR Hub
 │   ├── Infrastructure/
-│   │   ├── Converters/         ← FirestoreIsActiveConverter
-│   │   └── Repositories/       ← 5 Firestore repository implementasyonu
+│   │   ├── AppDbContext.cs     ← EF Core DbContext (6 DbSet, OnModelCreating ile tam şema)
+│   │   └── Repositories/       ← 6 PostgreSQL repository implementasyonu
+│   ├── Migrations/             ← EF Core migration dosyaları
 │   ├── Middlewares/
 │   │   └── ExceptionHandlingMiddleware.cs
-│   ├── Models/                 ← 6 Firestore veri modeli
+│   ├── Models/                 ← 7 POCO veri modeli (Firestore attribute'larından arındırılmış)
 │   ├── Services/               ← 5 business logic servisi
 │   ├── Program.cs              ← DI, JWT, CORS, Rate Limiting, SignalR konfigürasyonu
-│   ├── appsettings.json        ← Config (gitignore'da)
-│   └── firebase-key.json       ← Firebase credentials (gitignore'da)
+│   └── appsettings.json        ← Config (gitignore'da)
 │
 └── client-app/                 ← React Frontend
     └── src/
@@ -101,32 +102,32 @@ GoodTrack/
 
 ---
 
-## 4. Backend Veri Modelleri (Firestore Collections)
+## 4. Backend Veri Modelleri (PostgreSQL Tabloları)
 
-### `Product` — Koleksiyon: `products`
-| Alan | Tip | Firestore Key | Açıklama |
+### `Product` — Tablo: `products`
+| Alan | Tip | Kolon Adı (snake_case) | Açıklama |
 |------|-----|---------------|----------|
-| Id | string | (document id) | Auto-generated |
+| Id | string | `id` | `gen_random_uuid()::text` ile auto-generated |
 | Code | string | `code` | Ürün/sipariş kodu |
 | Image | string? | `image` | Base64 encoded görsel |
 | Text | string? | `text` | Serbest metin |
 | Length | string? | `length` | Boy/uzunluk |
-| Extras | `Dictionary<string, ExtraValue>?` | `extras` | Dinamik ek alanlar |
+| Extras | `Dictionary<string, ExtraValue>?` | `extras` | **JSONB** — Dinamik ek alanlar |
 | Completed | bool | `completed` | Üretici tamamladı mı? |
-| IsDefective | bool | `isDefective` | Hatalı bildirim var mı? |
-| IsPendingApproval | bool | `isPendingApproval` | Onay bekliyor mu? |
-| IsReproduction | bool | `isReproduction` | Yeniden üretim mi? |
-| DefectNote | string? | `defectNote` | Hata açıklaması |
-| DefectImage | string? | `defectImage` | Hata görseli (Base64) |
+| IsDefective | bool | `is_defective` | Hatalı bildirim var mı? |
+| IsPendingApproval | bool | `is_pending_approval` | Onay bekliyor mu? |
+| IsReproduction | bool | `is_reproduction` | Yeniden üretim mi? |
+| DefectNote | string? | `defect_note` | Hata açıklaması |
+| DefectImage | string? | `defect_image` | Hata görseli (Base64) |
 | Status | string | `status` | Sipariş durumu (bkz. OrderStatus) |
-| Logs | `List<OrderLog>` | `logs` | Durum geçmişi |
-| CreatedAt | string | `createdAt` | ISO 8601 format (`o`) |
-| CompletedAt | string? | `completedAt` | Tamamlanma zamanı |
-| SellerId | string | `sellerId` | Satıcı user ID'si |
-| ManufacturerId | string | `mfrId` | Üretici user ID'si |
-| SellerName | string | `sellerName` | Satıcı username |
-| ManufacturerName | string | `mfrName` | Üretici username |
-| CancelRequested | bool | `cancelRequested` | İptal talebi var mı? |
+| Logs | `List<OrderLog>` | `logs` | **JSONB** — Durum geçmişi |
+| CreatedAt | string | `created_at` | ISO 8601 format (`o`) |
+| CompletedAt | string? | `completed_at` | Tamamlanma zamanı |
+| SellerId | string | `seller_id` | Satıcı user ID'si |
+| ManufacturerId | string | `manufacturer_id` | Üretici user ID'si |
+| SellerName | string | `seller_name` | Satıcı username |
+| ManufacturerName | string | `manufacturer_name` | Üretici username |
+| CancelRequested | bool | `cancel_requested` | İptal talebi var mı? |
 
 #### `ExtraValue` (embedded)
 | Alan | Tip | Açıklama |
@@ -146,35 +147,35 @@ GoodTrack/
 
 ---
 
-### `User` — Koleksiyon: `users`
-| Alan | Tip | Firestore Key | Açıklama |
+### `User` — Tablo: `users`
+| Alan | Tip | Kolon Adı (snake_case) | Açıklama |
 |------|-----|---------------|----------|
-| Id | string | (document id) | Firebase document ID |
-| Username | string | `username` | Küçük harf, trim edilmiş |
-| PasswordHash | string | `passwordHash` | PBKDF2 hash |
+| Id | string | `id` | `gen_random_uuid()::text` ile auto-generated |
+| Username | string | `username` | Küçük harf, trim edilmiş. UNIQUE index |
+| PasswordHash | string | `password_hash` | PBKDF2 hash |
 | Role | string | `role` | `"seller"` veya `"mfr"` |
-| FirstName | string | `firstName` | |
-| LastName | string | `lastName` | |
-| Email | string | `email` | |
-| PhoneNumber | string | `phoneNumber` | |
-| ProfilePicture | string | `profilePicture` | Base64 veya boş string |
+| FirstName | string | `first_name` | |
+| LastName | string | `last_name` | |
+| Email | string | `email` | UNIQUE index |
+| PhoneNumber | string | `phone_number` | |
+| ProfilePicture | string | `profile_picture` | Base64 veya boş string |
 | Address | string | `address` | |
-| City | string | `city` | Üretici arama filtresi |
+| City | string | `city` | Üretici arama filtresi (ILike ile case-insensitive) |
 | Bio | string | `bio` | |
-| ProductImages | `List<string>` | `productImages` | Portföy görselleri (Base64) |
-| Keywords | `List<string>` | `keywords` | Uzmanlık etiketleri |
-| IsVisibleToSellers | bool | `isVisibleToSellers` | Satıcı arama sonuçlarında görünsün mü? |
-| CreatedAt | string | `createdAt` | |
-| AssociatedUserIds | `List<string>` | `associatedUserIds` | Bağlı kullanıcı ID listesi |
-| IsActive | bool | `isActive` | Hesap aktif mi? (şu an her zaman true) |
-| VerificationToken | string | `verificationToken` | Ölü kod — kullanılmıyor |
-| VerificationTokenExpiresAt | string | `verificationTokenExpiresAt` | Ölü kod |
-| RefreshToken | string | `refreshToken` | Yenileme anahtarı (Refresh Token) |
-| RefreshTokenExpiryTime | string | `refreshTokenExpiryTime` | Refresh Token son geçerlilik zamanı (ISO 8601) |
+| ProductImages | `List<string>` | `product_images` | **text[]** — Portföy görselleri (Base64) |
+| Keywords | `List<string>` | `keywords` | **text[]** — Uzmanlık etiketleri |
+| IsVisibleToSellers | bool | `is_visible_to_sellers` | Satıcı arama sonuçlarında görünsün mü? |
+| CreatedAt | string | `created_at` | |
+| AssociatedUserIds | `List<string>` | `associated_user_ids` | **text[]** — Bağlı kullanıcı ID listesi |
+| IsActive | bool | `is_active` | Hesap aktif mi? (şu an her zaman true) |
+| VerificationToken | string | `verification_token` | Ölü kod — kullanılmıyor |
+| VerificationTokenExpiresAt | string | `verification_token_expires_at` | Ölü kod |
+| RefreshToken | string | `refresh_token` | Yenileme anahtarı (Refresh Token) |
+| RefreshTokenExpiryTime | string | `refresh_token_expiry_time` | Refresh Token son geçerlilik zamanı (ISO 8601) |
 
 ---
 
-### `ConnectionRequest` — Koleksiyon: `connectionRequests`
+### `ConnectionRequest` — Tablo: `connection_requests`
 | Alan | Tip | Açıklama |
 |------|-----|----------|
 | Id | string | Document ID |
@@ -187,7 +188,7 @@ GoodTrack/
 
 ---
 
-### `CatalogProduct` — Koleksiyon: `catalogProducts`
+### `CatalogProduct` — Tablo: `catalog_products`
 | Alan | Tip | Açıklama |
 |------|-----|----------|
 | Id | string | Document ID |
@@ -198,18 +199,18 @@ GoodTrack/
 | ManufacturerName | string | (`mfrName`) |
 | Text | string? | |
 | Length | string? | |
-| Extras | `Dictionary<string, ExtraValue>?` | |
+| Extras | `Dictionary<string, ExtraValue>?` | **JSONB** |
 | CreatedAt | string | |
 
 ---
 
-### `ExtraFieldDef` — Koleksiyon: `extraFieldDefs`
+### `ExtraFieldDef` — Tablo: `extra_field_defs`
 | Alan | Tip | Açıklama |
 |------|-----|----------|
 | Id | string | Document ID |
 | Name | string | Alan adı (örn. "Renk") |
 | Type | string | `"text"` veya `"select"` |
-| Options | `List<string>` | Select tipiyse seçenekler |
+| Options | `List<string>` | **text[]** — Select tipiyse seçenekler |
 | CreatedBy | string | Oluşturan seller ID |
 
 ---
@@ -635,8 +636,9 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 - Seller'ın extra field definition'larını CRUD
 
 ### `Base64ImageStorageService.cs`
-- `StoreImageAsync(base64)` — `data:image` ile başladığını kontrol eder, Firestore'a kaydeder
+- `StoreImageAsync(base64)` — `data:image` ile başladığını kontrol eder
 - `DeleteImageAsync(storedBase64)` — Eski görseli siler
+- **Not:** Görseller artık Firestore'da değil, doğrudan `products`/`catalog_products` tablosunun `image` kolonunda Base64 string olarak saklanmaktadır.
 
 ---
 
@@ -661,8 +663,17 @@ ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, s
 | Env Var | Açıklama |
 |---------|----------|
 | `JWT_KEY` | JWT signing key (zorunlu, production'da değiştirilmeli) |
-| `FIREBASE_CREDENTIALS_JSON` | Firebase service account JSON (alternatif olarak dosya) |
+| `DATABASE_URL` | Supabase PostgreSQL bağlantı dizesi (Connection Pooler, Port 5432, Session Mode) |
 | `CORS_ALLOWED_ORIGINS` | Virgülle ayrılmış izinli origin'ler |
+
+**Kaldırılan değişkenler:** `FIREBASE_CREDENTIALS_JSON`, `Firebase__ProjectId` (artık kullanılmıyor)
+
+**Bağlantı Dizesi Formatı:**
+```
+Host=aws-0-eu-west-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.farfcrclysrcnkbwfgoc;Password=SIFRE
+```
+
+**EF Core Migration:** Tablolar Supabase MCP aracılığıyla doğrudan Supabase'e uygulandı (`InitialCreate` migration). Yeni migration'lar için: `dotnet ef migrations add <Name>` → `dotnet ef migrations script` → Supabase MCP `apply_migration`.
 
 ### Frontend URL Konfigürasyonu
 - `VITE_API_URL` — Development API URL (varsayılan: `/api`)
@@ -725,9 +736,12 @@ Tip aralığı: `font-family: 'Bebas Neue'` (logo/başlıklar), `'Inter'` veya `
 - ✅ TypeScript: 0 derleme hatası (Hem `client-app` hem de `client-app-redesign` sıfır hata ile derlenmektedir)
 - ✅ Production build: Başarılı
 - ✅ Güvenlik: Kritik açık yok
-- ✅ Git branch: `main` (Uzak sunucuya pushlandı)
+- ✅ Git branch: `main` (Kodlar push'a hazır; Supabase migration uygulandı)
+- ✅ **Firebase → Supabase/PostgreSQL Migrasyonu:** Google Cloud Firestore tamamen kaldırıldı. Tüm veri erişim katmanı Entity Framework Core + Npgsql/PostgreSQL ile yeniden yazıldı. Tablolar Supabase'e başarıyla uygulandı ve uygulama lokal ortamda çalışır durumda doğrulandı.
 - ✅ B2B Rehberi ("Üretici Bul"): Çoklu şehir ve kategori seçimi, en iyi eşleşmeyi en üstte listeleyen akıllı sıralama ve istemci tarafı hibrit filtreleme modeli tamamlandı.
 - ✅ Arayüz Düzeltmeleri & Cilalamaları: Sembollerin yazı ile çakışması, şifre göz ikonunun taşması, kronoloji satırlarının hover kayması, kronoloji detaylarının dikey hizalanması, hatalı/eksik siparişlerin açıklamasını gösteren ünlemli açılır kutular (AlertTriangle toggle) ve seçilemez (readonly) kronoloji metinleri tamamlandı.
 - ✅ Dil Çevirileri: Üretici uzmanlık alanları ve veritabanı kaynaklı Türkçe zaman geçmişi logları için anlık İngilizce çeviri desteği kuruldu.
 - ⚠️ JWT key production'da env var olarak set edilmeli (`JWT_KEY`)
 - ⚠️ CORS `CORS_ALLOWED_ORIGINS` production URL'leri ile set edilmeli
+- ⚠️ Render.com `DATABASE_URL` ortam değişkeni güncellenmeli (eski Firebase değişkenleri kaldırılmalı)
+- ⚠️ Kodlar henüz GitHub'a push edilmedi — `git push origin main` ile gönderilmeli
