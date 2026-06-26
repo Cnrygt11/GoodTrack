@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.Tasks;
+using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Auth;
 
 namespace GoodTrack.API.Controllers;
 
@@ -33,7 +35,28 @@ public class AdminController : BaseApiController
         _logger.LogInformation("Admin {AdminId} requested users list.", currentAdminId);
 
         var users = await _userRepository.GetAllUsersAsync();
-        return Ok(users);
+        var response = users.Select(u => new UserAdminDto
+        {
+            Id = u.Id,
+            Username = u.Username,
+            Role = u.Role,
+            FirstName = u.FirstName,
+            LastName = u.LastName,
+            Email = u.Email,
+            PhoneNumber = u.PhoneNumber,
+            ProfilePicture = u.ProfilePicture,
+            Address = u.Address,
+            City = u.City,
+            Bio = u.Bio,
+            ProductImages = u.ProductImages,
+            Keywords = u.Keywords,
+            IsVisibleToSellers = u.IsVisibleToSellers,
+            CreatedAt = u.CreatedAt,
+            AssociatedUserIds = u.AssociatedUserIds,
+            IsActive = u.IsActive
+        }).ToList();
+
+        return Ok(response);
     }
 
     [HttpDelete("users/{id}")]

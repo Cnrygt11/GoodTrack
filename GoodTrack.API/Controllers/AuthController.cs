@@ -132,4 +132,18 @@ public class AuthController : BaseApiController
             return BadRequest(new { message = ex.Message });
         }
     }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout()
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        await _authService.LogoutAsync(userId);
+        return Ok(new { message = "Başarıyla çıkış yapıldı." });
+    }
 }

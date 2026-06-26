@@ -602,15 +602,24 @@ public class AuthService : IAuthService
         user.FirstName = dto.FirstName;
         user.LastName = dto.LastName;
 
-        // Email format validation on update (same rules as registration)
+        // Email format validation on update (same rules as registration) and check uniqueness
         if (!string.IsNullOrWhiteSpace(dto.Email))
         {
-            var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
-            if (!emailRegex.IsMatch(dto.Email.Trim().ToLower()))
+            var emailClean = dto.Email.Trim().ToLower();
+            if (emailClean != user.Email)
             {
-                throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+                var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
+                if (!emailRegex.IsMatch(emailClean))
+                {
+                    throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+                }
+                var existingUser = await _userRepository.GetByEmailAsync(emailClean);
+                if (existingUser != null)
+                {
+                    throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
+                }
+                user.Email = emailClean;
             }
-            user.Email = dto.Email.Trim().ToLower();
         }
 
         // Phone format validation on update
@@ -763,6 +772,19 @@ public class AuthService : IAuthService
         }
 
         user.PasswordHash = _passwordHasher.HashPassword(user, newPassword);
+        await _userRepository.SaveAsync(user);
+    }
+
+    public async Task LogoutAsync(string userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+        }
+
+        user.RefreshToken = string.Empty;
+        user.RefreshTokenExpiryTime = string.Empty;
         await _userRepository.SaveAsync(user);
     }
 }
