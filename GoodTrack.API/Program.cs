@@ -1,13 +1,14 @@
-using Google.Cloud.Firestore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Threading.RateLimiting;
 using GoodTrack.API.Models;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Services;
 
@@ -20,13 +21,28 @@ builder.Services.AddOpenApi();
 // Password Hasher Registration
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
+// Database Configuration
+var connectionString = Environment.GetEnvironmentVariable("DATABASE_URL")
+    ?? builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "FATAL: Database connection string is not configured. " +
+        "Set the 'DATABASE_URL' environment variable or 'ConnectionStrings:DefaultConnection' in appsettings.json.");
+
+var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(connectionString);
+dataSourceBuilder.EnableDynamicJson();
+var dataSource = dataSourceBuilder.Build();
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(dataSource)
+           .UseSnakeCaseNamingConvention());
+
 // Register Repositories
-builder.Services.AddScoped<IUserRepository, FirestoreUserRepository>();
-builder.Services.AddScoped<IConnectionRequestRepository, FirestoreConnectionRequestRepository>();
-builder.Services.AddScoped<IProductRepository, FirestoreProductRepository>();
-builder.Services.AddScoped<ICatalogRepository, FirestoreCatalogRepository>();
-builder.Services.AddScoped<IFieldRepository, FirestoreFieldRepository>();
-builder.Services.AddScoped<IFeedbackRepository, FirestoreFeedbackRepository>();
+builder.Services.AddScoped<IUserRepository, PostgresUserRepository>();
+builder.Services.AddScoped<IConnectionRequestRepository, PostgresConnectionRequestRepository>();
+builder.Services.AddScoped<IProductRepository, PostgresProductRepository>();
+builder.Services.AddScoped<ICatalogRepository, PostgresCatalogRepository>();
+builder.Services.AddScoped<IFieldRepository, PostgresFieldRepository>();
+builder.Services.AddScoped<IFeedbackRepository, PostgresFeedbackRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -34,115 +50,6 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IFieldService, FieldService>();
 builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
-
-
-
-// Firebase / Firestore Setup
-var firebaseSection = builder.Configuration.GetSection("Firebase");
-var projectId = firebaseSection["ProjectId"];
-var credentialPath = firebaseSection["CredentialFilePath"];
-
-if (string.IsNullOrEmpty(projectId) || projectId == "YOUR_FIREBASE_PROJECT_ID")
-{
-    throw new InvalidOperationException("FATAL: Firebase Project ID is not configured in appsettings.json. Please set 'Firebase:ProjectId'.");
-}
-
-// Register FirestoreDb
-builder.Services.AddSingleton(sp =>
-{
-    var env = sp.GetRequiredService<IWebHostEnvironment>();
-    
-    // 1. Try environment variable FIREBASE_CREDENTIALS_JSON
-    var envJson = Environment.GetEnvironmentVariable("FIREBASE_CREDENTIALS_JSON");
-    if (!string.IsNullOrEmpty(envJson))
-    {
-        try 
-        {
-            using var doc = System.Text.Json.JsonDocument.Parse(envJson);
-            var email = doc.RootElement.GetProperty("client_email").GetString();
-            Console.WriteLine($"[DEBUG] Requesting access for Service Account: {email}");
-        } 
-        catch { }
-
-        Console.WriteLine("Attempting to initialize Firestore with credentials from environment variable (FIREBASE_CREDENTIALS_JSON)...");
-        var credential = TryLoadCredentialFromJson(envJson, out var err);
-        if (credential != null)
-        {
-            try
-            {
-                var firestoreDb = new FirestoreDbBuilder
-                {
-                    ProjectId = projectId,
-                    Credential = credential
-                }.Build();
-                Console.WriteLine("Firestore initialized successfully using environment variable credentials via FirestoreDbBuilder.");
-                Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
-                return firestoreDb;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"WARNING: Failed to initialize FirestoreDb with environment variable. Error: {ex.Message}");
-            }
-        }
-        else
-        {
-            Console.WriteLine($"WARNING: Failed to parse FIREBASE_CREDENTIALS_JSON environment variable. Error: {err}");
-        }
-    }
-
-    // 2. Try file-based credentials
-    var fullCredentialPath = Path.IsPathRooted(credentialPath) 
-        ? credentialPath 
-        : Path.Combine(env.ContentRootPath, credentialPath ?? "firebase-key.json");
-
-    if (File.Exists(fullCredentialPath))
-    {
-        Console.WriteLine($"Attempting to initialize Firestore with credentials from file: {fullCredentialPath}");
-        var fileContent = File.ReadAllText(fullCredentialPath);
-        var credential = TryLoadCredentialFromJson(fileContent, out var err);
-        if (credential != null)
-        {
-            try
-            {
-                var firestoreDb = new FirestoreDbBuilder
-                {
-                    ProjectId = projectId,
-                    Credential = credential
-                }.Build();
-                Console.WriteLine($"Firestore initialized successfully using credentials from file: {fullCredentialPath}");
-                Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
-                return firestoreDb;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"WARNING: Failed to initialize FirestoreDb with file credentials. Error: {ex.Message}");
-                Console.WriteLine("Attempting to fallback to Application Default Credentials (ADC).");
-            }
-        }
-        else
-        {
-            Console.WriteLine($"WARNING: Credentials file at {fullCredentialPath} could not be loaded. Error: {err}");
-            Console.WriteLine("Attempting to fallback to Application Default Credentials (ADC).");
-        }
-    }
-    else
-    {
-        Console.WriteLine($"Credentials file not found at: {fullCredentialPath}. Attempting to initialize Firestore Db with Application Default Credentials (ADC).");
-    }
-
-    // 3. Fallback to Application Default Credentials
-    try
-    {
-        return FirestoreDb.Create(projectId);
-    }
-    catch (Exception ex)
-    {
-        throw new InvalidOperationException(
-            $"FATAL: Failed to initialize FirestoreDb using service account file or Application Default Credentials (ADC). " +
-            $"Please ensure a valid service account JSON file is placed at '{fullCredentialPath}' or set via 'FIREBASE_CREDENTIALS_JSON' env var. " +
-            $"Inner Error: {ex.Message}", ex);
-    }
-});
 
 const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
 
@@ -307,87 +214,4 @@ app.UseStaticFiles();
 app.MapFallbackToFile("index.html");
 
 app.Run();
-
-#region Helper Methods
-static string SanitizePrivateKey(string rawKey)
-{
-    if (string.IsNullOrEmpty(rawKey)) return rawKey;
-
-    // Replace escaped newlines
-    var key = rawKey.Replace("\\n", "\n").Trim();
-
-    // Normalize newlines
-    key = key.Replace("\r\n", "\n").Replace("\r", "\n");
-
-    // If it doesn't contain the header/footer, wrap it
-    if (!key.Contains("-----BEGIN PRIVATE KEY-----"))
-    {
-        key = $"-----BEGIN PRIVATE KEY-----\n{key}\n-----END PRIVATE KEY-----\n";
-    }
-    else
-    {
-        // Ensure header and footer are separated by actual newlines
-        if (!key.StartsWith("-----BEGIN PRIVATE KEY-----\n"))
-        {
-            key = key.Replace("-----BEGIN PRIVATE KEY-----", "-----BEGIN PRIVATE KEY-----\n");
-        }
-        if (!key.EndsWith("\n-----END PRIVATE KEY-----\n") && !key.EndsWith("\n-----END PRIVATE KEY-----"))
-        {
-            key = key.Replace("-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----\n");
-        }
-    }
-
-    // Clean up any double newlines
-    while (key.Contains("\n\n"))
-    {
-        key = key.Replace("\n\n", "\n");
-    }
-
-    return key;
-}
-
-static Google.Apis.Auth.OAuth2.GoogleCredential? TryLoadCredentialFromJson(string jsonContent, out string? errorMessage)
-{
-    errorMessage = null;
-    try
-    {
-        // Parse the JSON to inspect/sanitize the private key
-        var jsonNode = System.Text.Json.Nodes.JsonNode.Parse(jsonContent);
-        if (jsonNode == null)
-        {
-            errorMessage = "JSON content is empty or invalid.";
-            return null;
-        }
-
-        var privateKeyNode = jsonNode["private_key"];
-        if (privateKeyNode != null)
-        {
-            var rawKey = privateKeyNode.ToString();
-            if (rawKey.Contains("YOUR_PRIVATE_KEY") || string.IsNullOrWhiteSpace(rawKey))
-            {
-                errorMessage = "Private key contains default placeholder values.";
-                return null;
-            }
-
-            var sanitizedKey = SanitizePrivateKey(rawKey);
-            jsonNode["private_key"] = sanitizedKey;
-        }
-
-        var projectIdNode = jsonNode["project_id"];
-        if (projectIdNode != null && projectIdNode.ToString().Contains("YOUR_PROJECT_ID"))
-        {
-            errorMessage = "Project ID contains default placeholder values.";
-            return null;
-        }
-
-        var updatedJson = jsonNode.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        return Google.Apis.Auth.OAuth2.GoogleCredential.FromJson(updatedJson);
-    }
-    catch (Exception ex)
-    {
-        errorMessage = ex.Message;
-        return null;
-    }
-}
-#endregion
 
