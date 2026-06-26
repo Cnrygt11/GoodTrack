@@ -50,6 +50,8 @@ public sealed class PostgresUserRepository : IUserRepository
         string? keyword,
         string? cursor,
         int limit,
+        bool mustHaveGallery = false,
+        bool mustHaveAvatar = false,
         CancellationToken cancellationToken = default)
     {
         var query = _context.Users
@@ -58,12 +60,30 @@ public sealed class PostgresUserRepository : IUserRepository
 
         if (!string.IsNullOrWhiteSpace(city))
         {
-            query = query.Where(u => EF.Functions.ILike(u.City, city));
+            var cities = city.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim().ToLower()).ToList();
+            if (cities.Any())
+            {
+                query = query.Where(u => cities.Contains(u.City.ToLower()));
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(keyword))
         {
-            query = query.Where(u => u.Keywords.Contains(keyword));
+            var keywords = keyword.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(k => k.Trim().ToLower()).ToList();
+            if (keywords.Any())
+            {
+                query = query.Where(u => u.Keywords.Any(kw => keywords.Contains(kw.ToLower())));
+            }
+        }
+
+        if (mustHaveGallery)
+        {
+            query = query.Where(u => u.ProductImages != null && u.ProductImages.Count > 0);
+        }
+
+        if (mustHaveAvatar)
+        {
+            query = query.Where(u => !string.IsNullOrEmpty(u.ProfilePicture));
         }
 
         if (!string.IsNullOrWhiteSpace(cursor))

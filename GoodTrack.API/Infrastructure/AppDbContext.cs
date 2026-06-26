@@ -13,6 +13,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<ConnectionRequest> ConnectionRequests => Set<ConnectionRequest>();
     public DbSet<ExtraFieldDef> ExtraFieldDefs => Set<ExtraFieldDef>();
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
+    public DbSet<UserCredit> UserCredits => Set<UserCredit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -132,6 +133,28 @@ public sealed class AppDbContext : DbContext
             entity.Property(f => f.Message).IsRequired().HasMaxLength(2000);
             entity.Property(f => f.BrowserInfo).HasMaxLength(500);
             entity.Property(f => f.CreatedAt).HasMaxLength(50);
+        });
+
+        // ── UserCredit ────────────────────────────────────────────────────────
+        modelBuilder.Entity<UserCredit>(entity =>
+        {
+            entity.ToTable("user_credits");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            entity.Property(c => c.UserId).IsRequired().HasMaxLength(100);
+            entity.Property(c => c.Plan).IsRequired().HasMaxLength(50);
+            entity.Property(c => c.Credits).IsRequired();
+            entity.Property(c => c.PlanStartedAt).HasMaxLength(50);
+            entity.Property(c => c.RenewsAt).HasMaxLength(50);
+
+            entity.HasIndex(c => c.UserId).IsUnique();
+
+            entity.Property(c => c.RowVersion).IsRowVersion();
+
+            entity.HasOne<User>()
+                  .WithOne()
+                  .HasForeignKey<UserCredit>(c => c.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

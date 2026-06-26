@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import useSearchMfr from '../../hooks/useSearchMfr';
-import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle, Lock } from 'lucide-react';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 import Lightbox from '../ui/Lightbox';
 import { TranslationKey } from '../../services/translations';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../constants/routes';
 
 export default function SearchMfrPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const navigate = useNavigate();
+  
   const {
     loading, error,
     selectedCities, selectedCategories,
@@ -18,13 +22,14 @@ export default function SearchMfrPage() {
     handleToggleCity, handleToggleCategory,
     handleResetFilters,
     fetchManufacturers, loadMore,
+    isLocked, lockReason, completedCount,
     t,
   } = useSearchMfr();
 
   const hasActiveFilters = selectedCities.length > 0 || selectedCategories.length > 0 || mustHaveGallery || mustHaveAvatar;
 
-  return (
-    <div className="smfr-page">
+  const pageContent = (
+    <div className={`smfr-page ${isLocked ? 'smfr-locked-blur' : ''}`}>
 
       {/* Page Header */}
       <div className="smfr-header">
@@ -37,7 +42,7 @@ export default function SearchMfrPage() {
 
         {/* ── LEFT: Filters ── */}
         <div className="smfr-sidebar">
-          <div className="card smfr-filters-card">
+          <div className={`card smfr-filters-card ${isLocked ? 'smfr-filters-card--disabled' : ''}`}>
 
             <div className="smfr-filters-header">
               <h3 className="smfr-filters-title">
@@ -45,7 +50,7 @@ export default function SearchMfrPage() {
                 {t('filtersHeader')}
               </h3>
               {hasActiveFilters && (
-                <button className="smfr-reset-btn" onClick={handleResetFilters}>
+                <button className="smfr-reset-btn" onClick={handleResetFilters} disabled={isLocked}>
                   {t('resetFiltersBtn')}
                 </button>
               )}
@@ -65,9 +70,15 @@ export default function SearchMfrPage() {
                     return (
                       <label
                         key={city}
-                        className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'}`}
+                        className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'} ${isLocked ? 'filter-checkbox-item--disabled' : ''}`}
                       >
-                        <input type="checkbox" checked={isChecked} onChange={() => handleToggleCity(city)} className="cursor-pointer" />
+                        <input 
+                          type="checkbox" 
+                          checked={isChecked} 
+                          onChange={() => !isLocked && handleToggleCity(city)} 
+                          disabled={isLocked}
+                          className={isLocked ? "cursor-not-allowed" : "cursor-pointer"} 
+                        />
                         <span>{city}</span>
                       </label>
                     );
@@ -85,9 +96,15 @@ export default function SearchMfrPage() {
                   return (
                     <label
                       key={cat}
-                      className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'}`}
+                      className={`filter-checkbox-item ${isChecked ? 'filter-checkbox-item--checked' : 'filter-checkbox-item--unchecked'} ${isLocked ? 'filter-checkbox-item--disabled' : ''}`}
                     >
-                      <input type="checkbox" checked={isChecked} onChange={() => handleToggleCategory(cat)} className="cursor-pointer" />
+                      <input 
+                        type="checkbox" 
+                        checked={isChecked} 
+                        onChange={() => !isLocked && handleToggleCategory(cat)} 
+                        disabled={isLocked}
+                        className={isLocked ? "cursor-not-allowed" : "cursor-pointer"} 
+                      />
                       <span>{t(`category_${cat.replace(/\s+/g, '_')}` as TranslationKey)}</span>
                     </label>
                   );
@@ -97,12 +114,22 @@ export default function SearchMfrPage() {
 
             {/* Toggle Filters */}
             <div className="filter-toggles">
-              <label className="filter-toggle-item">
-                <input type="checkbox" checked={mustHaveGallery} onChange={(e) => setMustHaveGallery(e.target.checked)} />
+              <label className={`filter-toggle-item ${isLocked ? 'filter-toggle-item--disabled' : ''}`}>
+                <input 
+                  type="checkbox" 
+                  checked={mustHaveGallery} 
+                  onChange={(e) => !isLocked && setMustHaveGallery(e.target.checked)} 
+                  disabled={isLocked}
+                />
                 <span>{t('hasShowcaseFilter')}</span>
               </label>
-              <label className="filter-toggle-item">
-                <input type="checkbox" checked={mustHaveAvatar} onChange={(e) => setMustHaveAvatar(e.target.checked)} />
+              <label className={`filter-toggle-item ${isLocked ? 'filter-toggle-item--disabled' : ''}`}>
+                <input 
+                  type="checkbox" 
+                  checked={mustHaveAvatar} 
+                  onChange={(e) => !isLocked && setMustHaveAvatar(e.target.checked)} 
+                  disabled={isLocked}
+                />
                 <span>{t('hasAvatarFilter')}</span>
               </label>
             </div>
@@ -250,4 +277,35 @@ export default function SearchMfrPage() {
       )}
     </div>
   );
+
+  if (isLocked) {
+    const isUpgradeLock = lockReason === 'upgrade';
+    return (
+      <div className="smfr-locked-container">
+        {pageContent}
+        <div 
+          className={`smfr-lock-overlay ${isUpgradeLock ? 'smfr-lock-overlay--clickable' : ''}`}
+          onClick={() => {
+            if (isUpgradeLock) {
+              navigate(ROUTES.sellerCredits);
+            }
+          }}
+        >
+          <div className="smfr-lock-card">
+            <Lock size={48} className="smfr-lock-icon" />
+            <h2 className="smfr-lock-title">
+              {isUpgradeLock ? t('findMfrUpgradeToUnlock') : t('findMfrLocked')}
+            </h2>
+            {!isUpgradeLock && (
+              <div className="smfr-lock-progress">
+                {t('currentCompletedCount').replace('{count}', String(completedCount))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return pageContent;
 }

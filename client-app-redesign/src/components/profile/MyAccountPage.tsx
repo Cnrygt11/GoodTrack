@@ -1,9 +1,7 @@
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
 import usePasswordChange from '../../hooks/usePasswordChange';
-import { ROUTES } from '../../constants/routes';
-import { ArrowLeft, Loader2, Key, CheckCircle2 } from 'lucide-react';
+import { Loader2, Key, CheckCircle2 } from 'lucide-react';
 import ProfileAvatarSection from './ProfileAvatarSection';
 import GeneralProfileFields from './GeneralProfileFields';
 import MfrBusinessFields from './MfrBusinessFields';
@@ -11,7 +9,6 @@ import ProductShowcaseGallery from './ProductShowcaseGallery';
 import PasswordChangeForm from './PasswordChangeForm';
 
 export default function MyAccountPage() {
-  const navigate = useNavigate();
   
   const {
     profile,
@@ -81,15 +78,6 @@ export default function MyAccountPage() {
 
   return (
     <div className="profile-page">
-      {/* Back to dashboard breadcrumb */}
-      <button 
-        onClick={() => navigate(profile.role === 'mfr' ? ROUTES.mfrOrders : ROUTES.sellerOrders)}
-        className="btn-back" 
-      >
-        <ArrowLeft size={14} />
-        {t('backToDashboard')}
-      </button>
-
       {passwordFlow.flowStep === 'profile' ? (
         <form onSubmit={handleSaveProfile} className="card profile-form">
           <ProfileAvatarSection

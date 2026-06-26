@@ -197,6 +197,19 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
   return response;
 }
 
+/**
+ * Represents an error response from the API, containing the HTTP status code.
+ */
+export class ApiError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.status = status;
+    this.name = 'ApiError';
+  }
+}
+
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(endpoint, options);
   
@@ -217,7 +230,7 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
         errorMessage = 'Sunucu tarafında dahili bir hata oluştu (500). Lütfen sunucu loglarını kontrol edin.';
       }
     }
-    throw new Error(errorMessage);
+    throw new ApiError(errorMessage, res.status);
   }
   
   if (res.status === 204) {
@@ -243,6 +256,27 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
 }
 
+/**
+ * Represents the user's credit balance and subscription plan details.
+ */
+export interface UserCredit {
+  id: string;
+  userId: string;
+  plan: string;
+  credits: number;
+  planStartedAt: string;
+  renewsAt: string;
+}
+
+/**
+ * Represents the details of a subscription plan available for upgrade.
+ */
+export interface SubscriptionPlanDetail {
+  plan: string;
+  credits: number;
+  price: number;
+  features: string[];
+}
 
 export interface RegisterPayload {
   firstname: string;
@@ -523,13 +557,17 @@ export const api = {
     city?: string,
     keyword?: string,
     cursor?: string,
-    limit?: number
+    limit?: number,
+    mustHaveGallery?: boolean,
+    mustHaveAvatar?: boolean
   ): Promise<{ items: UserProfile[]; nextCursor: string | null }> {
     const params = new URLSearchParams();
     if (city) params.append('city', city);
     if (keyword) params.append('keyword', keyword);
     if (cursor) params.append('cursor', cursor);
     if (limit) params.append('limit', limit.toString());
+    if (mustHaveGallery) params.append('mustHaveGallery', 'true');
+    if (mustHaveAvatar) params.append('mustHaveAvatar', 'true');
     return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(`/manufacturers/search?${params.toString()}`);
   },
 
@@ -552,5 +590,20 @@ export const api = {
 
   getAdminFeedbacks(): Promise<Feedback[]> {
     return apiCall<Feedback[]>('/admin/feedbacks');
+  },
+
+  getCredits(): Promise<UserCredit> {
+    return apiCall<UserCredit>('/credits');
+  },
+
+  getPlans(): Promise<SubscriptionPlanDetail[]> {
+    return apiCall<SubscriptionPlanDetail[]>('/credits/plans');
+  },
+
+  upgradePlan(plan: string): Promise<{ message: string; credits: UserCredit }> {
+    return apiCall<{ message: string; credits: UserCredit }>('/credits/upgrade', {
+      method: 'POST',
+      body: JSON.stringify({ plan })
+    });
   }
 };

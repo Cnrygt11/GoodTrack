@@ -5,7 +5,9 @@ using System.Net;
 using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Middlewares;
 
@@ -64,6 +66,14 @@ public class ExceptionHandlingMiddleware
             case InvalidOperationException:
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
+                break;
+            case InsufficientCreditsException:
+                statusCode = HttpStatusCode.PaymentRequired;
+                message = exception.Message;
+                break;
+            case DbUpdateConcurrencyException:
+                statusCode = HttpStatusCode.Conflict;
+                message = "İşlem sırasında eşzamanlılık çakışması oluştu. Lütfen tekrar deneyiniz.";
                 break;
         }
 

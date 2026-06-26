@@ -43,6 +43,7 @@ builder.Services.AddScoped<IProductRepository, PostgresProductRepository>();
 builder.Services.AddScoped<ICatalogRepository, PostgresCatalogRepository>();
 builder.Services.AddScoped<IFieldRepository, PostgresFieldRepository>();
 builder.Services.AddScoped<IFeedbackRepository, PostgresFeedbackRepository>();
+builder.Services.AddScoped<ICreditsRepository, CreditsRepository>();
 
 // Register Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -50,6 +51,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IFieldService, FieldService>();
 builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
+builder.Services.AddScoped<ICreditsService, CreditsService>();
 
 const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
 

@@ -23,13 +23,35 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
+  const { products, plan, connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
   const { showToast } = useToast();
   const { t, language } = useSettings();
 
   const [manufacturers, setManufacturers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+
+  const completedCount = useMemo(() => 
+    products.filter(p => p.status === 'delivered').length
+  , [products]);
+
+  const isLocked = useMemo(() => {
+    const planName = (plan || 'Free').toLowerCase();
+    if (planName === 'free') {
+      return true;
+    }
+    return false;
+  }, [plan]);
+
+  const lockReason = useMemo<'upgrade' | 'orders' | null>(() => {
+    const planName = (plan || 'Free').toLowerCase();
+    if (planName === 'free') {
+      return 'upgrade';
+    }
+    return null;
+  }, [plan]);
 
   // Load B2B connections and sent requests on mount to ensure fresh state
   useEffect(() => {
@@ -49,29 +71,51 @@ export default function useSearchMfr() {
       setLoading(true);
       setError('');
       
-      let allItems: UserProfile[] = [];
-      let currentCursor: string | undefined = undefined;
-      let hasMoreItems = true;
+      const cityQuery = selectedCities.length > 0 ? selectedCities.join(',') : undefined;
+      const catQuery = selectedCategories.length > 0 ? selectedCategories.join(',') : undefined;
 
-      while (hasMoreItems) {
-        const data = await api.searchManufacturers(
-          undefined,
-          undefined,
-          currentCursor,
-          50
-        );
-        allItems = [...allItems, ...data.items];
-        currentCursor = data.nextCursor || undefined;
-        hasMoreItems = data.nextCursor !== null;
-      }
-
-      setManufacturers(allItems);
+      const data = await api.searchManufacturers(
+        cityQuery,
+        catQuery,
+        undefined,
+        6,
+        mustHaveGallery,
+        mustHaveAvatar
+      );
+      setManufacturers(data.items);
+      setNextCursor(data.nextCursor || null);
+      setHasMore(data.nextCursor !== null);
     } catch (err: unknown) {
       setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedCities, selectedCategories, mustHaveGallery, mustHaveAvatar]);
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loading) return;
+    try {
+      setLoading(true);
+      const cityQuery = selectedCities.length > 0 ? selectedCities.join(',') : undefined;
+      const catQuery = selectedCategories.length > 0 ? selectedCategories.join(',') : undefined;
+
+      const data = await api.searchManufacturers(
+        cityQuery,
+        catQuery,
+        nextCursor,
+        6,
+        mustHaveGallery,
+        mustHaveAvatar
+      );
+      setManufacturers(prev => [...prev, ...data.items]);
+      setNextCursor(data.nextCursor || null);
+      setHasMore(data.nextCursor !== null);
+    } catch (err: unknown) {
+      showToast(extractErrorMessage(err) || 'Daha fazla üretici yüklenemedi.');
+    } finally {
+      setLoading(false);
+    }
+  }, [nextCursor, loading, showToast, selectedCities, selectedCategories, mustHaveGallery, mustHaveAvatar]);
 
   // Initial fetch
   useEffect(() => {
@@ -97,33 +141,10 @@ export default function useSearchMfr() {
     setMustHaveAvatar(false);
   }, []);
 
-  // Filter client side
+  // Filtered list (delegated fully to server side pagination)
   const filteredAndSortedManufacturers = useMemo(() => {
-    let list = [...manufacturers];
-
-    if (selectedCities.length > 0) {
-      list = list.filter(m => m.city && selectedCities.includes(m.city));
-    }
-
-    if (selectedCategories.length > 0) {
-      list = list.filter(m => m.keywords && m.keywords.some(kw => selectedCategories.includes(kw)));
-      // Sort by best match (highest number of matching categories first)
-      list.sort((a, b) => {
-        const matchesA = (a.keywords || []).filter(kw => selectedCategories.includes(kw)).length;
-        const matchesB = (b.keywords || []).filter(kw => selectedCategories.includes(kw)).length;
-        return matchesB - matchesA;
-      });
-    }
-
-    if (mustHaveGallery) {
-      list = list.filter((m) => m.productImages && m.productImages.length > 0);
-    }
-    if (mustHaveAvatar) {
-      list = list.filter((m) => !!m.profilePicture);
-    }
-
-    return list;
-  }, [manufacturers, selectedCities, selectedCategories, mustHaveGallery, mustHaveAvatar]);
+    return manufacturers;
+  }, [manufacturers]);
 
   const handleSendConnection = useCallback(async (username: string) => {
     const tempId = `temp-send-${Date.now()}`;
@@ -178,15 +199,18 @@ export default function useSearchMfr() {
     filteredAndSortedManufacturers,
     connections,
     sentRequests,
-    hasMore: false,
+    hasMore,
     handleToggleCity,
     handleToggleCategory,
     handleResetFilters,
     handleSendConnection,
     handleCancelConnection,
     fetchManufacturers,
-    loadMore: () => {},
+    loadMore,
     language,
-    t
+    t,
+    isLocked,
+    lockReason,
+    completedCount
   };
 }

@@ -717,9 +717,9 @@ public class AuthService : IAuthService
         await _userRepository.SaveAsync(user);
     }
 
-    public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit)
+    public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, bool mustHaveGallery = false, bool mustHaveAvatar = false)
     {
-        var (users, nextCursor) = await _userRepository.SearchManufacturersAsync(city, keyword, cursor, limit);
+        var (users, nextCursor) = await _userRepository.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
         
         var items = users.Select(MapToProfileDto).ToList();
 

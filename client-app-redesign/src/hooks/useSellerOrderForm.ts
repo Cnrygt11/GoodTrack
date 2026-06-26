@@ -3,7 +3,9 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, Product, ExtraFieldValue, CreateProductPayload } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
+import { api, Product, ExtraFieldValue, CreateProductPayload, ApiError } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { SellerTabId } from '../types/orders';
@@ -65,12 +67,14 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     optimisticAddProduct,
     optimisticUpdateProduct,
     optimisticRemoveProduct,
-    rollbackProducts
+    rollbackProducts,
+    refreshCredits
   } = useData();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
   const confirm = useConfirm();
+  const navigate = useNavigate();
 
   // --- Form State ---
   const [productCode, setProductCode] = useState('');
@@ -196,7 +200,18 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         await loadProducts();
       } catch (err: unknown) {
         rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
+        if (err instanceof ApiError && err.status === 402) {
+          showToast(t('creditWarnToast'), true);
+          confirm({
+            title: t('creditsLowWarning'),
+            message: t('insufficientCredits'),
+            confirmText: t('goToBilling'),
+          }).then((go) => {
+            if (go) navigate(ROUTES.sellerCredits);
+          });
+        } else {
+          showToast(extractErrorMessage(err));
+        }
         setEditingProduct(editingProduct);
         setProductCode(code);
         setOrderText(orderText || '');
@@ -245,9 +260,21 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         optimisticRemoveProduct(tempId);
         optimisticAddProduct(data.product);
         await loadProducts();
+        await refreshCredits();
       } catch (err: unknown) {
         rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
+        if (err instanceof ApiError && err.status === 402) {
+          showToast(t('creditWarnToast'), true);
+          confirm({
+            title: t('creditsLowWarning'),
+            message: t('insufficientCredits'),
+            confirmText: t('goToBilling'),
+          }).then((go) => {
+            if (go) navigate(ROUTES.sellerCredits);
+          });
+        } else {
+          showToast(extractErrorMessage(err));
+        }
         setProductCode(code);
         setOrderText(orderText || '');
         setMfrId(mfrId);
@@ -280,6 +307,9 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     showToast,
     t,
     handleClearForm,
+    confirm,
+    navigate,
+    refreshCredits,
   ]);
 
   const handleAddFieldSubmit = useCallback(async (e: FormEvent) => {

@@ -6,6 +6,7 @@ export const ROUTES = {
   sellerProfile:  '/seller/profile',
   sellerSearch:   '/seller/search-mfr',
   sellerConnections: '/seller/connections',
+  sellerCredits:     '/seller/credits',
   adminDashboard: '/admin/dashboard',
   adminFeedbacks: '/admin/feedbacks',
 } as const;

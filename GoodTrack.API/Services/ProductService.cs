@@ -17,17 +17,20 @@ public class ProductService : IProductService
     private readonly ICatalogRepository _catalogRepository;
     private readonly IHubContext<TrackingHub> _hubContext;
     private readonly IImageStorageService _imageStorageService;
+    private readonly ICreditsService _creditsService;
 
     public ProductService(
         IProductRepository productRepository, 
         ICatalogRepository catalogRepository,
         IHubContext<TrackingHub> hubContext,
-        IImageStorageService imageStorageService)
+        IImageStorageService imageStorageService,
+        ICreditsService creditsService)
     {
         _productRepository = productRepository;
         _catalogRepository = catalogRepository;
         _hubContext = hubContext;
         _imageStorageService = imageStorageService;
+        _creditsService = creditsService;
     }
 
     // ~5MB binary = ~6.8MB base64; we use 7_000_000 chars as the hard cap
@@ -92,6 +95,9 @@ public class ProductService : IProductService
 
         // Validate image size before storing (~5MB limit)
         ValidateImageSize(order.Image, "Sipariş görseli");
+
+        // Deduct credit for order creation
+        await _creditsService.DeductForOrderAsync(sellerId);
 
         order.Image = await _imageStorageService.StoreImageAsync(order.Image);
 

@@ -6,6 +6,7 @@ import { useData } from '../context/DataContext';
 import { ROUTES } from '../constants/routes';
 import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
 import FeedbackModal from './ui/FeedbackModal';
+import CreditsWidget from './credits/CreditsWidget';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -134,6 +135,7 @@ export default function Layout({ children }: LayoutProps) {
 
           {user.role === 'seller' && (
             <>
+              <CreditsWidget />
               <button 
                 className={`nav-btn ${currentPath === ROUTES.sellerOrders ? 'nav-btn--active nav-btn--seller' : ''}`}
                 onClick={() => navigate(ROUTES.sellerOrders)}

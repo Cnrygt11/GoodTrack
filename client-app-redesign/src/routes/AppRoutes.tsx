@@ -12,6 +12,7 @@ import ConnectionsPage from '../components/connections/ConnectionsPage';
 import UserProfileDetailPage from '../components/profile/UserProfileDetailPage';
 import AdminDashboardPage from '../components/admin/AdminDashboardPage';
 import AdminFeedbacksPage from '../components/admin/AdminFeedbacksPage';
+import CreditsPage from '../components/credits/CreditsPage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -170,6 +171,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['seller']}>
             <ConnectionsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/seller/credits"
+        element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <CreditsPage />
           </ProtectedRoute>
         }
       />
