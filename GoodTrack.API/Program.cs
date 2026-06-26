@@ -68,14 +68,21 @@ builder.Services.AddSingleton(sp =>
         var credential = TryLoadCredentialFromJson(envJson, out var err);
         if (credential != null)
         {
-            Console.WriteLine("Firestore initialized successfully using environment variable credentials.");
-            Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
-            Console.WriteLine($"[DEBUG] Credential is UnderlyingType: {credential?.UnderlyingCredential?.GetType().Name}");
-            return new FirestoreDbBuilder
+            try
             {
-                ProjectId = projectId,
-                Credential = credential
-            }.Build();
+                var firestoreDb = new FirestoreDbBuilder
+                {
+                    ProjectId = projectId,
+                    Credential = credential
+                }.Build();
+                Console.WriteLine("Firestore initialized successfully using environment variable credentials via FirestoreDbBuilder.");
+                Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
+                return firestoreDb;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WARNING: Failed to initialize FirestoreDb with environment variable. Error: {ex.Message}");
+            }
         }
         else
         {
@@ -95,14 +102,22 @@ builder.Services.AddSingleton(sp =>
         var credential = TryLoadCredentialFromJson(fileContent, out var err);
         if (credential != null)
         {
-            Console.WriteLine($"Firestore initialized successfully using credentials from: {fullCredentialPath}");
-            Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
-            Console.WriteLine($"[DEBUG] Credential is UnderlyingType: {credential?.UnderlyingCredential?.GetType().Name}");
-            return new FirestoreDbBuilder
+            try
             {
-                ProjectId = projectId,
-                Credential = credential
-            }.Build();
+                var firestoreDb = new FirestoreDbBuilder
+                {
+                    ProjectId = projectId,
+                    Credential = credential
+                }.Build();
+                Console.WriteLine($"Firestore initialized successfully using credentials from file: {fullCredentialPath}");
+                Console.WriteLine($"[DEBUG] Loaded ProjectId: '{projectId}'");
+                return firestoreDb;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WARNING: Failed to initialize FirestoreDb with file credentials. Error: {ex.Message}");
+                Console.WriteLine("Attempting to fallback to Application Default Credentials (ADC).");
+            }
         }
         else
         {
@@ -366,10 +381,7 @@ static Google.Apis.Auth.OAuth2.GoogleCredential? TryLoadCredentialFromJson(strin
         }
 
         var updatedJson = jsonNode.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        using var stream = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(updatedJson));
-        
-        return Google.Apis.Auth.OAuth2.CredentialFactory.FromStream<Google.Apis.Auth.OAuth2.ServiceAccountCredential>(stream)
-            .ToGoogleCredential();
+        return Google.Apis.Auth.OAuth2.GoogleCredential.FromJson(updatedJson);
     }
     catch (Exception ex)
     {
