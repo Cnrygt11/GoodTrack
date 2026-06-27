@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useConnections from '../../hooks/useConnections';
 import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, X } from 'lucide-react';
 import { ConnectionRequest } from '../../services/api';
+import styles from './ConnectionsPage.module.css';
 
 export default function ConnectionsPage() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function ConnectionsPage() {
     }
 
     return (
-      <span className={`connection-status-badge connection-status-badge--${statusClass}`}>
+      <span className={`${styles['connection-status-badge']} ${styles[`connection-status-badge--${statusClass}`]}`}>
         {icon}
         {text}
       </span>
@@ -61,7 +62,7 @@ export default function ConnectionsPage() {
 
   if (error) {
     return (
-      <div className="card connections-error-container" style={{ textAlign: 'center', padding: '40px' }}>
+      <div className={`card ${styles['connections-error-container']}`} style={{ textAlign: 'center', padding: '40px' }}>
         <XCircle size={48} style={{ color: 'var(--danger)', marginBottom: '16px' }} />
         <h3>{t('anErrorOccurred')}</h3>
         <p style={{ color: 'var(--muted)', marginBottom: '24px' }}>{error}</p>
@@ -73,49 +74,49 @@ export default function ConnectionsPage() {
   }
 
   return (
-    <div className="connections-container">
+    <div className={styles['connections-container']}>
       {/* Back to dashboard breadcrumb */}
       <button 
         onClick={() => navigate(isSeller ? '/seller/orders' : '/mfr/orders')}
-        className="btn-back connections-back-btn"
+        className={`btn-back ${styles['connections-back-btn']}`}
       >
         <ArrowLeft size={14} />
         {t('backToDashboard')}
       </button>
 
-      <div className="connections-header">
-        <h2 className="connections-title">
+      <div className={styles['connections-header']}>
+        <h2 className={styles['connections-title']}>
           {isSeller ? t('btnMyManufacturers') : t('btnMySellers')}
         </h2>
       </div>
 
-      <div className="connections-grid">
+      <div className={styles['connections-grid']}>
         {/* Left Column: Requests and Add Form */}
-        <div className="connections-left-col">
+        <div className={styles['connections-left-col']}>
           {/* Add Connection */}
-          <div className="connections-card">
-            <h3 className="connections-card-title">
+          <div className={styles['connections-card']}>
+            <h3 className={styles['connections-card-title']}>
               {isSeller 
                 ? t('addNewManufacturer') 
                 : t('addNewSeller')}
             </h3>
-            <form onSubmit={handleAddSubmit} className="connections-form">
-              <label className="connections-form-label">
+            <form onSubmit={handleAddSubmit} className={styles['connections-form']}>
+              <label className={styles['connections-form-label']}>
                 {isSeller 
                   ? t('connectManufacturerPrompt') 
                   : t('connectSellerPrompt')}
               </label>
-              <div className="connections-input-row">
+              <div className={styles['connections-input-row']}>
                 <input 
                   type="text" 
                   placeholder={t('usernamePlaceholder')}
                   value={addUsername}
                   onChange={(e) => setAddUsername(e.target.value)}
-                  className="connections-input"
+                  className={styles['connections-input']}
                 />
                 <button 
                   type="submit" 
-                  className="btn-primary btn-connection-add"
+                  className={`btn-primary ${styles['btn-connection-add']}`}
                 >
                   <UserPlus size={16} />
                   {t('addBtn')}
@@ -125,25 +126,25 @@ export default function ConnectionsPage() {
           </div>
 
           {/* Gelen İstekler */}
-          <div className="connections-card">
-            <h3 className="connections-card-title connections-card-title--flex">
+          <div className={styles['connections-card']}>
+            <h3 className={`${styles['connections-card-title']} ${styles['connections-card-title--flex']}`}>
               <span>{t('incomingRequests')}</span>
               {incomingRequests.length > 0 && (
-                <span className="connections-badge-danger">
+                <span className={styles['connections-badge-danger']}>
                   {incomingRequests.length}
                 </span>
               )}
             </h3>
-            <div className="connections-list">
+            <div className={styles['connections-list']}>
               {incomingRequests.length === 0 ? (
-                <div className="connections-empty-text">
+                <div className={styles['connections-empty-text']}>
                   {t('noIncoming')}
                 </div>
               ) : (
                 incomingRequests.map(r => (
                   <div 
                     key={r.id}
-                    className="connection-row"
+                    className={styles['connection-row']}
                   >
                     <button 
                       type="button"
@@ -152,16 +153,16 @@ export default function ConnectionsPage() {
                     >
                       @{r.senderUsername}
                     </button>
-                    <div className="connections-actions-wrapper">
+                    <div className={styles['connections-actions-wrapper']}>
                       <button 
-                        className="btn-primary btn-connection-accept"
+                        className={`btn-primary ${styles['btn-connection-accept']}`}
                         onClick={() => handleAccept(r.id)}
                       >
                         <Check size={12} />
                         {t('acceptBtn')}
                       </button>
                       <button 
-                        className="btn-secondary btn-connection-reject"
+                        className={`btn-secondary ${styles['btn-connection-reject']}`}
                         onClick={() => handleReject(r.id)}
                       >
                         <X size={12} />
@@ -175,20 +176,20 @@ export default function ConnectionsPage() {
           </div>
 
           {/* Gönderilen İstekler */}
-          <div className="connections-card">
-            <h3 className="connections-card-title">
+          <div className={styles['connections-card']}>
+            <h3 className={styles['connections-card-title']}>
               {t('sentRequests')}
             </h3>
-            <div className="connections-list">
+            <div className={styles['connections-list']}>
               {filteredSentRequests.length === 0 ? (
-                <div className="connections-empty-text">
+                <div className={styles['connections-empty-text']}>
                   {t('noSentRequests')}
                 </div>
               ) : (
                 filteredSentRequests.map(r => (
                   <div 
                     key={r.id} 
-                    className="connection-row"
+                    className={styles['connection-row']}
                   >
                     <button 
                       type="button"
@@ -197,10 +198,10 @@ export default function ConnectionsPage() {
                     >
                       @{r.receiverUsername}
                     </button>
-                    <div className="connections-flex-center-gap-8">
+                    <div className={styles['connections-flex-center-gap-8']}>
                       {getStatusBadge(r.status)}
                       <button 
-                        className={`btn-connection-cancel${r.status === 'pending' ? ' danger-style' : ''}`}
+                        className={`${styles['btn-connection-cancel']}${r.status === 'pending' ? ' danger-style' : ''}`}
                         onClick={() => handleDeleteSent(r.id)}
                         title={r.status === 'pending' ? t('cancelBtn') : t('clearBtn')}
                       >
@@ -215,52 +216,52 @@ export default function ConnectionsPage() {
         </div>
 
         {/* Right Column: Active Connections */}
-        <div className="connections-card">
-          <h3 className="connections-card-title connections-card-title--large">
+        <div className={styles['connections-card']}>
+          <h3 className={`${styles['connections-card-title']} ${styles['connections-card-title--large']}`}>
             {t('activeConnections')} ({connections.length})
           </h3>
-          <div className="connections-list">
+          <div className={styles['connections-list']}>
             {connectionsLoading ? (
-              <div className="connections-loading-wrapper">
-                <Loader2 className="animate-spin connections-loader" size={24} />
+              <div className={styles['connections-loading-wrapper']}>
+                <Loader2 className={`animate-spin ${styles['connections-loader']}`} size={24} />
               </div>
             ) : connections.length === 0 ? (
-              <div className="connections-empty-text connections-empty-text--large">
+              <div className={`${styles['connections-empty-text']} ${styles['connections-empty-text--large']}`}>
                 {t('noActiveConnections')}
               </div>
             ) : (
               connections.map(c => (
                 <div 
                   key={c.id} 
-                  className="connection-row active-connection-row"
+                  className={`${styles['connection-row']} ${styles['active-connection-row']}`}
                 >
                   <button 
                     type="button"
                     onClick={() => handleConnectionClick(c.username)}
-                    className="connection-profile-btn"
+                    className={styles['connection-profile-btn']}
                   >
-                    <div className="connection-avatar">
+                    <div className={styles['connection-avatar']}>
                       {c.username.substring(0, 2).toUpperCase()}
                     </div>
-                    <div className="connection-info">
-                      <span className="connection-username">
+                    <div className={styles['connection-info']}>
+                      <span className={styles['connection-username']}>
                         @{c.username}
                       </span>
-                      <span className="connection-role-label">
+                      <span className={styles['connection-role-label']}>
                         {c.role === 'mfr' ? t('mfr') : t('seller')}
                       </span>
                     </div>
                   </button>
                   
-                  <div className="connections-actions-wrapper">
+                  <div className={styles['connections-actions-wrapper']}>
                     <button 
-                      className="btn-secondary btn-connection-profile"
+                      className={`btn-secondary ${styles['btn-connection-profile']}`}
                       onClick={() => handleConnectionClick(c.username)}
                     >
                       {t('viewProfile')}
                     </button>
                     <button 
-                      className="btn-secondary btn-connection-disconnect"
+                      className={`btn-secondary ${styles['btn-connection-disconnect']}`}
                       onClick={() => handleRemoveConnection(c.id)}
                     >
                       <Trash2 size={13} />

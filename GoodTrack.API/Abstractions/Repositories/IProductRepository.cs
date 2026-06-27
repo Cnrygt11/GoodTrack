@@ -13,4 +13,5 @@ public interface IProductRepository
     Task SaveAsync(Product product, CancellationToken cancellationToken = default);
     Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     Task<int> MigrateStatusesAsync();
+    Task MarkProductsAsReadAsync(string userId, string role, string status, CancellationToken cancellationToken = default);
 }

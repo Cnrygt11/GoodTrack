@@ -1,0 +1,236 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
+using FluentAssertions;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Xunit;
+using GoodTrack.API.Abstractions.Repositories;
+using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Constants;
+using GoodTrack.API.Hubs;
+using GoodTrack.API.Models;
+using GoodTrack.API.Services;
+
+namespace GoodTrack.API.Tests;
+
+public class AuthServiceTests
+{
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IConnectionRequestRepository> _connectionRequestRepositoryMock;
+    private readonly Mock<IUserConnectionRepository> _userConnectionRepositoryMock;
+    private readonly Mock<IPasswordHasher<User>> _passwordHasherMock;
+    private readonly Mock<IConfiguration> _configurationMock;
+    private readonly Mock<IHubContext<TrackingHub>> _hubContextMock;
+    private readonly Mock<IHubClients> _hubClientsMock;
+    private readonly Mock<IClientProxy> _clientProxyMock;
+    private readonly Mock<ILogger<AuthService>> _loggerMock;
+    private readonly Mock<IImageStorageService> _imageStorageServiceMock;
+    private readonly AuthService _authService;
+
+    public AuthServiceTests()
+    {
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _connectionRequestRepositoryMock = new Mock<IConnectionRequestRepository>();
+        _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
+        _passwordHasherMock = new Mock<IPasswordHasher<User>>();
+        _configurationMock = new Mock<IConfiguration>();
+        _hubContextMock = new Mock<IHubContext<TrackingHub>>();
+        _loggerMock = new Mock<ILogger<AuthService>>();
+        _imageStorageServiceMock = new Mock<IImageStorageService>();
+
+        _hubClientsMock = new Mock<IHubClients>();
+        _clientProxyMock = new Mock<IClientProxy>();
+
+        _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
+        _hubClientsMock.Setup(c => c.Users(It.IsAny<IReadOnlyList<string>>())).Returns(_clientProxyMock.Object);
+        _hubClientsMock.Setup(c => c.User(It.IsAny<string>())).Returns(_clientProxyMock.Object);
+
+        _authService = new AuthService(
+            _userRepositoryMock.Object,
+            _connectionRequestRepositoryMock.Object,
+            _userConnectionRepositoryMock.Object,
+            _passwordHasherMock.Object,
+            _configurationMock.Object,
+            _hubContextMock.Object,
+            _loggerMock.Object,
+            _imageStorageServiceMock.Object);
+    }
+
+    [Fact]
+    public async Task GetConnectionsAsync_ValidUser_ShouldReturnTargetUsers()
+    {
+        // Arrange
+        var userId = "user-1";
+        var targetId = "user-2";
+        var connections = new List<UserConnection>
+        {
+            new() { Id = "conn-1", SellerId = userId, ManufacturerId = targetId }
+        };
+
+        var targetUser = new User
+        {
+            Id = targetId,
+            Username = "target_user",
+            Role = Roles.Mfr
+        };
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.GetConnectionsByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(connections);
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(targetId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(targetUser);
+
+        // Act
+        var result = await _authService.GetConnectionsAsync(userId);
+
+        // Assert
+        result.Should().HaveCount(1);
+        result[0].Id.Should().Be(targetId);
+        result[0].Username.Should().Be("target_user");
+        result[0].Role.Should().Be(Roles.Mfr);
+    }
+
+    [Fact]
+    public async Task RemoveConnectionAsync_ExistingConnection_ShouldDeleteAndNotify()
+    {
+        // Arrange
+        var userId = "user-1";
+        var targetId = "user-2";
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.DeleteAsync(userId, targetId, It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        await _authService.RemoveConnectionAsync(userId, targetId);
+
+        // Assert
+        _userConnectionRepositoryMock.Verify(r => r.DeleteAsync(userId, targetId, It.IsAny<CancellationToken>()), Times.Once);
+        _hubClientsMock.Verify(c => c.Users(It.Is<IReadOnlyList<string>>(l => l.Contains(userId) && l.Contains(targetId))), Times.Once);
+        _clientProxyMock.Verify(p => p.SendCoreAsync("ReceiveConnectionUpdate", It.IsAny<object[]>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendConnectionRequestAsync_ValidRequest_ShouldCreateRequestAndNotify()
+    {
+        // Arrange
+        var senderId = "sender-1";
+        var targetUsername = "receiver_user";
+        var receiverUser = new User
+        {
+            Id = "receiver-1",
+            Username = targetUsername,
+            Role = Roles.Mfr
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByUsernameAsync(targetUsername, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receiverUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(senderId, receiverUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        _connectionRequestRepositoryMock
+            .Setup(r => r.HasPendingRequestAsync(senderId, receiverUser.Id))
+            .ReturnsAsync(false);
+
+        _connectionRequestRepositoryMock
+            .Setup(r => r.HasPendingRequestAsync(receiverUser.Id, senderId))
+            .ReturnsAsync(false);
+
+        // Act
+        await _authService.SendConnectionRequestAsync(senderId, "sender_user", Roles.Seller, targetUsername);
+
+        // Assert
+        _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.Is<ConnectionRequest>(
+            req => req.SenderId == senderId && req.ReceiverId == receiverUser.Id && req.Status == "pending")), Times.Once);
+        
+        _hubClientsMock.Verify(c => c.User(receiverUser.Id), Times.Once);
+        _hubClientsMock.Verify(c => c.User(senderId), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendConnectionRequestAsync_AlreadyConnected_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var senderId = "sender-1";
+        var targetUsername = "receiver_user";
+        var receiverUser = new User
+        {
+            Id = "receiver-1",
+            Username = targetUsername,
+            Role = Roles.Mfr
+        };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByUsernameAsync(targetUsername, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receiverUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(senderId, receiverUser.Id, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act & Assert
+        var act = () => _authService.SendConnectionRequestAsync(senderId, "sender_user", Roles.Seller, targetUsername);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("Bu kullanıcı zaten listenizde ekli.");
+
+        _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<ConnectionRequest>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AcceptConnectionRequestAsync_PendingRequest_ShouldCreateConnection()
+    {
+        // Arrange
+        var receiverId = "receiver-1";
+        var requestId = "req-123";
+        var senderId = "sender-1";
+
+        var request = new ConnectionRequest
+        {
+            Id = requestId,
+            SenderId = senderId,
+            ReceiverId = receiverId,
+            Status = "pending"
+        };
+
+        var receiverUser = new User { Id = receiverId, Role = Roles.Seller };
+        var senderUser = new User { Id = senderId, Role = Roles.Mfr };
+
+        _connectionRequestRepositoryMock
+            .Setup(r => r.GetByIdAsync(requestId))
+            .ReturnsAsync(request);
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(receiverId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receiverUser);
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(senderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(senderUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(receiverId, senderId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        // Act
+        await _authService.AcceptConnectionRequestAsync(receiverId, requestId);
+
+        // Assert
+        _userConnectionRepositoryMock.Verify(r => r.SaveAsync(It.Is<UserConnection>(
+            c => c.SellerId == receiverId && c.ManufacturerId == senderId), It.IsAny<CancellationToken>()), Times.Once);
+
+        request.Status.Should().Be("accepted");
+        _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(request), Times.Once);
+
+        _hubClientsMock.Verify(c => c.Users(It.Is<IReadOnlyList<string>>(l => l.Contains(receiverId) && l.Contains(senderId))), Times.AtLeastOnce);
+    }
+}

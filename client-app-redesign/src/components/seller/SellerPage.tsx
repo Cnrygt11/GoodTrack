@@ -9,6 +9,7 @@ import BrokenDetailsModal from './BrokenDetailsModal';
 import CatalogPage from '../catalog/CatalogPage';
 import { ListFilter } from '../../types/orders';
 import { ORDER_STATUS } from '../../utils/constants';
+import styles from './SellerPage.module.css';
 
 function getTabIcon(tab: ListFilter) {
   const size = 20;
@@ -60,7 +61,7 @@ export default function SellerPage() {
     <div id="seller-screen">
 
       {/* Sub-tab navigation */}
-      <div className="seller-tab-nav">
+      <div className={styles['seller-tab-nav']}>
         <TabButton active={activeTab === 'list'}    onClick={() => setActiveTab('list')}    icon={<ClipboardList size={16} />} label={t('tabSentOrders')} />
         <TabButton active={activeTab === 'create'}  onClick={() => setActiveTab('create')}  icon={<PlusCircle size={16} />}   label={t('tabCreateOrder')} />
         <TabButton active={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} icon={<Package size={16} />}      label={t('btnMyProducts')} />
@@ -95,12 +96,12 @@ export default function SellerPage() {
       ) : (
         <>
           {/* Dashboard title */}
-          <h2 className="seller-dashboard-title">
+          <h2 className={styles['seller-dashboard-title']}>
             <>{t('sellerDashboardTitlePart1')} <span>{t('sellerDashboardTitlePart2')}</span></>
           </h2>
 
           {/* Status filter grid */}
-          <div className="seller-stat-grid">
+          <div className={styles['seller-stat-grid']}>
             {tabs.map((tab) => {
               const isActive = listFilter === tab.key;
               const count = badgeCounts[tab.key] || 0;
@@ -108,33 +109,33 @@ export default function SellerPage() {
                 <button
                   key={tab.key}
                   type="button"
-                  className={`seller-stat-card${isActive ? ' seller-stat-card--active' : ''}`}
+                  className={`${styles['seller-stat-card']}${isActive ? ' ' + styles['seller-stat-card--active'] : ''}`}
                   onClick={() => setListFilter(tab.key)}
                 >
-                  <div className={`seller-stat-icon status-${tab.key} ${isActive ? 'seller-stat-icon--active' : 'seller-stat-icon--inactive'}`}>
+                  <div className={`${styles['seller-stat-icon']} status-${tab.key} ${isActive ? styles['seller-stat-icon--active'] : styles['seller-stat-icon--inactive']}`}>
                     {getTabIcon(tab.key)}
                   </div>
-                  <span className={`seller-stat-label${isActive ? ' seller-stat-label--active' : ''}`}>
+                  <span className={`${styles['seller-stat-label']}${isActive ? ' ' + styles['seller-stat-label--active'] : ''}`}>
                     {tab.label}
                   </span>
-                  {count > 0 && <span className="seller-stat-badge">{count}</span>}
+                  {count > 0 && <span className={styles['seller-stat-badge']}>{count}</span>}
                 </button>
               );
             })}
           </div>
 
           {/* List header */}
-          <div className="seller-list-header">
+          <div className={styles['seller-list-header']}>
             <h3>
               {t('orderListLabel')}{' '}
-              <span className="seller-list-filter-name">
+              <span className={styles['seller-list-filter-name']}>
                 {tabs.find((tab) => tab.key === listFilter)?.label}
               </span>
             </h3>
-            <div className="seller-sort-row">
-              <span className="seller-sort-label">{t('sortByDate')}:</span>
+            <div className={styles['seller-sort-row']}>
+              <span className={styles['seller-sort-label']}>{t('sortByDate')}:</span>
               <select
-                className="seller-sort-select"
+                className={styles['seller-sort-select']}
                 value={sortOrder}
                 onChange={(e) => setSortOrder(e.target.value as 'desc' | 'asc')}
               >
@@ -145,9 +146,9 @@ export default function SellerPage() {
           </div>
 
           {/* Product list */}
-          <div className="seller-product-list">
+          <div className={styles['seller-product-list']}>
             {filteredProducts.length === 0 ? (
-              <div className="seller-empty-state">
+              <div className={styles['seller-empty-state']}>
                 <Package size={36} />
                 <p>
                   {t('noOrdersFoundInTab')}
@@ -220,7 +221,7 @@ function TabButton({ active, onClick, icon, label }: TabButtonProps) {
   return (
     <button
       type="button"
-      className={`seller-tab-btn${active ? ' seller-tab-btn--active' : ''}`}
+      className={`${styles['seller-tab-btn']}${active ? ' ' + styles['seller-tab-btn--active'] : ''}`}
       onClick={onClick}
     >
       {icon}

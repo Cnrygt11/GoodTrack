@@ -76,13 +76,18 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
       }, 1000);
     });
 
+    let active = true;
+
     // Start connection
     newConnection.start()
       .then(() => {
-        if (import.meta.env.DEV) console.log('[SignalR] Connected to Tracking Hub.');
-        setConnection(newConnection);
+        if (active) {
+          if (import.meta.env.DEV) console.log('[SignalR] Connected to Tracking Hub.');
+          setConnection(newConnection);
+        }
       })
       .catch(err => {
+        if (!active) return;
         const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg.includes('stopped during negotiation') || errMsg.includes('AbortError')) {
           console.warn('[SignalR] Connection start aborted during negotiation (likely due to React StrictMode or HMR).');
@@ -92,6 +97,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
       });
 
     return () => {
+      active = false;
       newConnection.stop().then(() => {
         if (import.meta.env.DEV) console.log('[SignalR] Stopped Tracking Hub Connection.');
       });

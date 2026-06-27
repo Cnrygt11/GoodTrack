@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Models;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -68,5 +69,55 @@ public sealed class PostgresProductRepository : IProductRepository
     {
         // Not applicable for PostgreSQL — returns 0
         return Task.FromResult(0);
+    }
+
+    public async Task MarkProductsAsReadAsync(string userId, string role, string status, CancellationToken cancellationToken = default)
+    {
+        var query = _context.Products.AsQueryable();
+
+        // 1. Filter by role ownership
+        if (role == Roles.Seller)
+        {
+            query = query.Where(p => p.SellerId == userId && !p.IsReadBySeller);
+        }
+        else
+        {
+            query = query.Where(p => p.ManufacturerId == userId && !p.IsReadByMfr);
+        }
+
+        // 2. Filter by status buckets (matching MarkStatusAsReadAsync logic in ProductService)
+        if (status.Equals("defective", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(p => p.Status == OrderStatus.Defective || p.Status == OrderStatus.Missing);
+        }
+        else if (status.Equals("shipped", StringComparison.OrdinalIgnoreCase))
+        {
+            if (role == Roles.Mfr)
+            {
+                query = query.Where(p => p.Status == OrderStatus.Shipped || p.Status == OrderStatus.Cancelled || p.Status == OrderStatus.ToShip);
+            }
+            else
+            {
+                query = query.Where(p => p.Status == OrderStatus.Shipped || p.Status == OrderStatus.Cancelled);
+            }
+        }
+        else if (status.Equals("awaiting", StringComparison.OrdinalIgnoreCase))
+        {
+            query = query.Where(p => p.Status == OrderStatus.Awaiting || p.Status == OrderStatus.Corrected);
+        }
+        else
+        {
+            query = query.Where(p => p.Status == status);
+        }
+
+        // 3. Execute bulk update
+        if (role == Roles.Seller)
+        {
+            await query.ExecuteUpdateAsync(setters => setters.SetProperty(p => p.IsReadBySeller, true), cancellationToken);
+        }
+        else
+        {
+            await query.ExecuteUpdateAsync(setters => setters.SetProperty(p => p.IsReadByMfr, true), cancellationToken);
+        }
     }
 }

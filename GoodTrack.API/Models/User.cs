@@ -34,8 +34,6 @@ public class User
 
     public string CreatedAt { get; set; } = string.Empty;
 
-    public List<string> AssociatedUserIds { get; set; } = new();
-
     public bool IsActive { get; set; } = true;
 
     public string VerificationToken { get; set; } = string.Empty;
@@ -45,4 +43,6 @@ public class User
     public string RefreshToken { get; set; } = string.Empty;
 
     public string RefreshTokenExpiryTime { get; set; } = string.Empty;
+
+    public uint RowVersion { get; set; }
 }

@@ -61,6 +61,7 @@ export default function useSellerOrderActions(
   // --- Handlers ---
 
   const handleCancelOrder = useCallback(async (productId: string) => {
+    if (isLoading.current) return;
     const accepted = await confirm({
       title: t('cancelOrderTitle'),
       message: t('cancelOrderConfirm'),
@@ -79,6 +80,7 @@ export default function useSellerOrderActions(
     }
 
     try {
+      isLoading.current = true;
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'cancelled');
       showToast(data.message || t('statusUpdatedSuccess'));
@@ -87,11 +89,13 @@ export default function useSellerOrderActions(
       rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
+      isLoading.current = false;
       setActionLoading(false);
     }
   }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleRequestCancel = useCallback(async (productId: string) => {
+    if (isLoading.current) return;
     const accepted = await confirm({
       title: t('requestCancelTitle'),
       message: t('requestCancelConfirm'),
@@ -110,6 +114,7 @@ export default function useSellerOrderActions(
     }
 
     try {
+      isLoading.current = true;
       setActionLoading(true);
       const data = await api.requestOrderCancellation(productId);
       showToast(data.message || t('statusUpdatedSuccess'));
@@ -118,6 +123,7 @@ export default function useSellerOrderActions(
       rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
+      isLoading.current = false;
       setActionLoading(false);
     }
   }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
@@ -128,6 +134,7 @@ export default function useSellerOrderActions(
     note?: string | null,
     image?: string | null,
   ) => {
+    if (isLoading.current) return;
     if (action === 'correct') {
       const accepted = await confirm({
         title: t('verifyOrderTitle'),
@@ -147,6 +154,7 @@ export default function useSellerOrderActions(
       }
 
       try {
+        isLoading.current = true;
         setActionLoading(true);
         const data = await api.updateOrderStatus(productId, 'to_ship');
         showToast(data.message || t('statusUpdatedSuccess'));
@@ -155,6 +163,7 @@ export default function useSellerOrderActions(
         rollbackProducts(prevProducts);
         showToast(extractErrorMessage(err));
       } finally {
+        isLoading.current = false;
         setActionLoading(false);
       }
     } else {
@@ -169,6 +178,7 @@ export default function useSellerOrderActions(
   }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
+    if (isLoading.current) return;
     const accepted = await confirm({
       title: t('shipOrderTitle'),
       message: t('shipOrderConfirm'),
@@ -187,6 +197,7 @@ export default function useSellerOrderActions(
     }
 
     try {
+      isLoading.current = true;
       setActionLoading(true);
       const data = await api.updateOrderStatus(productId, 'shipped');
       showToast(data.message || t('statusUpdatedSuccess'));
@@ -195,6 +206,7 @@ export default function useSellerOrderActions(
       rollbackProducts(prevProducts);
       showToast(extractErrorMessage(err));
     } finally {
+      isLoading.current = false;
       setActionLoading(false);
     }
   }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);

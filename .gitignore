@@ -29,3 +29,8 @@ appsettings.json
 appsettings.Development.json
 *.pem
 *.key
+
+# --- logs ---
+GoodTrack.API/logs/
+logs/
+

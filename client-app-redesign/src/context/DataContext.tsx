@@ -43,6 +43,7 @@ interface DataContextType {
   optimisticUpdateProduct: (prod: Product) => void;
   optimisticRemoveProduct: (productId: string) => void;
   rollbackProducts: (prev: Product[]) => void;
+  markStatusAsReadLocally: (status: string, role: string) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -333,6 +334,35 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setProductsState(prev);
   }, []);
 
+  const markStatusAsReadLocally = useCallback((status: string, role: string) => {
+    setProductsState(prev => prev.map(p => {
+      const currentStatus = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
+      
+      let match = false;
+      const lowerStatus = status.toLowerCase();
+      const lowerCurrent = currentStatus.toLowerCase();
+      
+      if (lowerStatus === 'defective') {
+        match = lowerCurrent === 'defective' || lowerCurrent === 'missing';
+      } else if (lowerStatus === 'shipped') {
+        match = lowerCurrent === 'shipped' || lowerCurrent === 'cancelled' || (role === 'mfr' && lowerCurrent === 'to_ship');
+      } else if (lowerStatus === 'awaiting') {
+        match = lowerCurrent === 'awaiting' || lowerCurrent === 'corrected';
+      } else {
+        match = lowerCurrent === lowerStatus;
+      }
+
+      if (match) {
+        if (role === 'seller') {
+          return { ...p, isReadBySeller: true };
+        } else {
+          return { ...p, isReadByMfr: true };
+        }
+      }
+      return p;
+    }));
+  }, []);
+
   // --- Credits Callbacks ---
   const refreshCredits = useCallback(async () => {
     if (!user || user.role !== 'seller') return;
@@ -428,6 +458,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       optimisticUpdateProduct,
       optimisticRemoveProduct,
       rollbackProducts,
+      markStatusAsReadLocally,
       balance,
       plan,
       renewsAt,

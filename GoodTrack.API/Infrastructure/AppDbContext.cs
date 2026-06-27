@@ -14,6 +14,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<ExtraFieldDef> ExtraFieldDefs => Set<ExtraFieldDef>();
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
     public DbSet<UserCredit> UserCredits => Set<UserCredit>();
+    public DbSet<UserConnection> UserConnections => Set<UserConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -42,7 +43,7 @@ public sealed class AppDbContext : DbContext
             // PostgreSQL native text[] arrays
             entity.Property(u => u.Keywords).HasColumnType("text[]");
             entity.Property(u => u.ProductImages).HasColumnType("text[]");
-            entity.Property(u => u.AssociatedUserIds).HasColumnType("text[]");
+            entity.Property(u => u.RowVersion).IsRowVersion();
             // Unique index
             entity.HasIndex(u => u.Username).IsUnique();
             entity.HasIndex(u => u.Email).IsUnique();
@@ -155,6 +156,18 @@ public sealed class AppDbContext : DbContext
                   .WithOne()
                   .HasForeignKey<UserCredit>(c => c.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── UserConnection ───────────────────────────────────────────────────
+        modelBuilder.Entity<UserConnection>(entity =>
+        {
+            entity.ToTable("user_connections");
+            entity.HasKey(c => c.Id);
+            entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            entity.Property(c => c.SellerId).IsRequired().HasMaxLength(100);
+            entity.Property(c => c.ManufacturerId).IsRequired().HasMaxLength(100);
+            entity.Property(c => c.ConnectedAt).HasMaxLength(50);
+            entity.HasIndex(c => new { c.SellerId, c.ManufacturerId }).IsUnique();
         });
     }
 }

@@ -63,7 +63,7 @@ public sealed class PostgresUserRepository : IUserRepository
             var cities = city.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim().ToLower()).ToList();
             if (cities.Any())
             {
-                query = query.Where(u => cities.Contains(u.City.ToLower()));
+                query = query.Where(u => cities.Contains(u.City));
             }
         }
 
@@ -72,7 +72,7 @@ public sealed class PostgresUserRepository : IUserRepository
             var keywords = keyword.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(k => k.Trim().ToLower()).ToList();
             if (keywords.Any())
             {
-                query = query.Where(u => u.Keywords.Any(kw => keywords.Contains(kw.ToLower())));
+                query = query.Where(u => u.Keywords.Any(kw => keywords.Contains(kw)));
             }
         }
 

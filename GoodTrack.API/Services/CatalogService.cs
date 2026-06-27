@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services;
@@ -23,24 +25,25 @@ public class CatalogService : ICatalogService
         _imageStorageService = imageStorageService;
     }
 
-    public async Task<List<CatalogProduct>> GetSellerCatalogAsync(string sellerId)
+    public async Task<List<CatalogProductResponseDto>> GetSellerCatalogAsync(string sellerId)
     {
-        return await _catalogRepository.GetCatalogBySellerAsync(sellerId);
+        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
+        return catalog.Select(MapToResponseDto).ToList();
     }
 
-    public async Task<CatalogProduct> AddCatalogProductAsync(string sellerId, CatalogProduct product)
+    public async Task<CatalogProductResponseDto> AddCatalogProductAsync(string sellerId, CreateCatalogProductDto dto)
     {
-        if (product == null || string.IsNullOrWhiteSpace(product.ProductCode))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.ProductCode))
         {
             throw new ArgumentException("Ürün kodu zorunludur!");
         }
 
-        if (string.IsNullOrWhiteSpace(product.ManufacturerId) || string.IsNullOrWhiteSpace(product.ManufacturerName))
+        if (string.IsNullOrWhiteSpace(dto.ManufacturerId) || string.IsNullOrWhiteSpace(dto.ManufacturerName))
         {
             throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
         }
 
-        var cleanCode = product.ProductCode.Trim();
+        var cleanCode = dto.ProductCode.Trim();
 
         var exists = await _catalogRepository.HasProductCodeAsync(sellerId, cleanCode);
         if (exists)
@@ -48,25 +51,32 @@ public class CatalogService : ICatalogService
             throw new ArgumentException("Bu ürün kodu kataloğunuzda zaten kayıtlı!");
         }
 
-        product.ProductCode = cleanCode;
-        product.SellerId = sellerId;
-        product.CreatedAt = DateTime.UtcNow.ToString("o");
+        var product = new CatalogProduct
+        {
+            ProductCode = cleanCode,
+            SellerId = sellerId,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras
+        };
 
-        product.Image = await _imageStorageService.StoreImageAsync(product.Image) ?? string.Empty;
-
+        product.Image = await _imageStorageService.StoreImageAsync(dto.Image) ?? string.Empty;
 
         await _catalogRepository.SaveAsync(product);
-        return product;
+        return MapToResponseDto(product);
     }
 
-    public async Task<CatalogProduct> UpdateCatalogProductAsync(string sellerId, string id, CatalogProduct updatedProduct)
+    public async Task<CatalogProductResponseDto> UpdateCatalogProductAsync(string sellerId, string id, CreateCatalogProductDto dto)
     {
-        if (updatedProduct == null || string.IsNullOrWhiteSpace(updatedProduct.ProductCode))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.ProductCode))
         {
             throw new ArgumentException("Ürün kodu zorunludur!");
         }
 
-        if (string.IsNullOrWhiteSpace(updatedProduct.ManufacturerId) || string.IsNullOrWhiteSpace(updatedProduct.ManufacturerName))
+        if (string.IsNullOrWhiteSpace(dto.ManufacturerId) || string.IsNullOrWhiteSpace(dto.ManufacturerName))
         {
             throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
         }
@@ -82,7 +92,7 @@ public class CatalogService : ICatalogService
             throw new UnauthorizedAccessException("Bu katalog ürününü düzenleme yetkiniz yok.");
         }
 
-        var cleanCode = updatedProduct.ProductCode.Trim();
+        var cleanCode = dto.ProductCode.Trim();
 
         // If product code changed, check uniqueness
         if (!string.Equals(existing.ProductCode, cleanCode, StringComparison.OrdinalIgnoreCase))
@@ -95,7 +105,7 @@ public class CatalogService : ICatalogService
         }
 
         // Handle image changes:
-        if (updatedProduct.Image != existing.Image)
+        if (dto.Image != existing.Image)
         {
             // If the old product had a local file, delete it safely
             if (!string.IsNullOrEmpty(existing.Image))
@@ -104,19 +114,18 @@ public class CatalogService : ICatalogService
             }
 
             // Store the new image
-            updatedProduct.Image = await _imageStorageService.StoreImageAsync(updatedProduct.Image) ?? string.Empty;
+            existing.Image = await _imageStorageService.StoreImageAsync(dto.Image) ?? string.Empty;
         }
 
         existing.ProductCode = cleanCode;
-        existing.ManufacturerId = updatedProduct.ManufacturerId;
-        existing.ManufacturerName = updatedProduct.ManufacturerName;
-        existing.Image = updatedProduct.Image;
-        existing.Text = updatedProduct.Text;
-        existing.Length = updatedProduct.Length;
-        existing.Extras = updatedProduct.Extras;
+        existing.ManufacturerId = dto.ManufacturerId;
+        existing.ManufacturerName = dto.ManufacturerName;
+        existing.Text = dto.Text;
+        existing.Length = dto.Length;
+        existing.Extras = dto.Extras;
         
         await _catalogRepository.SaveAsync(existing);
-        return existing;
+        return MapToResponseDto(existing);
     }
 
     public async Task DeleteCatalogProductAsync(string sellerId, string id)
@@ -158,4 +167,20 @@ public class CatalogService : ICatalogService
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
+    private static CatalogProductResponseDto MapToResponseDto(CatalogProduct product)
+    {
+        return new CatalogProductResponseDto
+        {
+            Id = product.Id,
+            ProductCode = product.ProductCode,
+            Image = product.Image,
+            Text = product.Text,
+            Length = product.Length,
+            Extras = product.Extras,
+            CreatedAt = product.CreatedAt,
+            SellerId = product.SellerId,
+            ManufacturerId = product.ManufacturerId,
+            ManufacturerName = product.ManufacturerName
+        };
+    }
 }

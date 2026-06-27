@@ -52,7 +52,7 @@ public class AdminController : BaseApiController
             Keywords = u.Keywords,
             IsVisibleToSellers = u.IsVisibleToSellers,
             CreatedAt = u.CreatedAt,
-            AssociatedUserIds = u.AssociatedUserIds,
+            AssociatedUserIds = new List<string>(),
             IsActive = u.IsActive
         }).ToList();
 

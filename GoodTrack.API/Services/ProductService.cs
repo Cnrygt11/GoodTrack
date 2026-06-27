@@ -8,6 +8,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Services;
 
@@ -18,6 +19,7 @@ public class ProductService : IProductService
     private readonly IHubContext<TrackingHub> _hubContext;
     private readonly IImageStorageService _imageStorageService;
     private readonly ICreditsService _creditsService;
+    private readonly Dictionary<string, StatusTransitionRule> _transitionRules;
 
     public ProductService(
         IProductRepository productRepository, 
@@ -31,6 +33,177 @@ public class ProductService : IProductService
         _hubContext = hubContext;
         _imageStorageService = imageStorageService;
         _creditsService = creditsService;
+
+        _transitionRules = new Dictionary<string, StatusTransitionRule>(StringComparer.OrdinalIgnoreCase)
+        {
+            {
+                OrderStatus.Cancelled,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Seller,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected, OrderStatus.Broken },
+                    ErrorMessage = "Üretime başlanmış olan siparişler iptal edilemez.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Cancelled;
+                        p.IsPendingApproval = false;
+                        p.IsDefective = false;
+                        p.Completed = false;
+                        return Task.FromResult("Sipariş satıcı tarafından iptal edildi.");
+                    }
+                }
+            },
+            {
+                OrderStatus.Production,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Mfr,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected, OrderStatus.Defective, OrderStatus.Missing },
+                    ErrorMessage = "Bu sipariş üretime alınamaz.",
+                    TransitionAction = async (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Production;
+                        p.Completed = false;
+                        p.IsDefective = false;
+                        p.IsPendingApproval = false;
+                        p.IsReproduction = oldStatus == OrderStatus.Defective || oldStatus == OrderStatus.Missing;
+
+                        string? oldDefectImage = p.DefectImage;
+                        p.DefectNote = null;
+                        p.DefectImage = null;
+                        await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+
+                        return (oldStatus == OrderStatus.Awaiting || oldStatus == OrderStatus.Corrected)
+                            ? "Sipariş üretici tarafından onaylandı ve üretime alındı."
+                            : "Sorunlu sipariş üretici tarafından tekrar üretime alındı.";
+                    }
+                }
+            },
+            {
+                OrderStatus.Broken,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Mfr,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected },
+                    ErrorMessage = "Sipariş bozuk olarak işaretlenemez.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Broken;
+                        p.IsPendingApproval = false;
+                        p.IsDefective = false;
+                        p.Completed = false;
+                        p.DefectNote = note;
+                        return Task.FromResult(string.IsNullOrEmpty(note)
+                            ? "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi."
+                            : $"Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi. Açıklama: {note}");
+                    }
+                }
+            },
+            {
+                OrderStatus.Completed,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Mfr,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Production },
+                    ErrorMessage = "Üretimi tamamlanacak sipariş önce üretimde olmalıdır.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Completed;
+                        p.Completed = true;
+                        p.CompletedAt = DateTime.UtcNow.ToString("o");
+                        return Task.FromResult("Üretici siparişin üretimini tamamladı.");
+                    }
+                }
+            },
+            {
+                OrderStatus.Delivered,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Mfr,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Completed, OrderStatus.Defective, OrderStatus.Missing },
+                    ErrorMessage = "Bu sipariş teslim edilemez.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Delivered;
+                        p.Completed = true;
+                        p.IsDefective = false;
+
+                        var msg = oldStatus == OrderStatus.Completed
+                            ? "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor."
+                            : "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.";
+                        return Task.FromResult(msg);
+                    }
+                }
+            },
+            {
+                OrderStatus.ToShip,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Seller,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
+                    ErrorMessage = "Sipariş teslim edilmeden onaylanamaz.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.ToShip;
+                        p.Completed = true;
+                        p.IsDefective = false;
+                        return Task.FromResult("Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.");
+                    }
+                }
+            },
+            {
+                OrderStatus.Defective,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Seller,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
+                    ErrorMessage = "Sipariş teslim edilmeden hata bildirilemez.",
+                    TransitionAction = async (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Defective;
+                        p.IsDefective = true;
+                        p.Completed = false;
+                        p.DefectNote = note;
+                        await UpdateDefectImageAsync(p, img);
+                        return $"Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama: {note}";
+                    }
+                }
+            },
+            {
+                OrderStatus.Missing,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Seller,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
+                    ErrorMessage = "Sipariş teslim edilmeden eksik bildirilemez.",
+                    TransitionAction = async (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Missing;
+                        p.IsDefective = true;
+                        p.Completed = false;
+                        p.DefectNote = note;
+                        await UpdateDefectImageAsync(p, img);
+                        return $"Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama: {note}";
+                    }
+                }
+            },
+            {
+                OrderStatus.Shipped,
+                new StatusTransitionRule
+                {
+                    RequiredRole = Roles.Seller,
+                    AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.ToShip },
+                    ErrorMessage = "Sipariş DOĞRU olarak onaylanmadan kargolanamaz.",
+                    TransitionAction = (p, oldStatus, note, img) =>
+                    {
+                        p.Status = OrderStatus.Shipped;
+                        p.Completed = true;
+                        p.IsDefective = false;
+                        return Task.FromResult("Sipariş satıcı tarafından kargolandı.");
+                    }
+                }
+            }
+        };
     }
 
     // ~5MB binary = ~6.8MB base64; we use 7_000_000 chars as the hard cap
@@ -44,52 +217,65 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task<List<Product>> GetUserProductsAsync(string userId, string role, CancellationToken cancellationToken = default)
+    public async Task<List<ProductResponseDto>> GetUserProductsAsync(string userId, string role, CancellationToken cancellationToken = default)
     {
+        List<Product> products;
         if (role == Roles.Seller)
         {
-            return await _productRepository.GetProductsBySellerAsync(userId, cancellationToken);
+            products = await _productRepository.GetProductsBySellerAsync(userId, cancellationToken);
         }
         else if (role == Roles.Mfr)
         {
-            return await _productRepository.GetProductsByManufacturerAsync(userId, cancellationToken);
+            products = await _productRepository.GetProductsByManufacturerAsync(userId, cancellationToken);
         }
         else
         {
             throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
         }
+
+        return products.Select(MapToResponseDto).ToList();
     }
 
-    public async Task<Product> CreateOrderAsync(string sellerId, string sellerName, Product order)
+    public async Task<ProductResponseDto> CreateOrderAsync(string sellerId, string sellerName, CreateProductDto dto)
     {
-        if (order == null || string.IsNullOrWhiteSpace(order.Code))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
             throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
         }
 
-        if (string.IsNullOrWhiteSpace(order.ManufacturerId))
+        if (string.IsNullOrWhiteSpace(dto.ManufacturerId))
         {
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
 
-        order.SellerId = sellerId;
-        order.SellerName = sellerName;
-        order.CreatedAt = DateTime.UtcNow.ToString("o");
-        order.Status = OrderStatus.Awaiting;
-        order.IsPendingApproval = true;
-        order.Completed = false;
-        order.IsDefective = false;
-        order.IsReadBySeller = true;
-        order.IsReadByMfr = false;
-        order.Logs = new List<OrderLog>
+        var order = new Product
         {
-            new OrderLog
+            Code = dto.Code,
+            Image = dto.Image,
+            Text = dto.Text,
+            Length = dto.Length,
+            Extras = dto.Extras,
+            ManufacturerId = dto.ManufacturerId,
+            ManufacturerName = dto.ManufacturerName,
+            SellerId = sellerId,
+            SellerName = sellerName,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            Status = OrderStatus.Awaiting,
+            IsPendingApproval = true,
+            Completed = false,
+            IsDefective = false,
+            IsReadBySeller = true,
+            IsReadByMfr = false,
+            Logs = new List<OrderLog>
             {
-                Timestamp = DateTime.UtcNow.ToString("o"),
-                Status = OrderStatus.Awaiting,
-                Message = "Sipariş oluşturuldu ve üretici onayına gönderildi.",
-                UserId = sellerId,
-                UserName = sellerName
+                new OrderLog
+                {
+                    Timestamp = DateTime.UtcNow.ToString("o"),
+                    Status = OrderStatus.Awaiting,
+                    Message = "Sipariş oluşturuldu ve üretici onayına gönderildi.",
+                    UserId = sellerId,
+                    UserName = sellerName
+                }
             }
         };
 
@@ -106,18 +292,18 @@ public class ProductService : IProductService
         // Real-time notification: new order created (notify seller and assigned manufacturer)
         await _hubContext.Clients.Users(order.ManufacturerId, sellerId).SendAsync("ReceiveOrderUpdate");
 
-        return order;
+        return MapToResponseDto(order);
     }
 
 
-    public async Task<Product> UpdateProductAsync(string sellerId, string orderId, Product updatedOrder)
+    public async Task<ProductResponseDto> UpdateProductAsync(string sellerId, string orderId, UpdateProductDto dto)
     {
-        if (updatedOrder == null || string.IsNullOrWhiteSpace(updatedOrder.Code))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
             throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
         }
 
-        if (string.IsNullOrWhiteSpace(updatedOrder.ManufacturerId))
+        if (string.IsNullOrWhiteSpace(dto.ManufacturerId))
         {
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
@@ -134,11 +320,11 @@ public class ProductService : IProductService
         }
 
         string oldMfrId = existing.ManufacturerId;
-        string newMfrId = updatedOrder.ManufacturerId;
+        string newMfrId = dto.ManufacturerId;
 
         // Handle image swapping safely
         string? oldImage = existing.Image;
-        string? newImage = updatedOrder.Image;
+        string? newImage = dto.Image;
 
         if (newImage != oldImage)
         {
@@ -165,12 +351,12 @@ public class ProductService : IProductService
         }
 
         // Update fields
-        existing.Code = updatedOrder.Code;
-        existing.Text = updatedOrder.Text;
-        existing.Length = updatedOrder.Length;
-        existing.Extras = updatedOrder.Extras;
+        existing.Code = dto.Code;
+        existing.Text = dto.Text;
+        existing.Length = dto.Length;
+        existing.Extras = dto.Extras;
         existing.ManufacturerId = newMfrId;
-        existing.ManufacturerName = updatedOrder.ManufacturerName;
+        existing.ManufacturerName = dto.ManufacturerName;
 
         if (existing.Status == OrderStatus.Broken)
         {
@@ -211,7 +397,7 @@ public class ProductService : IProductService
         }
         await _hubContext.Clients.Users(usersToNotify).SendAsync("ReceiveOrderUpdate");
 
-        return existing;
+        return MapToResponseDto(existing);
     }
 
     public async Task DeleteProductAsync(string sellerId, string orderId)
@@ -366,158 +552,23 @@ public class ProductService : IProductService
         Product product, string newStatus, string oldStatus,
         string role, string? defectNote, string? defectImage)
     {
-        return newStatus switch
+        if (!_transitionRules.TryGetValue(newStatus, out var rule))
         {
-            OrderStatus.Cancelled => ApplyCancelled(product, oldStatus, role),
-            OrderStatus.Production => await ApplyProductionAsync(product, oldStatus, role),
-            OrderStatus.Broken => ApplyBroken(product, oldStatus, role, defectNote),
-            OrderStatus.Completed => ApplyCompleted(product, oldStatus, role),
-            OrderStatus.Delivered => ApplyDelivered(product, oldStatus, role),
-            OrderStatus.ToShip => ApplyToShip(product, oldStatus, role),
-            OrderStatus.Defective => await ApplyDefectiveAsync(product, oldStatus, role, defectNote, defectImage),
-            OrderStatus.Missing => await ApplyMissingAsync(product, oldStatus, role, defectNote, defectImage),
-            OrderStatus.Shipped => ApplyShipped(product, oldStatus, role),
-            _ => throw new ArgumentException("Geçersiz hedef durum!")
-        };
-    }
+            throw new ArgumentException("Geçersiz hedef durum!");
+        }
 
-    private static string ApplyCancelled(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Seller)
-            throw new UnauthorizedAccessException("Siparişi sadece satıcı iptal edebilir.");
-        if (oldStatus != OrderStatus.Awaiting && oldStatus != OrderStatus.Corrected && oldStatus != OrderStatus.Broken)
-            throw new InvalidOperationException("Üretime başlanmış olan siparişler iptal edilemez.");
+        if (!role.Equals(rule.RequiredRole, StringComparison.OrdinalIgnoreCase))
+        {
+            var roleText = rule.RequiredRole == Roles.Seller ? "satıcı" : "üretici";
+            throw new UnauthorizedAccessException($"Bu işlemi sadece {roleText} gerçekleştirebilir.");
+        }
 
-        p.Status = OrderStatus.Cancelled;
-        p.IsPendingApproval = false;
-        p.IsDefective = false;
-        p.Completed = false;
-        return "Sipariş satıcı tarafından iptal edildi.";
-    }
+        if (!rule.AllowedSourceStatuses.Contains(oldStatus))
+        {
+            throw new InvalidOperationException(rule.ErrorMessage);
+        }
 
-    private async Task<string> ApplyProductionAsync(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Mfr)
-            throw new UnauthorizedAccessException("Siparişi sadece üretici üretime alabilir.");
-        if (oldStatus != OrderStatus.Awaiting && oldStatus != OrderStatus.Corrected && oldStatus != OrderStatus.Defective && oldStatus != OrderStatus.Missing)
-            throw new InvalidOperationException("Bu sipariş üretime alınamaz.");
-
-        p.Status = OrderStatus.Production;
-        p.Completed = false;
-        p.IsDefective = false;
-        p.IsPendingApproval = false;
-        p.IsReproduction = oldStatus == OrderStatus.Defective || oldStatus == OrderStatus.Missing;
-
-        string? oldDefectImage = p.DefectImage;
-        p.DefectNote = null;
-        p.DefectImage = null;
-        await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
-
-        return (oldStatus == OrderStatus.Awaiting || oldStatus == OrderStatus.Corrected)
-            ? "Sipariş üretici tarafından onaylandı ve üretime alındı."
-            : "Sorunlu sipariş üretici tarafından tekrar üretime alındı.";
-    }
-
-    private static string ApplyBroken(Product p, string oldStatus, string role, string? defectNote)
-    {
-        if (role != Roles.Mfr)
-            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Awaiting && oldStatus != OrderStatus.Corrected)
-            throw new InvalidOperationException("Sipariş bozuk olarak işaretlenemez.");
-
-        p.Status = OrderStatus.Broken;
-        p.IsPendingApproval = false;
-        p.IsDefective = false;
-        p.Completed = false;
-        p.DefectNote = defectNote;
-        return string.IsNullOrEmpty(defectNote)
-            ? "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi."
-            : $"Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi. Açıklama: {defectNote}";
-    }
-
-    private static string ApplyCompleted(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Mfr)
-            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Production)
-            throw new InvalidOperationException("Üretimi tamamlanacak sipariş önce üretimde olmalıdır.");
-
-        p.Status = OrderStatus.Completed;
-        p.Completed = true;
-        p.CompletedAt = DateTime.UtcNow.ToString("o");
-        return "Üretici siparişin üretimini tamamladı.";
-    }
-
-    private static string ApplyDelivered(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Mfr)
-            throw new UnauthorizedAccessException("Bu işlemi sadece üretici gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Completed && oldStatus != OrderStatus.Defective && oldStatus != OrderStatus.Missing)
-            throw new InvalidOperationException("Bu sipariş teslim edilemez.");
-
-        p.Status = OrderStatus.Delivered;
-        p.Completed = true;
-        p.IsDefective = false;
-
-        return oldStatus == OrderStatus.Completed
-            ? "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor."
-            : "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.";
-    }
-
-    private static string ApplyToShip(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Seller)
-            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Delivered)
-            throw new InvalidOperationException("Sipariş teslim edilmeden onaylanamaz.");
-
-        p.Status = OrderStatus.ToShip;
-        p.Completed = true;
-        p.IsDefective = false;
-        return "Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.";
-    }
-
-    private async Task<string> ApplyDefectiveAsync(Product p, string oldStatus, string role, string? defectNote, string? defectImage)
-    {
-        if (role != Roles.Seller)
-            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Delivered)
-            throw new InvalidOperationException("Sipariş teslim edilmeden hata bildirilemez.");
-
-        p.Status = OrderStatus.Defective;
-        p.IsDefective = true;
-        p.Completed = false;
-        p.DefectNote = defectNote;
-        await UpdateDefectImageAsync(p, defectImage);
-        return $"Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama: {defectNote}";
-    }
-
-    private async Task<string> ApplyMissingAsync(Product p, string oldStatus, string role, string? defectNote, string? defectImage)
-    {
-        if (role != Roles.Seller)
-            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.Delivered)
-            throw new InvalidOperationException("Sipariş teslim edilmeden eksik bildirilemez.");
-
-        p.Status = OrderStatus.Missing;
-        p.IsDefective = true;
-        p.Completed = false;
-        p.DefectNote = defectNote;
-        await UpdateDefectImageAsync(p, defectImage);
-        return $"Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama: {defectNote}";
-    }
-
-    private static string ApplyShipped(Product p, string oldStatus, string role)
-    {
-        if (role != Roles.Seller)
-            throw new UnauthorizedAccessException("Bu işlemi sadece satıcı gerçekleştirebilir.");
-        if (oldStatus != OrderStatus.ToShip)
-            throw new InvalidOperationException("Sipariş DOĞRU olarak onaylanmadan kargolanamaz.");
-
-        p.Status = OrderStatus.Shipped;
-        p.Completed = true;
-        p.IsDefective = false;
-        return "Sipariş satıcı tarafından kargolandı.";
+        return await rule.TransitionAction(product, oldStatus, defectNote, defectImage);
     }
 
     /// <summary>Handles base64 defect image upload/swap for defective and missing statuses.</summary>
@@ -558,7 +609,7 @@ public class ProductService : IProductService
         });
     }
 
-    public async Task<Product?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
+    public async Task<ProductResponseDto?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
     {
         var product = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (product == null) return null;
@@ -567,7 +618,7 @@ public class ProductService : IProductService
         if (role == Roles.Seller && product.SellerId != userId) return null;
         if (role == Roles.Mfr && product.ManufacturerId != userId) return null;
 
-        return product;
+        return MapToResponseDto(product);
     }
 
     public async Task<int> MigrateProductStatusesAsync()
@@ -636,59 +687,44 @@ public class ProductService : IProductService
 
     public async Task MarkStatusAsReadAsync(string userId, string role, string status)
     {
-        var products = await GetUserProductsAsync(userId, role);
-        var targetProducts = products.Where(p => {
-            string currentStatus = ResolveCurrentStatus(p);
-            
-            bool statusMatches = false;
-            if (status.Equals("defective", StringComparison.OrdinalIgnoreCase))
-            {
-                statusMatches = currentStatus.Equals(OrderStatus.Defective, StringComparison.OrdinalIgnoreCase) ||
-                                currentStatus.Equals(OrderStatus.Missing, StringComparison.OrdinalIgnoreCase);
-            }
-            else if (status.Equals("shipped", StringComparison.OrdinalIgnoreCase))
-            {
-                statusMatches = currentStatus.Equals(OrderStatus.Shipped, StringComparison.OrdinalIgnoreCase) ||
-                                currentStatus.Equals(OrderStatus.Cancelled, StringComparison.OrdinalIgnoreCase) ||
-                                (role.Equals(Roles.Mfr, StringComparison.OrdinalIgnoreCase) && currentStatus.Equals(OrderStatus.ToShip, StringComparison.OrdinalIgnoreCase));
-            }
-            else if (status.Equals("awaiting", StringComparison.OrdinalIgnoreCase))
-            {
-                statusMatches = currentStatus.Equals(OrderStatus.Awaiting, StringComparison.OrdinalIgnoreCase) ||
-                                currentStatus.Equals(OrderStatus.Corrected, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                statusMatches = currentStatus.Equals(status, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (!statusMatches) return false;
-
-            if (role == Roles.Seller)
-            {
-                return !p.IsReadBySeller;
-            }
-            else
-            {
-                return !p.IsReadByMfr;
-            }
-        }).ToList();
-
-        if (targetProducts.Count == 0) return;
-
-        foreach (var p in targetProducts)
-        {
-            if (role == Roles.Seller)
-            {
-                p.IsReadBySeller = true;
-            }
-            else
-            {
-                p.IsReadByMfr = true;
-            }
-            await _productRepository.SaveAsync(p);
-        }
-
-        await _hubContext.Clients.User(userId).SendAsync("ReceiveOrderUpdate");
+        await _productRepository.MarkProductsAsReadAsync(userId, role, status);
     }
+
+    private static ProductResponseDto MapToResponseDto(Product product)
+    {
+        return new ProductResponseDto
+        {
+            Id = product.Id,
+            Code = product.Code,
+            Image = product.Image,
+            Text = product.Text,
+            Length = product.Length,
+            Extras = product.Extras,
+            Completed = product.Completed,
+            IsDefective = product.IsDefective,
+            IsPendingApproval = product.IsPendingApproval,
+            IsReproduction = product.IsReproduction,
+            DefectNote = product.DefectNote,
+            DefectImage = product.DefectImage,
+            Status = product.Status,
+            Logs = product.Logs,
+            CreatedAt = product.CreatedAt,
+            CompletedAt = product.CompletedAt,
+            SellerId = product.SellerId,
+            ManufacturerId = product.ManufacturerId,
+            SellerName = product.SellerName,
+            ManufacturerName = product.ManufacturerName,
+            CancelRequested = product.CancelRequested,
+            IsReadBySeller = product.IsReadBySeller,
+            IsReadByMfr = product.IsReadByMfr
+        };
+    }
+}
+
+public class StatusTransitionRule
+{
+    public string RequiredRole { get; set; } = string.Empty;
+    public HashSet<string> AllowedSourceStatuses { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    public string ErrorMessage { get; set; } = string.Empty;
+    public Func<Product, string, string?, string?, Task<string>> TransitionAction { get; set; } = null!;
 }

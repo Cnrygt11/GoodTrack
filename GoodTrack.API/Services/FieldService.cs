@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services;
@@ -16,21 +18,29 @@ public class FieldService : IFieldService
         _fieldRepository = fieldRepository;
     }
 
-    public async Task<List<ExtraFieldDef>> GetSellerFieldsAsync(string sellerId)
+    public async Task<List<ExtraFieldDefResponseDto>> GetSellerFieldsAsync(string sellerId)
     {
-        return await _fieldRepository.GetFieldsBySellerAsync(sellerId);
+        var fields = await _fieldRepository.GetFieldsBySellerAsync(sellerId);
+        return fields.Select(MapToResponseDto).ToList();
     }
 
-    public async Task<ExtraFieldDef> CreateFieldDefAsync(string sellerId, ExtraFieldDef field)
+    public async Task<ExtraFieldDefResponseDto> CreateFieldDefAsync(string sellerId, CreateExtraFieldDefDto dto)
     {
-        if (field == null || string.IsNullOrWhiteSpace(field.Name) || string.IsNullOrWhiteSpace(field.Type))
+        if (dto == null || string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Type))
         {
             throw new ArgumentException("Geçersiz özellik verisi!");
         }
 
-        field.CreatedBy = sellerId;
+        var field = new ExtraFieldDef
+        {
+            Name = dto.Name,
+            Type = dto.Type,
+            Options = dto.Options ?? new List<string>(),
+            CreatedBy = sellerId
+        };
+
         await _fieldRepository.SaveAsync(field);
-        return field;
+        return MapToResponseDto(field);
     }
 
     public async Task DeleteFieldDefAsync(string sellerId, string id)
@@ -47,5 +57,17 @@ public class FieldService : IFieldService
         }
 
         await _fieldRepository.DeleteAsync(id);
+    }
+
+    private static ExtraFieldDefResponseDto MapToResponseDto(ExtraFieldDef field)
+    {
+        return new ExtraFieldDefResponseDto
+        {
+            Id = field.Id,
+            Name = field.Name,
+            Type = field.Type,
+            Options = field.Options,
+            CreatedBy = field.CreatedBy
+        };
     }
 }

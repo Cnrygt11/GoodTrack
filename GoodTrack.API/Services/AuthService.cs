@@ -23,6 +23,7 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConnectionRequestRepository _connectionRequestRepository;
+    private readonly IUserConnectionRepository _userConnectionRepository;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     private readonly IHubContext<TrackingHub> _hubContext;
@@ -32,6 +33,7 @@ public class AuthService : IAuthService
     public AuthService(
         IUserRepository userRepository,
         IConnectionRequestRepository connectionRequestRepository,
+        IUserConnectionRepository userConnectionRepository,
         IPasswordHasher<User> passwordHasher,
         IConfiguration configuration,
         IHubContext<TrackingHub> hubContext,
@@ -40,6 +42,7 @@ public class AuthService : IAuthService
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
+        _userConnectionRepository = userConnectionRepository;
         _passwordHasher = passwordHasher;
         _configuration = configuration;
         _hubContext = hubContext;
@@ -191,18 +194,14 @@ public class AuthService : IAuthService
 
     public async Task<List<UserDto>> GetConnectionsAsync(string userId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user == null)
-        {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
-        }
-
-        if (user.AssociatedUserIds == null || user.AssociatedUserIds.Count == 0)
+        var connections = await _userConnectionRepository.GetConnectionsByUserIdAsync(userId);
+        if (connections.Count == 0)
         {
             return new List<UserDto>();
         }
 
-        var fetchTasks = user.AssociatedUserIds
+        var fetchTasks = connections
+            .Select(c => c.SellerId == userId ? c.ManufacturerId : c.SellerId)
             .Select(id => _userRepository.GetByIdAsync(id))
             .ToList();
 
@@ -216,25 +215,7 @@ public class AuthService : IAuthService
 
     public async Task RemoveConnectionAsync(string userId, string targetId)
     {
-        var user = await _userRepository.GetByIdAsync(userId);
-        var target = await _userRepository.GetByIdAsync(targetId);
-
-        if (user == null)
-        {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
-        }
-
-        if (user.AssociatedUserIds != null && user.AssociatedUserIds.Contains(targetId))
-        {
-            user.AssociatedUserIds.Remove(targetId);
-            await _userRepository.SaveAsync(user);
-        }
-
-        if (target != null && target.AssociatedUserIds != null && target.AssociatedUserIds.Contains(userId))
-        {
-            target.AssociatedUserIds.Remove(userId);
-            await _userRepository.SaveAsync(target);
-        }
+        await _userConnectionRepository.DeleteAsync(userId, targetId);
 
         // Real-time notification: connection removed
         await _hubContext.Clients.Users(userId, targetId).SendAsync("ReceiveConnectionUpdate");
@@ -248,7 +229,7 @@ public class AuthService : IAuthService
 
     public async Task SendConnectionRequestAsync(string senderId, string senderUsername, string senderRole, string targetUsername)
     {
-        var receiver = await _userRepository.GetByUsernameAsync(targetUsername);
+        var receiver = await _userRepository.GetByUsernameAsync(targetUsername.Trim().ToLower());
         if (receiver == null)
         {
             throw new KeyNotFoundException("Kullanıcı bulunamadı!");
@@ -265,7 +246,8 @@ public class AuthService : IAuthService
             throw new ArgumentException($"Sadece {oppositeRoleText} ekleyebilirsiniz.");
         }
 
-        if (receiver.AssociatedUserIds != null && receiver.AssociatedUserIds.Contains(senderId))
+        var areConnected = await _userConnectionRepository.AreConnectedAsync(senderId, receiver.Id);
+        if (areConnected)
         {
             throw new ArgumentException("Bu kullanıcı zaten listenizde ekli.");
         }
@@ -337,20 +319,18 @@ public class AuthService : IAuthService
             throw new KeyNotFoundException("Kullanıcılardan biri bulunamadı.");
         }
 
-        user.AssociatedUserIds ??= new List<string>();
-        sender.AssociatedUserIds ??= new List<string>();
+        var sellerId = user.Role == Roles.Seller ? user.Id : sender.Id;
+        var mfrId = user.Role == Roles.Mfr ? user.Id : sender.Id;
 
-        if (!user.AssociatedUserIds.Contains(sender.Id))
+        var areConnected = await _userConnectionRepository.AreConnectedAsync(sellerId, mfrId);
+        if (!areConnected)
         {
-            user.AssociatedUserIds.Add(sender.Id);
+            await _userConnectionRepository.SaveAsync(new UserConnection
+            {
+                SellerId = sellerId,
+                ManufacturerId = mfrId
+            });
         }
-        if (!sender.AssociatedUserIds.Contains(user.Id))
-        {
-            sender.AssociatedUserIds.Add(user.Id);
-        }
-
-        await _userRepository.SaveAsync(user);
-        await _userRepository.SaveAsync(sender);
 
         request.Status = "accepted";
         await _connectionRequestRepository.SaveAsync(request);
@@ -426,7 +406,7 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role)
             }),
-            Expires = DateTime.UtcNow.AddHours(12),
+            Expires = DateTime.UtcNow.AddHours(3),
             Issuer = issuer,
             Audience = audience,
             SigningCredentials = new SigningCredentials(
@@ -665,7 +645,7 @@ public class AuthService : IAuthService
             }
             user.Bio = dto.Bio ?? string.Empty;
             user.Address = dto.Address ?? string.Empty;
-            user.City = dto.City ?? string.Empty;
+            user.City = dto.City?.Trim().ToLower() ?? string.Empty;
             user.IsVisibleToSellers = dto.IsVisibleToSellers;
 
             // Keywords selection (up to 3 keywords)
@@ -673,7 +653,7 @@ public class AuthService : IAuthService
             {
                 throw new ArgumentException("En fazla 3 kategori/anahtar kelime seçebilirsiniz!");
             }
-            user.Keywords = dto.Keywords ?? new List<string>();
+            user.Keywords = dto.Keywords?.Select(k => k.Trim().ToLower()).ToList() ?? new List<string>();
 
             // Product showcase image count checks (3 to 10 images)
             int imgCount = dto.ProductImages?.Count ?? 0;
@@ -686,13 +666,14 @@ public class AuthService : IAuthService
                 throw new ArgumentException("Mağazanızı satıcılara göstermek için en az 3 ürün görseli yüklemelisiniz!");
             }
 
-            // Process product images using _imageStorageService.StoreImageAsync
+            // Process product images using _imageStorageService.StoreImageAsync in parallel
             var processedImages = new List<string>();
             if (dto.ProductImages != null)
             {
-                foreach (var img in dto.ProductImages)
+                var tasks = dto.ProductImages.Select(img => _imageStorageService.StoreImageAsync(img));
+                var results = await Task.WhenAll(tasks);
+                foreach (var url in results)
                 {
-                    var url = await _imageStorageService.StoreImageAsync(img);
                     if (!string.IsNullOrEmpty(url))
                     {
                         processedImages.Add(url);

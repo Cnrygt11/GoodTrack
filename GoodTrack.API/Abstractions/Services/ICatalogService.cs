@@ -1,12 +1,13 @@
-using GoodTrack.API.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Abstractions.Services;
 
 public interface ICatalogService
 {
-    Task<List<CatalogProduct>> GetSellerCatalogAsync(string sellerId);
-    Task<CatalogProduct> AddCatalogProductAsync(string sellerId, CatalogProduct product);
-    Task<CatalogProduct> UpdateCatalogProductAsync(string sellerId, string id, CatalogProduct updatedProduct);
+    Task<List<CatalogProductResponseDto>> GetSellerCatalogAsync(string sellerId);
+    Task<CatalogProductResponseDto> AddCatalogProductAsync(string sellerId, CreateCatalogProductDto dto);
+    Task<CatalogProductResponseDto> UpdateCatalogProductAsync(string sellerId, string id, CreateCatalogProductDto dto);
     Task DeleteCatalogProductAsync(string sellerId, string id);
-
 }

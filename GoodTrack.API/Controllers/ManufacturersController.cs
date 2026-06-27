@@ -34,23 +34,35 @@ public class ManufacturersController : BaseApiController
     }
 
     [HttpGet]
-    [AllowAnonymous] // Original GetManufacturers didn't have [Authorize] filter on method, only class-level which was AuthController (AuthController has Authorize on specific endpoints, but not class-level. Wait, let's verify if original GetManufacturers was authorized)
-    // Ah, original GetManufacturers did not have [Authorize] attribute in AuthController, but AuthController had no class-level [Authorize].
-    // Let's verify the auth requirements for manufacturers.
-    // In AuthController:
-    // [EnableRateLimiting("api-general")]
-    // [HttpGet("manufacturers")]
-    // public async Task<IActionResult> GetManufacturers() ...
-    // Yes! It was anonymous. But SearchManufacturers had [Authorize] attribute:
-    // [Authorize]
-    // [EnableRateLimiting("api-general")]
-    // [HttpGet("manufacturers/search")]
-    // public async Task<IActionResult> SearchManufacturers(...) ...
-    // So indeed, GetManufacturers should be anonymous, and SearchManufacturers should be authorized.
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
+        var userId = GetCurrentUserId();
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        bool isFreePlan = false;
+        if (Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
+        {
+            var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
+            if (credits.Plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase))
+            {
+                isFreePlan = true;
+            }
+        }
+
         _logger.LogInformation("Fetching list of all registered manufacturer accounts");
         var manufacturers = await _authService.GetAvailableManufacturersAsync();
+
+        if (isFreePlan)
+        {
+            var masked = manufacturers.Select(m => new UserDto
+            {
+                Id = m.Id,
+                Username = "mfr_" + (m.Username.Length > 4 ? m.Username.Substring(0, 3) : "hidden") + "•••",
+                Role = m.Role
+            }).ToList();
+            return Ok(masked);
+        }
+
         return Ok(manufacturers);
     }
 

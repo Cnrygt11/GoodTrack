@@ -1,0 +1,55 @@
+name: GoodTrack CI Pipeline
+
+on:
+  push:
+    branches: [ main, master, dev ]
+  pull_request:
+    branches: [ main, master, dev ]
+
+jobs:
+  backend-ci:
+    name: Backend Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+
+    - name: Restore Dependencies
+      run: dotnet restore GoodTrack.API/GoodTrack.API.csproj
+
+    - name: Build Project
+      run: dotnet build GoodTrack.API/GoodTrack.API.csproj --configuration Release --no-restore
+
+    - name: Run Unit Tests
+      run: dotnet test GoodTrack.API.Tests/GoodTrack.API.Tests.csproj --configuration Release
+
+  frontend-ci:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        cache-dependency-path: 'client-app-redesign/package-lock.json'
+
+    - name: Install Dependencies
+      run: |
+        cd client-app-redesign
+        npm ci
+
+    - name: Build Production Bundle
+      run: |
+        cd client-app-redesign
+        npm run build

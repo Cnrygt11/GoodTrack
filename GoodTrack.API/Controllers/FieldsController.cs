@@ -3,10 +3,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
-using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
 
@@ -35,17 +33,7 @@ public class FieldsController : BaseApiController
         }
 
         _logger.LogInformation("Seller user {UserId} is retrieving extra dynamic fields templates", userId);
-        var fields = await _fieldService.GetSellerFieldsAsync(userId);
-        
-        var response = fields.Select(f => new ExtraFieldDefResponseDto
-        {
-            Id = f.Id,
-            Name = f.Name,
-            Type = f.Type,
-            Options = f.Options,
-            CreatedBy = f.CreatedBy
-        }).ToList();
-
+        var response = await _fieldService.GetSellerFieldsAsync(userId);
         return Ok(response);
     }
 
@@ -63,25 +51,8 @@ public class FieldsController : BaseApiController
             return BadRequest(new { message = "İstek verisi eksik." });
         }
 
-        var field = new ExtraFieldDef
-        {
-            Name = dto.Name,
-            Type = dto.Type,
-            Options = dto.Options
-        };
-
-        _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, field.Name);
-        var created = await _fieldService.CreateFieldDefAsync(userId, field);
-
-        var response = new ExtraFieldDefResponseDto
-        {
-            Id = created.Id,
-            Name = created.Name,
-            Type = created.Type,
-            Options = created.Options,
-            CreatedBy = created.CreatedBy
-        };
-
+        _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, dto.Name);
+        var response = await _fieldService.CreateFieldDefAsync(userId, dto);
         return Created(string.Empty, new { field = response, message = "Yeni özellik başarıyla eklendi." });
     }
 

@@ -1,10 +1,12 @@
-using GoodTrack.API.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Abstractions.Services;
 
 public interface IFieldService
 {
-    Task<List<ExtraFieldDef>> GetSellerFieldsAsync(string sellerId);
-    Task<ExtraFieldDef> CreateFieldDefAsync(string sellerId, ExtraFieldDef field);
+    Task<List<ExtraFieldDefResponseDto>> GetSellerFieldsAsync(string sellerId);
+    Task<ExtraFieldDefResponseDto> CreateFieldDefAsync(string sellerId, CreateExtraFieldDefDto dto);
     Task DeleteFieldDefAsync(string sellerId, string id);
 }

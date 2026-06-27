@@ -89,13 +89,14 @@ export default function useConnections() {
 
     try {
       await api.sendConnectionRequest(username);
+      await loadSentRequests();
     } catch (err: unknown) {
       // Rollback on failure
       rollbackSentRequests(prevSent);
       setAddUsername(username);
       showToast(extractErrorMessage(err));
     }
-  }, [addUsername, t, showToast, user, sentRequests, optimisticAddSentRequest, rollbackSentRequests]);
+  }, [addUsername, t, showToast, user, sentRequests, optimisticAddSentRequest, rollbackSentRequests, loadSentRequests]);
 
   const handleAccept = useCallback(async (requestId: string) => {
     // Find the request to get sender username/id
@@ -116,13 +117,15 @@ export default function useConnections() {
 
     try {
       await api.acceptRequest(requestId);
+      await refreshConnections();
+      await loadIncomingRequests();
     } catch (err: unknown) {
       // Rollback on failure
       rollbackIncomingRequests(prevIncoming);
       rollbackConnections(prevConnections);
       showToast(extractErrorMessage(err));
     }
-  }, [incomingRequests, connections, optimisticRemoveIncoming, optimisticAddConnection, rollbackIncomingRequests, rollbackConnections, user, showToast]);
+  }, [incomingRequests, connections, optimisticRemoveIncoming, optimisticAddConnection, rollbackIncomingRequests, rollbackConnections, user, showToast, refreshConnections, loadIncomingRequests]);
 
   const handleReject = useCallback(async (requestId: string) => {
     const accepted = await confirm({
@@ -140,12 +143,13 @@ export default function useConnections() {
 
     try {
       await api.rejectRequest(requestId);
+      await loadIncomingRequests();
     } catch (err: unknown) {
       // Rollback on failure
       rollbackIncomingRequests(prevIncoming);
       showToast(extractErrorMessage(err));
     }
-  }, [confirm, incomingRequests, optimisticRemoveIncoming, rollbackIncomingRequests, showToast]);
+  }, [confirm, incomingRequests, optimisticRemoveIncoming, rollbackIncomingRequests, showToast, loadIncomingRequests]);
 
   const handleDeleteSent = useCallback(async (requestId: string) => {
     const prevSent = [...sentRequests];
@@ -155,12 +159,13 @@ export default function useConnections() {
 
     try {
       await api.deleteSentRequest(requestId);
+      await loadSentRequests();
     } catch (err: unknown) {
       // Rollback on failure
       rollbackSentRequests(prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [sentRequests, optimisticRemoveSentRequest, rollbackSentRequests, showToast]);
+  }, [sentRequests, optimisticRemoveSentRequest, rollbackSentRequests, showToast, loadSentRequests]);
 
   const handleRemoveConnection = useCallback(async (targetId: string) => {
     const accepted = await confirm({
@@ -178,12 +183,13 @@ export default function useConnections() {
 
     try {
       await api.removeConnection(targetId);
+      await refreshConnections();
     } catch (err: unknown) {
       // Rollback on failure
       rollbackConnections(prevConnections);
       showToast(extractErrorMessage(err));
     }
-  }, [confirm, t, connections, optimisticRemoveConnection, rollbackConnections, showToast]);
+  }, [confirm, t, connections, optimisticRemoveConnection, rollbackConnections, showToast, refreshConnections]);
 
   // Handle B2B directory search
   const handleSearchSubmit = useCallback(async (e: React.FormEvent) => {

@@ -2,11 +2,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
-using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
 
@@ -35,8 +32,7 @@ public class CatalogController : BaseApiController
         }
 
         _logger.LogInformation("Fetching catalog products for Seller user: {UserId}", userId);
-        var catalog = await _catalogService.GetSellerCatalogAsync(userId);
-        var response = catalog.Select(MapToResponseDto).ToList();
+        var response = await _catalogService.GetSellerCatalogAsync(userId);
         return Ok(response);
     }
 
@@ -54,20 +50,8 @@ public class CatalogController : BaseApiController
             return BadRequest(new { message = "İstek verisi eksik." });
         }
 
-        var product = new CatalogProduct
-        {
-            ProductCode = dto.ProductCode,
-            Image = dto.Image,
-            ManufacturerId = dto.ManufacturerId,
-            ManufacturerName = dto.ManufacturerName,
-            Text = dto.Text,
-            Length = dto.Length,
-            Extras = dto.Extras
-        };
-
-        _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, product.ProductCode);
-        var created = await _catalogService.AddCatalogProductAsync(userId, product);
-        var response = MapToResponseDto(created);
+        _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
+        var response = await _catalogService.AddCatalogProductAsync(userId, dto);
         
         return Created(string.Empty, new { product = response, message = "Ürün başarıyla kataloğa eklendi." });
     }
@@ -91,22 +75,10 @@ public class CatalogController : BaseApiController
             return BadRequest(new { message = "Geçersiz ürün ID'si." });
         }
 
-        var product = new CatalogProduct
-        {
-            ProductCode = dto.ProductCode,
-            Image = dto.Image,
-            ManufacturerId = dto.ManufacturerId,
-            ManufacturerName = dto.ManufacturerName,
-            Text = dto.Text,
-            Length = dto.Length,
-            Extras = dto.Extras
-        };
-
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
-        var updated = await _catalogService.UpdateCatalogProductAsync(userId, id, product);
-        var response = MapToResponseDto(updated);
-
-        return Ok(new { product = response, message = "Katalog ürünü başarıyla güncellendi." });
+        var response = await _catalogService.UpdateCatalogProductAsync(userId, id, dto);
+        
+        return Ok(new { product = response, message = "Ürün kataloğu başarıyla güncellendi." });
     }
 
     [HttpDelete("{id}")]
@@ -126,22 +98,5 @@ public class CatalogController : BaseApiController
         _logger.LogInformation("Seller user {UserId} is deleting catalog product: {Id}", userId, id);
         await _catalogService.DeleteCatalogProductAsync(userId, id);
         return NoContent();
-    }
-
-    private CatalogProductResponseDto MapToResponseDto(CatalogProduct product)
-    {
-        return new CatalogProductResponseDto
-        {
-            Id = product.Id,
-            SellerId = product.SellerId,
-            ProductCode = product.ProductCode,
-            Image = product.Image,
-            ManufacturerId = product.ManufacturerId,
-            ManufacturerName = product.ManufacturerName,
-            Text = product.Text,
-            Length = product.Length,
-            Extras = product.Extras,
-            CreatedAt = product.CreatedAt
-        };
     }
 }

@@ -6,10 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
-using GoodTrack.API.Models;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Constants;
 
@@ -55,8 +53,7 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Retrieving products list for User: {UserId} with Role: {Role}", userId, role);
-        var products = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
-        var response = products.Select(MapToResponseDto).ToList();
+        var response = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
         return Ok(response);
     }
 
@@ -77,22 +74,10 @@ public class ProductsController : BaseApiController
             return BadRequest(new { message = "İstek verisi eksik." });
         }
 
-        var product = new Product
-        {
-            Code = dto.Code,
-            Image = dto.Image,
-            Text = dto.Text,
-            Length = dto.Length,
-            Extras = dto.Extras,
-            ManufacturerId = dto.ManufacturerId,
-            ManufacturerName = dto.ManufacturerName
-        };
+        _logger.LogInformation("Seller user {UserId} is submitting a new production order: {Code}", userId, dto.Code);
+        var response = await _productService.CreateOrderAsync(userId, userName, dto);
 
-        _logger.LogInformation("Seller user {UserId} is submitting a new production order: {Code}", userId, product.Code);
-        var created = await _productService.CreateOrderAsync(userId, userName, product);
-        var response = MapToResponseDto(created);
-
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, new { product = response, message = "Sipariş başarıyla üretime gönderildi." });
+        return CreatedAtAction(nameof(GetById), new { id = response.Id }, new { product = response, message = "Sipariş başarıyla üretime gönderildi." });
     }
 
     [HttpPut("{id}/status")]
@@ -143,20 +128,8 @@ public class ProductsController : BaseApiController
             return BadRequest(new { message = "Geçersiz sipariş ID'si." });
         }
 
-        var product = new Product
-        {
-            Code = dto.Code,
-            Image = dto.Image,
-            Text = dto.Text,
-            Length = dto.Length,
-            Extras = dto.Extras,
-            ManufacturerId = dto.ManufacturerId,
-            ManufacturerName = dto.ManufacturerName
-        };
-
         _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
-        var updated = await _productService.UpdateProductAsync(userId, id, product);
-        var response = MapToResponseDto(updated);
+        var response = await _productService.UpdateProductAsync(userId, id, dto);
 
         return Ok(new { product = response, message = "Sipariş başarıyla güncellendi." });
     }
@@ -178,13 +151,12 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is retrieving single production order details: {Id}", userId, id);
-        var product = await _productService.GetProductByIdAsync(userId, role, id, cancellationToken);
-        if (product == null)
+        var response = await _productService.GetProductByIdAsync(userId, role, id, cancellationToken);
+        if (response == null)
         {
             return NotFound(new { message = "Sipariş bulunamadı veya erişim yetkiniz yok." });
         }
 
-        var response = MapToResponseDto(product);
         return Ok(response);
     }
 
@@ -276,35 +248,5 @@ public class ProductsController : BaseApiController
         await _productService.RespondToOrderCancellationAsync(userId, id, request.Approve);
         string msg = request.Approve ? "İptal talebi onaylandı, sipariş iptal edildi." : "İptal talebi reddedildi, üretime devam ediliyor.";
         return Ok(new { message = msg });
-    }
-
-    private ProductResponseDto MapToResponseDto(Product product)
-    {
-        return new ProductResponseDto
-        {
-            Id = product.Id,
-            Code = product.Code,
-            Image = product.Image,
-            Text = product.Text,
-            Length = product.Length,
-            Extras = product.Extras,
-            Completed = product.Completed,
-            IsDefective = product.IsDefective,
-            IsPendingApproval = product.IsPendingApproval,
-            IsReproduction = product.IsReproduction,
-            DefectNote = product.DefectNote,
-            DefectImage = product.DefectImage,
-            Status = product.Status,
-            Logs = product.Logs,
-            CreatedAt = product.CreatedAt,
-            CompletedAt = product.CompletedAt,
-            SellerId = product.SellerId,
-            ManufacturerId = product.ManufacturerId,
-            SellerName = product.SellerName,
-            ManufacturerName = product.ManufacturerName,
-            CancelRequested = product.CancelRequested,
-            IsReadBySeller = product.IsReadBySeller,
-            IsReadByMfr = product.IsReadByMfr
-        };
     }
 }
