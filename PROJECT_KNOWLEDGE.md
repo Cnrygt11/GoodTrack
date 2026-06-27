@@ -1,747 +1,303 @@
 # GoodTrack — Proje Bilgi Belgesi (PROJECT_KNOWLEDGE)
 
-> **Son Güncelleme:** 26 Haziran 2026  
-> **Amaç:** Bu belge bir yapay zeka ajanının GoodTrack projesini kaynak kodunu tek tek analiz etmek zorunda kalmadan tam olarak anlaması için hazırlanmıştır. Bu belgeyi okuduktan sonra proje mimarisini, tüm dosya sorumluluklarını, API endpoint'lerini, veri modellerini ve bilinen teknik borçları tam olarak bilmeniz gerekir.
+> **Son Güncelleme:** 28 Haziran 2026  
+> **Amaç:** Bu belge, bir yapay zeka ajanının GoodTrack projesini kaynak kodlarını tek tek taramak zorunda kalmadan en küçük detayına kadar tam olarak anlaması için hazırlanmıştır. Bu belgeyi okuduktan sonra proje mimarisini, dosya sorumluluklarını, veritabanı şemasını, API endpoint'lerini, SignalR mekanizmalarını, kredi sistemini, yetkilendirmeleri ve bilinen teknik borçları eksiksiz bir şekilde kavramış olacaksınız.
 
 ---
 
-## 1. Proje Özeti
+## 1. Proje Özeti ve İş Mantığı
 
-**GoodTrack**, satıcılar (seller) ile üreticiler (manufacturer / mfr) arasındaki B2B üretim sipariş süreçlerini takip eden bir web uygulamasıdır. Satıcılar sipariş oluşturur, üreticiler siparişleri işler ve her iki taraf anlık durum güncellemelerini görür. Proje gerçek zamanlı bildirimler için **SignalR** kullanır.
+**GoodTrack**, satıcılar (seller) ile üreticiler (manufacturer / mfr) arasındaki B2B üretim sipariş süreçlerini ve ürün takip akışlarını yöneten bir web uygulamasıdır. 
 
-### Kullanıcı Rolleri
-| Rol | Türkçe | Özet |
-|-----|--------|------|
-| `seller` | Satıcı | Sipariş oluşturur, katalog yönetir, üretici arar ve bağlantı ekler |
-| `mfr` | Üretici (Manufacturer) | Siparişleri üretir, defect/missing bildirir, sipariş durumunu günceller |
-| `admin` | Admin | Sadece `MigrateStatuses` endpoint'i için kullanılır |
+### Temel İş Kuralları:
+- **Satıcılar (Seller):** Sipariş oluşturur, katalog yönetir, üretici arar, bağlantı (connection) isteği gönderir ve ürünlerin durumlarını takip eder.
+- **Üreticiler (Mfr):** Kendilerine atanan siparişleri üretime alır, tamamlar, hatalı veya eksik (defect/missing) durumlarını bildirir.
+- **Gerçek Zamanlılık:** Sipariş durum değişiklikleri, yeni bağlantı istekleri ve güncellemeler **SignalR** ile anlık olarak karşı tarafa iletilir.
+- **Redesign Kuralı:** Frontend tarafında yapılan tüm yeni geliştirmeler **yalnızca `client-app-redesign` projesi üzerinde** gerçekleştirilmelidir. Eski `client-app` projesi pasiftir ve dokunulmamalıdır.
+
+### Kullanıcı Rolleri:
+| Rol | Türkçe Karşılığı | Yetki / Sorumluluk Özeti |
+|-----|------------------|--------------------------|
+| `seller` | Satıcı | Sipariş oluşturma/güncelleme/silme, katalog yönetimi, ekstra alan tanımlama, bağlantı isteği atma, teslim onaylama |
+| `mfr` | Üretici | Sipariş kabul etme, üretime alma, tamamlama, hata/eksik bildirme, iptal taleplerini onaylama/reddetme |
+| `admin` | Yönetici | Yalnızca sistem yönetimi ve toplu durum geçiş/migrasyon işlemleri |
 
 ---
 
 ## 2. Teknoloji Stack'i
 
-### Backend
-- **Framework:** ASP.NET Core (.NET, C#)
-- **Veritabanı:** Supabase (PostgreSQL 17) — Entity Framework Core 9 + Npgsql
-- **ORM:** `Npgsql.EntityFrameworkCore.PostgreSQL` v9.0.4 + `EFCore.NamingConventions` (snake_case)
-- **Kimlik Doğrulama:** JWT Bearer Token
-- **Gerçek Zamanlı:** SignalR (`/hubs/tracking`)
-- **Rate Limiting:** ASP.NET Core built-in (`Microsoft.AspNetCore.RateLimiting`)
-- **Şifre Hashleme:** ASP.NET Core Identity `IPasswordHasher<User>` (PBKDF2)
-- **Deployment:** Render.com (Docker container)
+### Backend (.NET Web API)
+- **Framework:** ASP.NET Core (.NET 9)
+- **Veritabanı ORM:** Entity Framework Core 9 + Npgsql (PostgreSQL 17)
+- **Veritabanı Sunucusu:** Supabase (PostgreSQL 17.6)
+- **İsimlendirme Standardı:** EFCore Naming Conventions ile veritabanında `snake_case`, C# tarafında `PascalCase` eşlemesi.
+- **Kimlik Doğrulama:** JWT Bearer Token (12 Saat Access Token, 7 Gün Refresh Token ömrü).
+- **Gerçek Zamanlı Bildirimler:** SignalR Hub (`/hubs/tracking`).
+- **Hız Sınırlama (Rate Limiting):** ASP.NET Core yerleşik rate limiter (`auth-strict` için 5/dk, genel API için 60/dk).
+- **Görsel Depolama:** `Base64ImageStorageService` ile Base64 verilerinin kontrolü ve PostgreSQL tablolarında saklanması.
+- **Loglama:** Serilog (Console ve günlük JSON dosyası tabanlı `logs/goodtrack-.json`).
 
-### Frontend
+### Frontend (React App Redesign)
 - **Framework:** React 18 + TypeScript + Vite
-- **Routing:** React Router DOM v6
-- **Gerçek Zamanlı:** `@microsoft/signalr` client
-- **Stil:** Vanilla CSS (`index.css`) — TailwindCSS kullanılmıyor
+- **Yönlendirme (Routing):** React Router DOM v6
+- **Real-Time Client:** `@microsoft/signalr`
+- **Stil Yönetimi:** Vanilla CSS (`index.css` ve CSS Modules) — TailwindCSS veya harici UI kütüphanesi kullanılmıyor.
 - **İkonlar:** `lucide-react`
+
+### Test Suite (`GoodTrack.API.Tests`)
+- **Teknoloji:** xUnit + FluentAssertions + Microsoft.EntityFrameworkCore.InMemory
+- **Test Edilen Katmanlar:** `AuthService`, `CreditsService`, `Product` durum geçiş kuralları (`ProductStatus` testleri).
 
 ---
 
-## 3. Proje Dizin Yapısı
+## 3. Dizin Yapısı ve Dosya Dağılımı
 
 ```
 GoodTrack/
-├── GoodTrack.API/              ← .NET Backend
-│   ├── Abstractions/
-│   │   ├── Repositories/       ← Repository interface'leri (5 dosya)
-│   │   └── Services/           ← Service interface'leri (5 dosya)
-│   ├── Constants/
-│   │   ├── OrderStatus.cs      ← Status string sabitleri
-│   │   └── Roles.cs            ← Role string sabitleri
-│   ├── Controllers/            ← 8 controller
-│   ├── DTOs/
-│   │   ├── Auth/               ← Auth DTO'ları
-│   │   └── Product/            ← Product DTO'ları
-│   ├── Hubs/
-│   │   └── TrackingHub.cs      ← SignalR Hub
-│   ├── Infrastructure/
-│   │   ├── AppDbContext.cs     ← EF Core DbContext (6 DbSet, OnModelCreating ile tam şema)
-│   │   └── Repositories/       ← 6 PostgreSQL repository implementasyonu
-│   ├── Migrations/             ← EF Core migration dosyaları
-│   ├── Middlewares/
-│   │   └── ExceptionHandlingMiddleware.cs
-│   ├── Models/                 ← 7 POCO veri modeli (Firestore attribute'larından arındırılmış)
-│   ├── Services/               ← 5 business logic servisi
-│   ├── Program.cs              ← DI, JWT, CORS, Rate Limiting, SignalR konfigürasyonu
-│   └── appsettings.json        ← Config (gitignore'da)
+├── .github/workflows/
+│   └── ci.yml                  ← GitHub Actions Sürekli Entegrasyon (Build & Test)
+├── GoodTrack.API.Tests/         ← Backend Birim Testleri
+│   ├── AuthServiceTests.cs     ← Kayıt, Giriş, Profil ve Bağlantı testleri
+│   ├── CreditsServiceTests.cs  ← Bakiye, Plan ve Concurrency (Çakışma) testleri
+│   └── ProductStatusTransitionTests.cs ← Durum geçiş izinleri testleri
 │
-└── client-app/                 ← React Frontend
-    └── src/
-        ├── App.tsx             ← Provider hiyerarşisi + AppContent
-        ├── routes/
-        │   └── AppRoutes.tsx   ← Tüm route tanımları
-        ├── components/
-        │   ├── Layout.tsx      ← Navigasyon + sayfa çerçevesi
-        │   ├── auth/           ← AuthPage, VerificationPending
-        │   ├── catalog/        ← CatalogPage, CatalogForm, CatalogItemCard
-        │   ├── connections/    ← ConnectionsPage
-        │   ├── home/           ← LandingPage
-        │   ├── mfr/            ← MfrPage, MfrOrderCard, DefectDetailsModal, BrokenReportModal
-        │   ├── orders/         ← OrderDetailPage
-        │   ├── profile/        ← MyAccountPage, UserProfileDetailPage + alt bileşenler
-        │   ├── seller/         ← SellerPage, SellerOrderCard + 7 bileşen
-        │   └── ui/             ← Toast, Modal, Lightbox
-        ├── context/            ← 6 React Context
-        ├── hooks/              ← 13 custom hook
-        ├── services/
-        │   ├── api.ts          ← Tüm API çağrıları + TypeScript interface'leri
-        │   └── translations.ts ← TR/EN çeviri kataloğu
-        ├── constants/
-        │   ├── authKeys.ts     ← localStorage key sabitleri + event adları
-        │   └── routes.ts       ← ROUTES sabiti (URL path'leri)
-        ├── types/
-        │   └── orders.ts       ← ListFilter, SellerTabId tipleri
-        └── utils/
-            ├── constants.ts    ← ORDER_STATUS, ROLES, MANUFACTURER_CATEGORIES
-            ├── errorUtils.ts   ← extractErrorMessage(err: unknown): string
-            ├── imageHelper.ts  ← compressImage() yardımcısı
-            └── statusConfig.ts ← getStatusConfig(), getSellerCardAccent(), getMfrCardAccentColor()
+├── GoodTrack.API/               ← Backend Projesi (.NET 9)
+│   ├── Abstractions/
+│   │   ├── Repositories/       ← Repository Interface'leri (IUserRepository, IProductRepository, vb.)
+│   │   └── Services/           ← İş Mantığı Interface'leri (IAuthService, ICreditsService, vb.)
+│   ├── Constants/
+│   │   ├── OrderStatus.cs      ← Tüm sipariş durumu sabit dize değerleri
+│   │   └── Roles.cs            ← Kullanıcı rol sabitleri ("seller", "mfr", "admin")
+│   ├── Controllers/            ← API Denetleyicileri (Auth, Products, Connections, Credits, vb.)
+│   ├── DTOs/                   ← Veri Taşıma Nesneleri (Request/Response Modelleri)
+│   ├── Hubs/
+│   │   └── TrackingHub.cs      ← SignalR WebSocket sunucu hub'ı
+│   ├── Infrastructure/
+│   │   ├── AppDbContext.cs     ← DB şeması, PostgreSQL eşlemeleri ve veritabanı bağlamı
+│   │   └── Repositories/       ← EF Core & PostgreSQL somut repository sınıfları
+│   ├── Migrations/             ← EF Core Veritabanı Migrasyon Geçmişi
+│   ├── Middlewares/
+│   │   └── ExceptionHandlingMiddleware.cs ← Hata yakalama ve güvenli hata döndürme katmanı
+│   ├── Models/                 ← Veritabanı Entity sınıfları (User, Product, UserConnection, UserCredit, vb.)
+│   ├── Services/               ← Business Logic servisleri (AuthService, ProductService, CreditsService, vb.)
+│   ├── Program.cs              ← Uygulama başlangıç, DI konteyner konfigürasyonu ve middleware boru hattı
+│   └── appsettings.json        ← Yerel yapılandırma dosyaları (gitignore'da)
+│
+└── client-app-redesign/         ← Aktif React Frontend Projesi
+    ├── src/
+    │   ├── App.tsx             ← Provider hiyerarşisi ve rota sarmalayıcıları
+    │   ├── routes/
+    │   │   └── AppRoutes.tsx   ← Tüm korumalı ve genel sayfa rotaları
+    │   ├── components/
+    │   │   ├── Layout.tsx      ← Sayfa iskeleti, Navigasyon, Dil/Tema Seçici ve CreditsWidget
+    │   │   ├── auth/           ← Giriş/Kayıt ve Doğrulama Sayfaları
+    │   │   ├── catalog/        ← Ürün Kataloğu CRUD arayüzleri
+    │   │   ├── connections/    ← Bağlantı istekleri ve Bağlı Kullanıcılar listesi
+    │   │   ├── credits/        ← Kredi Satın Alma / Abonelik Paneli (CreditsPage)
+    │   │   ├── mfr/            ← Üretici Paneli ve sipariş kartları
+    │   │   ├── seller/         ← Satıcı Paneli, Sipariş Verme Formu ve Akıllı Üretici Arama
+    │   │   └── ui/             ← Modal, Toast, Lightbox, Sanal Ödeme Modalı
+    │   ├── context/            ← React Context yapıları (Auth, Data, Settings, SignalR, vb.)
+    │   ├── hooks/              ← Sayfalardan izole edilmiş iş mantığı custom hook'ları (13 dosya)
+    │   ├── services/
+    │   │   ├── api.ts          ← Tüm API fetch istekleri, base_url ayarları ve TS tipleri
+    │   │   └── translations.ts ← TR/EN dil çeviri sözlüğü
+    │   ├── types/              ← Arayüz tipleri ve filtre tanımları
+    │   └── utils/              ← Yardımcı araçlar (durum renkleri, görsel küçültme, hata ayıklama)
 ```
 
 ---
 
-## 4. Backend Veri Modelleri (PostgreSQL Tabloları)
+## 4. Veritabanı Şeması (PostgreSQL Tabloları)
 
-### `Product` — Tablo: `products`
-| Alan | Tip | Kolon Adı (snake_case) | Açıklama |
-|------|-----|---------------|----------|
-| Id | string | `id` | `gen_random_uuid()::text` ile auto-generated |
-| Code | string | `code` | Ürün/sipariş kodu |
-| Image | string? | `image` | Base64 encoded görsel |
-| Text | string? | `text` | Serbest metin |
-| Length | string? | `length` | Boy/uzunluk |
-| Extras | `Dictionary<string, ExtraValue>?` | `extras` | **JSONB** — Dinamik ek alanlar |
-| Completed | bool | `completed` | Üretici tamamladı mı? |
-| IsDefective | bool | `is_defective` | Hatalı bildirim var mı? |
-| IsPendingApproval | bool | `is_pending_approval` | Onay bekliyor mu? |
-| IsReproduction | bool | `is_reproduction` | Yeniden üretim mi? |
-| DefectNote | string? | `defect_note` | Hata açıklaması |
-| DefectImage | string? | `defect_image` | Hata görseli (Base64) |
-| Status | string | `status` | Sipariş durumu (bkz. OrderStatus) |
-| Logs | `List<OrderLog>` | `logs` | **JSONB** — Durum geçmişi |
-| CreatedAt | string | `created_at` | ISO 8601 format (`o`) |
-| CompletedAt | string? | `completed_at` | Tamamlanma zamanı |
-| SellerId | string | `seller_id` | Satıcı user ID'si |
-| ManufacturerId | string | `manufacturer_id` | Üretici user ID'si |
-| SellerName | string | `seller_name` | Satıcı username |
-| ManufacturerName | string | `manufacturer_name` | Üretici username |
-| CancelRequested | bool | `cancel_requested` | İptal talebi var mı? |
+Tüm şema `GoodTrack.API/Infrastructure/AppDbContext.cs` içinde EF Core Fluent API ile tanımlanmıştır.
 
-#### `ExtraValue` (embedded)
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| Name | string | Alan adı |
-| Type | string | `"text"` veya `"select"` |
-| Value | string | Girilen değer |
+### 4.1. `users` Tablosu
+Kullanıcı bilgilerini saklar. `associated_user_ids` kolonu silinmiş, yerine `user_connections` tablosu getirilmiştir.
+- **Id** (`text`, PK): `gen_random_uuid()::text` ile atanır.
+- **Username** (`varchar(100)`): Küçük harfli ve benzersizdir. UNIQUE indekslidir.
+- **PasswordHash** (`text`): PBKDF2 standardında şifrelenmiştir.
+- **Role** (`varchar(20)`): `"seller"` veya `"mfr"`.
+- **Email** (`varchar(200)`): UNIQUE indekslidir.
+- **ProfilePicture** (`text`): Base64 formatında saklanan profil görseli.
+- **City** (`varchar(100)`): Üretici aramaları için case-insensitive arama kolonu.
+- **Keywords** (`text[]`): Üreticinin uzmanlık alanları.
+- **ProductImages** (`text[]`): Üretici portföy galeri görselleri (Base64 listesi).
+- **IsVisibleToSellers** (`boolean`): Satıcı aramalarında listelensin mi?
+- **RowVersion** (`xid` / `uint`): Eşzamanlı (concurrency) güncelleme çakışmalarını önlemek için PostgreSQL sistem kolonu `xmin` ile eşlenmiştir. `[RowVersion]` attribute'una sahiptir.
 
-#### `OrderLog` (embedded list içinde)
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| Timestamp | string | ISO 8601 |
-| Status | string | Yeni durum |
-| Message | string | Açıklama |
-| UserId | string | İşlemi yapan kullanıcı |
-| UserName | string | İşlemi yapan kullanıcı adı |
+### 4.2. `user_connections` Tablosu
+İlişkisi onaylanmış Satıcı-Üretici çiftlerini tutar.
+- **Id** (`text`, PK): Benzersiz UUID.
+- **SellerId** (`varchar(100)`): Satıcının kullanıcı ID'si.
+- **ManufacturerId** (`varchar(100)`): Üreticinin kullanıcı ID'si.
+- **ConnectedAt** (`varchar(50)`): Bağlantı zamanı (ISO 8601 string).
+- *Benzersizlik:* `(seller_id, manufacturer_id)` üzerinde UNIQUE index bulunur.
 
----
+### 4.3. `connection_requests` Tablosu
+Kullanıcılar arasındaki arkadaşlık/bağlantı isteklerini yönetir.
+- **SenderId** & **SenderUsername** (`varchar`): İsteği atan taraf.
+- **ReceiverId** & **ReceiverUsername** (`varchar`): İsteği alan taraf.
+- **Status** (`varchar(20)`): `"pending"`, `"accepted"`, `"rejected"`.
 
-### `User` — Tablo: `users`
-| Alan | Tip | Kolon Adı (snake_case) | Açıklama |
-|------|-----|---------------|----------|
-| Id | string | `id` | `gen_random_uuid()::text` ile auto-generated |
-| Username | string | `username` | Küçük harf, trim edilmiş. UNIQUE index |
-| PasswordHash | string | `password_hash` | PBKDF2 hash |
-| Role | string | `role` | `"seller"` veya `"mfr"` |
-| FirstName | string | `first_name` | |
-| LastName | string | `last_name` | |
-| Email | string | `email` | UNIQUE index |
-| PhoneNumber | string | `phone_number` | |
-| ProfilePicture | string | `profile_picture` | Base64 veya boş string |
-| Address | string | `address` | |
-| City | string | `city` | Üretici arama filtresi (ILike ile case-insensitive) |
-| Bio | string | `bio` | |
-| ProductImages | `List<string>` | `product_images` | **text[]** — Portföy görselleri (Base64) |
-| Keywords | `List<string>` | `keywords` | **text[]** — Uzmanlık etiketleri |
-| IsVisibleToSellers | bool | `is_visible_to_sellers` | Satıcı arama sonuçlarında görünsün mü? |
-| CreatedAt | string | `created_at` | |
-| AssociatedUserIds | `List<string>` | `associated_user_ids` | **text[]** — Bağlı kullanıcı ID listesi |
-| IsActive | bool | `is_active` | Hesap aktif mi? (şu an her zaman true) |
-| VerificationToken | string | `verification_token` | Ölü kod — kullanılmıyor |
-| VerificationTokenExpiresAt | string | `verification_token_expires_at` | Ölü kod |
-| RefreshToken | string | `refresh_token` | Yenileme anahtarı (Refresh Token) |
-| RefreshTokenExpiryTime | string | `refresh_token_expiry_time` | Refresh Token son geçerlilik zamanı (ISO 8601) |
+### 4.4. `products` Tablosu (Siparişler)
+Tüm siparişlerin detaylarını ve geçmiş loglarını saklar.
+- **Id** (`text`, PK): Benzersiz UUID.
+- **Code** (`varchar(100)`): Sipariş kodu.
+- **Image** / **DefectImage** (`text`): Sipariş veya hata görselleri (Base64).
+- **Status** (`varchar`): Güncel durum (bkz: Bölüm 5).
+- **Extras** (`jsonb`): Siparişe eklenen dinamik alan anahtar-değer çiftleri (örneğin `{ "Renk": "Kırmızı" }`).
+- **Logs** (`jsonb`): Yapılan tüm durum geçişlerinin tarihçesi (`List<OrderLog>`).
+- **SellerId** & **ManufacturerId** (`varchar(100)`): İlgili tarafların ID'leri.
+- **CancelRequested** (`boolean`): Satıcı iptal talebi gönderdiğinde `true` olur.
+
+### 4.5. `user_credits` Tablosu
+Kullanıcıların bakiye ve abonelik bilgilerini saklar.
+- **UserId** (`text`, FK -> `users.id`): UNIQUE foreign key. Her kullanıcının en fazla bir kredi kaydı olabilir.
+- **Plan** (`text`): Kullanıcının abonelik seviyesi (`"Free"`, `"Pro"`, `"Enterprise"`).
+- **Credits** (`integer`): Kullanıcının güncel harcanabilir kredi bakiyesi.
+- **PlanStartedAt** & **RenewsAt** (`text`): Abonelik başlangıç ve otomatik yenilenme tarihleri.
+- **RowVersion** (`xid`): Eşzamanlı bakiye güncellemelerinde (race condition) verinin ezilmesini engellemek için `xmin` concurrency token ile korunur.
+
+### 4.6. `catalog_products` Tablosu
+Satıcının hızlı sipariş geçmek için oluşturduğu şablon ürünler kataloğudur.
+
+### 4.7. `extra_field_defs` Tablosu
+Satıcıların sipariş formuna ekleyebileceği özel dinamik alan tanımlarıdır. (`Name`, `Type: "text"/"select"`, `Options: text[]`).
 
 ---
 
-### `ConnectionRequest` — Tablo: `connection_requests`
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| Id | string | Document ID |
-| SenderId | string | İstek gönderen user ID |
-| SenderUsername | string | |
-| ReceiverId | string | İstek alan user ID |
-| ReceiverUsername | string | |
-| Status | string | `"pending"`, `"accepted"`, `"rejected"` |
-| CreatedAt | string | ISO 8601 |
+## 5. Sipariş Durum Akışı (Order Status Lifecycle)
 
----
+Siparişler doğrusal olmayan karmaşık bir durum döngüsüne sahiptir. İşlemi yapan kullanıcının rolüne göre durum geçişleri `ProductService.cs` içindeki `UpdateOrderStatusAsync` metodunda katı kurallarla denetlenir.
 
-### `CatalogProduct` — Tablo: `catalog_products`
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| Id | string | Document ID |
-| SellerId | string | Hangi satıcıya ait |
-| ProductCode | string | |
-| Image | string | Base64 (zorunlu) |
-| ManufacturerId | string | (`mfrId`) Atandığı üretici |
-| ManufacturerName | string | (`mfrName`) |
-| Text | string? | |
-| Length | string? | |
-| Extras | `Dictionary<string, ExtraValue>?` | **JSONB** |
-| CreatedAt | string | |
-
----
-
-### `ExtraFieldDef` — Tablo: `extra_field_defs`
-| Alan | Tip | Açıklama |
-|------|-----|----------|
-| Id | string | Document ID |
-| Name | string | Alan adı (örn. "Renk") |
-| Type | string | `"text"` veya `"select"` |
-| Options | `List<string>` | **text[]** — Select tipiyse seçenekler |
-| CreatedBy | string | Oluşturan seller ID |
-
----
-
-## 5. Order Status Akışı
-
-### Backend Sabiti: `Constants/OrderStatus.cs`
-### Frontend Sabiti: `utils/constants.ts → ORDER_STATUS`
-
-```
-awaiting       → Satıcı sipariş oluşturdu, üretici onayı bekliyor
-production     → Üretici üretime aldı
-completed      → Üretici tamamladı
-to_ship        → Satıcı onayı bekliyor / sevkiyata hazır
-delivered      → Teslim edildi
-defective      → Üretici hata bildirdi (defect image + note ile)
-missing        → Üretici eksik bildirdi
-broken         → Satıcı bozuk bildirdi
-corrected      → Satıcı düzeltme onayladı
-shipped        → Kargo gönderildi
-cancelled      → İptal edildi (cancel request flow ile)
+```mermaid
+stateDiagram-v2
+    [*] --> awaiting : Satıcı Sipariş Oluşturur (Maliyet: 1 Kredi)
+    awaiting --> production : Üretici Siparişi Kabul Eder
+    awaiting --> cancelled : Satıcı İptal Eder (Kredi İade Edilir)
+    
+    production --> completed : Üretici Üretimi Bitirir
+    production --> defective : Üretici Hata/Kusur Bildirir
+    production --> missing : Üretici Eksik Ürün Bildirir
+    
+    defective --> corrected : Satıcı Hatayı Düzeltir/Onaylar
+    missing --> corrected : Satıcı Düzeltmeyi Onaylar
+    corrected --> production : Üretici Tekrar Üretime Alır
+    
+    completed --> to_ship : Üretici Sevkiyata Hazırlar
+    to_ship --> shipped : Satıcı Kargo Çıkışı Yapar
+    to_ship --> broken : Satıcı Kusurlu/Bozuk Teslim Bildirir
+    
+    broken --> corrected : Satıcı Düzeltmeyi Onaylar
+    shipped --> delivered : Satıcı Teslim Aldı Olarak İşaretler
+    delivered --> [*] : Süreç Tamamlandı
 ```
 
-### Durum Geçişleri (ProductService.cs → UpdateOrderStatusAsync)
-- `seller` rolü: `to_ship`, `delivered`, `shipped`, `cancelled`, `corrected` yapabilir
-- `mfr` rolü: `production`, `completed`, `defective`, `missing`, `to_ship`, `cancelled` yapabilir
-- Kimin hangi duruma geçebileceği `ProductService.cs` içinde kontrol edilir
+### Durum Yetki Matrisi:
+- **Sadece Satıcı (`seller`):** `to_ship` durumundaki ürünü `shipped` veya `broken` yapabilir. Siparişi `delivered` (teslim edildi), `cancelled` (iptal edildi) veya `corrected` (düzeltildi) durumuna çekebilir.
+- **Sadece Üretici (`mfr`):** Yeni siparişi `production` (üretime alındı) durumuna alabilir. Üretimdeyken `completed`, `defective` (hatalı) veya `missing` (eksik) bildirebilir. `completed` olan ürünü `to_ship` durumuna getirebilir.
+- **İptal Akışı (Cancel Request):** `production` durumuna geçmiş bir siparişi satıcı doğrudan iptal edemez. Öncelikle `CancelRequested = true` yapar (iptal talebi). Üretici onaylarsa durum `cancelled` olur ve satıcıya kredi iadesi yapılır; reddederse talep düşer.
 
 ---
 
-## 6. Backend API Endpoint'leri
+## 6. Kredi ve Abonelik Sistemi
 
-**Base URL:** `/api`  
-**Tüm `/auth/register` ve `/auth/login` hariç tüm endpoint'ler JWT Bearer Token gerektirir**
+GoodTrack, B2B SaaS modeliyle çalışır. Satıcıların sipariş oluşturabilmesi için sistemde kredilerinin bulunması gerekir.
 
-### Auth Controller — `/api/auth`
+### Abonelik Paketleri:
+- **Free:** Aylık 10 Kredi verilir, fiyatı 0$'dır. Ekstra alan tanımı yapılamaz.
+- **Pro:** Aylık 100 Kredi verilir, fiyatı 29$'dır. En fazla 5 adet dinamik ekstra alan tanımına izin verilir.
+- **Enterprise:** Sınırsız (`999999`) Kredi verilir, fiyatı 99$'dır. Sınırsız dinamik ekstra alan tanımlanabilir.
 
-| Method | Endpoint | Rate Limit | Yetki | Açıklama |
-|--------|----------|------------|-------|----------|
-| POST | `/auth/register` | `auth-strict` (5/dk) | Public | Kullanıcı kaydı. Body: `{username, password, confirmPassword, firstname, lastname, email, phoneNumber, role}` |
-| POST | `/auth/login` | `auth-strict` | Public | Login. Response: `{token, refreshToken, username, role, userId, message}` |
-| POST | `/auth/refresh` | | Public | Access token yenileme. Body: `{token, refreshToken}`. Response: `{token, refreshToken, username, role, userId, message}` |
-| POST | `/auth/verify-password` | `auth-strict` | Authenticated | Şifre doğrula. Body: `{password}`. Response: `{success, message}` |
-| POST | `/auth/change-password` | `auth-strict` | Authenticated | Şifre değiştir. Body: `{oldPassword, newPassword, confirmNewPassword}` |
-
-### Connections Controller — `/api/connections`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/connections` | Authenticated | Bağlı kullanıcılar listesi |
-| POST | `/connections?username={x}` | Authenticated | Bağlantı isteği gönder |
-| DELETE | `/connections/{targetId}` | Authenticated | Bağlantıyı kaldır |
-| GET | `/connections/requests/incoming` | Authenticated | Gelen istekler |
-| GET | `/connections/requests/sent` | Authenticated | Gönderilen istekler |
-| PATCH | `/connections/requests/{requestId}` | Authenticated | İstek cevapla. Body: `{status: "accepted"/"rejected"}` |
-| DELETE | `/connections/requests/{requestId}` | Authenticated | Gönderilen isteği iptal et |
-
-### Products Controller — `/api/products`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/products` | Authenticated (seller/mfr) | Role'e göre filtrelenmiş ürünler |
-| GET | `/products/{id}` | Authenticated | Sipariş detayı |
-| POST | `/products` | `seller` | Yeni sipariş oluştur |
-| PUT | `/products/{id}` | `seller` | Siparişi güncelle |
-| DELETE | `/products/{id}` | `seller` | Siparişi sil |
-| PUT | `/products/{id}/status` | Authenticated | Durum güncelle. Body: `{status, defectNote?, defectImage?}` |
-| POST | `/products/{id}/cancellation-requests` | `seller` | İptal talebi gönder |
-| PATCH | `/products/{id}/cancellation-requests` | `mfr` | İptal talebini cevapla. Body: `{approve: bool}` |
-| POST | `/products/status-migrations` | `admin` | DB migration (admin only) |
-
-### Catalog Controller — `/api/catalog`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/catalog` | `seller` | Kendi katalog ürünlerini listele |
-| POST | `/catalog` | `seller` | Katalog ürünü ekle |
-| PUT | `/catalog/{id}` | `seller` | Katalog ürünü güncelle |
-| DELETE | `/catalog/{id}` | `seller` | Katalog ürünü sil |
-
-### Fields Controller — `/api/fields`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/fields` | `seller` | Ekstra alan tanımlarını listele |
-| POST | `/fields` | `seller` | Yeni alan tanımı oluştur |
-| DELETE | `/fields/{id}` | `seller` | Alan tanımını sil |
-
-### Profile Controller — `/api/profile`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/profile` | Authenticated | Kendi profilini getir |
-| PUT | `/profile` | Authenticated | Profili güncelle |
-| GET | `/profile/{username}` | Authenticated | Başka kullanıcının profilini getir |
-
-### Manufacturers Controller — `/api/manufacturers`
-
-| Method | Endpoint | Yetki | Açıklama |
-|--------|----------|-------|----------|
-| GET | `/manufacturers/search?city=&keyword=&cursor=&limit=` | `seller` | Üretici arama (paginated, cursor-based) |
-
-### SignalR Hub — `/hubs/tracking`
-- JWT token `access_token` query param ile taşınır (WebSocket handshake için)
-- Events (server → client): `ReceiveOrderUpdate`, `ReceiveConnectionRequest`, `ReceiveConnectionUpdate`
+### Kredi Kuralları ve Tüketim:
+1. **Sipariş Maliyeti:** Satıcı tarafından oluşturulan her 1 yeni sipariş, satıcının bakiyesinden **1 kredi** düşer.
+2. **Kredi İade Politikası:** Eğer bir sipariş `awaiting` durumundayken satıcı tarafından iptal edilirse veya `production` aşamasındayken üretici iptal talebini onaylarsa, satıcıya **1 kredi otomatik olarak iade edilir**.
+3. **Bakiye Kontrolü:** Kredisi 0 olan satıcı yeni sipariş oluşturamaz (`InsufficientCreditsException` fırlatılır).
+4. **Eşzamanlılık Koruması (Concurrency):** İki farklı sekmeden veya işlemden aynı anda kredi düşülmeye/artırılmaya çalışılması durumunda PostgreSQL'in `xmin` yapısı tetiklenir, çakışma algılanır ve işlem güvenli bir şekilde iptal edilerek veritabanı tutarlılığı korunur.
+5. **Sandbox Ödeme:** Frontend tarafında kart numarası kontrolü yapan bir sanal ödeme arayüzü (`MockPaymentModal`) mevcuttur.
 
 ---
 
-## 7. Frontend Rotaları
+## 7. API Uç Noktaları (Endpoint Listesi)
 
+Tüm istekler `/api` ön ekiyle başlar. Kayıt ve Giriş dışındaki tüm endpointler geçerli bir JWT Token gerektirir.
+
+### 7.1. Kimlik Doğrulama (`/api/auth`)
+- `POST /auth/register` (Hız Sınırlı: 5/dk): Yeni hesap oluşturur.
+- `POST /auth/login` (Hız Sınırlı: 5/dk): Kullanıcı adı ve şifreyi doğrular. Geriye JWT Token, Refresh Token ve Rol bilgisini döner.
+- `POST /auth/refresh`: Access Token süresi bittiğinde Refresh Token ile yeni bir token seti üretir.
+- `POST /auth/verify-password`: Hassas işlemler öncesi şifreyi doğrular.
+- `POST /auth/change-password`: Şifreyi günceller.
+
+### 7.2. Kullanıcı Bağlantıları (`/api/connections`)
+- `GET /connections`: Onaylanmış tüm bağlı kullanıcıları döner.
+- `POST /connections?username={x}`: Kullanıcı adına göre bağlantı/arkadaşlık isteği atar.
+- `DELETE /connections/{targetId}`: Mevcut bağlantıyı tek taraflı sonlandırır.
+- `GET /connections/requests/incoming` & `sent`: Gelen ve giden bağlantı isteklerini listeler.
+- `PATCH /connections/requests/{requestId}`: İstek kabul (`status: "accepted"`) veya reddedilir.
+
+### 7.3. Siparişler (`/api/products`)
+- `GET /products`: Kullanıcının rolüne göre filtreli sipariş listesini getirir.
+- `POST /products`: Yeni sipariş oluşturur (1 kredi düşer).
+- `PUT /products/{id}`: Sipariş detaylarını günceller (Sadece satıcı).
+- `PUT /products/{id}/status`: Sipariş durumunu günceller. Hata bildirimi için `defectNote` ve `defectImage` parametreleri bu istekte gönderilir.
+- `POST /products/{id}/cancellation-requests`: İptal isteği başlatır.
+- `PATCH /products/{id}/cancellation-requests`: İptal isteğini yanıtlar (`approve: true/false`).
+
+### 7.4. Krediler ve Faturalandırma (`/api/credits`)
+- `GET /credits/balance`: Kullanıcının güncel bakiyesini ve paket adını getirir.
+- `GET /credits/plans`: Sistemdeki aktif paket detaylarını ve özelliklerini döndürür.
+- `POST /credits/upgrade`: Paket yükseltme isteği gönderir. Sanal ödeme sonrasında tetiklenir.
+
+### 7.5. Katalog ve Özel Alanlar (`/api/catalog`, `/api/fields`)
+- Satıcıların hızlı sipariş oluşturmak için kullandığı katalog ve sipariş formunu özelleştiren dinamik alan tanımlarının CRUD işlemlerini içerir.
+
+---
+
+## 8. Frontend Mimari ve Optimistic UI Detayları
+
+Frontend tasarımı, üstün bir kullanıcı deneyimi sunmak amacıyla **Semantik İyimser Güncelleme (Semantic Optimistic UI)** sistemiyle donatılmıştır.
+
+### İyimser Güncelleme ve Kırpışma Önleme (Anti-Flicker):
+- Sunucuya bir güncelleme isteği (örneğin sipariş durumunu tamamlama veya bağlantı silme) gönderildiğinde, arayüz sunucu yanıtını beklemeden anında güncellenir.
+- Sunucudan SignalR veya HTTP kanalıyla gelecek mükerrer güncellemelerin veya yavaş yüklemelerin arayüzde titremeye (flicker) yol açmaması için `DataContext.tsx` içinde 15 saniyelik bir TTL (Time-To-Live) önbelleği (`Map`) tutulur.
+- İstek hata verirse, `rollback` fonksiyonları tetiklenerek arayüz eski kararlı durumuna otomatik olarak geri döndürülür ve kullanıcıya hata toast mesajı gösterilir.
+
+### React Context ve Provider Hiyerarşisi (`App.tsx`):
 ```
-/                           → Login değilse LandingPage, login ise role'e göre yönlendir
-/login                      → AuthPage (mode="login")
-/register                   → AuthPage (mode="register")
-/seller/orders              → SellerPage [role: seller]
-/seller/orders/:id          → OrderDetailPage [role: seller]
-/seller/search-mfr          → SearchMfrPage [role: seller]
-/seller/profile             → MyAccountPage [role: seller]
-/seller/profile/:username   → UserProfileDetailPage [role: seller]
-/seller/connections         → ConnectionsPage [role: seller]
-/mfr/orders                 → MfrPage [role: mfr]
-/mfr/orders/:id             → OrderDetailPage [role: mfr]
-/mfr/profile                → MyAccountPage [role: mfr]
-/mfr/profile/:username      → UserProfileDetailPage [role: mfr]
-/mfr/connections            → ConnectionsPage [role: mfr]
-*                           → Redirect to /
+SettingsProvider (Dil/Tema)
+└── ConfirmProvider (Onay modalları)
+    └── ToastProvider (Bildirimler)
+        └── AuthProvider (Oturum yönetimi)
+            └── DataProvider (Siparişler, katalog, krediler ve bağlantılar)
+                └── SignalRProvider (Canlı WebSocket dinleyicisi)
+                    └── AppContent (Sayfalar ve Rotalar)
 ```
 
-**Route Guard'lar:**
-- `ProtectedRoute` — giriş yapmamışsa `/login`'e yönlendirir; yanlış roldeyse kendi ana sayfasına yönlendirir
-- `PublicRoute` — giriş yapmışsa kendi ana sayfasına yönlendirir
+- **SignalR Context:** WebSocket bağlantısını canlı tutar. Sunucudan `ReceiveOrderUpdate`, `ReceiveConnectionRequest` veya `ReceiveConnectionUpdate` eventi geldiğinde, `DataContext` üzerindeki ilgili veri yükleme fonksiyonlarını otomatik tetikler.
 
 ---
 
-## 8. Frontend Context'leri
+## 9. Güvenlik Önlemleri
 
-### Provider Hiyerarşisi (App.tsx)
-```
-BrowserRouter
-  SettingsProvider       ← En üstte — diğerleri t() ve language kullanır
-    ConfirmProvider      ← SettingsProvider'a bağımlı
-      ToastProvider
-        AuthProvider     ← ToastProvider'a bağımlı (unauthorized toast için)
-          DataProvider   ← AuthProvider'a bağımlı
-            SignalRProvider ← DataProvider + AuthProvider'a bağımlı
-              AppContent
-```
+| Katman / Tehdit | Çözüm ve Uygulanan Mekanizma |
+|-----------------|------------------------------|
+| **Şifre Güvenliği** | `IPasswordHasher<User>` (PBKDF2) ile tuzlanarak (salt) şifrelenir. |
+| **Kimlik Yetkilendirme** | JWT Bearer. JWT anahtarı (`JWT_KEY`) ortam değişkeni olarak tutulur. Üretim modunda varsayılan geliştirici anahtarının kullanılması engellenmiştir. |
+| **Yetki Aşımı (IDOR)** | Her sipariş güncelleme, silme veya çekme isteğinde; istek atan kullanıcının siparişin satıcısı veya üreticisi olup olmadığı sunucu tarafında doğrulanır. |
+| **Kötü Niyetli İstek Sıklığı** | Giriş/Kayıt yolları için IP bazlı `auth-strict` (5 istek/dakika) rate limiting uygulanır. |
+| **Hata Güvenliği** | `ExceptionHandlingMiddleware` tüm hataları yakalar; detaylı hata yığınını (stack trace) dış dünyaya sızdırmadan istemciye sade hata mesajları döner. |
+| **Row Level Security (RLS)** | Supabase tablolarında RLS aktifleştirilmiştir. Doğrudan istemci üzerinden veritabanına izinsiz erişim engellenmiştir. |
 
 ---
 
-### `AuthContext` (`context/AuthContext.tsx`)
-**Exports:** `AuthProvider`, `useAuth()`  
-**State:** `user: User | null`  
-**Actions:** `login(token, username, role, userId)`, `logout()`  
-**Önemli:** `localStorage`'dan initial state okunur. `auth-unauthorized` custom event'ini dinler; gelince `logout()` + toast gösterir.  
-**localStorage Keys:** `AUTH_STORAGE_KEYS` (`token`, `username`, `role`, `userId`)
-
----
-
-### `DataContext` (`context/DataContext.tsx`)
-**Exports:** `DataProvider`, `useData()`  
-**State:**
-- `products: Product[]`
-- `connections: ConnectionUser[]`
-- `incomingRequests: ConnectionRequest[]`
-- `sentRequests: ConnectionRequest[]`
-- `catalogProducts: CatalogProduct[]` (sadece seller)
-- `extraFieldDefs: ExtraFieldDef[]` (sadece seller)
-
-**Actions:** `loadProducts()`, `refreshConnections()`, `loadIncomingRequests()`, `loadSentRequests()`, `loadCatalog()`, `loadExtraFields()`
-
-**Semantik Optimistic Aksiyonlar (context'ten erişilebilir):**
-- `optimisticAddSentRequest(req)` / `optimisticRemoveSentRequest(id)` / `rollbackSentRequests(prev)`
-- `optimisticAddConnection(conn)` / `optimisticRemoveConnection(id)` / `rollbackConnections(prev)`
-- `optimisticRemoveIncoming(id)` / `rollbackIncomingRequests(prev)`
-- `optimisticAddProduct(prod)` / `optimisticUpdateProduct(prod)` / `optimisticRemoveProduct(id)` / `rollbackProducts(prev)`
-
-**Optimistic UI:** `setConnections` ve `setProducts` (context-içi wrapper'lar) — iyimser ekleme/güncelleme/silme durumlarını 15 saniyelik TTL (zaman aşımı) ile hafızada (`Map`) tutarak SignalR veya backend yükleme isteklerinin arayüzde kırpışma (flicker) yapmasını önler.  
-**Initial Load:** `user` değiştiğinde tüm data yüklenir; logout'ta temizlenir.
-
----
-
-### `SettingsContext` (`context/SettingsContext.tsx`)
-**Exports:** `SettingsProvider`, `useSettings()`  
-**State:** `theme: 'dark' | 'light'`, `language: Language` ('tr' | 'en')  
-**Actions:** `toggleTheme()`, `setLanguage(lang)`, `t(key: TranslationKey): string`  
-**localStorage Keys:** `theme`, `language`  
-**Tema:** `light-theme` CSS sınıfı `document.documentElement`'e eklenir/çıkarılır.
-
----
-
-### `SignalRContext` (`context/SignalRContext.tsx`)
-**Exports:** `SignalRProvider`, `useSignalR()`  
-**Value:** `HubConnection | null`  
-**Bağlantı:** Sadece `user` değiştiğinde yeniden bağlanır. Callback'ler `useRef` ile güncellenir (gereksiz reconnect'i önlemek için).  
-**Events:**
-- `ReceiveOrderUpdate` → `loadProducts()`
-- `ReceiveConnectionRequest` → 1 sn delay sonra `loadIncomingRequests()` + `loadSentRequests()`
-- `ReceiveConnectionUpdate` → 1 sn delay sonra `refreshConnections()`
-
----
-
-### `ToastContext` (`context/ToastContext.tsx`)
-**Exports:** `ToastProvider`, `useToast()`  
-**Actions:** `showToast(message: string, isErrorOverride?: boolean)`  
-**Davranış:** Hata içeren anahtar kelime (tr/en) içeriyorsa kırmızı, yoksa yeşil gösterir. Hata: 4sn, başarı: 2.5sn.
-
----
-
-### `ConfirmContext` (`context/ConfirmContext.tsx`)
-**Exports:** `ConfirmProvider`, `useConfirm()`  
-**Actions:** `confirm(options): Promise<boolean>`  
-**Kullanım:** Destructive işlemler öncesi modal onay diyaloğu. `await confirm({title, message, confirmText?, isDestructive?})`
-
----
-
-## 9. Frontend Hook'ları
-
-### `useAuthPage` (`hooks/useAuthPage.ts`)
-- **Kullandığı Context'ler:** `useAuth`, `useSettings`, `useToast`
-- **Sorumluluğu:** Login/Register form state ve validasyonu. `handleLogin()`, `handleRegister()`.
-- **Önemli:** Phone number prefix (`+90`) + body ayrı tutulur.
-
-### `useCatalog` (`hooks/useCatalog.ts`)
-- **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Katalog CRUD, görsel compression, form state.
-- **Return:** `connections`, `catalogProducts`, `language`, `t`, `editingProduct`, form state, tüm handler'lar.
-
-### `useConnections` (`hooks/useConnections.ts`)
-- **Kullandığı Context'ler:** `useAuth`, `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Bağlantı isteği gönder, kabul et, reddet, sil, bağlantı kaldır.
-
-### `useMfrOrders` (`hooks/useMfrOrders.ts`)
-- **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`
-- **Sorumluluğu:** MfrPage için tüm state ve logic. Tab yönetimi, sıralama, defect modal, unseen badge yönetimi. Durum geçişleri, broken raporu ve iptal talebi cevapları Optimistic UI + Rollback ile entegredir.
-- **Return:** `activeTab`, `sortOrder`, `filteredProducts`, `sortedProducts`, `badgeCounts`, `selectedDefectProduct`, `isDetailsModalOpen`, modal handler'ları, `handleToggleComplete`, `handleMarkSingleAsSeen`, `onRespondCancel`.
-
-### `useOrderDetail` (`hooks/useOrderDetail.ts`)
-- **Kullandığı Context'ler:** `useSettings`
-- **Sorumluluğu:** Sipariş detay sayfası için ürünü `api.getProductById()` ile çeker.
-
-### `usePasswordChange` (`hooks/usePasswordChange.ts`)
-- **Kullandığı Context'ler:** `useToast`, `useSettings`
-- **Sorumluluğu:** 3 adımlı şifre değiştirme akışı (verify → new → confirm).
-
-### `useProfile` (`hooks/useProfile.ts`)
-- **Kullandığı Context'ler:** `useAuth`, `useToast`, `useSettings`
-- **Sorumluluğu:** Profil düzenleme state ve handler'ları (avatar, bio, keywords, product images). 338 satır, 44 return değeri.
-
-### `useSearchMfr` (`hooks/useSearchMfr.ts`)
-- **Kullandığı Context'ler:** `useData`, `useSettings`, `useAuth`, `useToast`
-- **Sorumluluğu:** Üretici arama (çoklu şehir ve kategori filtreleri), bağlantı isteği gönderme. Hibrit arama mimarisi sayesinde tüm aktif üretici listesini veritabanından çekip istemci tarafında anlık filtreler ve eşleşme sayısına göre akıllıca sıralar.
-
-### `useSellerOrderActions` (`hooks/useSellerOrderActions.ts`)
-- **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Defect modal state, defect/missing bildirim, iptal talebi, iptal yanıtı, onay toggle. Tüm aksiyonlar Optimistic UI + Rollback ile anlık tepki verecek şekilde entegredir.
-
-### `useSellerOrderBadges` (`hooks/useSellerOrderBadges.ts`)
-- **Sorumluluğu:** Seller dashboard tab'larındaki badge sayılarını hesaplar.
-
-### `useSellerOrderForm` (`hooks/useSellerOrderForm.ts`)
-- **Kullandığı Context'ler:** `useData`, `useToast`, `useSettings`, `useConfirm`
-- **Sorumluluğu:** Sipariş oluşturma/düzenleme formu. Katalog auto-fill, görsel compression, field yönetimi, CRUD (Oluşturma, Güncelleme, Silme işlemleri Optimistic UI + Rollback ile entegredir; hata durumunda form verileri otomatik kurtarılır).
-
-### `useSellerOrders` (`hooks/useSellerOrders.ts`)
-- **Sorumluluğu:** SellerPage için coordinator hook. Diğer hook'ları (Form, Actions, Badges) bir araya getirir. Tab ve sort state yönetimi, URL query params.
-
-### `useUserProfileDetail` (`hooks/useUserProfileDetail.ts`)
-- **Sorumluluğu:** Başka kullanıcının profil sayfası için `api.getProfileByUsername()` çağrısı.
-
----
-
-## 10. Frontend Bileşenleri
-
-### Layout.tsx (`components/Layout.tsx`)
-- Navigation bar — rol bazlı renkli menü butonları
-- Seller: Orders, New Order, Catalog, Search, Profile, Connections
-- Mfr: Orders, Profile, Connections
-- Theme toggle, Language toggle (TR/EN)
-- `ROUTES` sabiti kullanılır
-
-### Seller Bileşenleri (`components/seller/`)
-| Bileşen | Açıklama |
-|---------|----------|
-| `SellerPage.tsx` | Ana sayfa — tab navigation, order list, form, catalog |
-| `SellerOrderCard.tsx` | Tek sipariş kartı (status badge, tarih, butonlar) |
-| `OrderForm.tsx` | Sipariş oluşturma/düzenleme formu |
-| `OrderDetailsPreview.tsx` | Sipariş özet önizleme paneli |
-| `OrderMenuDropdown.tsx` | 3-nokta menüsü (edit, delete, cancel request) |
-| `OrderActionsBar.tsx` | Durum action butonları |
-| `AddFieldModal.tsx` | Ekstra alan tanımı ekleme modalı |
-| `BrokenDetailsModal.tsx` | Bozuk sipariş detay görüntüleme |
-| `DefectReportModal.tsx` | Defect/missing bildirimi formu |
-| `SearchMfrPage.tsx` | Üretici arama + filtreleme + bağlantı gönderme |
-
-### Mfr Bileşenleri (`components/mfr/`)
-| Bileşen | Açıklama |
-|---------|----------|
-| `MfrPage.tsx` | Ana sayfa — tab navigation, sipariş listesi |
-| `MfrOrderCard.tsx` | Tek sipariş kartı (üretici tarafı, defect butonları) |
-| `DefectDetailsModal.tsx` | Defect detay görüntüleme (not + görsel) |
-| `BrokenReportModal.tsx` | Broken bildirimi formu |
-
-### Profil Bileşenleri (`components/profile/`)
-| Bileşen | Açıklama |
-|---------|----------|
-| `MyAccountPage.tsx` | Kendi profil düzenleme sayfası |
-| `UserProfileDetailPage.tsx` | Başka kullanıcının profil sayfası |
-| `PasswordChangeForm.tsx` | 3 adımlı şifre değiştirme formu |
-| `GeneralProfileFields.tsx` | Genel profil alanları |
-| `MfrBusinessFields.tsx` | Üretici özgü alanlar (keywords, visibility, gallery) |
-| `ProfileAvatarSection.tsx` | Avatar yükleme/görüntüleme |
-| `ProductShowcaseGallery.tsx` | Portföy görseli yönetimi |
-
-### Ortak Bileşenler (`components/ui/`)
-| Bileşen | Açıklama |
-|---------|----------|
-| `Toast.tsx` | Global toast bildirimi |
-| `Modal.tsx` | Temel modal wrapper |
-| `Lightbox.tsx` | Görsel lightbox |
-
----
-
-## 11. Frontend Servisler ve Yardımcılar
-
-### `services/api.ts` — API Client
-- `BASE_URL`: Hostname'e göre dynamic (localhost → `/api`, production → `https://goodtrack.onrender.com/api`)
-- `getHubUrl(path)`: SignalR hub URL'i üretir
-- `apiFetch()`: JWT token ekler, 401'de `auth-unauthorized` event dispatch eder
-- `apiCall<T>()`: Response parse eder, hata mesajlarını handle eder (502, 404, 500 için özel mesajlar)
-- `api` object: Tüm API metodları (login, register, connections, products, catalog, fields, profile, manufacturers)
-
-**TypeScript Interface'leri (api.ts içinde tanımlı):**
-- `User` — `{token, refreshToken, username, role, userId}`
-- `UserProfile` — Tam profil verisi
-- `ConnectionUser` — `{id, username, role}`
-- `ConnectionRequest` — Bağlantı isteği
-- `CatalogProduct` — Katalog ürünü
-- `ExtraFieldDef` — Alan tanımı
-- `ExtraFieldValue` — Alan değeri
-- `OrderLog` — Sipariş log girişi
-- `Product` — Tam ürün/sipariş verisi
-- `RegisterPayload`, `CreateProductPayload`, `CreateCatalogProductPayload`, `UpdateCatalogProductPayload`, `CreateFieldPayload` — API request payload'ları
-
-### `services/translations.ts`
-- `Language = 'tr' | 'en'`
-- `TranslationKey` — Tüm translation key'lerinin union tipi
-- `translations: Record<Language, Record<TranslationKey, string>>` — TR/EN metin sözlüğü
-- **Kullanım:** `const { t } = useSettings(); t('someKey')`
-
-### `utils/errorUtils.ts`
-```typescript
-function extractErrorMessage(err: unknown): string
-// err instanceof Error → err.message
-// typeof err === 'string' → err
-// otherwise → String(err)
-```
-
-### `utils/imageHelper.ts`
-- `compressImage(file: File, maxWidth, maxHeight, quality): Promise<string>` — Canvas kullanarak görsel sıkıştırır ve Base64 döner
-
-### `utils/statusConfig.ts`
-- `getStatusConfig(status, t, options?)` — Status'a göre renk/ikon/label konfigürasyonu döner
-- `getSellerCardAccent(status)` — Seller order kartı için left bar rengi
-- `getMfrCardAccentColor(status)` — Mfr order kartı için accent rengi
-
-### `constants/authKeys.ts`
-```typescript
-AUTH_STORAGE_KEYS = { token, username, role, userId }
-AUTH_EVENTS = { unauthorized: 'auth-unauthorized' }
-MFR_SEEN_KEY_PREFIX = 'seen_mfr_'   // localStorage prefix
-```
-
-### `constants/routes.ts`
-```typescript
-ROUTES = { mfrOrders, mfrProfile, mfrConnections, sellerOrders, sellerProfile, sellerSearch, sellerConnections }
-```
-
----
-
-## 12. Backend Servisler
-
-### `AuthService.cs` (652 satır)
-**Sorumluluklar:**
-- `RegisterAsync` — Kullanıcı kaydı, duplicate kontrol, hash
-- `LoginAsync` — Şifre doğrulama, Access Token ve Refresh Token üretimi (Access Token: 12 saat, Refresh Token: 7 gün)
-- `RefreshTokenAsync` — Süresi geçmiş Access Token ve geçerli Refresh Token ile yeni bir token çifti üretme
-- `GetConnectionsAsync` / `RemoveConnectionAsync`
-- `SendConnectionRequestAsync` — Sadece seller → mfr veya mfr → seller gönderebilir
-- `GetIncomingRequestsAsync` / `GetSentRequestsAsync`
-- `AcceptConnectionRequestAsync` — `AssociatedUserIds` iki tarafa da eklenir, SignalR ile bildirilir
-- `RejectConnectionRequestAsync` / `DeleteConnectionRequestAsync`
-- `GetProfileAsync` / `GetProfileByUsernameAsync` — `MapToProfileDto()` private helper kullanır
-- `UpdateProfileAsync` — Profil günceller, eski görseli siler
-- `SearchManufacturersAsync` — `isVisibleToSellers=true` olan mfr'ları cursor-based paginate eder
-- `VerifyPasswordAsync` / `ChangePasswordAsync`
-- `MapToProfileDto()` — private helper (tekrar azaltmak için extract edildi)
-- `MapToConnectionRequestDto()` — private helper
-
-**JWT:** Access token süresi `AddMinutes(15)` olarak tanımlıdır. Signing key `JWT_KEY` env var'dan okunur, yoksa `Jwt:Key` config'den. Production'da default key kullanılırsa startup'ta throw atılır.
-
----
-
-### `ProductService.cs` (yaklaşık 700 satır)
-**Sorumluluklar:**
-- `GetUserProductsAsync` — Role'e göre (seller: kendi siparişleri, mfr: kendisine gelen)
-- `CreateOrderAsync` — İlk log kaydı ile birlikte kayıt, SignalR bildirim
-- `UpdateProductAsync` — Görsel değişmişse eski silme
-- `DeleteProductAsync` — IDOR kontrolü (sadece sipariş sahibi silebilir)
-- `UpdateOrderStatusAsync` — Merkezi durum geçiş metodu; role ve status doğrulaması yapar; defect için görsel kaydetme ve eski silme içerir; log append eder; SignalR bildirim
-- `GetProductByIdAsync` — IDOR kontrolü (sadece seller veya ürünün mfr'ı görebilir)
-- `MigrateProductStatusesAsync` — Admin: eski bool-based statusları string'e çevirir
-- `RequestOrderCancellationAsync` — `cancelRequested=true` set eder, mfr'a SignalR bildirim
-- `RespondToOrderCancellationAsync` — approve: status=cancelled; reject: cancelRequested=false
-
----
-
-### `CatalogService.cs`
-- Seller'ın kendi katalog ürünleri CRUD
-- Görsel değişiminde eski Base64 silinir
-
-### `FieldService.cs`
-- Seller'ın extra field definition'larını CRUD
-
-### `Base64ImageStorageService.cs`
-- `StoreImageAsync(base64)` — `data:image` ile başladığını kontrol eder
-- `DeleteImageAsync(storedBase64)` — Eski görseli siler
-- **Not:** Görseller artık Firestore'da değil, doğrudan `products`/`catalog_products` tablosunun `image` kolonunda Base64 string olarak saklanmaktadır.
-
----
-
-## 13. Backend Güvenlik
-
-| Katman | Mekanizma |
-|--------|-----------|
-| Kimlik Doğrulama | JWT Bearer Token (Access: 12 saat, Refresh: 7 gün) |
-| Yetkilendirme | `[Authorize]` + `[Authorize(Roles="seller"/"mfr")]` |
-| IDOR Koruması | `ProductService` ve `AuthService`'de `userId` sahiplik kontrolü |
-| Rate Limiting | `auth-strict`: 5/dk, `api-general`: 60/dk |
-| CORS | `appsettings.json` + `CORS_ALLOWED_ORIGINS` env var whitelist |
-| Error Handling | `ExceptionHandlingMiddleware` — stack trace sızdırmaz |
-| Şifre | PBKDF2 (ASP.NET Identity `IPasswordHasher<User>`) |
-| JWT Key | Production'da default key kullanımı startup'ta `throw` atar |
-
----
-
-## 14. Deployment
-
-### Konfigürasyon (Render.com ortam değişkenleri)
-| Env Var | Açıklama |
-|---------|----------|
-| `JWT_KEY` | JWT signing key (zorunlu, production'da değiştirilmeli) |
-| `DATABASE_URL` | Supabase PostgreSQL bağlantı dizesi (Connection Pooler, Port 5432, Session Mode) |
-| `CORS_ALLOWED_ORIGINS` | Virgülle ayrılmış izinli origin'ler |
-
-**Kaldırılan değişkenler:** `FIREBASE_CREDENTIALS_JSON`, `Firebase__ProjectId` (artık kullanılmıyor)
-
-**Bağlantı Dizesi Formatı:**
-```
-Host=aws-0-eu-west-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.farfcrclysrcnkbwfgoc;Password=SIFRE
-```
-
-**EF Core Migration:** Tablolar Supabase MCP aracılığıyla doğrudan Supabase'e uygulandı (`InitialCreate` migration). Yeni migration'lar için: `dotnet ef migrations add <Name>` → `dotnet ef migrations script` → Supabase MCP `apply_migration`.
-
-### Frontend URL Konfigürasyonu
-- `VITE_API_URL` — Development API URL (varsayılan: `/api`)
-- `VITE_PRODUCTION_API_URL` — Production API URL
-
-### Dockerfile
-`GoodTrack/Dockerfile` — Backend + frontend build (wwwroot'a kopyalama) + SPA fallback
-
----
-
-## 15. Bilinen Teknik Borçlar (Kod Kalitesi)
-
-### Kritik Değil, Ama Bilinmeli
-1. **Ölü Email Verification Kodu:** `User.VerificationToken`, `User.VerificationTokenExpiresAt` alanları var; `VerifyEmailAsync` metodu var; ancak hiç çağrılmıyor. `IsActive` her zaman `true` set ediliyor. E-posta doğrulama sistemi devre dışı.
-
-2. ~~**`useSearchMfr.ts` — Client-Side Filtering:** Çoklu şehir (`selectedCities`) ve çoklu kategori (`selectedCategories`) filtreleri eklendi. Firestore limitasyonları sebebiyle (birden fazla `WhereIn` ve `WhereArrayContainsAny` sorgusunun birleştirilememesi), ilk açılışta tüm üreticiler 50'şerli chunks halinde istemciye çekilip instant (0ms) filtrelenecek şekilde hibrit arama mimarisi kuruldu. En çok kategori eşleşmesine sahip üreticiyi en üstte listeleyen akıllı sıralama yapıldı.
-
-3. ~~**`DataContext` Raw Setter'lar:** `setProducts`, `setConnections` vb. context'ten direkt erişilebilir, iş mantığını bypass edebilir.~~ **✅ Düzeltildi:** Raw dispatcher'lar (`setConnections`, `setIncomingRequests`, `setSentRequests`, `setProducts`) context type'ından kaldırıldı. Her optimistic senaryo için semantik aksiyonlar eklendi (`optimisticAddSentRequest`, `optimisticRemoveConnection`, `rollbackConnections` vb.). `optimisticConnections`/`optimisticRemovals` ref'leri de artık context dışına sızdırılmıyor.
-
-4. ~~**Inline `language === 'tr' ? ... : ...` Ternary'ler:** `MfrOrderCard`, `OrderForm`, `SellerOrderCard`, `OrderMenuDropdown`, `ConfirmContext` gibi dosyalarda tarih formatlama ve bazı UI metinleri için `t()` sistemi yerine inline ternary kullanılıyor.~~ **✅ Düzeltildi:** Tüm inline `language ===` ternary'ler `t()` çağrılarıyla değiştirildi. `dateLocale` (`tr-TR`/`en-US`), `langToggleLabel`, `fieldRequired`, `editOrderHeading`, `cancelReqApprove`, `rejectRequestTitle`, `removeConnectionTitle` vb. 20+ yeni anahtar `translations.ts`'e eklendi. `language` artık kullanılmayan bileşenlerden (`MfrOrderCard`, `SellerOrderCard`, `OrderDetailsPreview`, `OrderMenuDropdown`, `OrderForm`, `ConfirmContext`, `useOrderDetail`) temizlendi.
-
-5. **`CreateCatalogProductPayload` ve `UpdateCatalogProductPayload`:** Özdeş interface'ler, birleştirilebilir.
-
-6. **JWT Token Süresi:** 7 gün — refresh token mekanizması yok. **✅ Düzeltildi:** 7 günlük Refresh Token mekanizması eklendi. Access Token süresi güvenlik ve oturum stabilitesi (race condition ve rate limit aşımını önlemek) doğrultusunda 12 saat olarak ayarlandı. İstemci 401 hatası aldığında sessizce token yenileyen interceptor entegre edildi.
-
-7. **Base64 Görsel Boyut Kontrolü Eksik:** Backend'de max boyut kontrolü yapılmıyor.
-
----
-
-## 16. Kod Kalitesi Standartları (Bu Projede Uygulanan)
-
-- **TypeScript:** `catch (err: unknown)` + `extractErrorMessage(err)` pattern — `catch (err: any)` yok
-- **Bileşen tanımı:** `export default function ComponentName({ prop }: Props) {...}` — `React.FC` kullanılmıyor
-- **Hook'lar:** Tüm state + side effect + API çağrıları hook'larda; bileşenler saf presentational
-- **Stiller:** İnline style yok (CSS sınıfları) — `index.css`'de tanımlı
-- **Sabitler:** Magic string yok; `ORDER_STATUS`, `ROLES`, `AUTH_STORAGE_KEYS`, `ROUTES`, `MFR_SEEN_KEY_PREFIX` kullanılır
-- **Backend:** `BaseApiController.GetCurrentUserId()` helper — her controller'da tekrar eden userId kodu yok
-- **Backend:** `ExceptionHandlingMiddleware` — try/catch boilerplate controller'larda yok
-- **Backend:** `Roles.cs` ve `OrderStatus.cs` sabit sınıfları — magic string yok
-- **Console Log:** Sadece `import.meta.env.DEV` kontrolü altında veya `console.error` (hata durumları)
-
----
-
-## 17. CSS Tasarım Sistemi
-
-CSS değişkenleri `index.css`'de `:root` altında tanımlı:
-- `--text`, `--muted`, `--bg`, `--border`, `--surface`
-- `--accent-seller`, `--accent-seller-glow` (amber/turuncu tema — seller için)
-- `--accent-mfr`, `--accent-mfr-glow` (cyan tema — üretici için)
-- `--danger` (kırmızı — destructive işlemler)
-
-Light tema: `html.light-theme` sınıfıyla değişkenler override edilir.
-
-Tip aralığı: `font-family: 'Bebas Neue'` (logo/başlıklar), `'Inter'` veya `'Outfit'` (body)
-
----
-
-## 18. Proje Durumu (Haziran 2026)
-
-- ✅ TypeScript: 0 derleme hatası (Hem `client-app` hem de `client-app-redesign` sıfır hata ile derlenmektedir)
-- ✅ Production build: Başarılı
-- ✅ Güvenlik: Kritik açık yok
-- ✅ Git branch: `main` (Kodlar push'a hazır; Supabase migration uygulandı)
-- ✅ **Firebase → Supabase/PostgreSQL Migrasyonu:** Google Cloud Firestore tamamen kaldırıldı. Tüm veri erişim katmanı Entity Framework Core + Npgsql/PostgreSQL ile yeniden yazıldı. Tablolar Supabase'e başarıyla uygulandı ve uygulama lokal ortamda çalışır durumda doğrulandı.
-- ✅ B2B Rehberi ("Üretici Bul"): Çoklu şehir ve kategori seçimi, en iyi eşleşmeyi en üstte listeleyen akıllı sıralama ve istemci tarafı hibrit filtreleme modeli tamamlandı.
-- ✅ Arayüz Düzeltmeleri & Cilalamaları: Sembollerin yazı ile çakışması, şifre göz ikonunun taşması, kronoloji satırlarının hover kayması, kronoloji detaylarının dikey hizalanması, hatalı/eksik siparişlerin açıklamasını gösteren ünlemli açılır kutular (AlertTriangle toggle) ve seçilemez (readonly) kronoloji metinleri tamamlandı.
-- ✅ Dil Çevirileri: Üretici uzmanlık alanları ve veritabanı kaynaklı Türkçe zaman geçmişi logları için anlık İngilizce çeviri desteği kuruldu.
-- ⚠️ JWT key production'da env var olarak set edilmeli (`JWT_KEY`)
-- ⚠️ CORS `CORS_ALLOWED_ORIGINS` production URL'leri ile set edilmeli
-- ⚠️ Render.com `DATABASE_URL` ortam değişkeni güncellenmeli (eski Firebase değişkenleri kaldırılmalı)
-- ⚠️ Kodlar henüz GitHub'a push edilmedi — `git push origin main` ile gönderilmeli
+## 10. Canlıya Alma (Deployment) ve Yapılandırma
+
+### Docker Dosyası (`Dockerfile`):
+Proje, tek bir Docker imajı içinde hem frontend'in Vite ile derlenmesini (`dist` çıktısı backend'in `wwwroot` dizinine kopyalanır) hem de backend API'sinin derlenerek ayağa kaldırılmasını sağlar. SPA yönlendirmeleri için backend üzerinde `app.MapFallbackToFile("index.html")` tanımlıdır.
+
+### Gerekli Ortam Değişkenleri (Render.com Env Vars):
+- `DATABASE_URL`: Supabase PostgreSQL bağlantı dizesi (Connection Pooler, Port 5432, Transaction/Session Mode).
+- `JWT_KEY`: En az 256-bit uzunluğunda güçlü JWT imzalama anahtarı.
+- `CORS_ALLOWED_ORIGINS`: İzin verilen frontend adresleri (virgülle ayrılmış).
