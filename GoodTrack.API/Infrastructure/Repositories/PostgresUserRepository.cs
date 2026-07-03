@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Models;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -41,7 +42,7 @@ public sealed class PostgresUserRepository : IUserRepository
     {
         return await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == "mfr")
+            .Where(u => u.Role == Roles.Mfr)
             .ToListAsync(cancellationToken);
     }
 
@@ -56,7 +57,7 @@ public sealed class PostgresUserRepository : IUserRepository
     {
         var query = _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == "mfr" && u.IsVisibleToSellers);
+            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers);
 
         if (!string.IsNullOrWhiteSpace(city))
         {

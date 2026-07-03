@@ -15,7 +15,7 @@ using GoodTrack.API.Infrastructure;
 
 namespace GoodTrack.API.Services;
 
-public class ProductService : IProductService
+public sealed class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly ICatalogRepository _catalogRepository;

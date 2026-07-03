@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
 using GoodTrack.API.Models;
+using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.DTOs.Credits;
 
 namespace GoodTrack.API.Controllers;
 
@@ -42,12 +45,12 @@ public class CreditsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is retrieving their credit details.", userId);
         var userCredit = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
-        return Ok(userCredit);
+        return Ok(new ApiResponse<UserCredit>(userCredit));
     }
 
     /// <summary>
@@ -61,7 +64,7 @@ public class CreditsController : BaseApiController
     {
         _logger.LogInformation("Retrieving available subscription plan details.");
         var plans = await _creditsService.GetPlansAsync(cancellationToken);
-        return Ok(plans);
+        return Ok(new ApiResponse<List<SubscriptionPlanDetail>>(plans));
     }
 
     /// <summary>
@@ -76,31 +79,20 @@ public class CreditsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.Plan))
         {
-            return BadRequest(new { message = "Geçersiz plan verisi." });
+            return BadRequest(ApiResponse.Fail("Geçersiz plan verisi."));
         }
 
         _logger.LogInformation("User {UserId} is upgrading to plan: {Plan}", userId, request.Plan);
         var updatedCredit = await _creditsService.UpgradePlanAsync(userId, request.Plan, cancellationToken);
-        return Ok(new 
+        return Ok(new ApiResponse<object>(new 
         { 
             message = "Plan başarıyla yükseltildi.", 
             credits = updatedCredit 
-        });
+        }));
     }
-}
-
-/// <summary>
-/// Data transfer object containing parameters for upgrading a subscription plan.
-/// </summary>
-public class UpgradePlanRequest
-{
-    /// <summary>
-    /// The target plan name to upgrade to.
-    /// </summary>
-    public string Plan { get; set; } = string.Empty;
 }

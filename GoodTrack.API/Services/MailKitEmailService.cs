@@ -9,7 +9,7 @@ using MailKit.Security;
 
 namespace GoodTrack.API.Services;
 
-public class MailKitEmailService : IEmailService
+public sealed class MailKitEmailService : IEmailService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<MailKitEmailService> _logger;

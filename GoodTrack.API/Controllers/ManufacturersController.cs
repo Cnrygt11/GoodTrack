@@ -12,6 +12,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
 using GoodTrack.API.Models;
 using GoodTrack.API.DTOs.Auth;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -63,10 +64,10 @@ public class ManufacturersController : BaseApiController
                 Username = "mfr_" + (m.Username.Length > 4 ? m.Username.Substring(0, 3) : "hidden") + "•••",
                 Role = m.Role
             }).ToList();
-            return Ok(masked);
+            return Ok(new ApiResponse<List<UserDto>>(masked));
         }
 
-        return Ok(manufacturers);
+        return Ok(new ApiResponse<List<UserDto>>(manufacturers));
     }
 
     [HttpGet("search")]
@@ -109,7 +110,7 @@ public class ManufacturersController : BaseApiController
             }
         }
 
-        return Ok(results);
+        return Ok(new ApiResponse<PagedResultDto<UserProfileDto>>(results));
     }
 
     private static string MaskFirstName(string? firstName)

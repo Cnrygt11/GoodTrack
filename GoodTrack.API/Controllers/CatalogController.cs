@@ -2,10 +2,12 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -28,12 +30,12 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("Fetching catalog products for Seller user: {UserId}", userId);
         var response = await _catalogService.GetSellerCatalogAsync(userId);
-        return Ok(response);
+        return Ok(new ApiResponse<List<CatalogProductResponseDto>>(response));
     }
 
     [HttpPost]
@@ -42,18 +44,18 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (dto == null)
         {
-            return BadRequest(new { message = "İstek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
         var response = await _catalogService.AddCatalogProductAsync(userId, dto);
         
-        return Created(string.Empty, new { product = response, message = "Ürün başarıyla kataloğa eklendi." });
+        return Created(string.Empty, new ApiResponse<object>(new { product = response, message = "Ürün başarıyla kataloğa eklendi." }));
     }
 
     [HttpPut("{id}")]
@@ -62,23 +64,23 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (dto == null)
         {
-            return BadRequest(new { message = "İstek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(new { message = "Geçersiz ürün ID'si." });
+            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
         }
 
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
         var response = await _catalogService.UpdateCatalogProductAsync(userId, id, dto);
         
-        return Ok(new { product = response, message = "Ürün kataloğu başarıyla güncellendi." });
+        return Ok(new ApiResponse<object>(new { product = response, message = "Ürün kataloğu başarıyla güncellendi." }));
     }
 
     [HttpDelete("{id}")]
@@ -87,12 +89,12 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(new { message = "Geçersiz ürün ID'si." });
+            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
         }
 
         _logger.LogInformation("Seller user {UserId} is deleting catalog product: {Id}", userId, id);

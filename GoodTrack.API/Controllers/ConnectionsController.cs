@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -29,12 +31,12 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is retrieving active connections list", userId);
         var connections = await _connectionService.GetConnectionsAsync(userId);
-        return Ok(connections);
+        return Ok(new ApiResponse<List<UserDto>>(connections));
     }
 
     [HttpPost]
@@ -46,18 +48,18 @@ public class ConnectionsController : BaseApiController
 
         if (senderId is null || string.IsNullOrEmpty(senderUsername) || string.IsNullOrEmpty(senderRole))
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (string.IsNullOrWhiteSpace(username))
         {
-            return BadRequest(new { message = "Kullanıcı adı boş olamaz." });
+            return BadRequest(ApiResponse.Fail("Kullanıcı adı boş olamaz."));
         }
 
         _logger.LogInformation("User {SenderId} ({Username}) is sending a connection request to user: {Target}", senderId, senderUsername, username);
         await _connectionService.SendConnectionRequestAsync(senderId, senderUsername, senderRole, username);
         
-        return Created(string.Empty, new { message = "Bağlantı isteği gönderildi." });
+        return Created(string.Empty, ApiResponse.Ok("Bağlantı isteği gönderildi."));
     }
 
     [HttpGet("requests/incoming")]
@@ -66,12 +68,12 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is fetching pending incoming connection requests", userId);
         var requests = await _connectionService.GetIncomingRequestsAsync(userId);
-        return Ok(requests);
+        return Ok(new ApiResponse<List<ConnectionRequestDto>>(requests));
     }
 
     [HttpGet("requests/sent")]
@@ -80,12 +82,12 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is fetching sent connection requests history", userId);
         var requests = await _connectionService.GetSentRequestsAsync(userId);
-        return Ok(requests);
+        return Ok(new ApiResponse<List<ConnectionRequestDto>>(requests));
     }
 
     [HttpPatch("requests/{requestId}")]
@@ -94,12 +96,12 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (dto == null)
         {
-            return BadRequest(new { message = "İstek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         _logger.LogInformation("User {UserId} is updating connection request {RequestId} to status: {Status}", userId, requestId, dto.Status);
@@ -107,15 +109,15 @@ public class ConnectionsController : BaseApiController
         if (dto.Status.Equals("accepted", StringComparison.OrdinalIgnoreCase))
         {
             await _connectionService.AcceptConnectionRequestAsync(userId, requestId);
-            return Ok(new { message = "Bağlantı başarıyla kuruldu." });
+            return Ok(ApiResponse.Ok("Bağlantı başarıyla kuruldu."));
         }
         else if (dto.Status.Equals("rejected", StringComparison.OrdinalIgnoreCase))
         {
             await _connectionService.RejectConnectionRequestAsync(userId, requestId);
-            return Ok(new { message = "Bağlantı isteği reddedildi." });
+            return Ok(ApiResponse.Ok("Bağlantı isteği reddedildi."));
         }
 
-        return BadRequest(new { message = "Geçersiz durum bilgisi." });
+        return BadRequest(ApiResponse.Fail("Geçersiz durum bilgisi."));
     }
 
     [HttpDelete("requests/{requestId}")]
@@ -124,7 +126,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is clearing connection request log: {RequestId}", userId, requestId);
@@ -138,7 +140,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("User {UserId} is removing active connection with user: {TargetId}", userId, targetId);

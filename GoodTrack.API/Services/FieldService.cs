@@ -9,7 +9,7 @@ using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services;
 
-public class FieldService : IFieldService
+public sealed class FieldService : IFieldService
 {
     private readonly IFieldRepository _fieldRepository;
 

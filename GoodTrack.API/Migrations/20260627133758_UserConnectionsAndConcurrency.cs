@@ -42,6 +42,35 @@ namespace GoodTrack.API.Migrations
                 table: "user_connections",
                 columns: new[] { "seller_id", "manufacturer_id" },
                 unique: true);
+
+            migrationBuilder.CreateTable(
+                name: "user_credits",
+                columns: table => new
+                {
+                    id = table.Column<string>(type: "text", nullable: false, defaultValueSql: "gen_random_uuid()::text"),
+                    user_id = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    plan = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    credits = table.Column<int>(type: "integer", nullable: false),
+                    plan_started_at = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    renews_at = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false, defaultValue: 0u)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_user_credits", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_user_credits_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_user_credits_user_id",
+                table: "user_credits",
+                column: "user_id",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -49,6 +78,9 @@ namespace GoodTrack.API.Migrations
         {
             migrationBuilder.DropTable(
                 name: "user_connections");
+
+            migrationBuilder.DropTable(
+                name: "user_credits");
 
             migrationBuilder.DropColumn(
                 name: "xmin",

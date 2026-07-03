@@ -12,7 +12,7 @@ using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Services;
 
-public class ProfileService : IProfileService
+public sealed class ProfileService : IProfileService
 {
     private readonly IUserRepository _userRepository;
     private readonly IImageStorageService _imageStorageService;

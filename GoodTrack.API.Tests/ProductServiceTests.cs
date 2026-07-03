@@ -25,7 +25,7 @@ public class ProductServiceTests : IDisposable
     private readonly SqliteConnection _connection;
     private readonly AppDbContext _context;
     private readonly PostgresProductRepository _productRepository;
-    private readonly CreditsRepository _creditsRepository;
+    private readonly PostgresCreditsRepository _creditsRepository;
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
     private readonly Mock<IHubContext<TrackingHub>> _hubContextMock;
     private readonly Mock<IClientProxy> _clientProxyMock;
@@ -48,7 +48,7 @@ public class ProductServiceTests : IDisposable
         _context.Database.EnsureCreated();
 
         _productRepository = new PostgresProductRepository(_context);
-        _creditsRepository = new CreditsRepository(_context);
+        _creditsRepository = new PostgresCreditsRepository(_context);
         _creditsService = new CreditsService(_creditsRepository);
 
         _catalogRepositoryMock = new Mock<ICatalogRepository>();

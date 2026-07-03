@@ -12,7 +12,7 @@ using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Services;
 
-public class OrderWorkflowService : IOrderWorkflowService
+public sealed class OrderWorkflowService : IOrderWorkflowService
 {
     private readonly IProductRepository _productRepository;
     private readonly ICatalogRepository _catalogRepository;
@@ -436,12 +436,4 @@ public class OrderWorkflowService : IOrderWorkflowService
             _logger.LogWarning(ex, "SignalR notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
         }
     }
-}
-
-public class StatusTransitionRule
-{
-    public string RequiredRole { get; set; } = string.Empty;
-    public HashSet<string> AllowedSourceStatuses { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-    public string ErrorMessage { get; set; } = string.Empty;
-    public Func<Product, string, string?, string?, Task<string>> TransitionAction { get; set; } = null!;
 }

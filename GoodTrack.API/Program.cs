@@ -92,7 +92,7 @@ try
     builder.Services.AddScoped<ICatalogRepository, PostgresCatalogRepository>();
     builder.Services.AddScoped<IFieldRepository, PostgresFieldRepository>();
     builder.Services.AddScoped<IFeedbackRepository, PostgresFeedbackRepository>();
-    builder.Services.AddScoped<ICreditsRepository, CreditsRepository>();
+    builder.Services.AddScoped<ICreditsRepository, PostgresCreditsRepository>();
 
     // Register Services
     builder.Services.AddScoped<IAuthService, AuthService>();

@@ -3,10 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Auth;
+using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Controllers;
 
@@ -56,7 +59,7 @@ public class AdminController : BaseApiController
             IsActive = u.IsActive
         }).ToList();
 
-        return Ok(response);
+        return Ok(new ApiResponse<List<UserAdminDto>>(response));
     }
 
     [HttpDelete("users/{id}")]
@@ -67,17 +70,17 @@ public class AdminController : BaseApiController
 
         if (currentAdminId == id)
         {
-            return BadRequest("Kendi yönetici hesabınızı silemezsiniz.");
+            return BadRequest(ApiResponse.Fail("Kendi yönetici hesabınızı silemezsiniz."));
         }
 
         var user = await _userRepository.GetByIdAsync(id);
         if (user == null)
         {
-            return NotFound("Silinmek istenen kullanıcı bulunamadı.");
+            return NotFound(ApiResponse.Fail("Silinmek istenen kullanıcı bulunamadı."));
         }
 
         await _userRepository.DeleteUserAsync(id);
-        return Ok(new { message = $"'{user.Username}' kullanıcısı başarıyla silindi." });
+        return Ok(ApiResponse.Ok($"'{user.Username}' kullanıcısı başarıyla silindi."));
     }
 
     [HttpGet("feedbacks")]
@@ -87,6 +90,6 @@ public class AdminController : BaseApiController
         _logger.LogInformation("Admin {AdminId} requested feedbacks list.", currentAdminId);
 
         var feedbacks = await _feedbackRepository.GetAllFeedbacksAsync();
-        return Ok(feedbacks);
+        return Ok(new ApiResponse<List<Feedback>>(feedbacks));
     }
 }

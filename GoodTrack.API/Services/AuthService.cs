@@ -18,7 +18,7 @@ using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Services;
 
-public class AuthService : IAuthService
+public sealed class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher<User> _passwordHasher;

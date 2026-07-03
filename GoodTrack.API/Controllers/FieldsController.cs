@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -29,12 +30,12 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         _logger.LogInformation("Seller user {UserId} is retrieving extra dynamic fields templates", userId);
         var response = await _fieldService.GetSellerFieldsAsync(userId);
-        return Ok(response);
+        return Ok(new ApiResponse<List<ExtraFieldDefResponseDto>>(response));
     }
 
     [HttpPost]
@@ -43,17 +44,17 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (dto == null)
         {
-            return BadRequest(new { message = "İstek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, dto.Name);
         var response = await _fieldService.CreateFieldDefAsync(userId, dto);
-        return Created(string.Empty, new { field = response, message = "Yeni özellik başarıyla eklendi." });
+        return Created(string.Empty, new ApiResponse<object>(new { field = response, message = "Yeni özellik başarıyla eklendi." }));
     }
 
     [HttpDelete("{id}")]
@@ -62,12 +63,12 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(new { message = "Geçersiz özellik ID'si." });
+            return BadRequest(ApiResponse.Fail("Geçersiz özellik ID'si."));
         }
 
         _logger.LogInformation("Seller user {UserId} is deleting dynamic feature template: {Id}", userId, id);

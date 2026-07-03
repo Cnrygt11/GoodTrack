@@ -8,6 +8,7 @@ using System;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -35,11 +36,11 @@ public class ProfileController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         var profile = await _profileService.GetProfileAsync(userId);
-        return Ok(profile);
+        return Ok(new ApiResponse<UserProfileDto>(profile));
     }
 
     [HttpGet("{username}")]
@@ -49,7 +50,7 @@ public class ProfileController : BaseApiController
         var currentUserUsername = User.FindFirst(ClaimTypes.Name)?.Value;
         if (currentUserId == null || string.IsNullOrEmpty(currentUserUsername))
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         bool isSelf = currentUserUsername.Equals(username, StringComparison.OrdinalIgnoreCase);
@@ -63,12 +64,11 @@ public class ProfileController : BaseApiController
 
         if (!isSelf && !isConnected)
         {
-            // Return 403 Forbidden instead of 400 Bad Request since it is an authorization issue
-            return StatusCode(StatusCodes.Status403Forbidden, new { message = "Sadece bağlantınız olan kullanıcıların profillerini görüntüleyebilirsiniz." });
+            return StatusCode(StatusCodes.Status403Forbidden, ApiResponse.Fail("Sadece bağlantınız olan kullanıcıların profillerini görüntüleyebilirsiniz."));
         }
 
         var profile = await _profileService.GetProfileByUsernameAsync(username);
-        return Ok(profile);
+        return Ok(new ApiResponse<UserProfileDto>(profile));
     }
 
     [HttpPut]
@@ -77,15 +77,15 @@ public class ProfileController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (dto == null)
         {
-            return BadRequest(new { message = "Profil güncelleme istek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("Profil güncelleme istek verisi eksik."));
         }
 
         await _profileService.UpdateProfileAsync(userId, dto);
-        return Ok(new { message = "Profil başarıyla güncellendi." });
+        return Ok(ApiResponse.Ok("Profil başarıyla güncellendi."));
     }
 }

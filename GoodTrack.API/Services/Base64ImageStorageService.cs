@@ -6,7 +6,7 @@ using GoodTrack.API.Abstractions.Services;
 
 namespace GoodTrack.API.Services;
 
-public class Base64ImageStorageService : IImageStorageService
+public sealed class Base64ImageStorageService : IImageStorageService
 {
     public Base64ImageStorageService()
     {

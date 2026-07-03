@@ -210,6 +210,12 @@ export class ApiError extends Error {
   }
 }
 
+interface ApiResponseEnvelope<T> {
+  success: boolean;
+  data?: T;
+  message?: string;
+}
+
 async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const res = await apiFetch(endpoint, options);
   
@@ -221,7 +227,6 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
         errorMessage = errData.message;
       }
     } catch {
-      // Body is not JSON (e.g. 502 Bad Gateway HTML, 404, etc.)
       if (res.status === 502) {
         errorMessage = 'Sunucu şu anda başlatılıyor olabilir (Render ücretsiz sunucuları kullanılmadığında uyku moduna geçer). Lütfen 30 saniye sonra tekrar deneyin.';
       } else if (res.status === 404) {
@@ -243,13 +248,28 @@ async function apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<
       return {} as T;
     }
     try {
-      return JSON.parse(text) as T;
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && 'success' in parsed) {
+        const envelope = parsed as ApiResponseEnvelope<T>;
+        if (envelope.success) {
+          if ('data' in envelope && envelope.data !== undefined) {
+            return envelope.data;
+          }
+          return envelope as unknown as T;
+        } else {
+          throw new Error(envelope.message || 'İşlem başarısız oldu.');
+        }
+      }
+      return parsed as T;
     } catch (parseErr) {
+      if (parseErr instanceof Error && parseErr.message === 'İşlem başarısız oldu.') {
+        throw parseErr;
+      }
       console.error("JSON parse failed. Raw response text:", text, parseErr);
       throw new Error(`Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu). Yanıt: ${text.slice(0, 100)}`);
     }
   } catch (err) {
-    if (err instanceof Error && err.message.startsWith('Sunucudan geçersiz veri biçimi')) {
+    if (err instanceof Error && (err.message.startsWith('Sunucudan geçersiz veri biçimi') || err.message === 'İşlem başarısız oldu.')) {
       throw err;
     }
     throw new Error('Sunucudan geçersiz veri biçimi alındı (JSON bekleniyordu).');

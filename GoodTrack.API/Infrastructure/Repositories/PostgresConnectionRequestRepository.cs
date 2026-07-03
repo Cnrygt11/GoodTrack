@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Models;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -26,7 +27,7 @@ public sealed class PostgresConnectionRequestRepository : IConnectionRequestRepo
     {
         return await _context.ConnectionRequests
             .AsNoTracking()
-            .Where(r => r.ReceiverId == receiverId && r.Status == "pending")
+            .Where(r => r.ReceiverId == receiverId && r.Status == ConnectionRequestStatus.Pending)
             .ToListAsync();
     }
 
@@ -34,7 +35,7 @@ public sealed class PostgresConnectionRequestRepository : IConnectionRequestRepo
     {
         return await _context.ConnectionRequests
             .AsNoTracking()
-            .AnyAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId && r.Status == "pending");
+            .AnyAsync(r => r.SenderId == senderId && r.ReceiverId == receiverId && r.Status == ConnectionRequestStatus.Pending);
     }
 
     public async Task<List<ConnectionRequest>> GetSentRequestsAsync(string senderId)

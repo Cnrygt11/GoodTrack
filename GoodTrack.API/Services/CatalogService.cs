@@ -9,7 +9,7 @@ using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services;
 
-public class CatalogService : ICatalogService
+public sealed class CatalogService : ICatalogService
 {
     private readonly ICatalogRepository _catalogRepository;
     private readonly IProductRepository _productRepository;

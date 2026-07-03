@@ -10,15 +10,15 @@ namespace GoodTrack.API.Infrastructure.Repositories;
 /// <summary>
 /// PostgreSQL implementation of the ICreditsRepository.
 /// </summary>
-public sealed class CreditsRepository : ICreditsRepository
+public sealed class PostgresCreditsRepository : ICreditsRepository
 {
     private readonly AppDbContext _context;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="CreditsRepository"/> class.
+    /// Initializes a new instance of the <see cref="PostgresCreditsRepository"/> class.
     /// </summary>
     /// <param name="context">The database context.</param>
-    public CreditsRepository(AppDbContext context)
+    public PostgresCreditsRepository(AppDbContext context)
     {
         _context = context;
     }

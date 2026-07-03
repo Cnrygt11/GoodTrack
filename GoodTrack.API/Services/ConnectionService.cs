@@ -13,7 +13,7 @@ using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Services;
 
-public class ConnectionService : IConnectionService
+public sealed class ConnectionService : IConnectionService
 {
     private readonly IUserRepository _userRepository;
     private readonly IConnectionRequestRepository _connectionRequestRepository;
@@ -113,7 +113,7 @@ public class ConnectionService : IConnectionService
             SenderUsername = senderUsername,
             ReceiverId = receiver.Id,
             ReceiverUsername = receiver.Username,
-            Status = "pending",
+            Status = ConnectionRequestStatus.Pending,
             CreatedAt = DateTime.UtcNow.ToString("o")
         };
 
@@ -149,7 +149,7 @@ public class ConnectionService : IConnectionService
             throw new UnauthorizedAccessException("Bu isteği kabul etme yetkiniz yok.");
         }
 
-        if (request.Status != "pending")
+        if (request.Status != ConnectionRequestStatus.Pending)
         {
             throw new ArgumentException("İstek zaten işlenmiş.");
         }
@@ -175,7 +175,7 @@ public class ConnectionService : IConnectionService
             });
         }
 
-        request.Status = "accepted";
+        request.Status = ConnectionRequestStatus.Accepted;
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request accepted (update both connections list and requests list)
@@ -196,12 +196,12 @@ public class ConnectionService : IConnectionService
             throw new UnauthorizedAccessException("Bu isteği reddetme yetkiniz yok.");
         }
 
-        if (request.Status != "pending")
+        if (request.Status != ConnectionRequestStatus.Pending)
         {
             throw new ArgumentException("İstek zaten işlenmiş.");
         }
 
-        request.Status = "rejected";
+        request.Status = ConnectionRequestStatus.Rejected;
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request rejected

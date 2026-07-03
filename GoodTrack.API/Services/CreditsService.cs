@@ -12,7 +12,7 @@ namespace GoodTrack.API.Services;
 /// <summary>
 /// Service managing user credits and subscription plan actions.
 /// </summary>
-public class CreditsService : ICreditsService
+public sealed class CreditsService : ICreditsService
 {
     private readonly ICreditsRepository _creditsRepository;
 

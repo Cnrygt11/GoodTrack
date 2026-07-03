@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
+using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
 
@@ -31,13 +32,13 @@ public class AuthController : BaseApiController
     {
         if (request == null)
         {
-            return BadRequest(new { message = "Kayıt istek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("Kayıt istek verisi eksik."));
         }
         _logger.LogInformation("Processing register request for username: {Username}", request.Username);
         string baseUrl = $"{Request.Scheme}://{Request.Host}";
         await _authService.RegisterAsync(request, baseUrl);
         
-        return Created(string.Empty, new { message = "Kullanıcı başarıyla kaydedildi.", username = request.Username.Trim().ToLower(), role = request.Role });
+        return Created(string.Empty, ApiResponse.Ok("Kullanıcı başarıyla kaydedildi."));
     }
 
     [EnableRateLimiting("auth-strict")]
@@ -46,11 +47,11 @@ public class AuthController : BaseApiController
     {
         if (request == null)
         {
-            return BadRequest(new { message = "Giriş istek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("Giriş istek verisi eksik."));
         }
         _logger.LogInformation("Processing login request for username: {Username}", request.Username);
         var response = await _authService.LoginAsync(request);
-        return Ok(new { token = response.Token, refreshToken = response.RefreshToken, username = response.Username, role = response.Role, userId = response.UserId, message = "Giriş başarılı." });
+        return Ok(new ApiResponse<LoginResponse>(response, "Giriş başarılı."));
     }
 
     [Authorize]
@@ -61,21 +62,21 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.Password))
         {
-            return BadRequest(new { message = "Şifre alanı boş olamaz!" });
+            return BadRequest(ApiResponse.Fail("Şifre alanı boş olamaz!"));
         }
 
         var isValid = await _authService.VerifyPasswordAsync(userId, request.Password);
         if (!isValid)
         {
-            return Unauthorized(new { message = "Eski şifre hatalı!" });
+            return Unauthorized(ApiResponse.Fail("Eski şifre hatalı!"));
         }
 
-        return Ok(new { success = true, message = "Şifre doğrulandı." });
+        return Ok(ApiResponse.Ok("Şifre doğrulandı."));
     }
 
     [Authorize]
@@ -86,16 +87,16 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         if (request == null)
         {
-            return BadRequest(new { message = "İstek verisi eksik." });
+            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
-        return Ok(new { message = "Şifreniz başarıyla güncellendi." });
+        return Ok(ApiResponse.Ok("Şifreniz başarıyla güncellendi."));
     }
 
     [EnableRateLimiting("auth-strict")]
@@ -104,33 +105,25 @@ public class AuthController : BaseApiController
     {
         if (request == null)
         {
-            return BadRequest(new { message = "Yenileme isteği verisi eksik." });
+            return BadRequest(ApiResponse.Fail("Yenileme isteği verisi eksik."));
         }
 
         try
         {
             var response = await _authService.RefreshTokenAsync(request);
-            return Ok(new
-            {
-                token = response.Token,
-                refreshToken = response.RefreshToken,
-                username = response.Username,
-                role = response.Role,
-                userId = response.UserId,
-                message = "Token başarıyla yenilendi."
-            });
+            return Ok(new ApiResponse<LoginResponse>(response, "Token başarıyla yenilendi."));
         }
         catch (Microsoft.IdentityModel.Tokens.SecurityTokenException ex)
         {
-            return Unauthorized(new { message = ex.Message });
+            return Unauthorized(ApiResponse.Fail(ex.Message));
         }
         catch (UnauthorizedAccessException ex)
         {
-            return Unauthorized(new { message = ex.Message });
+            return Unauthorized(ApiResponse.Fail(ex.Message));
         }
         catch (ArgumentException ex)
         {
-            return BadRequest(new { message = ex.Message });
+            return BadRequest(ApiResponse.Fail(ex.Message));
         }
     }
 
@@ -141,10 +134,10 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized();
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
         await _authService.LogoutAsync(userId);
-        return Ok(new { message = "Başarıyla çıkış yapıldı." });
+        return Ok(ApiResponse.Ok("Başarıyla çıkış yapıldı."));
     }
 }
