@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
@@ -117,19 +118,26 @@ public sealed class ProductService : IProductService
 
         ValidateImageSize(order.Image, "Sipariş görseli");
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
-        try
+        var originalId = order.Id;
+        var strategy = _context.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async () =>
         {
-            await _creditsService.DeductForOrderAsync(sellerId);
-            order.Image = await _imageStorageService.StoreImageAsync(order.Image);
-            await _productRepository.SaveAsync(order);
-            await transaction.CommitAsync();
-        }
-        catch
-        {
-            await transaction.RollbackAsync();
-            throw;
-        }
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                await _creditsService.DeductForOrderAsync(sellerId);
+                order.Image = await _imageStorageService.StoreImageAsync(order.Image);
+                await _productRepository.SaveAsync(order);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                _context.Entry(order).State = EntityState.Detached;
+                order.Id = originalId;
+                await transaction.RollbackAsync();
+                throw;
+            }
+        });
 
         await SafeNotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate");
 
