@@ -151,6 +151,13 @@ async function apiFetch(endpoint: string, options: RequestInit = {}): Promise<Re
       throw new Error('Oturumunuz sonlandırıldı. Lütfen tekrar giriş yapın.');
     }
 
+    const currentToken = localStorage.getItem(AUTH_STORAGE_KEYS.token);
+    if (currentToken && currentToken !== token) {
+      headers['Authorization'] = `Bearer ${currentToken}`;
+      response = await fetch(`${BASE_URL}${endpoint}`, options);
+      return response;
+    }
+
     const refreshToken = localStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
     if (token && refreshToken) {
       if (!refreshPromise) {
