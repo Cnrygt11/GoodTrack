@@ -64,8 +64,8 @@ public class CreditsServiceTests
         result.UserId.Should().Be(userId);
         result.Plan.Should().Be(SubscriptionPlan.Free);
         result.Credits.Should().Be(5);
-        result.PlanStartedAt.Should().NotBeNullOrEmpty();
-        result.RenewsAt.Should().NotBeNullOrEmpty();
+        result.PlanStartedAt.Should().NotBe(default(DateTime));
+        result.RenewsAt.Should().NotBe(default(DateTime));
 
         _creditsRepositoryMock.Verify(r => r.SaveAsync(It.Is<UserCredit>(c => c.UserId == userId && c.Plan == SubscriptionPlan.Free), It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -128,7 +128,7 @@ public class CreditsServiceTests
         var existingRecord = new UserCredit
         {
             UserId = userId,
-            Plan = SubscriptionPlan.Free,
+            Plan = plan == SubscriptionPlan.Free ? SubscriptionPlan.Pro : SubscriptionPlan.Free,
             Credits = 2
         };
 
@@ -142,6 +142,54 @@ public class CreditsServiceTests
         // Assert
         result.Plan.Should().Be(plan);
         result.Credits.Should().Be(expectedCredits);
+        _creditsRepositoryMock.Verify(r => r.SaveAsync(existingRecord, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpgradePlanAsync_SamePlan_ShouldThrowInvalidOperationException()
+    {
+        // Arrange
+        var userId = "user-same";
+        var existingRecord = new UserCredit
+        {
+            UserId = userId,
+            Plan = SubscriptionPlan.Pro,
+            Credits = 100
+        };
+
+        _creditsRepositoryMock
+            .Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRecord);
+
+        // Act & Assert
+        var act = () => _creditsService.UpgradePlanAsync(userId, SubscriptionPlan.Pro);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Zaten 'Pro' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
+
+        _creditsRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<UserCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task RefundCreditAsync_ShouldIncreaseCreditsByAmount()
+    {
+        // Arrange
+        var userId = "user-refund";
+        var existingRecord = new UserCredit
+        {
+            UserId = userId,
+            Plan = SubscriptionPlan.Free,
+            Credits = 5
+        };
+
+        _creditsRepositoryMock
+            .Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRecord);
+
+        // Act
+        await _creditsService.RefundCreditAsync(userId, 2);
+
+        // Assert
+        existingRecord.Credits.Should().Be(7); // 5 + 2 = 7
         _creditsRepositoryMock.Verify(r => r.SaveAsync(existingRecord, It.IsAny<CancellationToken>()), Times.Once);
     }
 }

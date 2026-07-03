@@ -3,6 +3,7 @@ import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signal
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
 import { getHubUrl } from '../services/api';
+import { AUTH_STORAGE_KEYS } from '../constants/authKeys';
 
 const SignalRContext = createContext<HubConnection | null>(null);
 
@@ -36,7 +37,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
 
     const newConnection = new HubConnectionBuilder()
       .withUrl(hubUrl, {
-        accessTokenFactory: () => user.token
+        accessTokenFactory: () => localStorage.getItem(AUTH_STORAGE_KEYS.token) || ''
       })
       .configureLogging({
         log(logLevel, message) {

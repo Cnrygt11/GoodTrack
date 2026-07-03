@@ -39,7 +39,7 @@ public sealed class PostgresUserConnectionRepository : IUserConnectionRepository
         if (string.IsNullOrWhiteSpace(connection.Id))
         {
             connection.Id = Guid.NewGuid().ToString();
-            connection.ConnectedAt = DateTime.UtcNow.ToString("o");
+            connection.ConnectedAt = DateTime.UtcNow;
             await _context.Set<UserConnection>().AddAsync(connection, cancellationToken);
         }
         else

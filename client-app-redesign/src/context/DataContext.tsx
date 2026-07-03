@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { useToast } from './ToastContext';
 import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef, SubscriptionPlanDetail } from '../services/api';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -50,6 +51,7 @@ const DataContext = createContext<DataContextType | null>(null);
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
+  const { showToast } = useToast();
 
   const [products, setProductsState] = useState<Product[]>([]);
   const [connections, setConnectionsState] = useState<ConnectionUser[]>([]);
@@ -225,8 +227,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setProducts(data);
     } catch (err: unknown) {
       console.error('Failed to load products:', extractErrorMessage(err));
+      showToast('Siparişler yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const refreshConnections = useCallback(async () => {
     if (!user) return;
@@ -235,8 +238,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setConnections(data);
     } catch (err: unknown) {
       console.error('Failed to load connections:', extractErrorMessage(err));
+      showToast('Bağlantılar yüklenirken hata oluştu.');
     }
-  }, [user, setConnections]);
+  }, [user, setConnections, showToast]);
 
   const loadIncomingRequests = useCallback(async () => {
     if (!user) return;
@@ -245,8 +249,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setIncomingRequests(data);
     } catch (err: unknown) {
       console.error('Failed to load incoming connection requests:', extractErrorMessage(err));
+      showToast('Gelen bağlantı istekleri yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const loadSentRequests = useCallback(async () => {
     if (!user) return;
@@ -255,8 +260,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSentRequests(data);
     } catch (err: unknown) {
       console.error('Failed to load sent connection requests:', extractErrorMessage(err));
+      showToast('Gönderilen bağlantı istekleri yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const loadCatalog = useCallback(async () => {
     if (!user || user.role !== 'seller') return;
@@ -265,8 +271,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setCatalogProducts(data);
     } catch (err: unknown) {
       console.error('Failed to load catalog:', extractErrorMessage(err));
+      showToast('Katalog yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const loadExtraFields = useCallback(async () => {
     if (!user || user.role !== 'seller') return;
@@ -275,8 +282,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setExtraFieldDefs(data);
     } catch (err: unknown) {
       console.error('Failed to load extra fields:', extractErrorMessage(err));
+      showToast('Özel alanlar yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   // ─── Semantic optimistic actions ────────────────────────────────────────────
 
@@ -373,8 +381,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setRenewsAt(data.renewsAt);
     } catch (err: unknown) {
       console.error('Failed to load user credits:', err);
+      showToast('Kredi bilgileri yüklenirken hata oluştu.');
     }
-  }, [user]);
+  }, [user, showToast]);
 
   const loadPlans = useCallback(async () => {
     try {
@@ -382,8 +391,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setPlanDetails(data);
     } catch (err: unknown) {
       console.error('Failed to load subscription plans:', err);
+      showToast('Abonelik planları yüklenirken hata oluştu.');
     }
-  }, []);
+  }, [showToast]);
 
   const upgradePlan = useCallback(async (planName: string): Promise<boolean> => {
     setIsUpgrading(true);

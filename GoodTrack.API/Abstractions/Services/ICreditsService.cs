@@ -35,6 +35,14 @@ public interface ICreditsService
     Task<UserCredit> UpgradePlanAsync(string userId, string plan, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Refunds credits for a seller when a production order is cancelled or deleted.
+    /// </summary>
+    /// <param name="userId">The ID of the user.</param>
+    /// <param name="amount">The credit amount to refund.</param>
+    /// <param name="cancellationToken">Token to cancel the operation.</param>
+    Task RefundCreditAsync(string userId, int amount = 1, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves all available subscription plans.
     /// </summary>
     /// <param name="cancellationToken">Token to cancel the operation.</param>

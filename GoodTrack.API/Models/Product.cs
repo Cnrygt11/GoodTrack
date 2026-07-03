@@ -1,3 +1,4 @@
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -42,9 +43,9 @@ public class Product
 
     public List<OrderLog> Logs { get; set; } = new();
 
-    public string CreatedAt { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
 
-    public string? CompletedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
 
     [MaxLength(50)]
     public string SellerId { get; set; } = string.Empty;

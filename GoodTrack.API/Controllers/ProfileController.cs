@@ -15,12 +15,17 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class ProfileController : BaseApiController
 {
-    private readonly IAuthService _authService;
+    private readonly IProfileService _profileService;
+    private readonly IConnectionService _connectionService;
     private readonly ILogger<ProfileController> _logger;
 
-    public ProfileController(IAuthService authService, ILogger<ProfileController> logger)
+    public ProfileController(
+        IProfileService profileService,
+        IConnectionService connectionService,
+        ILogger<ProfileController> logger)
     {
-        _authService = authService;
+        _profileService = profileService;
+        _connectionService = connectionService;
         _logger = logger;
     }
 
@@ -33,7 +38,7 @@ public class ProfileController : BaseApiController
             return Unauthorized();
         }
 
-        var profile = await _authService.GetProfileAsync(userId);
+        var profile = await _profileService.GetProfileAsync(userId);
         return Ok(profile);
     }
 
@@ -52,7 +57,7 @@ public class ProfileController : BaseApiController
 
         if (!isSelf)
         {
-            var connections = await _authService.GetConnectionsAsync(currentUserId);
+            var connections = await _connectionService.GetConnectionsAsync(currentUserId);
             isConnected = System.Linq.Enumerable.Any(connections, c => c.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -62,7 +67,7 @@ public class ProfileController : BaseApiController
             return StatusCode(StatusCodes.Status403Forbidden, new { message = "Sadece bağlantınız olan kullanıcıların profillerini görüntüleyebilirsiniz." });
         }
 
-        var profile = await _authService.GetProfileByUsernameAsync(username);
+        var profile = await _profileService.GetProfileByUsernameAsync(username);
         return Ok(profile);
     }
 
@@ -80,7 +85,7 @@ public class ProfileController : BaseApiController
             return BadRequest(new { message = "Profil güncelleme istek verisi eksik." });
         }
 
-        await _authService.UpdateProfileAsync(userId, dto);
+        await _profileService.UpdateProfileAsync(userId, dto);
         return Ok(new { message = "Profil başarıyla güncellendi." });
     }
 }

@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, CatalogProduct } from '../services/api';
+import { api, CatalogProduct, ExtraFieldValue } from '../services/api';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -104,7 +104,7 @@ export default function useCatalog() {
     const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
 
     // Format extra fields
-    const formattedExtras: Record<string, any> = {};
+    const formattedExtras: Record<string, ExtraFieldValue> = {};
     extraFieldDefs.forEach((def) => {
       formattedExtras[def.id] = { name: def.name, type: def.type, value: extraValues[def.id] || '' };
     });

@@ -34,7 +34,7 @@ export default function MockPaymentModal({
   const [paymentFinished, setPaymentFinished] = useState(false);
 
   // Status simulation timer
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -117,7 +117,7 @@ export default function MockPaymentModal({
       return;
     }
 
-    const [month, year] = expiry.split('/');
+    const month = expiry.split('/')[0];
     const m = parseInt(month, 10);
     if (isNaN(m) || m < 1 || m > 12) {
       setError(t('paymentErrorInvalidExpiry'));
@@ -163,9 +163,9 @@ export default function MockPaymentModal({
                 setCvc('');
               }, 1500);
 
-            } catch (err: any) {
+            } catch (err: unknown) {
               setIsProcessing(false);
-              setError(err.message || 'Ödeme işlemi başarısız oldu.');
+              setError(err instanceof Error ? err.message : 'Ödeme işlemi başarısız oldu.');
             }
           }, 1000);
         }, 1200);

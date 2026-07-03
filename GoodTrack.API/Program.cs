@@ -11,6 +11,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Formatting.Compact;
 
@@ -18,6 +19,7 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning)
     .Enrich.FromLogContext()
+    .Enrich.With<GoodTrack.API.Infrastructure.Logging.SensitiveDataMaskingEnricher>()
     .WriteTo.Console()
     .WriteTo.File(new RenderedCompactJsonFormatter(), "logs/goodtrack-.json", rollingInterval: RollingInterval.Day)
     .CreateLogger();
@@ -33,7 +35,32 @@ try
 
     // Add services to the container.
     builder.Services.AddControllers();
-    builder.Services.AddOpenApi();
+    builder.Services.AddOpenApi(options =>
+    {
+        options.AddDocumentTransformer((document, context, cancellationToken) =>
+        {
+            document.Components ??= new Microsoft.OpenApi.OpenApiComponents();
+            
+            var scheme = new Microsoft.OpenApi.OpenApiSecurityScheme
+            {
+                Type = Microsoft.OpenApi.SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Description = "JWT Authorization header using the Bearer scheme. Example: \"bearer {token}\""
+            };
+            
+            document.Components.SecuritySchemes.Add("Bearer", scheme);
+            
+            var requirement = new Microsoft.OpenApi.OpenApiSecurityRequirement
+            {
+                [new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+            };
+            
+            document.Security = new List<Microsoft.OpenApi.OpenApiSecurityRequirement> { requirement };
+            
+            return Task.CompletedTask;
+        });
+    });
 
     // Password Hasher Registration
     builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
@@ -50,7 +77,11 @@ try
     var dataSource = dataSourceBuilder.Build();
 
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(dataSource)
+        options.UseNpgsql(dataSource, npgsqlOptions =>
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorCodesToAdd: null))
                .UseSnakeCaseNamingConvention());
 
     // Register Repositories
@@ -65,11 +96,15 @@ try
 
     // Register Services
     builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IConnectionService, ConnectionService>();
+    builder.Services.AddScoped<IProfileService, ProfileService>();
     builder.Services.AddScoped<IProductService, ProductService>();
+    builder.Services.AddScoped<IOrderWorkflowService, OrderWorkflowService>();
     builder.Services.AddScoped<ICatalogService, CatalogService>();
     builder.Services.AddScoped<IFieldService, FieldService>();
     builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
     builder.Services.AddScoped<ICreditsService, CreditsService>();
+    builder.Services.AddScoped<IEmailService, MailKitEmailService>();
 
     const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
 
@@ -133,25 +168,34 @@ try
     {
         options.RejectionStatusCode = 429;
 
-        options.AddFixedWindowLimiter("auth-strict", cfg =>
+        options.AddPolicy("auth-strict", httpContext =>
         {
-            cfg.PermitLimit = 5;
-            cfg.Window = TimeSpan.FromMinutes(1);
-            cfg.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            cfg.QueueLimit = 0;
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString();
+            return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 5,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
         });
 
-        options.AddFixedWindowLimiter("api-general", cfg =>
+        options.AddPolicy("api-general", httpContext =>
         {
-            cfg.PermitLimit = 60;
-            cfg.Window = TimeSpan.FromMinutes(1);
-            cfg.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-            cfg.QueueLimit = 0;
+            var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString();
+            return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 60,
+                Window = TimeSpan.FromMinutes(1),
+                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                QueueLimit = 0
+            });
         });
     });
 
     // Add SignalR Real-time communication services
     builder.Services.AddSignalR();
+    builder.Services.AddHealthChecks();
 
     // Configure CORS whitelisting
     var allowedOriginsList = new List<string>();
@@ -163,6 +207,11 @@ try
     }
 
     var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+    if (builder.Environment.IsProduction() && string.IsNullOrEmpty(envOrigins))
+    {
+        throw new InvalidOperationException("FATAL: CORS allowed origins are not configured for Production. Please set the 'CORS_ALLOWED_ORIGINS' environment variable.");
+    }
+
     if (!string.IsNullOrEmpty(envOrigins))
     {
         var split = envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
@@ -201,8 +250,33 @@ try
 
     var app = builder.Build();
 
+    // 14. UseForwardedHeaders() middleware
+    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+    });
+
+    // 8. Security headers middleware (CSP, HSTS, X-Frame-Options, X-Content-Type-Options)
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' wss: ws:; frame-ancestors 'none';");
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        context.Response.Headers.Append("X-Content-Type-Options", "nosniff");
+        context.Response.Headers.Append("Referrer-Policy", "strict-origin-when-cross-origin");
+
+        if (!app.Environment.IsDevelopment())
+        {
+            context.Response.Headers.Append("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+        }
+
+        await next();
+    });
+
     // Enable Global Exception Handler Middleware early in the pipeline
     app.UseMiddleware<GoodTrack.API.Middlewares.ExceptionHandlingMiddleware>();
+
+    // HTTP Request Logging Middleware
+    app.UseMiddleware<GoodTrack.API.Middlewares.HttpLoggingMiddleware>();
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
@@ -223,6 +297,7 @@ try
     app.UseRateLimiter();
 
     app.MapControllers();
+    app.MapHealthChecks("/health");
 
     // Map SignalR Connections Hub
     app.MapHub<GoodTrack.API.Hubs.TrackingHub>("/hubs/tracking");

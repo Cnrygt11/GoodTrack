@@ -29,14 +29,14 @@ public class UserCredit
     public int Credits { get; set; }
 
     /// <summary>
-    /// ISO 8601 formatted timestamp of when the plan was started.
+    /// Timestamp of when the plan was started.
     /// </summary>
-    public string PlanStartedAt { get; set; } = string.Empty;
+    public DateTime PlanStartedAt { get; set; }
 
     /// <summary>
-    /// ISO 8601 formatted timestamp of when the plan renews next.
+    /// Timestamp of when the plan renews next.
     /// </summary>
-    public string RenewsAt { get; set; } = string.Empty;
+    public DateTime RenewsAt { get; set; }
 
     /// <summary>
     /// Concurrency token for optimistic locking (xmin system column in PostgreSQL).

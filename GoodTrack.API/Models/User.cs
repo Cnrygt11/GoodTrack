@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace GoodTrack.API.Models;
 
 public class User
@@ -42,7 +45,7 @@ public class User
 
     public string RefreshToken { get; set; } = string.Empty;
 
-    public string RefreshTokenExpiryTime { get; set; } = string.Empty;
+    public DateTime? RefreshTokenExpiryTime { get; set; }
 
     public uint RowVersion { get; set; }
 }

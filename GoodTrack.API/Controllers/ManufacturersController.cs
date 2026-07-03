@@ -19,16 +19,19 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class ManufacturersController : BaseApiController
 {
-    private readonly IAuthService _authService;
+    private readonly IConnectionService _connectionService;
+    private readonly IProfileService _profileService;
     private readonly ICreditsService _creditsService;
     private readonly ILogger<ManufacturersController> _logger;
 
     public ManufacturersController(
-        IAuthService authService,
+        IConnectionService connectionService,
+        IProfileService profileService,
         ICreditsService creditsService,
         ILogger<ManufacturersController> logger)
     {
-        _authService = authService;
+        _connectionService = connectionService;
+        _profileService = profileService;
         _creditsService = creditsService;
         _logger = logger;
     }
@@ -50,7 +53,7 @@ public class ManufacturersController : BaseApiController
         }
 
         _logger.LogInformation("Fetching list of all registered manufacturer accounts");
-        var manufacturers = await _authService.GetAvailableManufacturersAsync();
+        var manufacturers = await _connectionService.GetAvailableManufacturersAsync();
 
         if (isFreePlan)
         {
@@ -90,7 +93,7 @@ public class ManufacturersController : BaseApiController
         }
 
         limit = Math.Clamp(limit, 1, 50);
-        var results = await _authService.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
+        var results = await _profileService.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
 
         // Apply enterprise obfuscation if user is on Free plan
         if (isFreePlan && results.Items != null)

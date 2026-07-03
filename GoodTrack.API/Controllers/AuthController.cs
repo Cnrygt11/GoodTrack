@@ -50,7 +50,7 @@ public class AuthController : BaseApiController
         }
         _logger.LogInformation("Processing login request for username: {Username}", request.Username);
         var response = await _authService.LoginAsync(request);
-        return Ok(new { token = response.Token, username = response.Username, role = response.Role, userId = response.UserId, message = "Giriş başarılı." });
+        return Ok(new { token = response.Token, refreshToken = response.RefreshToken, username = response.Username, role = response.Role, userId = response.UserId, message = "Giriş başarılı." });
     }
 
     [Authorize]
@@ -98,6 +98,7 @@ public class AuthController : BaseApiController
         return Ok(new { message = "Şifreniz başarıyla güncellendi." });
     }
 
+    [EnableRateLimiting("auth-strict")]
     [HttpPost("refresh")]
     public async Task<IActionResult> Refresh([FromBody] TokenRefreshRequest request)
     {

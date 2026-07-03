@@ -19,13 +19,18 @@ public sealed class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        bool isSqlite = Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite";
         
         // ── User ──────────────────────────────────────────────────────────────
         modelBuilder.Entity<User>(entity =>
         {
             entity.ToTable("users");
             entity.HasKey(u => u.Id);
-            entity.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
             entity.Property(u => u.PasswordHash).IsRequired();
             entity.Property(u => u.Role).IsRequired().HasMaxLength(20);
@@ -39,11 +44,14 @@ public sealed class AppDbContext : DbContext
             entity.Property(u => u.VerificationToken).HasMaxLength(200);
             entity.Property(u => u.VerificationTokenExpiresAt).HasMaxLength(50);
             entity.Property(u => u.RefreshToken).HasMaxLength(500);
-            entity.Property(u => u.RefreshTokenExpiryTime).HasMaxLength(50);
+            entity.Property(u => u.RefreshTokenExpiryTime);
             // PostgreSQL native text[] arrays
-            entity.Property(u => u.Keywords).HasColumnType("text[]");
-            entity.Property(u => u.ProductImages).HasColumnType("text[]");
-            entity.Property(u => u.RowVersion).IsRowVersion();
+            if (!isSqlite)
+            {
+                entity.Property(u => u.Keywords).HasColumnType("text[]");
+                entity.Property(u => u.ProductImages).HasColumnType("text[]");
+                entity.Property(u => u.RowVersion).IsRowVersion();
+            }
             // Unique index
             entity.HasIndex(u => u.Username).IsUnique();
             entity.HasIndex(u => u.Email).IsUnique();
@@ -54,21 +62,39 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("products");
             entity.HasKey(p => p.Id);
-            entity.Property(p => p.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(p => p.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(p => p.Code).IsRequired().HasMaxLength(100);
             entity.Property(p => p.Status).IsRequired().HasMaxLength(50);
             entity.Property(p => p.SellerId).IsRequired().HasMaxLength(100);
             entity.Property(p => p.ManufacturerId).IsRequired().HasMaxLength(100);
             entity.Property(p => p.SellerName).HasMaxLength(200);
             entity.Property(p => p.ManufacturerName).HasMaxLength(200);
-            entity.Property(p => p.CreatedAt).HasMaxLength(50);
-            entity.Property(p => p.CompletedAt).HasMaxLength(50);
+            entity.Property(p => p.CreatedAt).IsRequired();
+            entity.Property(p => p.CompletedAt);
             entity.Property(p => p.Text).HasMaxLength(1000);
             entity.Property(p => p.Length).HasMaxLength(50);
             entity.Property(p => p.DefectNote).HasMaxLength(1000);
             // JSONB columns for nested structures
-            entity.Property(p => p.Extras).HasColumnType("jsonb");
-            entity.Property(p => p.Logs).HasColumnType("jsonb");
+            if (!isSqlite)
+            {
+                entity.Property(p => p.Extras).HasColumnType("jsonb");
+                entity.Property(p => p.Logs).HasColumnType("jsonb");
+            }
+            else
+            {
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions();
+                entity.Property(p => p.Extras).HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, ExtraValue>>(v, jsonOptions) ?? new Dictionary<string, ExtraValue>()
+                );
+                entity.Property(p => p.Logs).HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
+                    v => System.Text.Json.JsonSerializer.Deserialize<List<OrderLog>>(v, jsonOptions) ?? new List<OrderLog>()
+                );
+            }
             // Indexes
             entity.HasIndex(p => p.SellerId);
             entity.HasIndex(p => p.ManufacturerId);
@@ -79,7 +105,10 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("catalog_products");
             entity.HasKey(c => c.Id);
-            entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(c => c.SellerId).IsRequired().HasMaxLength(100);
             entity.Property(c => c.ProductCode).IsRequired().HasMaxLength(100);
             entity.Property(c => c.ManufacturerId).HasMaxLength(100);
@@ -87,7 +116,18 @@ public sealed class AppDbContext : DbContext
             entity.Property(c => c.Text).HasMaxLength(1000);
             entity.Property(c => c.Length).HasMaxLength(50);
             entity.Property(c => c.CreatedAt).HasMaxLength(50);
-            entity.Property(c => c.Extras).HasColumnType("jsonb");
+            if (!isSqlite)
+            {
+                entity.Property(c => c.Extras).HasColumnType("jsonb");
+            }
+            else
+            {
+                var jsonOptions = new System.Text.Json.JsonSerializerOptions();
+                entity.Property(c => c.Extras).HasConversion(
+                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
+                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, ExtraValue>>(v, jsonOptions) ?? new Dictionary<string, ExtraValue>()
+                );
+            }
             entity.HasIndex(c => c.SellerId);
             entity.HasIndex(c => new { c.SellerId, c.ProductCode }).IsUnique();
         });
@@ -97,7 +137,10 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("connection_requests");
             entity.HasKey(r => r.Id);
-            entity.Property(r => r.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(r => r.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(r => r.SenderId).IsRequired().HasMaxLength(100);
             entity.Property(r => r.SenderUsername).HasMaxLength(100);
             entity.Property(r => r.ReceiverId).IsRequired().HasMaxLength(100);
@@ -113,11 +156,17 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("extra_field_defs");
             entity.HasKey(f => f.Id);
-            entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(f => f.Name).IsRequired().HasMaxLength(100);
             entity.Property(f => f.Type).IsRequired().HasMaxLength(50);
             entity.Property(f => f.CreatedBy).HasMaxLength(100);
-            entity.Property(f => f.Options).HasColumnType("text[]");
+            if (!isSqlite)
+            {
+                entity.Property(f => f.Options).HasColumnType("text[]");
+            }
             entity.HasIndex(f => f.CreatedBy);
         });
 
@@ -126,7 +175,10 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("feedbacks");
             entity.HasKey(f => f.Id);
-            entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(f => f.UserId).HasMaxLength(100);
             entity.Property(f => f.Username).HasMaxLength(100);
             entity.Property(f => f.Role).HasMaxLength(20);
@@ -141,16 +193,22 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("user_credits");
             entity.HasKey(c => c.Id);
-            entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(c => c.UserId).IsRequired().HasMaxLength(100);
             entity.Property(c => c.Plan).IsRequired().HasMaxLength(50);
             entity.Property(c => c.Credits).IsRequired();
-            entity.Property(c => c.PlanStartedAt).HasMaxLength(50);
-            entity.Property(c => c.RenewsAt).HasMaxLength(50);
+            entity.Property(c => c.PlanStartedAt).IsRequired();
+            entity.Property(c => c.RenewsAt).IsRequired();
 
             entity.HasIndex(c => c.UserId).IsUnique();
 
-            entity.Property(c => c.RowVersion).IsRowVersion();
+            if (!isSqlite)
+            {
+                entity.Property(c => c.RowVersion).IsRowVersion();
+            }
 
             entity.HasOne<User>()
                   .WithOne()
@@ -163,10 +221,13 @@ public sealed class AppDbContext : DbContext
         {
             entity.ToTable("user_connections");
             entity.HasKey(c => c.Id);
-            entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            if (!isSqlite)
+            {
+                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
+            }
             entity.Property(c => c.SellerId).IsRequired().HasMaxLength(100);
             entity.Property(c => c.ManufacturerId).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.ConnectedAt).HasMaxLength(50);
+            entity.Property(c => c.ConnectedAt).IsRequired();
             entity.HasIndex(c => new { c.SellerId, c.ManufacturerId }).IsUnique();
         });
     }

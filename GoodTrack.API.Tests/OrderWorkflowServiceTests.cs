@@ -6,6 +6,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.SignalR;
 using Moq;
 using Xunit;
+using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
@@ -15,7 +16,7 @@ using GoodTrack.API.Services;
 
 namespace GoodTrack.API.Tests;
 
-public class ProductStatusTransitionTests
+public class OrderWorkflowServiceTests
 {
     private readonly Mock<IProductRepository> _productRepositoryMock;
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
@@ -24,9 +25,9 @@ public class ProductStatusTransitionTests
     private readonly Mock<ICreditsService> _creditsServiceMock;
     private readonly Mock<IHubClients> _hubClientsMock;
     private readonly Mock<IClientProxy> _clientProxyMock;
-    private readonly ProductService _productService;
+    private readonly OrderWorkflowService _workflowService;
 
-    public ProductStatusTransitionTests()
+    public OrderWorkflowServiceTests()
     {
         _productRepositoryMock = new Mock<IProductRepository>();
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
@@ -40,12 +41,13 @@ public class ProductStatusTransitionTests
         _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
         _hubClientsMock.Setup(c => c.Users(It.IsAny<IReadOnlyList<string>>())).Returns(_clientProxyMock.Object);
 
-        _productService = new ProductService(
+        _workflowService = new OrderWorkflowService(
             _productRepositoryMock.Object,
             _catalogRepositoryMock.Object,
             _hubContextMock.Object,
             _imageStorageServiceMock.Object,
-            _creditsServiceMock.Object);
+            _creditsServiceMock.Object,
+            Mock.Of<ILogger<OrderWorkflowService>>());
     }
 
     [Fact]
@@ -69,7 +71,7 @@ public class ProductStatusTransitionTests
             .ReturnsAsync(product);
 
         // Act
-        await _productService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Cancelled);
+        await _workflowService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Cancelled);
 
         // Assert
         product.Status.Should().Be(OrderStatus.Cancelled);
@@ -98,7 +100,7 @@ public class ProductStatusTransitionTests
             .ReturnsAsync(product);
 
         // Act & Assert
-        var act = () => _productService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Cancelled);
+        var act = () => _workflowService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Cancelled);
         await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Üretime başlanmış olan siparişler iptal edilemez.");
 
@@ -125,7 +127,7 @@ public class ProductStatusTransitionTests
             .ReturnsAsync(product);
 
         // Act
-        await _productService.UpdateOrderStatusAsync(mfrId, Roles.Mfr, orderId, OrderStatus.Production);
+        await _workflowService.UpdateOrderStatusAsync(mfrId, Roles.Mfr, orderId, OrderStatus.Production);
 
         // Assert
         product.Status.Should().Be(OrderStatus.Production);
@@ -155,7 +157,7 @@ public class ProductStatusTransitionTests
             .ReturnsAsync(product);
 
         // Act & Assert
-        var act = () => _productService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Completed);
+        var act = () => _workflowService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Completed);
         await act.Should().ThrowAsync<UnauthorizedAccessException>()
             .WithMessage("Bu işlemi sadece üretici gerçekleştirebilir.");
 

@@ -63,7 +63,7 @@ public class ExceptionHandlingMiddleware
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
                 break;
-            case InvalidOperationException:
+            case InvalidOperationException when exception.Source != null && exception.Source.Contains("GoodTrack"):
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
                 break;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import useCredits from '../../hooks/useCredits';
 import { useSettings } from '../../context/SettingsContext';
+import { TranslationKey } from '../../services/translations';
 import { Check, ShieldCheck, Zap } from 'lucide-react';
 import MockPaymentModal from '../ui/MockPaymentModal';
 import styles from './CreditsPage.module.css';
@@ -120,7 +121,7 @@ export default function CreditsPage() {
                   {tier.features.map((featureKey) => (
                     <li key={featureKey} className={styles['feature-item']}>
                       <Check size={14} className={styles['feature-check-icon']} />
-                      <span>{t(featureKey as any)}</span>
+                      <span>{t(featureKey as TranslationKey)}</span>
                     </li>
                   ))}
                 </ul>

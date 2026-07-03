@@ -18,6 +18,7 @@ namespace GoodTrack.API.Controllers;
 public class ProductsController : BaseApiController
 {
     private readonly IProductService _productService;
+    private readonly IOrderWorkflowService _orderWorkflowService;
     private readonly ILogger<ProductsController> _logger;
 
     private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -35,9 +36,13 @@ public class ProductsController : BaseApiController
         OrderStatus.Cancelled
     };
 
-    public ProductsController(IProductService productService, ILogger<ProductsController> logger)
+    public ProductsController(
+        IProductService productService, 
+        IOrderWorkflowService orderWorkflowService,
+        ILogger<ProductsController> logger)
     {
         _productService = productService;
+        _orderWorkflowService = orderWorkflowService;
         _logger = logger;
     }
 
@@ -96,7 +101,6 @@ public class ProductsController : BaseApiController
             return BadRequest(new { message = "Hedef durum bilgisi eksik." });
         }
 
-        // Validate Status against OrderStatus constants
         if (!ValidStatuses.Contains(request.Status.Trim()))
         {
             return BadRequest(new { message = $"Geçersiz durum bilgisi: {request.Status}" });
@@ -104,7 +108,7 @@ public class ProductsController : BaseApiController
 
         _logger.LogInformation("User {UserId} with role {Role} is changing status of order {Id} to: {Status}", userId, role, id, request.Status);
 
-        await _productService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
+        await _orderWorkflowService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
         return Ok(new { id, status = request.Status, message = "Sipariş durumu başarıyla güncellendi." });
     }
 
@@ -223,7 +227,7 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Seller {UserId} requesting cancellation for order {Id}", userId, id);
-        await _productService.RequestOrderCancellationAsync(userId, id);
+        await _orderWorkflowService.RequestOrderCancellationAsync(userId, id);
         return Ok(new { message = "İptal talebi üreticiye iletildi." });
     }
 
@@ -245,7 +249,7 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Manufacturer {UserId} responding to cancellation for order {Id} with: {Approve}", userId, id, request.Approve);
-        await _productService.RespondToOrderCancellationAsync(userId, id, request.Approve);
+        await _orderWorkflowService.RespondToOrderCancellationAsync(userId, id, request.Approve);
         string msg = request.Approve ? "İptal talebi onaylandı, sipariş iptal edildi." : "İptal talebi reddedildi, üretime devam ediliyor.";
         return Ok(new { message = msg });
     }

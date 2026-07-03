@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using GoodTrack.API.Models;
@@ -20,8 +21,8 @@ public class ProductResponseDto
     public string? DefectImage { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<OrderLog> Logs { get; set; } = new();
-    public string CreatedAt { get; set; } = string.Empty;
-    public string? CompletedAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? CompletedAt { get; set; }
     public string SellerId { get; set; } = string.Empty;
 
     [JsonPropertyName("mfrId")]

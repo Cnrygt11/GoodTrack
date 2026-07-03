@@ -18,4 +18,5 @@ COPY --from=build-env /app/out .
 # Expose port and start API
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
+USER app
 ENTRYPOINT ["dotnet", "GoodTrack.API.dll"]

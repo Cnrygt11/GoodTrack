@@ -40,8 +40,8 @@ public class CreditsService : ICreditsService
             UserId = userId,
             Plan = SubscriptionPlan.Free,
             Credits = 5,
-            PlanStartedAt = DateTime.UtcNow.ToString("o"),
-            RenewsAt = DateTime.UtcNow.AddMonths(1).ToString("o")
+            PlanStartedAt = DateTime.UtcNow,
+            RenewsAt = DateTime.UtcNow.AddMonths(1)
         };
 
         await _creditsRepository.SaveAsync(record, cancellationToken);
@@ -72,6 +72,11 @@ public class CreditsService : ICreditsService
 
         var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
 
+        if (record.Plan.Equals(plan, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException($"Zaten '{plan}' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
+        }
+
         int newCredits;
         if (plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase))
         {
@@ -94,11 +99,19 @@ public class CreditsService : ICreditsService
         }
 
         record.Credits = newCredits;
-        record.PlanStartedAt = DateTime.UtcNow.ToString("o");
-        record.RenewsAt = DateTime.UtcNow.AddMonths(1).ToString("o");
+        record.PlanStartedAt = DateTime.UtcNow;
+        record.RenewsAt = DateTime.UtcNow.AddMonths(1);
 
         await _creditsRepository.SaveAsync(record, cancellationToken);
         return record;
+    }
+
+    /// <inheritdoc />
+    public async Task RefundCreditAsync(string userId, int amount = 1, CancellationToken cancellationToken = default)
+    {
+        var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
+        record.Credits += amount;
+        await _creditsRepository.SaveAsync(record, cancellationToken);
     }
 
     /// <inheritdoc />

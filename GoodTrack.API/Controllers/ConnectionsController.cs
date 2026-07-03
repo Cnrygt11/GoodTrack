@@ -14,12 +14,12 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class ConnectionsController : BaseApiController
 {
-    private readonly IAuthService _authService;
+    private readonly IConnectionService _connectionService;
     private readonly ILogger<ConnectionsController> _logger;
 
-    public ConnectionsController(IAuthService authService, ILogger<ConnectionsController> logger)
+    public ConnectionsController(IConnectionService connectionService, ILogger<ConnectionsController> logger)
     {
-        _authService = authService;
+        _connectionService = connectionService;
         _logger = logger;
     }
 
@@ -33,7 +33,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is retrieving active connections list", userId);
-        var connections = await _authService.GetConnectionsAsync(userId);
+        var connections = await _connectionService.GetConnectionsAsync(userId);
         return Ok(connections);
     }
 
@@ -55,7 +55,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {SenderId} ({Username}) is sending a connection request to user: {Target}", senderId, senderUsername, username);
-        await _authService.SendConnectionRequestAsync(senderId, senderUsername, senderRole, username);
+        await _connectionService.SendConnectionRequestAsync(senderId, senderUsername, senderRole, username);
         
         return Created(string.Empty, new { message = "Bağlantı isteği gönderildi." });
     }
@@ -70,7 +70,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is fetching pending incoming connection requests", userId);
-        var requests = await _authService.GetIncomingRequestsAsync(userId);
+        var requests = await _connectionService.GetIncomingRequestsAsync(userId);
         return Ok(requests);
     }
 
@@ -84,7 +84,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is fetching sent connection requests history", userId);
-        var requests = await _authService.GetSentRequestsAsync(userId);
+        var requests = await _connectionService.GetSentRequestsAsync(userId);
         return Ok(requests);
     }
 
@@ -106,12 +106,12 @@ public class ConnectionsController : BaseApiController
 
         if (dto.Status.Equals("accepted", StringComparison.OrdinalIgnoreCase))
         {
-            await _authService.AcceptConnectionRequestAsync(userId, requestId);
+            await _connectionService.AcceptConnectionRequestAsync(userId, requestId);
             return Ok(new { message = "Bağlantı başarıyla kuruldu." });
         }
         else if (dto.Status.Equals("rejected", StringComparison.OrdinalIgnoreCase))
         {
-            await _authService.RejectConnectionRequestAsync(userId, requestId);
+            await _connectionService.RejectConnectionRequestAsync(userId, requestId);
             return Ok(new { message = "Bağlantı isteği reddedildi." });
         }
 
@@ -128,7 +128,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is clearing connection request log: {RequestId}", userId, requestId);
-        await _authService.DeleteConnectionRequestAsync(userId, requestId);
+        await _connectionService.DeleteConnectionRequestAsync(userId, requestId);
         return NoContent();
     }
 
@@ -142,7 +142,7 @@ public class ConnectionsController : BaseApiController
         }
 
         _logger.LogInformation("User {UserId} is removing active connection with user: {TargetId}", userId, targetId);
-        await _authService.RemoveConnectionAsync(userId, targetId);
+        await _connectionService.RemoveConnectionAsync(userId, targetId);
         return NoContent();
     }
 }

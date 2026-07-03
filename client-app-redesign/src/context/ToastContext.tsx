@@ -8,7 +8,7 @@ interface ToastState {
 
 interface ToastContextType {
   toast: ToastState;
-  showToast: (message: string) => void;
+  showToast: (message: string, isErrorOverride?: boolean) => void;
 }
 
 const ToastContext = createContext<ToastContextType | null>(null);
