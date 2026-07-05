@@ -95,11 +95,6 @@ export default function useCatalog() {
       return;
     }
 
-    if (!catalogImage) {
-      showToast(t('catalogImageRequired'));
-      return;
-    }
-
     const selectedMfr = connections.find(c => c.id === mfrId);
     const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
 
@@ -116,7 +111,7 @@ export default function useCatalog() {
         // Edit mode
         const data = await api.updateCatalogProduct(editingProduct.id, {
           productCode: code,
-          image: catalogImage,
+          image: catalogImage || '',
           mfrId,
           mfrName,
           extras: formattedExtras
@@ -129,7 +124,7 @@ export default function useCatalog() {
         // Add mode
         const data = await api.addCatalogProduct({
           productCode: code,
-          image: catalogImage,
+          image: catalogImage || '',
           mfrId,
           mfrName,
           extras: formattedExtras
@@ -168,6 +163,39 @@ export default function useCatalog() {
     }
   }, [t, showToast, loadCatalog, editingProduct, handleClearForm]);
 
+  const [syncEtsyLoading, setSyncEtsyLoading] = useState(false);
+
+  const handleSyncEtsyListings = useCallback(async () => {
+    try {
+      setSyncEtsyLoading(true);
+      const res = await api.syncEtsyListings();
+      showToast(res.message || 'Etsy ürünleri başarıyla çekildi.');
+      await loadCatalog();
+    } catch (err: any) {
+      showToast(extractErrorMessage(err) || 'Etsy ürünleri çekilirken hata oluştu.');
+    } finally {
+      setSyncEtsyLoading(false);
+    }
+  }, [loadCatalog, showToast]);
+
+  const handleAssignManufacturer = useCallback(async (productId: string, selectedMfrId: string) => {
+    const product = catalogProducts.find(p => p.id === productId);
+    if (!product) return;
+
+    const selectedMfr = connections.find(c => c.id === selectedMfrId);
+    const mfrName = selectedMfr ? selectedMfr.username : '';
+
+    await api.updateCatalogProduct(productId, {
+      productCode: product.productCode,
+      image: product.image || '',
+      mfrId: selectedMfrId,
+      mfrName: mfrName,
+      extras: product.extras || {}
+    });
+
+    await loadCatalog();
+  }, [catalogProducts, connections, loadCatalog]);
+
   return {
     connections,
     catalogProducts,
@@ -188,6 +216,9 @@ export default function useCatalog() {
     handleClearForm,
     handleStartEdit,
     handleSubmit,
-    handleDelete
+    handleDelete,
+    syncEtsyLoading,
+    handleSyncEtsyListings,
+    handleAssignManufacturer
   };
 }

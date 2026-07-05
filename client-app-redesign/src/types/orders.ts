@@ -27,5 +27,4 @@ export const LIST_FILTER_TABS: ListFilter[] = [
 ];
 
 /** Active sub-page tab on the SellerPage. */
-export type SellerTabId = 'list' | 'create' | 'catalog' | 'archive';
-
+export type SellerTabId = 'list' | 'create' | 'catalog';

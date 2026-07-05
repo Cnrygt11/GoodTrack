@@ -15,6 +15,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Feedback> Feedbacks => Set<Feedback>();
     public DbSet<UserCredit> UserCredits => Set<UserCredit>();
     public DbSet<UserConnection> UserConnections => Set<UserConnection>();
+    public DbSet<EtsyConnection> EtsyConnections => Set<EtsyConnection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -229,6 +230,28 @@ public sealed class AppDbContext : DbContext
             entity.Property(c => c.ManufacturerId).IsRequired().HasMaxLength(100);
             entity.Property(c => c.ConnectedAt).IsRequired();
             entity.HasIndex(c => new { c.SellerId, c.ManufacturerId }).IsUnique();
+        });
+
+        // ── EtsyConnection ───────────────────────────────────────────────────
+        modelBuilder.Entity<EtsyConnection>(entity =>
+        {
+            entity.ToTable("etsy_connections");
+            entity.HasKey(e => e.UserId);
+            entity.Property(e => e.UserId).HasMaxLength(100);
+            entity.Property(e => e.EtsyShopId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.EtsyShopName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ApiKeyKeystring).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ApiKeySharedSecret).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.AccessToken).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.RefreshToken).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.TokenExpiresAt).IsRequired();
+            entity.Property(e => e.WebhookSigningSecret).HasMaxLength(200);
+            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
+
+            entity.HasOne<User>()
+                  .WithOne()
+                  .HasForeignKey<EtsyConnection>(e => e.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

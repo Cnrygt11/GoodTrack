@@ -43,16 +43,23 @@ public sealed class ConnectionService : IConnectionService
             return new List<UserDto>();
         }
 
-        var fetchTasks = connections
+        var targetIds = connections
             .Select(c => c.SellerId == userId ? c.ManufacturerId : c.SellerId)
-            .Select(id => _userRepository.GetByIdAsync(id))
+            .Distinct()
             .ToList();
 
-        var targets = await Task.WhenAll(fetchTasks);
+        var targets = new List<User>();
+        foreach (var id in targetIds)
+        {
+            var u = await _userRepository.GetByIdAsync(id);
+            if (u != null)
+            {
+                targets.Add(u);
+            }
+        }
 
         return targets
-            .Where(t => t != null)
-            .Select(t => new UserDto { Id = t!.Id, Username = t.Username, Role = t.Role })
+            .Select(t => new UserDto { Id = t.Id, Username = t.Username, Role = t.Role })
             .ToList();
     }
 

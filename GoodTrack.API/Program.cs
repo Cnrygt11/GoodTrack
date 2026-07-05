@@ -40,6 +40,10 @@ try
         options.AddDocumentTransformer((document, context, cancellationToken) =>
         {
             document.Components ??= new Microsoft.OpenApi.OpenApiComponents();
+            if (document.Components.SecuritySchemes == null)
+            {
+                document.Components.SecuritySchemes = new Dictionary<string, Microsoft.OpenApi.IOpenApiSecurityScheme>();
+            }
             
             var scheme = new Microsoft.OpenApi.OpenApiSecurityScheme
             {
@@ -105,6 +109,8 @@ try
     builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
     builder.Services.AddScoped<ICreditsService, CreditsService>();
     builder.Services.AddScoped<IEmailService, MailKitEmailService>();
+    builder.Services.AddHttpClient();
+    builder.Services.AddScoped<IEtsyService, EtsyService>();
 
     const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
 

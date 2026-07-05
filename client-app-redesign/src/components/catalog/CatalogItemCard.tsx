@@ -1,22 +1,28 @@
 import React from 'react';
-import { Package, Edit2, Trash2 } from 'lucide-react';
-import { CatalogProduct } from '../../services/api';
+import { Package, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { CatalogProduct, ConnectionUser } from '../../services/api';
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
 
 interface CatalogItemCardProps {
   product: CatalogProduct;
-  onEdit: (product: CatalogProduct) => void;
+  connections: ConnectionUser[];
   onDelete: (id: string) => void;
+  onAssignMfr: (productId: string, selectedMfrId: string) => Promise<void>;
 }
 
 export default function CatalogItemCard({
   product,
-  onEdit,
-  onDelete
+  connections,
+  onDelete,
+  onAssignMfr
 }: CatalogItemCardProps) {
   const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
+  const [saveStatus, setSaveStatus] = React.useState<'idle' | 'saving' | 'saved'>('idle');
+
+  const isUnassigned = !product.mfrId || product.mfrId === '00000000-0000-0000-0000-000000000000';
+
   return (
     <div className="product-card">
       {product.image ? (
@@ -35,12 +41,32 @@ export default function CatalogItemCard({
           <Package size={24} style={{ color: 'var(--muted)' }} />
         </div>
       )}
+      
       <div className="product-info">
         <div className="product-code">{product.productCode}</div>
-        <div className="product-fields" style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
-          <div className="product-field-chip" style={{ border: '1px solid var(--accent-mfr)', color: 'var(--accent-mfr)' }}>
-            <strong>{t('assignedManufacturerLabel')}:</strong> {product.mfrName}
+
+        {/* Warning Badge for Unassigned Manufacturer */}
+        {isUnassigned && (
+          <div className="mfr-warning-badge" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid rgba(239, 68, 68, 0.2)',
+            color: '#EF4444',
+            padding: '6px 10px',
+            borderRadius: '6px',
+            fontSize: '12px',
+            fontWeight: 500,
+            marginTop: '4px',
+            marginBottom: '8px'
+          }}>
+            <AlertCircle size={14} />
+            {t('mfrNotAssigned') || 'Üretici atanmadı'}
           </div>
+        )}
+
+        <div className="product-fields" style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
           {product.extras && Object.values(product.extras).map((val, idx) => {
             if (!val.value) return null;
             return (
@@ -52,27 +78,48 @@ export default function CatalogItemCard({
         </div>
       </div>
       
-      <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: 'auto' }}>
-        <button 
-          type="button"
-          className="btn-secondary" 
-          style={{ 
-            borderColor: 'var(--accent-seller)', 
-            color: 'var(--accent-seller)', 
-            fontSize: '12px', 
-            padding: '6px 12px', 
-            borderRadius: '6px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            flex: 1,
-            justifyContent: 'center'
+      {/* Bottom Dropdown & Action Area */}
+      <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: 'auto', alignItems: 'center' }}>
+        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500, whiteSpace: 'nowrap' }}>
+          {t('assignedManufacturerLabel') || 'Üretici'}:
+        </span>
+        <select
+          value={product.mfrId || ''}
+          onChange={async (e) => {
+            const val = e.target.value;
+            try {
+              setSaveStatus('saving');
+              await onAssignMfr(product.id, val);
+              setSaveStatus('saved');
+              setTimeout(() => setSaveStatus('idle'), 1500);
+            } catch (err: any) {
+              setSaveStatus('idle');
+            }
           }}
-          onClick={() => onEdit(product)}
+          disabled={saveStatus === 'saving'}
+          className="catalog-mfr-select"
         >
-          <Edit2 size={14} />
-          {t('editBtn')}
-        </button>
+          <option value="">{t('selectManufacturerPlaceholder') || 'Üretici Seçin...'}</option>
+          {connections.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.username}
+            </option>
+          ))}
+        </select>
+
+        {/* Action Status Micro-animation Icon */}
+        {saveStatus !== 'idle' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '16px' }}>
+            {saveStatus === 'saving' && (
+              <Loader2 size={16} className="animate-spin" style={{ color: 'var(--accent-seller)' }} />
+            )}
+            {saveStatus === 'saved' && (
+              <CheckCircle2 size={16} style={{ color: 'var(--success)' }} />
+            )}
+          </div>
+        )}
+
+        {/* Delete Button */}
         <button 
           type="button"
           className="btn-secondary" 
@@ -80,20 +127,21 @@ export default function CatalogItemCard({
             borderColor: 'var(--danger)', 
             color: 'var(--danger)', 
             fontSize: '12px', 
-            padding: '6px 12px', 
+            padding: '6px', 
             borderRadius: '6px',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px',
-            flex: 1,
-            justifyContent: 'center'
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px'
           }}
           onClick={() => onDelete(product.id)}
+          title={t('deleteBtn')}
         >
           <Trash2 size={14} />
-          {t('deleteBtn')}
         </button>
       </div>
+
       {product.image && (
         <Lightbox
           isOpen={isLightboxOpen}

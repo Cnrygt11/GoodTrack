@@ -34,15 +34,12 @@ export default function useSellerOrders() {
 
   const activeTab: SellerTabId =
     tabParam === 'create' ? 'create' :
-    tabParam === 'catalog' ? 'catalog' :
-    (tabParam === 'archive' || tabParam === 'shipped') ? 'archive' : 'list';
+    tabParam === 'catalog' ? 'catalog' : 'list';
 
   const listFilter: ListFilter =
-    activeTab === 'archive'
-      ? ORDER_STATUS.SHIPPED
-      : (tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter) && tabParam !== ORDER_STATUS.SHIPPED)
-        ? (tabParam as ListFilter)
-        : ORDER_STATUS.AWAITING;
+    (tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter))
+      ? (tabParam as ListFilter)
+      : ORDER_STATUS.AWAITING;
 
   const setActiveTab = useCallback(
     (tab: SellerTabId) => {
@@ -51,10 +48,8 @@ export default function useSellerOrders() {
           prev.set('tab', 'create');
         } else if (tab === 'catalog') {
           prev.set('tab', 'catalog');
-        } else if (tab === 'archive') {
-          prev.set('tab', 'archive');
         } else {
-          prev.set('tab', listFilter === ORDER_STATUS.SHIPPED ? ORDER_STATUS.AWAITING : listFilter);
+          prev.set('tab', listFilter);
         }
         return prev;
       });

@@ -5579,6 +5579,34 @@ h2 span.mfr-accent {
   color: var(--text-muted, #7c7c8a) !important;
 }
 
+/* Catalog Manufacturer Selection Dropdown Styling */
+.catalog-mfr-select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--surface2) !important;
+  color: var(--text) !important;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.catalog-mfr-select:focus {
+  border-color: var(--accent-seller);
+}
+
+.catalog-mfr-select option {
+  background-color: #1e1e2d !important; /* Windows/Chrome için koyu arka plan */
+  color: #f3f4f6 !important; /* Açık renk yazı */
+}
+
+.light-theme .catalog-mfr-select option {
+  background-color: #ffffff !important; /* Açık arka plan */
+  color: #1e1b4b !important; /* Koyu renk yazı */
+}
+
 
 
 

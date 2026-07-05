@@ -1,0 +1,198 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using System;
+using System.IO;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Infrastructure;
+using GoodTrack.API.DTOs.Common;
+
+namespace GoodTrack.API.Controllers;
+
+[AllowAnonymous]
+public class EtsyWebhookController : BaseApiController
+{
+    private readonly AppDbContext _context;
+    private readonly IEtsyService _etsyService;
+    private readonly ILogger<EtsyWebhookController> _logger;
+
+    public EtsyWebhookController(
+        AppDbContext context,
+        IEtsyService etsyService,
+        ILogger<EtsyWebhookController> logger)
+    {
+        _context = context;
+        _etsyService = etsyService;
+        _logger = logger;
+    }
+
+    [HttpPost("webhook")]
+    public async Task<IActionResult> HandleWebhook(CancellationToken cancellationToken)
+    {
+        // 1. Gerekli başlıkları (headers) oku
+        if (!Request.Headers.TryGetValue("webhook-id", out var webhookId) ||
+            !Request.Headers.TryGetValue("webhook-timestamp", out var webhookTimestampStr) ||
+            !Request.Headers.TryGetValue("webhook-signature", out var webhookSignature))
+        {
+            _logger.LogWarning("Missing required Etsy webhook headers.");
+            return BadRequest("Eksik webhook başlıkları.");
+        }
+
+        // 2. Zaman damgasını (timestamp) doğrula (Replay attack önleme - 5 dakika sınırı)
+        if (!long.TryParse(webhookTimestampStr, out var webhookTimestamp))
+        {
+            return BadRequest("Geçersiz webhook zaman damgası.");
+        }
+
+        var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        if (Math.Abs(currentUnixTime - webhookTimestamp) > 300)
+        {
+            _logger.LogWarning("Webhook timestamp is stale. Diff: {Diff}s", currentUnixTime - webhookTimestamp);
+            return BadRequest("Zaman aşımına uğramış istek (Stale timestamp).");
+        }
+
+        // 3. İstek gövdesini (body) ham metin olarak oku
+        string rawBody;
+        using (var reader = new StreamReader(Request.Body, Encoding.UTF8))
+        {
+            rawBody = await reader.ReadToEndAsync(cancellationToken);
+        }
+
+        if (string.IsNullOrEmpty(rawBody))
+        {
+            return BadRequest("Boş istek gövdesi.");
+        }
+
+        // 4. Payload'u deserialize et
+        EtsyWebhookPayload? payload;
+        try
+        {
+            payload = JsonSerializer.Deserialize<EtsyWebhookPayload>(rawBody);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to parse webhook JSON payload.");
+            return BadRequest("Geçersiz JSON formatı.");
+        }
+
+        if (payload == null || string.IsNullOrEmpty(payload.ShopId) || string.IsNullOrEmpty(payload.ResourceUrl))
+        {
+            return BadRequest("Eksik payload verileri.");
+        }
+
+        // 5. Bu ShopId'ye sahip aktif bağlantısı olan satıcıyı veri tabanından bul
+        var etsyConnection = await _context.EtsyConnections
+            .FirstOrDefaultAsync(c => c.EtsyShopId == payload.ShopId && c.IsActive, cancellationToken);
+
+        if (etsyConnection == null)
+        {
+            _logger.LogWarning("Active Etsy connection not found for ShopId: {ShopId}. Webhook ignored.", payload.ShopId);
+            return Ok(); // Etsy webhook'u iptal etmesin diye 200 döneriz.
+        }
+
+        // 6. İmzayı doğrula
+        if (string.IsNullOrEmpty(etsyConnection.WebhookSigningSecret))
+        {
+            _logger.LogWarning("WebhookSigningSecret is not set for ShopId: {ShopId}. Ignoring signature verification.", payload.ShopId);
+        }
+        else
+        {
+            var isValid = VerifySignature(webhookId!, webhookTimestampStr!, rawBody, etsyConnection.WebhookSigningSecret, webhookSignature!);
+            if (!isValid)
+            {
+                _logger.LogWarning("Webhook signature verification failed for ShopId: {ShopId}", payload.ShopId);
+                return Unauthorized("Geçersiz imza (Signature mismatch).");
+            }
+        }
+
+        // 7. Yalnızca order.paid olayı için sipariş oluşturma işlemini tetikle
+        if (payload.EventType.Equals("order.paid", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                // Resource URL'den sipariş ID'sini çekelim. URL formatı:
+                // https://api.etsy.com/v3/application/shops/{YOUR_SHOP_ID}/receipts/{RECEIPT_ID}
+                var uri = new Uri(payload.ResourceUrl);
+                var segments = uri.Segments;
+                var receiptId = segments[^1].TrimEnd('/');
+
+                _logger.LogInformation("Webhook triggered order paid processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
+                
+                await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error processing webhook order synchronization.");
+                return StatusCode(500, "Sipariş senkronizasyonu sırasında iç sunucu hatası oluştu.");
+            }
+        }
+        else
+        {
+            _logger.LogInformation("Ignoring unsupported webhook event type: {EventType}", payload.EventType);
+        }
+
+        return Ok();
+    }
+
+    private bool VerifySignature(string webhookId, string timestamp, string rawBody, string signingSecret, string headerSignature)
+    {
+        try
+        {
+            var secretBase64 = signingSecret.Contains("_") ? signingSecret.Split('_')[1] : signingSecret;
+            var secretBytes = Convert.FromBase64String(secretBase64);
+
+            var signedContent = $"{webhookId}.{timestamp}.{rawBody}";
+            var contentBytes = Encoding.UTF8.GetBytes(signedContent);
+
+            using (var hmac = new HMACSHA256(secretBytes))
+            {
+                var hashBytes = hmac.ComputeHash(contentBytes);
+                var expectedSignature = Convert.ToBase64String(hashBytes);
+                return string.Equals(expectedSignature, headerSignature, StringComparison.Ordinal);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying webhook signature.");
+            return false;
+        }
+    }
+
+    public class EtsyWebhookPayload
+    {
+        [JsonPropertyName("event_type")]
+        public string EventType { get; set; } = string.Empty;
+
+        [JsonPropertyName("resource_url")]
+        public string ResourceUrl { get; set; } = string.Empty;
+
+        [JsonPropertyName("shop_id")]
+        [JsonConverter(typeof(ShopIdStringConverter))]
+        public string ShopId { get; set; } = string.Empty;
+    }
+
+    // Etsy ShopId sayı veya metin olarak dönebileceği için özel JsonConverter kullanıyoruz
+    private class ShopIdStringConverter : JsonConverter<string>
+    {
+        public override string Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        {
+            if (reader.TokenType == JsonTokenType.Number)
+            {
+                return reader.GetInt64().ToString();
+            }
+            return reader.GetString() ?? string.Empty;
+        }
+
+        public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value);
+        }
+    }
+}

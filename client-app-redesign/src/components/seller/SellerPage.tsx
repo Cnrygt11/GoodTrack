@@ -54,6 +54,7 @@ export default function SellerPage() {
     { key: ORDER_STATUS.DELIVERED, label: t('tabDeliveredSeller') },
     { key: ORDER_STATUS.DEFECTIVE, label: t('tabReportedIssues') },
     { key: ORDER_STATUS.TO_SHIP, label: t('tabToShip') },
+    { key: ORDER_STATUS.SHIPPED, label: t('tabShipped') },
   ];
 
   return (
@@ -64,7 +65,6 @@ export default function SellerPage() {
         <TabButton active={activeTab === 'list'}    onClick={() => setActiveTab('list')}    icon={<ClipboardList size={16} />} label={t('tabSentOrders')} />
         <TabButton active={activeTab === 'create'}  onClick={() => setActiveTab('create')}  icon={<PlusCircle size={16} />}   label={t('tabCreateOrder')} />
         <TabButton active={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} icon={<Package size={16} />}      label={t('btnMyProducts')} />
-        <TabButton active={activeTab === 'archive'} onClick={() => setActiveTab('archive')} icon={<Archive size={16} />}      label={t('tabShipped')} />
       </div>
 
       {/* Tab panels */}
@@ -97,45 +97,39 @@ export default function SellerPage() {
         <>
           {/* Dashboard title */}
           <h2 className={styles['seller-dashboard-title']}>
-            {activeTab === 'archive' ? (
-              <>{t('tabShipped')} <span>{t('sellerDashboardTitlePart2')}</span></>
-            ) : (
-              <>{t('sellerDashboardTitlePart1')} <span>{t('sellerDashboardTitlePart2')}</span></>
-            )}
+            <>{t('sellerDashboardTitlePart1')} <span>{t('sellerDashboardTitlePart2')}</span></>
           </h2>
 
           {/* Status filter grid */}
-          {activeTab !== 'archive' && (
-            <div className={styles['seller-stat-grid']}>
-              {tabs.map((tab) => {
-                const isActive = listFilter === tab.key;
-                const count = badgeCounts[tab.key] || 0;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    className={`${styles['seller-stat-card']}${isActive ? ' ' + styles['seller-stat-card--active'] : ''}`}
-                    onClick={() => setListFilter(tab.key)}
-                  >
-                    <div className={`${styles['seller-stat-icon']} status-${tab.key} ${isActive ? styles['seller-stat-icon--active'] : styles['seller-stat-icon--inactive']}`}>
-                      {getTabIcon(tab.key)}
-                    </div>
-                    <span className={`${styles['seller-stat-label']}${isActive ? ' ' + styles['seller-stat-label--active'] : ''}`}>
-                      {tab.label}
-                    </span>
-                    {count > 0 && <span className={styles['seller-stat-badge']}>{count}</span>}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div className={styles['seller-stat-grid']}>
+            {tabs.map((tab) => {
+              const isActive = listFilter === tab.key;
+              const count = badgeCounts[tab.key] || 0;
+              return (
+                <button
+                  key={tab.key}
+                  type="button"
+                  className={`${styles['seller-stat-card']}${isActive ? ' ' + styles['seller-stat-card--active'] : ''}`}
+                  onClick={() => setListFilter(tab.key)}
+                >
+                  <div className={`${styles['seller-stat-icon']} status-${tab.key} ${isActive ? styles['seller-stat-icon--active'] : styles['seller-stat-icon--inactive']}`}>
+                    {getTabIcon(tab.key)}
+                  </div>
+                  <span className={`${styles['seller-stat-label']}${isActive ? ' ' + styles['seller-stat-label--active'] : ''}`}>
+                    {tab.label}
+                  </span>
+                  {count > 0 && <span className={styles['seller-stat-badge']}>{count}</span>}
+                </button>
+              );
+            })}
+          </div>
 
           {/* List header */}
           <div className={styles['seller-list-header']}>
             <h3>
               {t('orderListLabel')}{' '}
               <span className={styles['seller-list-filter-name']}>
-                {activeTab === 'archive' ? t('tabShipped') : tabs.find((tab) => tab.key === listFilter)?.label}
+                {tabs.find((tab) => tab.key === listFilter)?.label}
               </span>
             </h3>
             <div className={styles['seller-sort-row']}>

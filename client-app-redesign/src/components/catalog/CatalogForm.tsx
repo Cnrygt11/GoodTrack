@@ -1,4 +1,4 @@
-import { Camera, Plus, Save, Loader2, X } from 'lucide-react';
+import { Plus, Save, Loader2, X } from 'lucide-react';
 import { CatalogProduct, ConnectionUser, ExtraFieldDef } from '../../services/api';
 import { TranslationKey } from '../../services/translations';
 
@@ -43,6 +43,11 @@ export default function CatalogForm({
   onOpenFieldModal,
   onRemoveField
 }: CatalogFormProps) {
+  // Uyumluluk için tutulan ancak kullanılmayan props uyarılarını sustur
+  void catalogImage;
+  void imageFileName;
+  void onImageChange;
+
   return (
     <div className="form-card">
       <h3>
@@ -63,32 +68,7 @@ export default function CatalogForm({
             />
           </div>
 
-          <div className="form-group">
-            <label>{t('productImage')}</label>
-            <div className="image-upload-area" id="cat-img-area">
-              <input 
-                type="file" 
-                accept="image/*" 
-                id="cat-image" 
-                onChange={onImageChange}
-              />
-              {!catalogImage ? (
-                <>
-                  <div className="upload-icon">
-                    <Camera size={24} />
-                  </div>
-                  <div className="upload-text">{t('clickToUpload')}</div>
-                </>
-              ) : (
-                <>
-                  <img className="image-preview" src={catalogImage} alt="preview" />
-                  <span className="filename-preview">
-                    {imageFileName.substring(0, 16)}...
-                  </span>
-                </>
-              )}
-            </div>
-          </div>
+
 
           <div className="form-group">
             <label>{t('assignedManufacturerLabel')}</label>

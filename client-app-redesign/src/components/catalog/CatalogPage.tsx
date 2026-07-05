@@ -1,4 +1,4 @@
-import { Package } from 'lucide-react';
+import { Package, Sparkles, Loader2 } from 'lucide-react';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
@@ -31,9 +31,11 @@ export default function CatalogPage({
     actionLoading,
     handleImageChange,
     handleClearForm,
-    handleStartEdit,
     handleSubmit,
-    handleDelete
+    handleDelete,
+    syncEtsyLoading,
+    handleSyncEtsyListings,
+    handleAssignManufacturer
   } = useCatalog();
 
   return (
@@ -42,6 +44,24 @@ export default function CatalogPage({
         <h2 style={{ marginBottom: 0 }}>
           {t('productCatalogTitlePart1')} <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
         </h2>
+        <button
+          className="btn-primary"
+          onClick={handleSyncEtsyListings}
+          disabled={syncEtsyLoading}
+          style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '8px 16px' }}
+        >
+          {syncEtsyLoading ? (
+            <>
+              <Loader2 className="animate-spin" size={14} />
+              Ürünler Çekiliyor...
+            </>
+          ) : (
+            <>
+              <Sparkles size={14} />
+              Etsy Ürünlerini Çek
+            </>
+          )}
+        </button>
       </div>
 
       <CatalogForm
@@ -82,7 +102,8 @@ export default function CatalogPage({
             <CatalogItemCard
               key={p.id}
               product={p}
-              onEdit={handleStartEdit}
+              connections={connections}
+              onAssignMfr={handleAssignManufacturer}
               onDelete={handleDelete}
             />
           ))

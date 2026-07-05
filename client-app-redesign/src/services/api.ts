@@ -632,5 +632,44 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ plan })
     });
+  },
+
+  // ── Etsy Entegrasyonu API Çağrıları ────────────────────────────────────────
+
+  connectEtsy(payload: { keystring: string; sharedSecret: string; callbackUrl: string; frontendUrl: string }): Promise<{ oauthUrl: string }> {
+    return apiCall<{ oauthUrl: string }>('/etsyauth/connect', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  },
+
+  getEtsyConnection(): Promise<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null } | null> {
+    return apiCall<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null } | null>('/etsysync/connection');
+  },
+
+  updateEtsyWebhookSecret(webhookSigningSecret: string | null): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/etsysync/connection/webhook-secret', {
+      method: 'POST',
+      body: JSON.stringify({ webhookSigningSecret })
+    });
+  },
+
+  syncEtsyListings(): Promise<{ count: number; message: string }> {
+    return apiCall<{ count: number; message: string }>('/etsysync/sync-listings', {
+      method: 'POST'
+    });
+  },
+
+  syncEtsyOrders(): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/etsysync/sync-orders', {
+      method: 'POST'
+    });
+  },
+
+  testMockEtsyWebhook(payload: any): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/etsysync/webhook/test-mock', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   }
 };
