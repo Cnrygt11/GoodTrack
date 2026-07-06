@@ -25,6 +25,17 @@ public sealed class PostgresCatalogRepository : ICatalogRepository
 
     public async Task<List<CatalogProduct>> GetCatalogBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
     {
+        // Veritabanı Otomatik İyileştirme (Self-Healing): Geçersiz veya boş ID'li eski hatalı ürünleri temizle
+        var brokenProducts = await _context.CatalogProducts
+            .Where(c => c.SellerId == sellerId && (c.Id == "" || c.Id == null))
+            .ToListAsync(cancellationToken);
+
+        if (brokenProducts.Any())
+        {
+            _context.CatalogProducts.RemoveRange(brokenProducts);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
         return await _context.CatalogProducts
             .AsNoTracking()
             .Where(c => c.SellerId == sellerId)

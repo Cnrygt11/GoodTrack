@@ -304,6 +304,7 @@ public sealed class EtsyService : IEtsyService
 
                         var newProduct = new CatalogProduct
                         {
+                            Id = Guid.NewGuid().ToString(),
                             SellerId = userId,
                             ProductCode = targetProductCode,
                             Image = base64Image,
