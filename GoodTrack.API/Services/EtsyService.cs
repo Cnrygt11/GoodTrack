@@ -464,7 +464,7 @@ public sealed class EtsyService : IEtsyService
                 var refreshed = await RefreshAccessTokenAsync(userId, connection.EtsyShopId, cancellationToken);
                 _logger.LogInformation("Syncing recent Etsy orders for Shop: {ShopName}", refreshed.EtsyShopName);
 
-                var url = $"https://api.etsy.com/v3/application/shops/{refreshed.EtsyShopId}/receipts?was_paid=true&limit=20";
+                var url = $"https://api.etsy.com/v3/application/shops/{refreshed.EtsyShopId}/receipts?status=paid&limit=20";
                 var request = new HttpRequestMessage(HttpMethod.Get, url);
                 request.Headers.Add("x-api-key", $"{refreshed.ApiKeyKeystring}:{refreshed.ApiKeySharedSecret}");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
@@ -703,6 +703,9 @@ public sealed class EtsyService : IEtsyService
 
         [JsonPropertyName("shop_id")]
         public long ShopId { get; set; }
+
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
