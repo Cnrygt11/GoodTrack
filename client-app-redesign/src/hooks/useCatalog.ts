@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -29,6 +29,30 @@ export default function useCatalog() {
   const [extraValues, setExtraValues] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState(false);
   const isActionLoading = useRef(false);
+
+  // Etsy Connection Status for UI
+  const [etsyConnection, setEtsyConnection] = useState<any>(null);
+  const [loadingConnection, setLoadingConnection] = useState(true);
+
+  const fetchEtsyConnection = useCallback(async () => {
+    try {
+      setLoadingConnection(true);
+      const data = await api.getEtsyConnection();
+      if (data && data.isActive) {
+        setEtsyConnection(data);
+      } else {
+        setEtsyConnection(null);
+      }
+    } catch {
+      setEtsyConnection(null);
+    } finally {
+      setLoadingConnection(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchEtsyConnection();
+  }, [fetchEtsyConnection]);
 
   const handleExtraValueChange = useCallback((fieldId: string, val: string) => {
     setExtraValues((prev) => ({ ...prev, [fieldId]: val }));
@@ -219,6 +243,8 @@ export default function useCatalog() {
     handleDelete,
     syncEtsyLoading,
     handleSyncEtsyListings,
-    handleAssignManufacturer
+    handleAssignManufacturer,
+    etsyConnection,
+    loadingConnection
   };
 }

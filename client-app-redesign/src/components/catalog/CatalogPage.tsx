@@ -1,8 +1,10 @@
-import { Package, Sparkles, Loader2 } from 'lucide-react';
+import { Package, Sparkles, Loader2, Store, CheckCircle2 } from 'lucide-react';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
 import { ExtraFieldDef } from '../../services/api';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../../constants/routes';
 
 interface CatalogPageProps {
   extraFieldDefs: ExtraFieldDef[];
@@ -15,6 +17,7 @@ export default function CatalogPage({
   onOpenFieldModal,
   onRemoveField
 }: CatalogPageProps) {
+  const navigate = useNavigate();
   const {
     connections,
     catalogProducts,
@@ -35,7 +38,9 @@ export default function CatalogPage({
     handleDelete,
     syncEtsyLoading,
     handleSyncEtsyListings,
-    handleAssignManufacturer
+    handleAssignManufacturer,
+    etsyConnection,
+    loadingConnection
   } = useCatalog();
 
   return (
@@ -44,24 +49,55 @@ export default function CatalogPage({
         <h2 style={{ marginBottom: 0 }}>
           {t('productCatalogTitlePart1')} <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
         </h2>
-        <button
-          className="btn-primary"
-          onClick={handleSyncEtsyListings}
-          disabled={syncEtsyLoading}
-          style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '8px 16px' }}
-        >
-          {syncEtsyLoading ? (
-            <>
-              <Loader2 className="animate-spin" size={14} />
-              Ürünler Çekiliyor...
-            </>
+        
+        {!loadingConnection && (
+          etsyConnection ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <span style={{ 
+                fontSize: '12px', 
+                color: 'var(--success)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontWeight: 600, 
+                backgroundColor: 'rgba(16, 185, 129, 0.1)', 
+                padding: '6px 12px', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(16, 185, 129, 0.15)' 
+              }}>
+                <CheckCircle2 size={14} />
+                {etsyConnection.shopName} Bağlandı
+              </span>
+              <button
+                className="btn-primary"
+                onClick={handleSyncEtsyListings}
+                disabled={syncEtsyLoading}
+                style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '8px 16px' }}
+              >
+                {syncEtsyLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={14} />
+                    Ürünler Çekiliyor...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={14} />
+                    Etsy Ürünlerini Çek
+                  </>
+                )}
+              </button>
+            </div>
           ) : (
-            <>
-              <Sparkles size={14} />
-              Etsy Ürünlerini Çek
-            </>
-          )}
-        </button>
+            <button
+              className="btn-primary"
+              onClick={() => navigate(ROUTES.sellerProfile + '?tab=integrations')}
+              style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '8px 16px' }}
+            >
+              <Store size={14} />
+              Etsy Mağazasını Bağla
+            </button>
+          )
+        )}
       </div>
 
       <CatalogForm
