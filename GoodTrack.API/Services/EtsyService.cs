@@ -284,6 +284,16 @@ public sealed class EtsyService : IEtsyService
                             existingProduct.ProductCode = targetProductCode;
                             existingProduct.Text = etsyListing.Title;
                             
+                            // Görsel boşsa veya hatalı formatta (data:image içermiyorsa) yeniden çekip güncelle
+                            if (string.IsNullOrEmpty(existingProduct.Image) || !existingProduct.Image.StartsWith("data:image"))
+                            {
+                                var updatedBase64Image = await FetchListingImageAsBase64Async(etsyListing.ListingId.ToString(), refreshed, cancellationToken);
+                                if (!string.IsNullOrEmpty(updatedBase64Image))
+                                {
+                                    existingProduct.Image = updatedBase64Image;
+                                }
+                            }
+
                             if (existingProduct.Extras == null)
                             {
                                 existingProduct.Extras = new Dictionary<string, ExtraValue>();
@@ -573,7 +583,7 @@ public sealed class EtsyService : IEtsyService
             }
 
             var imageBytes = await _httpClient.GetByteArrayAsync(firstImage.Url570xN, cancellationToken);
-            return Convert.ToBase64String(imageBytes);
+            return $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
         }
         catch (Exception ex)
         {
