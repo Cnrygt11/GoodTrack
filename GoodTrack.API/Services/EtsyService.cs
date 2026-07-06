@@ -265,16 +265,37 @@ public sealed class EtsyService : IEtsyService
 
                 if (listingsContainer?.Results != null && listingsContainer.Results.Any())
                 {
+                    var existingProducts = await _context.CatalogProducts
+                        .Where(p => p.SellerId == userId)
+                        .ToListAsync(cancellationToken);
+
                     foreach (var etsyListing in listingsContainer.Results)
                     {
-                        var productCode = $"etsy-{etsyListing.ListingId}";
+                        var sku = await FetchListingSkuAsync(etsyListing.ListingId, refreshed, cancellationToken);
+                        var targetProductCode = !string.IsNullOrEmpty(sku) ? sku : $"etsy-{etsyListing.ListingId}";
 
-                        var existingProduct = await _context.CatalogProducts
-                            .FirstOrDefaultAsync(p => p.SellerId == userId && p.ProductCode == productCode, cancellationToken);
+                        var existingProduct = existingProducts.FirstOrDefault(p =>
+                            (p.Extras != null && p.Extras.TryGetValue("etsy_listing_id", out var val) && val.Value == etsyListing.ListingId.ToString()) ||
+                            p.ProductCode == $"etsy-{etsyListing.ListingId}" ||
+                            p.ProductCode == targetProductCode);
 
                         if (existingProduct != null)
                         {
+                            existingProduct.ProductCode = targetProductCode;
                             existingProduct.Text = etsyListing.Title;
+                            
+                            if (existingProduct.Extras == null)
+                            {
+                                existingProduct.Extras = new Dictionary<string, ExtraValue>();
+                            }
+                            existingProduct.Extras["etsy_listing_id"] = new ExtraValue 
+                            { 
+                                Name = "Etsy Listing ID", 
+                                Type = "text", 
+                                Value = etsyListing.ListingId.ToString() 
+                            };
+
+                            _context.CatalogProducts.Update(existingProduct);
                             importedProducts.Add(existingProduct);
                             continue;
                         }
@@ -284,10 +305,14 @@ public sealed class EtsyService : IEtsyService
                         var newProduct = new CatalogProduct
                         {
                             SellerId = userId,
-                            ProductCode = productCode,
+                            ProductCode = targetProductCode,
                             Image = base64Image,
                             Text = etsyListing.Title,
-                            CreatedAt = DateTime.UtcNow.ToString("o")
+                            CreatedAt = DateTime.UtcNow.ToString("o"),
+                            Extras = new Dictionary<string, ExtraValue>
+                            {
+                                { "etsy_listing_id", new ExtraValue { Name = "Etsy Listing ID", Type = "text", Value = etsyListing.ListingId.ToString() } }
+                            }
                         };
 
                         _context.CatalogProducts.Add(newProduct);
@@ -340,11 +365,12 @@ public sealed class EtsyService : IEtsyService
 
         foreach (var transaction in receipt.Transactions)
         {
-            var productCode = $"etsy-{transaction.ListingId}";
-
-            // Kataloğumuzda bu ürünü bul
+            // Kataloğumuzda bu ürünü bul (SKU veya listing_id fallback ile)
             var catalogProduct = await _context.CatalogProducts
-                .FirstOrDefaultAsync(p => p.SellerId == userId && p.ProductCode == productCode, cancellationToken);
+                .FirstOrDefaultAsync(p => p.SellerId == userId && (
+                    (!string.IsNullOrEmpty(transaction.Sku) && p.ProductCode == transaction.Sku) || 
+                    p.ProductCode == $"etsy-{transaction.ListingId}"
+                ), cancellationToken);
 
             if (catalogProduct == null)
             {
@@ -354,7 +380,7 @@ public sealed class EtsyService : IEtsyService
 
             if (string.IsNullOrEmpty(catalogProduct.ManufacturerId))
             {
-                _logger.LogWarning("Catalog product {ProductCode} has no manufacturer assigned. Skipping order creation.", productCode);
+                _logger.LogWarning("Catalog product {ProductCode} has no manufacturer assigned. Skipping order creation.", catalogProduct.ProductCode);
                 continue;
             }
 
@@ -466,6 +492,34 @@ public sealed class EtsyService : IEtsyService
     }
 
     // ── Yardımcı Metotlar (Helpers) ───────────────────────────────────────────
+
+    private async Task<string?> FetchListingSkuAsync(long listingId, EtsyConnection refreshed, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = $"https://api.etsy.com/v3/application/listings/{listingId}/inventory";
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("x-api-key", $"{refreshed.ApiKeyKeystring}:{refreshed.ApiKeySharedSecret}");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var inventory = JsonSerializer.Deserialize<EtsyInventoryContainer>(json);
+            
+            var firstProduct = inventory?.Products?.FirstOrDefault();
+            return firstProduct?.Sku;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to fetch inventory/SKU for Listing: {ListingId}", listingId);
+            return null;
+        }
+    }
 
     private async Task<(string ShopId, string ShopName)> FetchShopDetailsAsync(string etsyUserId, string keystring, string sharedSecret, string accessToken, CancellationToken cancellationToken)
     {
@@ -678,6 +732,9 @@ public sealed class EtsyService : IEtsyService
         [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
 
+        [JsonPropertyName("sku")]
+        public string? Sku { get; set; }
+
         [JsonPropertyName("variations")]
         public List<EtsyTransactionVariation>? Variations { get; set; }
 
@@ -692,5 +749,17 @@ public sealed class EtsyService : IEtsyService
 
         [JsonPropertyName("formatted_value")]
         public string FormattedValue { get; set; } = string.Empty;
+    }
+
+    private sealed class EtsyInventoryContainer
+    {
+        [JsonPropertyName("products")]
+        public List<EtsyInventoryProduct>? Products { get; set; }
+    }
+
+    private sealed class EtsyInventoryProduct
+    {
+        [JsonPropertyName("sku")]
+        public string? Sku { get; set; }
     }
 }

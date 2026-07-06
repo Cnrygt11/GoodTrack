@@ -194,23 +194,27 @@ public class EtsySyncController : BaseApiController
 
             foreach (var transaction in request.MockReceipt.Transactions)
             {
-                var productCode = $"etsy-{transaction.ListingId}";
+                // Kataloğumuzdaki tüm ürünleri hafızaya çekip in-memory olarak eşleştirelim (SKU desteği için)
+                var allProducts = await _context.CatalogProducts
+                    .Where(p => p.SellerId == userId)
+                    .ToListAsync(cancellationToken);
 
-                // Kataloğumuzda bu ürünü bul
-                var catalogProduct = await _context.CatalogProducts
-                    .FirstOrDefaultAsync(p => p.SellerId == userId && p.ProductCode == productCode, cancellationToken);
+                var catalogProduct = allProducts.FirstOrDefault(p =>
+                    p.ProductCode == $"etsy-{transaction.ListingId}" ||
+                    p.ProductCode == transaction.ListingId.ToString() ||
+                    (p.Extras != null && p.Extras.TryGetValue("etsy_listing_id", out var val) && val.Value == transaction.ListingId.ToString()));
 
                 if (catalogProduct == null)
                 {
                     return BadRequest(ApiResponse.Fail(
-                        $"Listing ID '{transaction.ListingId}' GoodTrack kataloğunda bulunamadı. " +
-                        $"Lütfen önce Etsy ürünlerini kataloğa çekip bu Listing ID'sine sahip ürüne üretici atayınız."));
+                        $"Listing ID '{transaction.ListingId}' veya eşleşen SKU'ya sahip ürün GoodTrack kataloğunda bulunamadı. " +
+                        $"Lütfen önce Etsy ürünlerini kataloğa çekip bu ürüne üretici atayınız."));
                 }
 
                 if (string.IsNullOrEmpty(catalogProduct.ManufacturerId))
                 {
                     return BadRequest(ApiResponse.Fail(
-                        $"Katalogdaki '{productCode}' kodlu test ürününe henüz üretici atanmamış. " +
+                        $"Katalogdaki '{catalogProduct.ProductCode}' kodlu test ürününe henüz üretici atanmamış. " +
                         $"Lütfen katalog sayfasından üretici atayınız."));
                 }
 
