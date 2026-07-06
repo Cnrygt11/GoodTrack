@@ -483,6 +483,7 @@ public sealed class EtsyService : IEtsyService
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        _logger.LogInformation("Raw Etsy shop details response for User ID {UserId}: {JsonResponse}", etsyUserId, json);
         var container = JsonSerializer.Deserialize<EtsyShopsContainer>(json);
 
         var shop = container?.Results?.FirstOrDefault();
