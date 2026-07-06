@@ -287,10 +287,12 @@ export default function EtsyIntegration() {
               </div>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>{connection.shopName}</h4>
-                  <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'var(--success)', fontWeight: 600, border: '1px solid rgba(16, 185, 129, 0.2)' }}>Aktif</span>
+                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={16} />
+                    {connection.shopName} Bağlandı
+                  </h4>
                 </div>
-                <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginTop: '6px' }}>
                   Mağaza ID: {connection.shopId} • Token Bitiş: {new Date(connection.tokenExpiresAt).toLocaleDateString('tr-TR')} {new Date(connection.tokenExpiresAt).toLocaleTimeString('tr-TR')}
                 </span>
               </div>
