@@ -484,10 +484,8 @@ public sealed class EtsyService : IEtsyService
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         _logger.LogInformation("Raw Etsy shop details response for User ID {UserId}: {JsonResponse}", etsyUserId, json);
-        var container = JsonSerializer.Deserialize<EtsyShopsContainer>(json);
-
-        var shop = container?.Results?.FirstOrDefault();
-        if (shop == null)
+        var shop = JsonSerializer.Deserialize<EtsyShopResult>(json);
+        if (shop == null || shop.ShopId == 0)
         {
             throw new InvalidOperationException("Kullanıcıya ait Etsy mağazası bulunamadı.");
         }
