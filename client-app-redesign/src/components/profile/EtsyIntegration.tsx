@@ -95,6 +95,19 @@ export default function EtsyIntegration() {
 
   useEffect(() => {
     fetchConnectionInfo();
+
+    // URL parametrelerini kontrol et (Hata/Başarı durumlarını arayüzde göstermek için)
+    const params = new URLSearchParams(window.location.search);
+    const hasError = params.get('etsy_connected') === 'false';
+    const errorMsg = params.get('error');
+    if (hasError && errorMsg) {
+      setError(decodeURIComponent(errorMsg));
+      window.history.replaceState({}, document.title, window.location.pathname + '?tab=integrations');
+    } else if (params.get('etsy_connected') === 'true') {
+      const shopName = params.get('shop_name');
+      setActionSuccessMessage(shopName ? `${decodeURIComponent(shopName)} mağazası başarıyla bağlandı!` : 'Etsy mağazası başarıyla bağlandı!');
+      window.history.replaceState({}, document.title, window.location.pathname + '?tab=integrations');
+    }
   }, []);
 
   const handleConnect = async (e: React.FormEvent) => {
