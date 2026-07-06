@@ -23,16 +23,16 @@ interface EtsyConnectionInfo {
 
 export default function EtsyIntegration() {
   const [loading, setLoading] = useState(true);
-  const [connection, setConnection] = useState<EtsyConnectionInfo | null>(null);
+  const [connections, setConnections] = useState<EtsyConnectionInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   // Form states for connection
   const [connectLoading, setConnectLoading] = useState(false);
 
-  // Webhook settings states
-  const [webhookSecret, setWebhookSecret] = useState('');
-  const [webhookLoading, setWebhookLoading] = useState(false);
-  const [webhookSuccess, setWebhookSuccess] = useState(false);
+  // Webhook settings states per shop
+  const [webhookSecrets, setWebhookSecrets] = useState<Record<string, string>>({});
+  const [webhookLoadings, setWebhookLoadings] = useState<Record<string, boolean>>({});
+  const [webhookSuccesses, setWebhookSuccesses] = useState<Record<string, boolean>>({});
 
   // Sync actions states
   const [syncListingsLoading, setSyncListingsLoading] = useState(false);
@@ -75,11 +75,15 @@ export default function EtsyIntegration() {
   const fetchConnectionInfo = async () => {
     setLoading(true);
     try {
-      const data = await api.getEtsyConnection();
-      setConnection(data);
-      if (data && data.webhookSigningSecret) {
-        setWebhookSecret(data.webhookSigningSecret);
-      }
+      const data = await api.getEtsyConnections();
+      setConnections(data || []);
+      
+      const secrets: Record<string, string> = {};
+      (data || []).forEach(conn => {
+        secrets[conn.shopId] = conn.webhookSigningSecret || '';
+      });
+      setWebhookSecrets(secrets);
+      
       setError(null);
     } catch (err: any) {
       console.error(err);
@@ -100,7 +104,6 @@ export default function EtsyIntegration() {
 
     try {
       const callbackUrl = getCallbackUrl();
-      // Geri döndüğümüzde profil sayfasının integrations sekmesini açması için parametre ekliyoruz.
       const frontendUrl = `${window.location.origin}/seller/profile?tab=integrations`;
 
       const result = await api.connectEtsy({
@@ -111,7 +114,6 @@ export default function EtsyIntegration() {
       });
 
       if (result && result.oauthUrl) {
-        // Kullanıcıyı Etsy izin ekranına yönlendir
         window.location.href = result.oauthUrl;
       } else {
         throw new Error('OAuth URL alınamadı.');
@@ -122,26 +124,40 @@ export default function EtsyIntegration() {
     }
   };
 
-  const handleUpdateWebhookSecret = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setWebhookLoading(true);
-    setWebhookSuccess(false);
+  const handleUpdateWebhookSecret = async (shopId: string) => {
+    setWebhookLoadings(prev => ({ ...prev, [shopId]: true }));
+    setWebhookSuccesses(prev => ({ ...prev, [shopId]: false }));
     setActionSuccessMessage(null);
 
     try {
-      await api.updateEtsyWebhookSecret(webhookSecret || null);
-      setWebhookSuccess(true);
-      if (connection) {
-        setConnection({
-          ...connection,
-          webhookSigningSecret: webhookSecret || null
-        });
-      }
-      setTimeout(() => setWebhookSuccess(false), 3000);
+      const secret = webhookSecrets[shopId] || '';
+      await api.updateEtsyWebhookSecret(shopId, secret || null);
+      
+      setWebhookSuccesses(prev => ({ ...prev, [shopId]: true }));
+      setConnections(prev => prev.map(c => c.shopId === shopId ? { ...c, webhookSigningSecret: secret || null } : c));
+      
+      setActionSuccessMessage('Webhook imza doğrulama anahtarı başarıyla güncellendi.');
+      setTimeout(() => {
+        setWebhookSuccesses(prev => ({ ...prev, [shopId]: false }));
+        setActionSuccessMessage(null);
+      }, 3000);
     } catch (err: any) {
       setError('Webhook Signing Secret güncellenemedi: ' + err.message);
     } finally {
-      setWebhookLoading(false);
+      setWebhookLoadings(prev => ({ ...prev, [shopId]: false }));
+    }
+  };
+
+  const handleDisconnect = async (shopId: string) => {
+    if (confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
+      try {
+        await api.disconnectEtsyShop(shopId);
+        setConnections(prev => prev.filter(c => c.shopId !== shopId));
+        setActionSuccessMessage('Etsy mağaza bağlantısı başarıyla kesildi.');
+        setTimeout(() => setActionSuccessMessage(null), 3000);
+      } catch (err: any) {
+        setError('Bağlantı kesilirken hata oluştu: ' + err.message);
+      }
     }
   };
 
@@ -191,7 +207,7 @@ export default function EtsyIntegration() {
 
     const payload = {
       event_type: 'order.paid',
-      shop_id: connection?.shopId || 'test-shop',
+      shop_id: connections[0]?.shopId || 'test-shop',
       mock_receipt: {
         receipt_id: parseInt(generatedReceiptId),
         name: mockCustomerName,
@@ -274,55 +290,135 @@ export default function EtsyIntegration() {
           <span style={{ fontSize: '13px', color: 'var(--text)' }}>{actionSuccessMessage}</span>
         </div>
       )}
+      <div className="card" style={{ padding: '24px', border: '1px solid var(--border)', borderRadius: '12px', marginBottom: '24px', backgroundColor: 'var(--bg-card)' }}>
+        <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <PlusCircle size={18} style={{ color: '#F1641E' }} />
+          Yeni Etsy Mağazası Bağla
+        </h4>
+        <div>
+          <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6, margin: '0 0 16px 0' }}>
+            GoodTrack sunucuları aracılığıyla yeni bir Etsy mağazasını saniyeler içinde bağlayabilirsiniz.
+            Aşağıdaki butona tıkladığınızda güvenli bir şekilde Etsy izin ekranına yönlendirileceksiniz.
+          </p>
 
-      {connection ? (
-        // ── BAĞLI DURUM ARAYÜZÜ ──────────────────────────────────────────────
-        <div className="etsy-connected-panel" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          
-          {/* Bağlantı Bilgi Kartı */}
-          <div className="card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', backgroundColor: 'var(--bg-card-glow)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <Store size={24} style={{ color: 'var(--success)' }} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <CheckCircle2 size={16} />
-                    {connection.shopName} Bağlandı
-                  </h4>
-                </div>
-                <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginTop: '6px' }}>
-                  Mağaza ID: {connection.shopId} • Token Bitiş: {new Date(connection.tokenExpiresAt).toLocaleDateString('tr-TR')} {new Date(connection.tokenExpiresAt).toLocaleTimeString('tr-TR')}
-                </span>
-              </div>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '10px' }}>
+          <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button 
-                className="btn-secondary" 
-                onClick={() => {
-                  if (confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
-                    api.updateEtsyWebhookSecret(null).then(() => {
-                      // Bizim backend'de silme endpoint'i yerine isActive = false yapabiliriz
-                      // Bu test için hızlıca mock sıfırlama yapıyoruz
-                      setConnection(null);
-                    });
-                  }
-                }}
-                style={{ fontSize: '13px' }}
+                type="submit" 
+                className="btn-primary" 
+                disabled={connectLoading}
+                style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '10px 20px' }}
               >
-                Bağlantıyı Kes
+                {connectLoading ? <Loader2 className="animate-spin" size={14} /> : <Store size={14} />}
+                Yeni Mağaza Bağla (OAuth)
               </button>
             </div>
-          </div>
+          </form>
+        </div>
+      </div>
+
+      {connections.length > 0 ? (
+        // ── BAĞLI MAĞAZALAR ARAYÜZÜ ──────────────────────────────────────────────
+        <div className="etsy-connected-panel" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          
+          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600 }}>Bağlı Etsy Mağazalarınız ({connections.length})</h4>
+
+          {connections.map((conn) => (
+            <div key={conn.shopId} className="card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '20px', backgroundColor: 'var(--bg-card-glow)' }}>
+              
+              {/* Bağlantı Bilgi Satırı */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'rgba(16, 185, 129, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Store size={24} style={{ color: 'var(--success)' }} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <h4 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 size={16} />
+                        {conn.shopName} Bağlandı
+                      </h4>
+                    </div>
+                    <span style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginTop: '6px' }}>
+                      Mağaza ID: {conn.shopId} • Token Bitiş: {new Date(conn.tokenExpiresAt).toLocaleDateString('tr-TR')} {new Date(conn.tokenExpiresAt).toLocaleTimeString('tr-TR')}
+                    </span>
+                  </div>
+                </div>
+                
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => handleDisconnect(conn.shopId)}
+                  style={{ fontSize: '13px' }}
+                >
+                  Bağlantıyı Kes
+                </button>
+              </div>
+
+              {/* Bu Mağazaya Özel Webhook Ayarı */}
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
+                <h6 style={{ margin: '0 0 12px 0', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Settings size={12} />
+                  Gerçek Zamanlı Webhook Yapılandırması ({conn.shopName})
+                </h6>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>Etsy Webhook Gönderim URL'i</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={getWebhookUrl()} 
+                        style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--bg-input-disabled)', padding: '6px 10px', borderRadius: '6px' }}
+                      />
+                      <button 
+                        type="button" 
+                        className="btn-secondary" 
+                        onClick={() => copyToClipboard(getWebhookUrl())}
+                        style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}
+                      >
+                        {copied ? <CheckCircle2 size={12} style={{ color: 'var(--success)' }} /> : <Copy size={12} />}
+                        {copied ? 'Kopyalandı' : 'Kopyala'}
+                      </button>
+                    </div>
+                    <small style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px', lineHeight: 1.4 }}>
+                      Etsy Developer portalınızda bu mağaza için webhook oluşturup <strong>order.paid</strong> event'ine abone olun.
+                    </small>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginTop: '8px' }}>
+                    <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
+                      <label style={{ fontSize: '11px', display: 'block', marginBottom: '4px' }}>Webhook Signing Secret (İmza Doğrulama Anahtarı)</label>
+                      <input 
+                        type="password" 
+                        placeholder="whsec_..."
+                        value={webhookSecrets[conn.shopId] || ''}
+                        onChange={(e) => setWebhookSecrets(prev => ({ ...prev, [conn.shopId]: e.target.value }))}
+                        style={{ fontSize: '13px', padding: '6px 10px', borderRadius: '6px' }}
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      className="btn-primary" 
+                      disabled={webhookLoadings[conn.shopId]}
+                      onClick={() => handleUpdateWebhookSecret(conn.shopId)}
+                      style={{ fontSize: '12px', padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      {webhookLoadings[conn.shopId] && <Loader2 className="animate-spin" size={12} />}
+                      {webhookSuccesses[conn.shopId] ? 'Kaydedildi!' : 'Anahtarı Kaydet'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          ))}
 
           {/* Hızlı İşlemler */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             <div className="card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: '12px' }}>
-              <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>1. Ürünleri Çek & Eşitle</h5>
+              <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>1. Tüm Mağazaların Ürünlerini Eşitle</h5>
               <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                Etsy mağazanızdaki aktif ürünleri GoodTrack Kataloğuna aktarır. Aktarılan ürünlere katalog sayfasından manuel olarak üretici atamalısınız.
+                Bağlı tüm Etsy mağazalarınızdaki aktif ürünleri GoodTrack Kataloğuna aktarır. Eşitlenen tüm ürünlerin üretici atamalarını katalog sayfasından yapabilirsiniz.
               </p>
               <button 
                 className="btn-primary" 
@@ -331,14 +427,14 @@ export default function EtsyIntegration() {
                 style={{ width: '100%', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E' }}
               >
                 {syncListingsLoading ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-                Etsy Ürünlerini Kataloğa Çek
+                Tüm Ürünleri Kataloğa Çek
               </button>
             </div>
 
             <div className="card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: '12px' }}>
               <h5 style={{ margin: '0 0 8px 0', fontSize: '14px', fontWeight: 600 }}>2. Son Siparişleri Kontrol Et</h5>
               <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
-                Etsy mağazanızda son 24 saat içinde gerçekleşen ve henüz GoodTrack paneline düşmemiş olan siparişleri manuel olarak tarayıp panele aktarır.
+                Tüm bağlı Etsy mağazalarınızda son 24 saat içinde gerçekleşen siparişleri tarar ve henüz panele düşmemiş olanları otomatik olarak panele aktarır.
               </p>
               <button 
                 className="btn-secondary" 
@@ -352,95 +448,12 @@ export default function EtsyIntegration() {
             </div>
           </div>
 
-          {/* Webhook Yapılandırması */}
-          <div className="card" style={{ padding: '20px', border: '1px solid var(--border)', borderRadius: '12px' }}>
-            <h5 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Settings size={14} />
-              Gerçek Zamanlı Webhook Kurulumu
-            </h5>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', color: 'var(--muted)', display: 'block', marginBottom: '6px' }}>Etsy Webhook Gönderim URL'i</label>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input 
-                    type="text" 
-                    readOnly 
-                    value={getWebhookUrl()} 
-                    style={{ flex: 1, fontSize: '12px', fontFamily: 'monospace', backgroundColor: 'var(--bg-input-disabled)' }}
-                  />
-                  <button 
-                    type="button" 
-                    className="btn-secondary" 
-                    onClick={() => copyToClipboard(getWebhookUrl())}
-                    style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    {copied ? <CheckCircle2 size={14} style={{ color: 'var(--success)' }} /> : <Copy size={14} />}
-                    {copied ? 'Kopyalandı' : 'Kopyala'}
-                  </button>
-                </div>
-                <small style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '6px', lineHeight: 1.4 }}>
-                  Etsy Developer portalınızdaki webhook alanına bu URL'i ekleyin ve <strong>order.paid</strong> event'ine abone olun.
-                </small>
-              </div>
-
-              <form onSubmit={handleUpdateWebhookSecret} style={{ borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                <div className="form-group" style={{ marginBottom: '12px' }}>
-                  <label style={{ fontSize: '12px' }}>Webhook Signing Secret (İmza Doğrulama Anahtarı)</label>
-                  <input 
-                    type="password" 
-                    placeholder="whsec_..."
-                    value={webhookSecret}
-                    onChange={(e) => setWebhookSecret(e.target.value)}
-                    style={{ fontSize: '13px' }}
-                  />
-                  <small style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                    Etsy webhook portalında oluşturduğunuz endpoint detaylarından alacağınız <code>whsec_</code> ile başlayan imza doğrulama anahtarını buraya girin.
-                  </small>
-                </div>
-                
-                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <button 
-                    type="submit" 
-                    className="btn-primary" 
-                    disabled={webhookLoading}
-                    style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    {webhookLoading && <Loader2 className="animate-spin" size={12} />}
-                    {webhookSuccess ? 'Kaydedildi!' : 'İmza Anahtarını Kaydet'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-
         </div>
       ) : (
-        // ── BAĞLI OLMAYAN DURUM ARAYÜZÜ (KURULUM) ───────────────────────────
+        // ── BAĞLI OLMAYAN DURUM BİLGİSİ ───────────────────────────
         <div className="etsy-disconnected-panel">
-          <div className="card" style={{ padding: '24px', border: '1px solid var(--border)', borderRadius: '12px', marginBottom: '24px', backgroundColor: 'var(--bg-card)' }}>
-            <h4 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 600 }}>Etsy Mağazanızı GoodTrack'e Bağlayın</h4>
-            
-            <div>
-              <p style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6, margin: '0 0 20px 0' }}>
-                Herhangi bir teknik ayar veya API anahtarına gerek olmadan, GoodTrack platformu aracılığıyla mağazanızı saniyeler içinde bağlayabilirsiniz.
-                Aşağıdaki butona tıkladığınızda güvenli bir şekilde Etsy izin ekranına yönlendirileceksiniz.
-              </p>
-
-              <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                  <button 
-                    type="submit" 
-                    className="btn-primary" 
-                    disabled={connectLoading}
-                    style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '10px 20px' }}
-                  >
-                    {connectLoading ? <Loader2 className="animate-spin" size={14} /> : <Store size={14} />}
-                    Etsy Mağazasını Bağla (OAuth)
-                  </button>
-                </div>
-              </form>
-            </div>
+          <div className="card" style={{ padding: '20px', border: '1px dashed var(--border)', borderRadius: '12px', textAlign: 'center', color: 'var(--muted)', fontSize: '13px' }}>
+            Henüz bağlanmış bir Etsy mağazası bulunmuyor. Yukarıdaki butonu kullanarak ilk mağazanızı bağlayabilirsiniz.
           </div>
         </div>
       )}

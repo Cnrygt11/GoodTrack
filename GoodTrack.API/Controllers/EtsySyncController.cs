@@ -36,8 +36,8 @@ public class EtsySyncController : BaseApiController
         _logger = logger;
     }
 
-    [HttpGet("connection")]
-    public async Task<IActionResult> GetConnection(CancellationToken cancellationToken)
+    [HttpGet("connections")]
+    public async Task<IActionResult> GetConnections(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
@@ -45,19 +45,16 @@ public class EtsySyncController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
-        var connection = await _etsyService.GetConnectionAsync(userId, cancellationToken);
-        if (connection == null || !connection.IsActive)
-        {
-            return Ok(new ApiResponse<object?>(null));
-        }
+        var connections = await _etsyService.GetConnectionsAsync(userId, cancellationToken);
+        var result = connections.Select(c => new { 
+            shopId = c.EtsyShopId, 
+            shopName = c.EtsyShopName,
+            isActive = c.IsActive,
+            tokenExpiresAt = c.TokenExpiresAt,
+            webhookSigningSecret = c.WebhookSigningSecret
+        }).ToList();
 
-        return Ok(new ApiResponse<object>(new { 
-            shopId = connection.EtsyShopId, 
-            shopName = connection.EtsyShopName,
-            isActive = connection.IsActive,
-            tokenExpiresAt = connection.TokenExpiresAt,
-            webhookSigningSecret = connection.WebhookSigningSecret
-        }));
+        return Ok(new ApiResponse<object>(result));
     }
 
     [HttpPost("connection/webhook-secret")]
@@ -69,10 +66,15 @@ public class EtsySyncController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
-        var connection = await _etsyService.GetConnectionAsync(userId, cancellationToken);
+        if (string.IsNullOrEmpty(dto.EtsyShopId))
+        {
+            return BadRequest(ApiResponse.Fail("EtsyShopId zorunludur."));
+        }
+
+        var connection = await _etsyService.GetConnectionAsync(userId, dto.EtsyShopId, cancellationToken);
         if (connection == null)
         {
-            return BadRequest(ApiResponse.Fail("Aktif bir Etsy bağlantısı bulunamadı."));
+            return BadRequest(ApiResponse.Fail("Belirtilen mağaza için aktif bir Etsy bağlantısı bulunamadı."));
         }
 
         connection.WebhookSigningSecret = dto.WebhookSigningSecret;
@@ -81,9 +83,41 @@ public class EtsySyncController : BaseApiController
         return Ok(ApiResponse.Ok("Webhook imza anahtarı başarıyla güncellendi."));
     }
 
+    [HttpPost("connection/disconnect")]
+    public async Task<IActionResult> DisconnectShop([FromBody] DisconnectShopDto dto, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == null)
+        {
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+        }
+
+        if (string.IsNullOrEmpty(dto.EtsyShopId))
+        {
+            return BadRequest(ApiResponse.Fail("EtsyShopId zorunludur."));
+        }
+
+        var connection = await _context.EtsyConnections
+            .FirstOrDefaultAsync(c => c.UserId == userId && c.EtsyShopId == dto.EtsyShopId, cancellationToken);
+
+        if (connection != null)
+        {
+            _context.EtsyConnections.Remove(connection);
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+
+        return Ok(ApiResponse.Ok("Etsy mağaza bağlantısı başarıyla kesildi."));
+    }
+
     public class UpdateWebhookSecretDto
     {
         public string? WebhookSigningSecret { get; set; }
+        public string EtsyShopId { get; set; } = string.Empty;
+    }
+
+    public class DisconnectShopDto
+    {
+        public string EtsyShopId { get; set; } = string.Empty;
     }
 
     [HttpPost("sync-listings")]

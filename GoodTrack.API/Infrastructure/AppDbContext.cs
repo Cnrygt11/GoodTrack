@@ -236,9 +236,9 @@ public sealed class AppDbContext : DbContext
         modelBuilder.Entity<EtsyConnection>(entity =>
         {
             entity.ToTable("etsy_connections");
-            entity.HasKey(e => e.UserId);
+            entity.HasKey(e => new { e.UserId, e.EtsyShopId });
             entity.Property(e => e.UserId).HasMaxLength(100);
-            entity.Property(e => e.EtsyShopId).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.EtsyShopId).HasMaxLength(100);
             entity.Property(e => e.EtsyShopName).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ApiKeyKeystring).IsRequired().HasMaxLength(200);
             entity.Property(e => e.ApiKeySharedSecret).IsRequired().HasMaxLength(200);
@@ -249,8 +249,8 @@ public sealed class AppDbContext : DbContext
             entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
 
             entity.HasOne<User>()
-                  .WithOne()
-                  .HasForeignKey<EtsyConnection>(e => e.UserId)
+                  .WithMany()
+                  .HasForeignKey(e => e.UserId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
     }

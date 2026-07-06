@@ -643,14 +643,21 @@ export const api = {
     });
   },
 
-  getEtsyConnection(): Promise<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null } | null> {
-    return apiCall<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null } | null>('/etsysync/connection');
+  getEtsyConnections(): Promise<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null }[]> {
+    return apiCall<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null }[]>('/etsysync/connections');
   },
 
-  updateEtsyWebhookSecret(webhookSigningSecret: string | null): Promise<{ message: string }> {
+  updateEtsyWebhookSecret(shopId: string, webhookSigningSecret: string | null): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/connection/webhook-secret', {
       method: 'POST',
-      body: JSON.stringify({ webhookSigningSecret })
+      body: JSON.stringify({ etsyShopId: shopId, webhookSigningSecret })
+    });
+  },
+
+  disconnectEtsyShop(shopId: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/etsysync/connection/disconnect', {
+      method: 'POST',
+      body: JSON.stringify({ etsyShopId: shopId })
     });
   },
 

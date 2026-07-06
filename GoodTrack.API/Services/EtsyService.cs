@@ -142,14 +142,13 @@ public sealed class EtsyService : IEtsyService
         // Etsy mağaza detaylarını çek
         var (shopId, shopName) = await FetchShopDetailsAsync(etsyUserId, keystring, sharedSecret, tokenResponse.AccessToken, cancellationToken);
 
-        var connection = await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+        var connection = await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId && c.EtsyShopId == shopId, cancellationToken);
         if (connection == null)
         {
-            connection = new EtsyConnection { UserId = userId };
+            connection = new EtsyConnection { UserId = userId, EtsyShopId = shopId };
             _context.EtsyConnections.Add(connection);
         }
 
-        connection.EtsyShopId = shopId;
         connection.EtsyShopName = shopName;
         connection.ApiKeyKeystring = keystring;
         connection.ApiKeySharedSecret = sharedSecret;
@@ -162,14 +161,14 @@ public sealed class EtsyService : IEtsyService
 
         _logger.LogInformation("Successfully connected Etsy shop {ShopName} ({ShopId}) for user {UserId}", shopName, shopId, userId);
         return connection;
-    }
+     }
 
-    public async Task<EtsyConnection> RefreshAccessTokenAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<EtsyConnection> RefreshAccessTokenAsync(string userId, string shopId, CancellationToken cancellationToken = default)
     {
-        var connection = await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+        var connection = await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId && c.EtsyShopId == shopId, cancellationToken);
         if (connection == null)
         {
-            throw new InvalidOperationException("Etsy connection not found for user.");
+            throw new InvalidOperationException($"Etsy connection not found for user {userId} and shop {shopId}.");
         }
 
         // Eğer token'ın süresi dolmadıysa yenilemeye gerek yok (güvenlik payı olarak son 5 dakika kala yenilenir)
@@ -223,68 +222,83 @@ public sealed class EtsyService : IEtsyService
         return connection;
     }
 
-    public async Task<EtsyConnection?> GetConnectionAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<List<EtsyConnection>> GetConnectionsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        return await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId, cancellationToken);
+        return await _context.EtsyConnections.Where(c => c.UserId == userId).ToListAsync(cancellationToken);
+    }
+
+    public async Task<EtsyConnection?> GetConnectionAsync(string userId, string shopId, CancellationToken cancellationToken = default)
+    {
+        return await _context.EtsyConnections.FirstOrDefaultAsync(c => c.UserId == userId && c.EtsyShopId == shopId, cancellationToken);
     }
 
     public async Task<List<CatalogProduct>> FetchAndImportEtsyListingsAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var connection = await RefreshAccessTokenAsync(userId, cancellationToken);
-        _logger.LogInformation("Fetching Etsy active listings for Shop: {ShopName}", connection.EtsyShopName);
+        var connections = await _context.EtsyConnections
+            .Where(c => c.UserId == userId && c.IsActive)
+            .ToListAsync(cancellationToken);
 
-        var url = $"https://api.etsy.com/v3/application/shops/{connection.EtsyShopId}/listings/active?limit=100";
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("x-api-key", $"{connection.ApiKeyKeystring}:{connection.ApiKeySharedSecret}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", connection.AccessToken);
-
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var err = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to fetch active listings. Status: {Status}, Error: {Error}", response.StatusCode, err);
-            throw new InvalidOperationException("Etsy aktif ürünleri çekilemedi.");
-        }
-
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        var listingsContainer = JsonSerializer.Deserialize<EtsyListingsContainer>(json);
         var importedProducts = new List<CatalogProduct>();
 
-        if (listingsContainer?.Results == null || !listingsContainer.Results.Any())
+        foreach (var connection in connections)
         {
-            return importedProducts;
-        }
-
-        foreach (var etsyListing in listingsContainer.Results)
-        {
-            var productCode = $"etsy-{etsyListing.ListingId}";
-
-            // Mevcut kataloğu kontrol et
-            var existingProduct = await _context.CatalogProducts
-                .FirstOrDefaultAsync(p => p.SellerId == userId && p.ProductCode == productCode, cancellationToken);
-
-            if (existingProduct != null)
+            try
             {
-                // Mevcut katalog ürününün bilgilerini güncelle, üretici atamalarını sıfırlama!
-                existingProduct.Text = etsyListing.Title;
-                importedProducts.Add(existingProduct);
-                continue;
+                var refreshed = await RefreshAccessTokenAsync(userId, connection.EtsyShopId, cancellationToken);
+                _logger.LogInformation("Fetching Etsy active listings for Shop: {ShopName}", refreshed.EtsyShopName);
+
+                var url = $"https://api.etsy.com/v3/application/shops/{refreshed.EtsyShopId}/listings/active?limit=100";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("x-api-key", $"{refreshed.ApiKeyKeystring}:{refreshed.ApiKeySharedSecret}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Failed to fetch active listings for shop {ShopId}. Status: {Status}, Error: {Error}", refreshed.EtsyShopId, response.StatusCode, err);
+                    continue;
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var listingsContainer = JsonSerializer.Deserialize<EtsyListingsContainer>(json);
+
+                if (listingsContainer?.Results != null && listingsContainer.Results.Any())
+                {
+                    foreach (var etsyListing in listingsContainer.Results)
+                    {
+                        var productCode = $"etsy-{etsyListing.ListingId}";
+
+                        var existingProduct = await _context.CatalogProducts
+                            .FirstOrDefaultAsync(p => p.SellerId == userId && p.ProductCode == productCode, cancellationToken);
+
+                        if (existingProduct != null)
+                        {
+                            existingProduct.Text = etsyListing.Title;
+                            importedProducts.Add(existingProduct);
+                            continue;
+                        }
+
+                        var base64Image = await FetchListingImageAsBase64Async(etsyListing.ListingId.ToString(), refreshed, cancellationToken);
+
+                        var newProduct = new CatalogProduct
+                        {
+                            SellerId = userId,
+                            ProductCode = productCode,
+                            Image = base64Image,
+                            Text = etsyListing.Title,
+                            CreatedAt = DateTime.UtcNow.ToString("o")
+                        };
+
+                        _context.CatalogProducts.Add(newProduct);
+                        importedProducts.Add(newProduct);
+                    }
+                }
             }
-
-            // Görseli çek
-            var base64Image = await FetchListingImageAsBase64Async(etsyListing.ListingId.ToString(), connection, cancellationToken);
-
-            var newProduct = new CatalogProduct
+            catch (Exception ex)
             {
-                SellerId = userId,
-                ProductCode = productCode,
-                Image = base64Image,
-                Text = etsyListing.Title,
-                CreatedAt = DateTime.UtcNow.ToString("o")
-            };
-
-            _context.CatalogProducts.Add(newProduct);
-            importedProducts.Add(newProduct);
+                _logger.LogError(ex, "Failed to import listings for shop {ShopId}", connection.EtsyShopId);
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -295,11 +309,7 @@ public sealed class EtsyService : IEtsyService
 
     public async Task ProcessEtsyOrderSyncAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default)
     {
-        var connection = await RefreshAccessTokenAsync(userId, cancellationToken);
-        if (connection.EtsyShopId != shopId)
-        {
-            throw new InvalidOperationException("Etsy Shop ID mismatch for user connection.");
-        }
+        var connection = await RefreshAccessTokenAsync(userId, shopId, cancellationToken);
 
         _logger.LogInformation("Processing Etsy order sync. ReceiptId: {ReceiptId}", receiptId);
 
@@ -406,39 +416,51 @@ public sealed class EtsyService : IEtsyService
 
     public async Task SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var connection = await RefreshAccessTokenAsync(userId, cancellationToken);
-        _logger.LogInformation("Syncing recent Etsy orders for user {UserId}", userId);
+        var connections = await _context.EtsyConnections
+            .Where(c => c.UserId == userId && c.IsActive)
+            .ToListAsync(cancellationToken);
 
-        var url = $"https://api.etsy.com/v3/application/shops/{connection.EtsyShopId}/receipts?was_paid=true&limit=20";
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Add("x-api-key", $"{connection.ApiKeyKeystring}:{connection.ApiKeySharedSecret}");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", connection.AccessToken);
-
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            var err = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to fetch recent receipts. Error: {Error}", err);
-            throw new InvalidOperationException("Etsy sipariş listesi çekilemedi.");
-        }
-
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        var receiptsContainer = JsonSerializer.Deserialize<EtsyReceiptsContainer>(json);
-
-        if (receiptsContainer?.Results == null || !receiptsContainer.Results.Any())
-        {
-            return;
-        }
-
-        foreach (var receipt in receiptsContainer.Results)
+        foreach (var connection in connections)
         {
             try
             {
-                await ProcessEtsyOrderSyncAsync(userId, connection.EtsyShopId, receipt.ReceiptId.ToString(), cancellationToken);
+                var refreshed = await RefreshAccessTokenAsync(userId, connection.EtsyShopId, cancellationToken);
+                _logger.LogInformation("Syncing recent Etsy orders for Shop: {ShopName}", refreshed.EtsyShopName);
+
+                var url = $"https://api.etsy.com/v3/application/shops/{refreshed.EtsyShopId}/receipts?was_paid=true&limit=20";
+                var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Add("x-api-key", $"{refreshed.ApiKeyKeystring}:{refreshed.ApiKeySharedSecret}");
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
+
+                var response = await _httpClient.SendAsync(request, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                {
+                    var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                    _logger.LogError("Failed to fetch recent receipts for shop {ShopId}. Error: {Error}", refreshed.EtsyShopId, err);
+                    continue;
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cancellationToken);
+                var receiptsContainer = JsonSerializer.Deserialize<EtsyReceiptsContainer>(json);
+
+                if (receiptsContainer?.Results != null && receiptsContainer.Results.Any())
+                {
+                    foreach (var receipt in receiptsContainer.Results)
+                    {
+                        try
+                        {
+                            await ProcessEtsyOrderSyncAsync(userId, refreshed.EtsyShopId, receipt.ReceiptId.ToString(), cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error processing sync for Receipt ID: {ReceiptId}", receipt.ReceiptId);
+                        }
+                    }
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing sync for Receipt ID: {ReceiptId}", receipt.ReceiptId);
+                _logger.LogError(ex, "Failed to sync orders for shop {ShopId}", connection.EtsyShopId);
             }
         }
     }
