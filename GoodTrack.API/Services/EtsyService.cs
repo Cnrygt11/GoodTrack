@@ -592,7 +592,7 @@ public sealed class EtsyService : IEtsyService
     private sealed class EtsyShopResult
     {
         [JsonPropertyName("shop_id")]
-        public int ShopId { get; set; }
+        public long ShopId { get; set; }
 
         [JsonPropertyName("shop_name")]
         public string ShopName { get; set; } = string.Empty;
@@ -607,7 +607,7 @@ public sealed class EtsyService : IEtsyService
     private sealed class EtsyListingResult
     {
         [JsonPropertyName("listing_id")]
-        public int ListingId { get; set; }
+        public long ListingId { get; set; }
 
         [JsonPropertyName("title")]
         public string Title { get; set; } = string.Empty;
@@ -634,10 +634,10 @@ public sealed class EtsyService : IEtsyService
     private sealed class EtsyReceipt
     {
         [JsonPropertyName("receipt_id")]
-        public int ReceiptId { get; set; }
+        public long ReceiptId { get; set; }
 
         [JsonPropertyName("shop_id")]
-        public int ShopId { get; set; }
+        public long ShopId { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -670,7 +670,7 @@ public sealed class EtsyService : IEtsyService
     private sealed class EtsyTransaction
     {
         [JsonPropertyName("listing_id")]
-        public int ListingId { get; set; }
+        public long ListingId { get; set; }
 
         [JsonPropertyName("quantity")]
         public int Quantity { get; set; }

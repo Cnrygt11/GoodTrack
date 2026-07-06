@@ -299,7 +299,7 @@ public class EtsySyncController : BaseApiController
     public class MockReceipt
     {
         [JsonPropertyName("receipt_id")]
-        public int ReceiptId { get; set; }
+        public long ReceiptId { get; set; }
 
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
@@ -323,7 +323,7 @@ public class EtsySyncController : BaseApiController
     public class MockTransaction
     {
         [JsonPropertyName("listing_id")]
-        public int ListingId { get; set; }
+        public long ListingId { get; set; }
 
         [JsonPropertyName("quantity")]
         public int Quantity { get; set; }
