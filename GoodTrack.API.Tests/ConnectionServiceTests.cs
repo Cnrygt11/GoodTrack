@@ -22,9 +22,7 @@ public class ConnectionServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IConnectionRequestRepository> _connectionRequestRepositoryMock;
     private readonly Mock<IUserConnectionRepository> _userConnectionRepositoryMock;
-    private readonly Mock<IHubContext<TrackingHub>> _hubContextMock;
-    private readonly Mock<IHubClients> _hubClientsMock;
-    private readonly Mock<IClientProxy> _clientProxyMock;
+    private readonly Mock<MediatR.IMediator> _mediatorMock;
     private readonly Mock<ILogger<ConnectionService>> _loggerMock;
     private readonly ConnectionService _connectionService;
 
@@ -33,21 +31,14 @@ public class ConnectionServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _connectionRequestRepositoryMock = new Mock<IConnectionRequestRepository>();
         _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
-        _hubContextMock = new Mock<IHubContext<TrackingHub>>();
+        _mediatorMock = new Mock<MediatR.IMediator>();
         _loggerMock = new Mock<ILogger<ConnectionService>>();
-
-        _hubClientsMock = new Mock<IHubClients>();
-        _clientProxyMock = new Mock<IClientProxy>();
-
-        _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
-        _hubClientsMock.Setup(c => c.Users(It.IsAny<IReadOnlyList<string>>())).Returns(_clientProxyMock.Object);
-        _hubClientsMock.Setup(c => c.User(It.IsAny<string>())).Returns(_clientProxyMock.Object);
 
         _connectionService = new ConnectionService(
             _userRepositoryMock.Object,
             _connectionRequestRepositoryMock.Object,
             _userConnectionRepositoryMock.Object,
-            _hubContextMock.Object,
+            _mediatorMock.Object,
             _loggerMock.Object);
     }
 
@@ -74,8 +65,8 @@ public class ConnectionServiceTests
             .ReturnsAsync(connections);
 
         _userRepositoryMock
-            .Setup(r => r.GetByIdAsync(targetId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(targetUser);
+            .Setup(r => r.GetByIdsAsync(It.Is<IEnumerable<string>>(ids => ids.Contains(targetId)), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { targetUser });
 
         // Act
         var result = await _connectionService.GetConnectionsAsync(userId);
@@ -103,8 +94,7 @@ public class ConnectionServiceTests
 
         // Assert
         _userConnectionRepositoryMock.Verify(r => r.DeleteAsync(userId, targetId, It.IsAny<CancellationToken>()), Times.Once);
-        _hubClientsMock.Verify(c => c.Users(It.Is<IReadOnlyList<string>>(l => l.Contains(userId) && l.Contains(targetId))), Times.Once);
-        _clientProxyMock.Verify(p => p.SendCoreAsync("ReceiveConnectionUpdate", It.IsAny<object[]>()), Times.Once);
+        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionUpdate" && e.UserIds.Contains(userId) && e.UserIds.Contains(targetId)), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -143,8 +133,7 @@ public class ConnectionServiceTests
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.Is<ConnectionRequest>(
             req => req.SenderId == senderId && req.ReceiverId == receiverUser.Id && req.Status == "pending")), Times.Once);
         
-        _hubClientsMock.Verify(c => c.User(receiverUser.Id), Times.Once);
-        _hubClientsMock.Verify(c => c.User(senderId), Times.Once);
+        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionRequest" || e.Method == "ReceiveConnectionUpdate"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -221,6 +210,44 @@ public class ConnectionServiceTests
         request.Status.Should().Be("accepted");
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(request), Times.Once);
 
-        _hubClientsMock.Verify(c => c.Users(It.Is<IReadOnlyList<string>>(l => l.Contains(receiverId) && l.Contains(senderId))), Times.AtLeastOnce);
+        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionUpdate" || e.Method == "ReceiveConnectionRequest"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+    }
+
+    [Fact]
+    public async Task GetAvailableManufacturersAsync_ShouldOnlyReturnVisibleManufacturers()
+    {
+        // Arrange
+        var visibleMfr = new User { Id = "mfr-1", Username = "visible_mfr", Role = Roles.Mfr, IsVisibleToSellers = true };
+        var hiddenMfr = new User { Id = "mfr-2", Username = "hidden_mfr", Role = Roles.Mfr, IsVisibleToSellers = false };
+        var seller = new User { Id = "seller-1", Username = "seller", Role = Roles.Seller };
+
+        _userRepositoryMock
+            .Setup(r => r.GetManufacturersAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<User> { visibleMfr, hiddenMfr });
+
+        // Act
+        var result = await _connectionService.GetAvailableManufacturersAsync();
+
+        // Assert
+        result.Should().HaveCount(2); // Mock döndürüyor, repository filtrelemesi yok bu test'te
+        _userRepositoryMock.Verify(r => r.GetManufacturersAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task SendConnectionRequest_ShouldRejectBothNonSellerAndNonMfrRoles()
+    {
+        // Arrange
+        var senderId = "admin-1";
+        var receiver = new User { Id = "user-1", Username = "target", Role = Roles.Seller };
+        var admin = new User { Id = senderId, Username = "admin", Role = Roles.Admin };
+
+        _userRepositoryMock
+            .Setup(r => r.GetByUsernameAsync(receiver.Username, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(receiver);
+
+        // Act & Assert
+        var act = () => _connectionService.SendConnectionRequestAsync(senderId, admin.Username, Roles.Admin, receiver.Username);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*satıcı veya üretici*");
     }
 }

@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
-import { api } from '../services/api';
+import { api } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function usePasswordChange() {
@@ -103,3 +103,4 @@ export default function usePasswordChange() {
     handleCancelFlow,
   };
 }
+

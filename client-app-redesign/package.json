@@ -1,5 +1,5 @@
 {
-  "name": "client-app",
+  "name": "client-app-redesign",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -7,10 +7,12 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepare": "cd .. && husky"
   },
   "dependencies": {
     "@microsoft/signalr": "^10.0.0",
+    "@tanstack/react-query": "^5.101.2",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
@@ -26,6 +28,15 @@
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.6.0",
+    "husky": "^8.0.0",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.4",
     "vite": "^8.0.12"
+  },
+  "lint-staged": {
+    "src/**/*.{js,jsx,ts,tsx,json,css}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }

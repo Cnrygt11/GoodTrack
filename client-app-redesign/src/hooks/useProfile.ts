@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
-import { api, UserProfile } from '../services/api';
+import { api, UserProfile } from '../services/apiClient';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -242,3 +242,4 @@ export default function useProfile() {
     handleSaveProfile
   };
 }
+

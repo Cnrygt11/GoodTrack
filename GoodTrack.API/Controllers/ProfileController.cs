@@ -30,7 +30,12 @@ public class ProfileController : BaseApiController
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the profile of the current logged-in user.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetProfile()
     {
         var userId = GetCurrentUserId();
@@ -43,7 +48,13 @@ public class ProfileController : BaseApiController
         return Ok(new ApiResponse<UserProfileDto>(profile));
     }
 
+    /// <summary>
+    /// Retrieves profile details of another user by username (must be a connection).
+    /// </summary>
     [HttpGet("{username}")]
+    [ProducesResponseType(typeof(ApiResponse<UserProfileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProfileByUsername(string username)
     {
         var currentUserId = GetCurrentUserId();
@@ -71,18 +82,19 @@ public class ProfileController : BaseApiController
         return Ok(new ApiResponse<UserProfileDto>(profile));
     }
 
+    /// <summary>
+    /// Updates the current user's profile.
+    /// </summary>
     [HttpPut]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
         {
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
-        }
-
-        if (dto == null)
-        {
-            return BadRequest(ApiResponse.Fail("Profil güncelleme istek verisi eksik."));
         }
 
         await _profileService.UpdateProfileAsync(userId, dto);

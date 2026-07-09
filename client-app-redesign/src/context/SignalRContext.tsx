@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
-import { getHubUrl } from '../services/api';
+import { getHubUrl } from '../services/apiClient';
 import { AUTH_STORAGE_KEYS } from '../constants/authKeys';
 
 const SignalRContext = createContext<HubConnection | null>(null);
@@ -116,3 +116,4 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
 export function useSignalR() {
   return useContext(SignalRContext);
 }
+

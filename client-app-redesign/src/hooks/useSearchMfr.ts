@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { api, UserProfile, ConnectionRequest } from '../services/api';
+import { api, UserProfile, ConnectionRequest } from '../services/apiClient';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -214,3 +214,4 @@ export default function useSearchMfr() {
     completedCount
   };
 }
+

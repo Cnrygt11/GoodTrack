@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import { Send, Info } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -59,3 +59,4 @@ function ActionBtn({ type, onClick, children, icon, fullWidth, bordered }: Actio
     </button>
   );
 }
+

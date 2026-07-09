@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import useConnections from '../../hooks/useConnections';
 import { ArrowLeft, UserPlus, Check, Clock, CheckCircle2, XCircle, Trash2, Loader2, X } from 'lucide-react';
-import { ConnectionRequest } from '../../services/api';
+import { ConnectionRequest } from '../../services/apiClient';
 import styles from './ConnectionsPage.module.css';
 
 export default function ConnectionsPage() {
@@ -277,3 +277,4 @@ export default function ConnectionsPage() {
     </div>
   );
 }
+

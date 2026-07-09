@@ -1,5 +1,5 @@
 import { X, Info, Package } from 'lucide-react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import Modal from '../ui/Modal';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -69,3 +69,4 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
     </Modal>
   );
 }
+

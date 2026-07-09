@@ -1,5 +1,5 @@
 import { X, AlertTriangle } from 'lucide-react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import Modal from '../ui/Modal';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -50,3 +50,4 @@ export default function BrokenDetailsModal({ isOpen, onClose, product }: BrokenD
     </Modal>
   );
 }
+

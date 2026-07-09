@@ -2,7 +2,7 @@ import { Package, Sparkles, Loader2 } from 'lucide-react';
 import useCatalog from '../../hooks/useCatalog';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
-import { ExtraFieldDef } from '../../services/api';
+import { ExtraFieldDef } from '../../services/apiClient';
 
 interface CatalogPageProps {
   extraFieldDefs: ExtraFieldDef[];
@@ -112,3 +112,4 @@ export default function CatalogPage({
     </div>
   );
 }
+

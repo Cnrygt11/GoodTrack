@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Product, api } from '../services/api';
+import { Product, api } from '../services/apiClient';
 import { ListFilter, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
 import { useData } from '../context/DataContext';
@@ -84,3 +84,4 @@ export default function useSellerOrderBadges(
 
   return { unseenIds, badgeCounts, handleMarkSingleAsSeen };
 }
+

@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
-import { api, Product } from '../services/api';
+import { api, Product } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { ORDER_STATUS } from '../utils/constants';
 
@@ -252,3 +252,4 @@ export default function useMfrOrders() {
     filteredProducts
   };
 }
+

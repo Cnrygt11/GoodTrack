@@ -1,11 +1,26 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Models;
+using GoodTrack.API.Infrastructure.Configurations;
+
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace GoodTrack.API.Infrastructure;
 
 public sealed class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+    private readonly IHttpContextAccessor _httpContextAccessor;
+
+    public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
+    {
+        _httpContextAccessor = httpContextAccessor;
+    }
 
     public DbSet<User> Users => Set<User>();
     public DbSet<Product> Products => Set<Product>();
@@ -16,242 +31,165 @@ public sealed class AppDbContext : DbContext
     public DbSet<UserCredit> UserCredits => Set<UserCredit>();
     public DbSet<UserConnection> UserConnections => Set<UserConnection>();
     public DbSet<EtsyConnection> EtsyConnections => Set<EtsyConnection>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         bool isSqlite = Database.ProviderName == "Microsoft.EntityFrameworkCore.Sqlite";
-        
-        // ── User ──────────────────────────────────────────────────────────────
-        modelBuilder.Entity<User>(entity =>
+
+        // Automatically discover and apply all configurations, injecting isSqlite if constructor accepts it
+        var configTypes = typeof(AppDbContext).Assembly.GetTypes()
+            .Where(t => !t.IsAbstract && !t.IsInterface && t.GetInterfaces().Any(gi => gi.IsGenericType && gi.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>)));
+
+        foreach (var type in configTypes)
         {
-            entity.ToTable("users");
-            entity.HasKey(u => u.Id);
-            if (!isSqlite)
-            {
-                entity.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(u => u.Username).IsRequired().HasMaxLength(100);
-            entity.Property(u => u.PasswordHash).IsRequired();
-            entity.Property(u => u.Role).IsRequired().HasMaxLength(20);
-            entity.Property(u => u.Email).HasMaxLength(200);
-            entity.Property(u => u.FirstName).HasMaxLength(100);
-            entity.Property(u => u.LastName).HasMaxLength(100);
-            entity.Property(u => u.PhoneNumber).HasMaxLength(20);
-            entity.Property(u => u.City).HasMaxLength(100);
-            entity.Property(u => u.Bio).HasMaxLength(1000);
-            entity.Property(u => u.CreatedAt).HasMaxLength(50);
-            entity.Property(u => u.VerificationToken).HasMaxLength(200);
-            entity.Property(u => u.VerificationTokenExpiresAt).HasMaxLength(50);
-            entity.Property(u => u.RefreshToken).HasMaxLength(500);
-            entity.Property(u => u.RefreshTokenExpiryTime);
-            // PostgreSQL native text[] arrays
-            if (!isSqlite)
-            {
-                entity.Property(u => u.Keywords).HasColumnType("text[]");
-                entity.Property(u => u.ProductImages).HasColumnType("text[]");
-                entity.Property(u => u.RowVersion).IsRowVersion();
-            }
-            // Unique index
-            entity.HasIndex(u => u.Username).IsUnique();
-            entity.HasIndex(u => u.Email).IsUnique();
-        });
+            var constructor = type.GetConstructor(new[] { typeof(bool) });
+            object configInstance = constructor != null
+                ? constructor.Invoke(new object[] { isSqlite })
+                : Activator.CreateInstance(type)!;
 
-        // ── Product ───────────────────────────────────────────────────────────
-        modelBuilder.Entity<Product>(entity =>
+            var entityType = type.GetInterfaces()
+                .First(gi => gi.IsGenericType && gi.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>))
+                .GetGenericArguments()[0];
+
+            var applyMethod = typeof(ModelBuilder)
+                .GetMethods()
+                .First(m => m.Name == nameof(ModelBuilder.ApplyConfiguration) 
+                            && m.GetParameters().Length == 1 
+                            && m.GetParameters()[0].ParameterType.IsGenericType 
+                            && m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>))
+                .MakeGenericMethod(entityType);
+
+            applyMethod.Invoke(modelBuilder, new[] { configInstance });
+        }
+    }
+
+    public override int SaveChanges()
+    {
+        var auditEntries = OnBeforeSaveChanges();
+        var result = base.SaveChanges();
+        OnAfterSaveChanges(auditEntries);
+        return result;
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var auditEntries = OnBeforeSaveChanges();
+        var result = await base.SaveChangesAsync(cancellationToken);
+        await OnAfterSaveChangesAsync(auditEntries);
+        return result;
+    }
+
+    private List<AuditEntry> OnBeforeSaveChanges()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<AuditEntry>();
+
+        foreach (var entry in ChangeTracker.Entries())
         {
-            entity.ToTable("products");
-            entity.HasKey(p => p.Id);
-            if (!isSqlite)
-            {
-                entity.Property(p => p.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(p => p.Code).IsRequired().HasMaxLength(100);
-            entity.Property(p => p.Status).IsRequired().HasMaxLength(50);
-            entity.Property(p => p.SellerId).IsRequired().HasMaxLength(100);
-            entity.Property(p => p.ManufacturerId).IsRequired().HasMaxLength(100);
-            entity.Property(p => p.SellerName).HasMaxLength(200);
-            entity.Property(p => p.ManufacturerName).HasMaxLength(200);
-            entity.Property(p => p.CreatedAt).IsRequired();
-            entity.Property(p => p.CompletedAt);
-            entity.Property(p => p.Text).HasMaxLength(1000);
-            entity.Property(p => p.Length).HasMaxLength(50);
-            entity.Property(p => p.DefectNote).HasMaxLength(1000);
-            // JSONB columns for nested structures
-            if (!isSqlite)
-            {
-                entity.Property(p => p.Extras).HasColumnType("jsonb");
-                entity.Property(p => p.Logs).HasColumnType("jsonb");
-            }
-            else
-            {
-                var jsonOptions = new System.Text.Json.JsonSerializerOptions();
-                entity.Property(p => p.Extras).HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
-                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, ExtraValue>>(v, jsonOptions) ?? new Dictionary<string, ExtraValue>()
-                );
-                entity.Property(p => p.Logs).HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
-                    v => System.Text.Json.JsonSerializer.Deserialize<List<OrderLog>>(v, jsonOptions) ?? new List<OrderLog>()
-                );
-            }
-            // Indexes
-            entity.HasIndex(p => p.SellerId);
-            entity.HasIndex(p => p.ManufacturerId);
-        });
+            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
 
-        // ── CatalogProduct ────────────────────────────────────────────────────
-        modelBuilder.Entity<CatalogProduct>(entity =>
+            var auditEntry = new AuditEntry(entry)
+            {
+                TableName = entry.Metadata.GetTableName() ?? entry.Metadata.Name,
+                Action = entry.State.ToString()
+            };
+
+            auditEntries.Add(auditEntry);
+
+            foreach (var property in entry.Properties)
+            {
+                string propertyName = property.Metadata.Name;
+                if (property.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[propertyName] = property.CurrentValue ?? "NULL";
+                    continue;
+                }
+
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        auditEntry.NewValues[propertyName] = property.CurrentValue ?? "NULL";
+                        break;
+
+                    case EntityState.Deleted:
+                        auditEntry.OldValues[propertyName] = property.OriginalValue ?? "NULL";
+                        break;
+
+                    case EntityState.Modified:
+                        if (property.IsModified)
+                        {
+                            auditEntry.OldValues[propertyName] = property.OriginalValue ?? "NULL";
+                            auditEntry.NewValues[propertyName] = property.CurrentValue ?? "NULL";
+                        }
+                        break;
+                }
+            }
+        }
+
+        return auditEntries.Where(_ => _.HasAuditData).ToList();
+    }
+
+    private void OnAfterSaveChanges(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0) return;
+
+        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        foreach (var auditEntry in auditEntries)
         {
-            entity.ToTable("catalog_products");
-            entity.HasKey(c => c.Id);
-            if (!isSqlite)
-            {
-                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(c => c.SellerId).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.ProductCode).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.ManufacturerId).HasMaxLength(100);
-            entity.Property(c => c.ManufacturerName).HasMaxLength(200);
-            entity.Property(c => c.Text).HasMaxLength(1000);
-            entity.Property(c => c.Length).HasMaxLength(50);
-            entity.Property(c => c.CreatedAt).HasMaxLength(50);
-            if (!isSqlite)
-            {
-                entity.Property(c => c.Extras).HasColumnType("jsonb");
-            }
-            else
-            {
-                var jsonOptions = new System.Text.Json.JsonSerializerOptions();
-                entity.Property(c => c.Extras).HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, jsonOptions),
-                    v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, ExtraValue>>(v, jsonOptions) ?? new Dictionary<string, ExtraValue>()
-                );
-            }
-            entity.HasIndex(c => c.SellerId);
-            entity.HasIndex(c => new { c.SellerId, c.ProductCode }).IsUnique();
-        });
+            AuditLogs.Add(auditEntry.ToAuditLog(userId));
+        }
+        base.SaveChanges();
+    }
 
-        // ── ConnectionRequest ─────────────────────────────────────────────────
-        modelBuilder.Entity<ConnectionRequest>(entity =>
+    private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0) return;
+
+        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        foreach (var auditEntry in auditEntries)
         {
-            entity.ToTable("connection_requests");
-            entity.HasKey(r => r.Id);
-            if (!isSqlite)
-            {
-                entity.Property(r => r.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(r => r.SenderId).IsRequired().HasMaxLength(100);
-            entity.Property(r => r.SenderUsername).HasMaxLength(100);
-            entity.Property(r => r.ReceiverId).IsRequired().HasMaxLength(100);
-            entity.Property(r => r.ReceiverUsername).HasMaxLength(100);
-            entity.Property(r => r.Status).IsRequired().HasMaxLength(20).HasDefaultValue("pending");
-            entity.Property(r => r.CreatedAt).HasMaxLength(50);
-            entity.HasIndex(r => r.ReceiverId);
-            entity.HasIndex(r => r.SenderId);
-        });
+            AuditLogs.Add(auditEntry.ToAuditLog(userId));
+        }
+        await base.SaveChangesAsync();
+    }
 
-        // ── ExtraFieldDef ─────────────────────────────────────────────────────
-        modelBuilder.Entity<ExtraFieldDef>(entity =>
+    // Değişiklikleri geçici tutan yardımcı iç sınıf
+    private class AuditEntry
+    {
+        public Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry { get; }
+        public string TableName { get; set; } = string.Empty;
+        public string Action { get; set; } = string.Empty;
+        public Dictionary<string, object> KeyValues { get; } = new();
+        public Dictionary<string, object> OldValues { get; } = new();
+        public Dictionary<string, object> NewValues { get; } = new();
+        public bool HasAuditData => KeyValues.Any() || OldValues.Any() || NewValues.Any();
+
+        public AuditEntry(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
         {
-            entity.ToTable("extra_field_defs");
-            entity.HasKey(f => f.Id);
-            if (!isSqlite)
-            {
-                entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(f => f.Name).IsRequired().HasMaxLength(100);
-            entity.Property(f => f.Type).IsRequired().HasMaxLength(50);
-            entity.Property(f => f.CreatedBy).HasMaxLength(100);
-            if (!isSqlite)
-            {
-                entity.Property(f => f.Options).HasColumnType("text[]");
-            }
-            entity.HasIndex(f => f.CreatedBy);
-        });
+            Entry = entry;
+        }
 
-        // ── Feedback ──────────────────────────────────────────────────────────
-        modelBuilder.Entity<Feedback>(entity =>
+        public AuditLog ToAuditLog(string? userId)
         {
-            entity.ToTable("feedbacks");
-            entity.HasKey(f => f.Id);
-            if (!isSqlite)
+            var options = new JsonSerializerOptions { WriteIndented = false };
+            return new AuditLog
             {
-                entity.Property(f => f.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(f => f.UserId).HasMaxLength(100);
-            entity.Property(f => f.Username).HasMaxLength(100);
-            entity.Property(f => f.Role).HasMaxLength(20);
-            entity.Property(f => f.Title).IsRequired().HasMaxLength(100);
-            entity.Property(f => f.Message).IsRequired().HasMaxLength(2000);
-            entity.Property(f => f.BrowserInfo).HasMaxLength(500);
-            entity.Property(f => f.CreatedAt).HasMaxLength(50);
-        });
-
-        // ── UserCredit ────────────────────────────────────────────────────────
-        modelBuilder.Entity<UserCredit>(entity =>
-        {
-            entity.ToTable("user_credits");
-            entity.HasKey(c => c.Id);
-            if (!isSqlite)
-            {
-                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(c => c.UserId).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.Plan).IsRequired().HasMaxLength(50);
-            entity.Property(c => c.Credits).IsRequired();
-            entity.Property(c => c.PlanStartedAt).IsRequired();
-            entity.Property(c => c.RenewsAt).IsRequired();
-
-            entity.HasIndex(c => c.UserId).IsUnique();
-
-            if (!isSqlite)
-            {
-                entity.Property(c => c.RowVersion).IsRowVersion();
-            }
-
-            entity.HasOne<User>()
-                  .WithOne()
-                  .HasForeignKey<UserCredit>(c => c.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        // ── UserConnection ───────────────────────────────────────────────────
-        modelBuilder.Entity<UserConnection>(entity =>
-        {
-            entity.ToTable("user_connections");
-            entity.HasKey(c => c.Id);
-            if (!isSqlite)
-            {
-                entity.Property(c => c.Id).HasDefaultValueSql("gen_random_uuid()::text");
-            }
-            entity.Property(c => c.SellerId).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.ManufacturerId).IsRequired().HasMaxLength(100);
-            entity.Property(c => c.ConnectedAt).IsRequired();
-            entity.HasIndex(c => new { c.SellerId, c.ManufacturerId }).IsUnique();
-        });
-
-        // ── EtsyConnection ───────────────────────────────────────────────────
-        modelBuilder.Entity<EtsyConnection>(entity =>
-        {
-            entity.ToTable("etsy_connections");
-            entity.HasKey(e => new { e.UserId, e.EtsyShopId });
-            entity.Property(e => e.UserId).HasMaxLength(100);
-            entity.Property(e => e.EtsyShopId).HasMaxLength(100);
-            entity.Property(e => e.EtsyShopName).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.ApiKeyKeystring).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.ApiKeySharedSecret).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.AccessToken).IsRequired().HasMaxLength(1000);
-            entity.Property(e => e.RefreshToken).IsRequired().HasMaxLength(1000);
-            entity.Property(e => e.TokenExpiresAt).IsRequired();
-            entity.Property(e => e.WebhookSigningSecret).HasMaxLength(200);
-            entity.Property(e => e.IsActive).IsRequired().HasDefaultValue(true);
-
-            entity.HasOne<User>()
-                  .WithMany()
-                  .HasForeignKey(e => e.UserId)
-                  .OnDelete(DeleteBehavior.Cascade);
-        });
+                Id = Guid.NewGuid().ToString(),
+                UserId = userId,
+                EntityName = TableName,
+                Action = Action,
+                Timestamp = DateTime.UtcNow,
+                KeyValues = JsonSerializer.Serialize(KeyValues, options),
+                OldValues = OldValues.Any() ? JsonSerializer.Serialize(OldValues, options) : null,
+                NewValues = NewValues.Any() ? JsonSerializer.Serialize(NewValues, options) : null
+            };
+        }
     }
 }
+

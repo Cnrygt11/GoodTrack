@@ -10,13 +10,16 @@ using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
 
+using MediatR;
+using GoodTrack.API.Features.Common.Events;
+
 namespace GoodTrack.API.Services;
 
 public sealed class OrderWorkflowService : IOrderWorkflowService
 {
     private readonly IProductRepository _productRepository;
     private readonly ICatalogRepository _catalogRepository;
-    private readonly IHubContext<TrackingHub> _hubContext;
+    private readonly IMediator _mediator;
     private readonly IImageStorageService _imageStorageService;
     private readonly ICreditsService _creditsService;
     private readonly ILogger<OrderWorkflowService> _logger;
@@ -25,14 +28,14 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     public OrderWorkflowService(
         IProductRepository productRepository, 
         ICatalogRepository catalogRepository,
-        IHubContext<TrackingHub> hubContext,
+        IMediator mediator,
         IImageStorageService imageStorageService,
         ICreditsService creditsService,
         ILogger<OrderWorkflowService> logger)
     {
         _productRepository = productRepository;
         _catalogRepository = catalogRepository;
-        _hubContext = hubContext;
+        _mediator = mediator;
         _imageStorageService = imageStorageService;
         _creditsService = creditsService;
         _logger = logger;
@@ -429,11 +432,11 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         try
         {
-            await _hubContext.Clients.Users(userIds).SendAsync(method);
+            await _mediator.Publish(new UserNotificationEvent(userIds, method));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "SignalR notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
+            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
         }
     }
 }

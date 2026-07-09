@@ -24,6 +24,20 @@ public sealed class PostgresUserRepository : IUserRepository
         return await _context.Users.FindAsync(new object?[] { id }, cancellationToken);
     }
 
+    public async Task<List<User>> GetByIdsAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids?.Where(id => !string.IsNullOrWhiteSpace(id)).Distinct().ToList() ?? new List<string>();
+        if (idList.Count == 0)
+        {
+            return new List<User>();
+        }
+
+        return await _context.Users
+            .AsNoTracking()
+            .Where(u => idList.Contains(u.Id))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default)
     {
         return await _context.Users
@@ -42,7 +56,7 @@ public sealed class PostgresUserRepository : IUserRepository
     {
         return await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == Roles.Mfr)
+            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers)
             .ToListAsync(cancellationToken);
     }
 

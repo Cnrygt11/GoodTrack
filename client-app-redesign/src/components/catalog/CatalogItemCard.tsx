@@ -1,6 +1,6 @@
 import React from 'react';
 import { Package, Trash2, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { CatalogProduct, ConnectionUser } from '../../services/api';
+import { CatalogProduct, ConnectionUser } from '../../services/apiClient';
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
 
@@ -92,7 +92,7 @@ export default function CatalogItemCard({
               await onAssignMfr(product.id, val);
               setSaveStatus('saved');
               setTimeout(() => setSaveStatus('idle'), 1500);
-            } catch (err: any) {
+            } catch (err: unknown) {
               setSaveStatus('idle');
             }
           }}
@@ -153,3 +153,4 @@ export default function CatalogItemCard({
     </div>
   );
 }
+

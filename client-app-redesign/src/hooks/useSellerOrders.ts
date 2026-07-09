@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, FormEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useData } from '../context/DataContext';
 import { useSettings } from '../context/SettingsContext';
-import { Product } from '../services/api';
+import { Product } from '../services/apiClient';
 import { ListFilter, SellerTabId, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
 import useSellerOrderBadges from './useSellerOrderBadges';
@@ -187,3 +187,4 @@ export default function useSellerOrders() {
     isBrokenModalOpen, selectedBrokenProduct, openBrokenDetails, closeBrokenDetails,
   };
 }
+

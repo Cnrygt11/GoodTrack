@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,12 @@ public class FieldsController : BaseApiController
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves all dynamic field definitions.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<List<ExtraFieldDefResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetAll()
     {
         var userId = GetCurrentUserId();
@@ -38,7 +44,13 @@ public class FieldsController : BaseApiController
         return Ok(new ApiResponse<List<ExtraFieldDefResponseDto>>(response));
     }
 
+    /// <summary>
+    /// Creates a new dynamic field definition.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<ExtraFieldDefResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateExtraFieldDefDto dto)
     {
         var userId = GetCurrentUserId();
@@ -47,17 +59,18 @@ public class FieldsController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
-        if (dto == null)
-        {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
-        }
-
         _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, dto.Name);
         var response = await _fieldService.CreateFieldDefAsync(userId, dto);
-        return Created(string.Empty, new ApiResponse<object>(new { field = response, message = "Yeni özellik başarıyla eklendi." }));
+        return Created(string.Empty, new ApiResponse<ExtraFieldDefResponseDto>(response, "Yeni özellik başarıyla eklendi."));
     }
 
+    /// <summary>
+    /// Deletes a dynamic field definition.
+    /// </summary>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string id)
     {
         var userId = GetCurrentUserId();

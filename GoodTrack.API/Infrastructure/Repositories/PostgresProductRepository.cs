@@ -65,12 +65,6 @@ public sealed class PostgresProductRepository : IProductRepository
         }
     }
 
-    public Task<int> MigrateStatusesAsync()
-    {
-        // Not applicable for PostgreSQL — returns 0
-        return Task.FromResult(0);
-    }
-
     public async Task MarkProductsAsReadAsync(string userId, string role, string status, CancellationToken cancellationToken = default)
     {
         var query = _context.Products.AsQueryable();

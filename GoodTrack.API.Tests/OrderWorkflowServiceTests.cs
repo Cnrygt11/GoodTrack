@@ -20,31 +20,22 @@ public class OrderWorkflowServiceTests
 {
     private readonly Mock<IProductRepository> _productRepositoryMock;
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
-    private readonly Mock<IHubContext<TrackingHub>> _hubContextMock;
     private readonly Mock<IImageStorageService> _imageStorageServiceMock;
     private readonly Mock<ICreditsService> _creditsServiceMock;
-    private readonly Mock<IHubClients> _hubClientsMock;
-    private readonly Mock<IClientProxy> _clientProxyMock;
     private readonly OrderWorkflowService _workflowService;
 
     public OrderWorkflowServiceTests()
     {
         _productRepositoryMock = new Mock<IProductRepository>();
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
-        _hubContextMock = new Mock<IHubContext<TrackingHub>>();
+        var mediatorMock = new Mock<MediatR.IMediator>();
         _imageStorageServiceMock = new Mock<IImageStorageService>();
         _creditsServiceMock = new Mock<ICreditsService>();
-
-        _hubClientsMock = new Mock<IHubClients>();
-        _clientProxyMock = new Mock<IClientProxy>();
-        
-        _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
-        _hubClientsMock.Setup(c => c.Users(It.IsAny<IReadOnlyList<string>>())).Returns(_clientProxyMock.Object);
 
         _workflowService = new OrderWorkflowService(
             _productRepositoryMock.Object,
             _catalogRepositoryMock.Object,
-            _hubContextMock.Object,
+            mediatorMock.Object,
             _imageStorageServiceMock.Object,
             _creditsServiceMock.Object,
             Mock.Of<ILogger<OrderWorkflowService>>());

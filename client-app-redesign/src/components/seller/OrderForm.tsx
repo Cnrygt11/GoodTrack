@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExtraFieldDef, ConnectionUser } from '../../services/api';
+import { ExtraFieldDef, ConnectionUser } from '../../services/apiClient';
 import { TranslationKey } from '../../services/translations';
 import { Camera, Plus, Send, CheckCircle2, X, Loader2 } from 'lucide-react';
 
@@ -197,3 +197,4 @@ export default function OrderForm({
     </>
   );
 }
+

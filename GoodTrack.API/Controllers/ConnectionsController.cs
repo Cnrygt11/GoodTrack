@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Auth;
 using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.Constants;
 
 namespace GoodTrack.API.Controllers;
 
@@ -106,12 +107,12 @@ public class ConnectionsController : BaseApiController
 
         _logger.LogInformation("User {UserId} is updating connection request {RequestId} to status: {Status}", userId, requestId, dto.Status);
 
-        if (dto.Status.Equals("accepted", StringComparison.OrdinalIgnoreCase))
+        if (dto.Status.Equals(ConnectionRequestStatus.Accepted, StringComparison.OrdinalIgnoreCase))
         {
             await _connectionService.AcceptConnectionRequestAsync(userId, requestId);
             return Ok(ApiResponse.Ok("Bağlantı başarıyla kuruldu."));
         }
-        else if (dto.Status.Equals("rejected", StringComparison.OrdinalIgnoreCase))
+        else if (dto.Status.Equals(ConnectionRequestStatus.Rejected, StringComparison.OrdinalIgnoreCase))
         {
             await _connectionService.RejectConnectionRequestAsync(userId, requestId);
             return Ok(ApiResponse.Ok("Bağlantı isteği reddedildi."));

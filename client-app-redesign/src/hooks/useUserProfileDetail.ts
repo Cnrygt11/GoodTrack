@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { api, UserProfile } from '../services/api';
+import { api, UserProfile } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useUserProfileDetail(username: string | undefined) {
@@ -40,3 +40,4 @@ export default function useUserProfileDetail(username: string | undefined) {
     t,
   };
 }
+

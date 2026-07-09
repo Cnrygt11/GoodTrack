@@ -4,7 +4,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, UserProfile, ConnectionRequest, ConnectionUser } from '../services/api';
+import { api, UserProfile, ConnectionRequest, ConnectionUser } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useConnections() {
@@ -250,3 +250,4 @@ export default function useConnections() {
     handleSendConnectionFromSearch
   };
 }
+

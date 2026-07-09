@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, Product } from '../services/api';
+import { api, Product } from '../services/apiClient';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -289,3 +289,4 @@ export default function useSellerOrderActions(
     handleDefectClick, handleDefectImageChange, handleDefectReportSubmit,
   };
 }
+

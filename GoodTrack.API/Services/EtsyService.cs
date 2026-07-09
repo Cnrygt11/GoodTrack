@@ -648,12 +648,6 @@ public sealed class EtsyService : IEtsyService
         public string RefreshToken { get; set; } = string.Empty;
     }
 
-    private sealed class EtsyShopsContainer
-    {
-        [JsonPropertyName("results")]
-        public List<EtsyShopResult>? Results { get; set; }
-    }
-
     private sealed class EtsyShopResult
     {
         [JsonPropertyName("shop_id")]

@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef, SubscriptionPlanDetail } from '../services/api';
+import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef, SubscriptionPlanDetail } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 interface DataContextType {
@@ -488,3 +488,4 @@ export function useData() {
   if (!context) throw new Error('useData must be used within DataProvider');
   return context;
 }
+

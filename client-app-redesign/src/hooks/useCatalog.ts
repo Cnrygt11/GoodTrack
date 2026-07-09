@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
-import { api, CatalogProduct, ExtraFieldValue } from '../services/api';
+import { api, CatalogProduct, ExtraFieldValue } from '../services/apiClient';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -173,7 +173,7 @@ export default function useCatalog() {
       const res = await api.syncEtsyListings();
       showToast(res.message || 'Etsy ürünleri başarıyla çekildi.');
       await loadCatalog();
-    } catch (err: any) {
+    } catch (err: unknown) {
       showToast(extractErrorMessage(err) || 'Etsy ürünleri çekilirken hata oluştu.');
     } finally {
       setSyncEtsyLoading(false);
@@ -224,3 +224,4 @@ export default function useCatalog() {
     handleAssignManufacturer
   };
 }
+

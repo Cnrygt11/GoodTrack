@@ -1,5 +1,5 @@
 import { Plus, Save, Loader2, X } from 'lucide-react';
-import { CatalogProduct, ConnectionUser, ExtraFieldDef } from '../../services/api';
+import { CatalogProduct, ConnectionUser, ExtraFieldDef } from '../../services/apiClient';
 import { TranslationKey } from '../../services/translations';
 
 interface CatalogFormProps {
@@ -176,3 +176,4 @@ export default function CatalogForm({
     </div>
   );
 }
+

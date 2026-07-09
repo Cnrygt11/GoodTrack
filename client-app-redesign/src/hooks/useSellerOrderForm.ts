@@ -5,7 +5,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../constants/routes';
-import { api, Product, ExtraFieldValue, CreateProductPayload, ApiError } from '../services/api';
+import { api, Product, ExtraFieldValue, CreateProductPayload, ApiError } from '../services/apiClient';
 import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { SellerTabId } from '../types/orders';
@@ -409,3 +409,4 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     handleSubmit, handleAddFieldSubmit, handleRemoveField, handleDeleteClick,
   };
 }
+

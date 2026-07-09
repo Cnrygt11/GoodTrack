@@ -1,4 +1,4 @@
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { ORDER_STATUS } from '../../utils/constants';
@@ -114,3 +114,4 @@ export default function OrderDetailsPreview({
     </div>
   );
 }
+

@@ -14,6 +14,9 @@ using GoodTrack.API.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Formatting.Compact;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using GoodTrack.API.Validators;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -35,6 +38,15 @@ try
 
     // Add services to the container.
     builder.Services.AddControllers();
+    builder.Services.AddHttpContextAccessor();
+
+    // Register MediatR assembly scanning
+    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+
+    // Register FluentValidation Auto Validation
+    builder.Services.AddFluentValidationAutoValidation();
+    builder.Services.AddValidatorsFromAssemblyContaining<FeedbackInputDtoValidator>();
+
     builder.Services.AddOpenApi(options =>
     {
         options.AddDocumentTransformer((document, context, cancellationToken) =>
@@ -112,21 +124,23 @@ try
     builder.Services.AddHttpClient();
     builder.Services.AddScoped<IEtsyService, EtsyService>();
 
-    const string DefaultDevelopmentJwtKey = "GoodTrackProductionTrackingSystemSuperSecretKey2026!";
-
     // Configure JWT Authentication
     var jwtSection = builder.Configuration.GetSection("Jwt");
-    // Prefer JWT_KEY env var for production security (Render.com env vars override appsettings)
+    // Prefer JWT_KEY env var for production security (Render.com env vars override appsettings).
+    // In Development the key is read from user-secrets / appsettings; no secret is hardcoded in source.
     var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? jwtSection["Key"];
-    if (string.IsNullOrEmpty(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
+    if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
     {
-        throw new InvalidOperationException("FATAL: JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
+        throw new InvalidOperationException(
+            "FATAL: JWT signing key is not configured. Set the 'JWT_KEY' environment variable, " +
+            "or configure 'Jwt:Key' via user-secrets (development) / environment variables (production).");
     }
 
-    // Ensure default development key is not used in production
-    if (builder.Environment.IsProduction() && jwtKey == DefaultDevelopmentJwtKey)
+    // Enforce a minimum key strength in production instead of comparing against a hardcoded default.
+    if (builder.Environment.IsProduction() && jwtKey.Length < 32)
     {
-        throw new InvalidOperationException("FATAL: Default JWT signing key cannot be used in a production environment. Please set a secure 'Jwt:Key' via environment variable.");
+        throw new InvalidOperationException(
+            "FATAL: JWT signing key is too weak for production. Provide a key of at least 32 characters via the 'JWT_KEY' environment variable.");
     }
 
     var jwtIssuer = jwtSection["Issuer"] ?? "GoodTrack.API";

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { api, Product } from '../services/api';
+import { api, Product } from '../services/apiClient';
 
 export default function useOrderDetail(id: string | undefined) {
   const { user } = useAuth();
@@ -40,3 +40,4 @@ export default function useOrderDetail(id: string | undefined) {
     setProduct,
   };
 }
+

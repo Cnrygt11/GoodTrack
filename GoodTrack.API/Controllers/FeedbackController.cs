@@ -1,15 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Security.Claims;
 using System.Threading.Tasks;
-using System.ComponentModel.DataAnnotations;
-using System;
-using Microsoft.Extensions.Logging;
-using GoodTrack.API.Abstractions.Repositories;
-using GoodTrack.API.Models;
-using GoodTrack.API.DTOs.Common;
+using MediatR;
 using GoodTrack.API.DTOs.Feedback;
+using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.Features.Feedbacks.SubmitFeedback;
+using Microsoft.AspNetCore.Http;
 
 namespace GoodTrack.API.Controllers;
 
@@ -17,48 +14,30 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class FeedbackController : BaseApiController
 {
-    private readonly IFeedbackRepository _feedbackRepository;
-    private readonly IUserRepository _userRepository;
-    private readonly ILogger<FeedbackController> _logger;
+    private readonly IMediator _mediator;
 
-    public FeedbackController(
-        IFeedbackRepository feedbackRepository,
-        IUserRepository userRepository,
-        ILogger<FeedbackController> logger)
+    public FeedbackController(IMediator mediator)
     {
-        _feedbackRepository = feedbackRepository;
-        _userRepository = userRepository;
-        _logger = logger;
+        _mediator = mediator;
     }
 
+    /// <summary>
+    /// Submits user feedback using CQRS Command.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SubmitFeedback([FromBody] FeedbackInputDto input)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
         }
 
-        var user = await _userRepository.GetByIdAsync(userId);
-        if (user is null)
-        {
-            return NotFound(ApiResponse.Fail("Kullanıcı bulunamadı."));
-        }
-
-        var feedback = new Feedback
-        {
-            UserId = userId,
-            Username = user.Username,
-            Role = user.Role,
-            Title = input.Title,
-            Message = input.Message,
-            BrowserInfo = input.BrowserInfo ?? string.Empty,
-            CreatedAt = DateTime.UtcNow.ToString("o")
-        };
-
-        await _feedbackRepository.SaveAsync(feedback);
-
-        return Ok(ApiResponse.Ok("Geri bildiriminiz başarıyla iletildi. Teşekkür ederiz!"));
+        var command = new SubmitFeedbackCommand(userId, input.Title, input.Message, input.BrowserInfo);
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -26,14 +27,15 @@ public class AuthController : BaseApiController
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Registers a new user.
+    /// </summary>
     [EnableRateLimiting("auth-strict")]
     [HttpPost("register")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        if (request == null)
-        {
-            return BadRequest(ApiResponse.Fail("Kayıt istek verisi eksik."));
-        }
         _logger.LogInformation("Processing register request for username: {Username}", request.Username);
         string baseUrl = $"{Request.Scheme}://{Request.Host}";
         await _authService.RegisterAsync(request, baseUrl);
@@ -41,22 +43,30 @@ public class AuthController : BaseApiController
         return Created(string.Empty, ApiResponse.Ok("Kullanıcı başarıyla kaydedildi."));
     }
 
+    /// <summary>
+    /// Authenticates user and returns JWT token.
+    /// </summary>
     [EnableRateLimiting("auth-strict")]
     [HttpPost("login")]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        if (request == null)
-        {
-            return BadRequest(ApiResponse.Fail("Giriş istek verisi eksik."));
-        }
         _logger.LogInformation("Processing login request for username: {Username}", request.Username);
         var response = await _authService.LoginAsync(request);
         return Ok(new ApiResponse<LoginResponse>(response, "Giriş başarılı."));
     }
 
+    /// <summary>
+    /// Verifies current password of the logged in user.
+    /// </summary>
     [Authorize]
     [EnableRateLimiting("auth-strict")]
     [HttpPost("verify-password")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> VerifyPassword([FromBody] VerifyPasswordRequest request)
     {
         var userId = GetCurrentUserId();
@@ -79,9 +89,15 @@ public class AuthController : BaseApiController
         return Ok(ApiResponse.Ok("Şifre doğrulandı."));
     }
 
+    /// <summary>
+    /// Changes password of the logged in user.
+    /// </summary>
     [Authorize]
     [EnableRateLimiting("auth-strict")]
     [HttpPost("change-password")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
         var userId = GetCurrentUserId();
@@ -99,8 +115,14 @@ public class AuthController : BaseApiController
         return Ok(ApiResponse.Ok("Şifreniz başarıyla güncellendi."));
     }
 
+    /// <summary>
+    /// Refreshes JWT token with a valid refresh token.
+    /// </summary>
     [EnableRateLimiting("auth-strict")]
     [HttpPost("refresh")]
+    [ProducesResponseType(typeof(ApiResponse<LoginResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Refresh([FromBody] TokenRefreshRequest request)
     {
         if (request == null)
@@ -127,8 +149,13 @@ public class AuthController : BaseApiController
         }
     }
 
+    /// <summary>
+    /// Logs out current user.
+    /// </summary>
     [Authorize]
     [HttpPost("logout")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout()
     {
         var userId = GetCurrentUserId();

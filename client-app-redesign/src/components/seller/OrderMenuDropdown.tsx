@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { Edit2, Info, Ban, Trash2 } from 'lucide-react';
 import { ORDER_STATUS } from '../../utils/constants';
@@ -98,3 +98,4 @@ function DropdownItem({ icon, label, isDanger, onClick }: DropdownItemProps) {
     </button>
   );
 }
+

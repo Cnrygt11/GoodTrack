@@ -2,7 +2,12 @@
 node_modules/
 client-app/node_modules/
 client-app/dist/
+client-app-redesign/dist/
 .eslintcache
+
+# --- Repo dışı / alakasız araçlar & geçici klasörler ---
+token-saver/
+scratch/
 
 # --- .NET / C# Backend ---
 bin/
@@ -29,6 +34,9 @@ appsettings.json
 appsettings.Development.json
 *.pem
 *.key
+
+# --- Frontend build output (Docker/CI rebuilds this into wwwroot at deploy time) ---
+GoodTrack.API/wwwroot/
 
 # --- logs ---
 GoodTrack.API/logs/

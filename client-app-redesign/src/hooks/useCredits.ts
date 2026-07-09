@@ -3,7 +3,7 @@ import { useData } from '../context/DataContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
-import { SubscriptionPlanDetail } from '../services/api';
+import { SubscriptionPlanDetail } from '../services/apiClient';
 
 /**
  * Return type interface for the useCredits custom hook.
@@ -70,3 +70,4 @@ export default function useCredits(): UseCreditsReturn {
     fetchCredits: refreshCredits,
   };
 }
+

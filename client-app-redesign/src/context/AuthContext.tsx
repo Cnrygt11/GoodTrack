@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, useCallback, useEffect } from 'react';
-import { User } from '../services/api';
+import { User } from '../services/apiClient';
 import { useToast } from './ToastContext';
 import { AUTH_STORAGE_KEYS, AUTH_EVENTS } from '../constants/authKeys';
 
@@ -69,3 +69,4 @@ export function useAuth() {
   if (!context) throw new Error('useAuth must be used within AuthProvider');
   return context;
 }
+

@@ -13,6 +13,7 @@ using GoodTrack.API.Models;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Etsy;
 
 namespace GoodTrack.API.Controllers;
 
@@ -107,17 +108,6 @@ public class EtsySyncController : BaseApiController
         }
 
         return Ok(ApiResponse.Ok("Etsy mağaza bağlantısı başarıyla kesildi."));
-    }
-
-    public class UpdateWebhookSecretDto
-    {
-        public string? WebhookSigningSecret { get; set; }
-        public string EtsyShopId { get; set; } = string.Empty;
-    }
-
-    public class DisconnectShopDto
-    {
-        public string EtsyShopId { get; set; } = string.Empty;
     }
 
     [HttpPost("sync-listings")]

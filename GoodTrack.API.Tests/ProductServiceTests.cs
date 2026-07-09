@@ -27,9 +27,8 @@ public class ProductServiceTests : IDisposable
     private readonly PostgresProductRepository _productRepository;
     private readonly PostgresCreditsRepository _creditsRepository;
     private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
-    private readonly Mock<IHubContext<TrackingHub>> _hubContextMock;
-    private readonly Mock<IClientProxy> _clientProxyMock;
-    private readonly Mock<IHubClients> _hubClientsMock;
+    private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<IUserConnectionRepository> _userConnectionRepositoryMock;
     private readonly Mock<IImageStorageService> _imageStorageServiceMock;
     private readonly CreditsService _creditsService;
     private readonly ProductService _productService;
@@ -44,7 +43,8 @@ public class ProductServiceTests : IDisposable
             .UseSqlite(_connection)
             .Options;
 
-        _context = new AppDbContext(options);
+        var httpContextAccessorMock = new Moq.Mock<Microsoft.AspNetCore.Http.IHttpContextAccessor>();
+        _context = new AppDbContext(options, httpContextAccessorMock.Object);
         _context.Database.EnsureCreated();
 
         _productRepository = new PostgresProductRepository(_context);
@@ -52,18 +52,17 @@ public class ProductServiceTests : IDisposable
         _creditsService = new CreditsService(_creditsRepository);
 
         _catalogRepositoryMock = new Mock<ICatalogRepository>();
-        _hubContextMock = new Mock<IHubContext<TrackingHub>>();
+        _userRepositoryMock = new Mock<IUserRepository>();
+        _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
+        var mediatorMock = new Mock<MediatR.IMediator>();
         _imageStorageServiceMock = new Mock<IImageStorageService>();
-
-        _hubClientsMock = new Mock<IHubClients>();
-        _clientProxyMock = new Mock<IClientProxy>();
-        _hubContextMock.Setup(h => h.Clients).Returns(_hubClientsMock.Object);
-        _hubClientsMock.Setup(c => c.Users(It.IsAny<IReadOnlyList<string>>())).Returns(_clientProxyMock.Object);
 
         _productService = new ProductService(
             _productRepository,
             _catalogRepositoryMock.Object,
-            _hubContextMock.Object,
+            _userRepositoryMock.Object,
+            _userConnectionRepositoryMock.Object,
+            mediatorMock.Object,
             _imageStorageServiceMock.Object,
             _creditsService,
             _context,
@@ -103,6 +102,21 @@ public class ProductServiceTests : IDisposable
             Credits = 5
         };
         await _creditsRepository.SaveAsync(userCredit);
+
+        // Setup manufacturer validation mocks
+        var mfrUser = new User
+        {
+            Id = mfrId,
+            Username = "mfr_one",
+            Role = Roles.Mfr
+        };
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mfrUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(sellerId, mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
 
         _imageStorageServiceMock
             .Setup(s => s.StoreImageAsync(It.IsAny<string?>()))
@@ -165,6 +179,21 @@ public class ProductServiceTests : IDisposable
         };
         await _creditsRepository.SaveAsync(userCredit);
 
+        // Setup manufacturer validation mocks
+        var mfrUser = new User
+        {
+            Id = mfrId,
+            Username = "mfr_two",
+            Role = Roles.Mfr
+        };
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mfrUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(sellerId, mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
         // Force Image Storage to throw exception
         _imageStorageServiceMock
             .Setup(s => s.StoreImageAsync(It.IsAny<string?>()))
@@ -193,5 +222,72 @@ public class ProductServiceTests : IDisposable
         // Verify no product was saved
         var products = await _productRepository.GetProductsBySellerAsync(sellerId);
         products.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_ManufacturerNotConnected_ShouldThrowUnauthorizedAccessException()
+    {
+        // Arrange
+        var sellerId = "seller-3";
+        var mfrId = "mfr-3";
+
+        var user = new User { Id = sellerId, Username = "seller_three", PasswordHash = "hash", Role = Roles.Seller };
+        await _context.Users.AddAsync(user);
+        await _context.SaveChangesAsync();
+
+        var userCredit = new UserCredit { UserId = sellerId, Plan = SubscriptionPlan.Free, Credits = 5 };
+        await _creditsRepository.SaveAsync(userCredit);
+
+        var mfrUser = new User { Id = mfrId, Username = "mfr_three", Role = Roles.Mfr };
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(mfrUser);
+
+        _userConnectionRepositoryMock
+            .Setup(r => r.AreConnectedAsync(sellerId, mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(false);
+
+        var dto = new CreateProductDto
+        {
+            Code = "PROD-300",
+            ManufacturerId = mfrId,
+            ManufacturerName = "Mfr Three"
+        };
+
+        // Act & Assert
+        var act = () => _productService.CreateOrderAsync(sellerId, "Seller Three", dto);
+        await act.Should().ThrowAsync<UnauthorizedAccessException>()
+            .WithMessage("*bağlantılı*");
+    }
+
+    [Fact]
+    public async Task CreateOrderAsync_ManufacturerNotFound_ShouldThrowArgumentException()
+    {
+        // Arrange
+        var sellerId = "seller-4";
+        var mfrId = "mfr-nonexistent";
+
+        var user = new User { Id = sellerId, Username = "seller_four", PasswordHash = "hash", Role = Roles.Seller };
+        await _context.Users.AddAsync(user);
+        await _context.SaveChangesAsync();
+
+        var userCredit = new UserCredit { UserId = sellerId, Plan = SubscriptionPlan.Free, Credits = 5 };
+        await _creditsRepository.SaveAsync(userCredit);
+
+        _userRepositoryMock
+            .Setup(r => r.GetByIdAsync(mfrId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync((User?)null);
+
+        var dto = new CreateProductDto
+        {
+            Code = "PROD-400",
+            ManufacturerId = mfrId,
+            ManufacturerName = "Unknown"
+        };
+
+        // Act & Assert
+        var act = () => _productService.CreateOrderAsync(sellerId, "Seller Four", dto);
+        await act.Should().ThrowAsync<ArgumentException>()
+            .WithMessage("*üretici bulunamadı*");
     }
 }

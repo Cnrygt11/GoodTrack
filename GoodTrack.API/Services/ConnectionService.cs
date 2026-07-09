@@ -11,6 +11,9 @@ using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
 
+using MediatR;
+using GoodTrack.API.Features.Common.Events;
+
 namespace GoodTrack.API.Services;
 
 public sealed class ConnectionService : IConnectionService
@@ -18,20 +21,20 @@ public sealed class ConnectionService : IConnectionService
     private readonly IUserRepository _userRepository;
     private readonly IConnectionRequestRepository _connectionRequestRepository;
     private readonly IUserConnectionRepository _userConnectionRepository;
-    private readonly IHubContext<TrackingHub> _hubContext;
+    private readonly IMediator _mediator;
     private readonly ILogger<ConnectionService> _logger;
 
     public ConnectionService(
         IUserRepository userRepository,
         IConnectionRequestRepository connectionRequestRepository,
         IUserConnectionRepository userConnectionRepository,
-        IHubContext<TrackingHub> hubContext,
+        IMediator mediator,
         ILogger<ConnectionService> logger)
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
         _userConnectionRepository = userConnectionRepository;
-        _hubContext = hubContext;
+        _mediator = mediator;
         _logger = logger;
     }
 
@@ -48,15 +51,8 @@ public sealed class ConnectionService : IConnectionService
             .Distinct()
             .ToList();
 
-        var targets = new List<User>();
-        foreach (var id in targetIds)
-        {
-            var u = await _userRepository.GetByIdAsync(id);
-            if (u != null)
-            {
-                targets.Add(u);
-            }
-        }
+        // Tek toplu sorgu ile tüm bağlantı hedeflerini çek (N+1 sorgusundan kaçınmak için).
+        var targets = await _userRepository.GetByIdsAsync(targetIds);
 
         return targets
             .Select(t => new UserDto { Id = t.Id, Username = t.Username, Role = t.Role })
@@ -88,6 +84,17 @@ public sealed class ConnectionService : IConnectionService
         if (receiver.Id == senderId)
         {
             throw new ArgumentException("Kendinize bağlantı isteği gönderemezsiniz.");
+        }
+
+        // Bağlantı yalnızca bir satıcı ile bir üretici arasında kurulabilir.
+        if (senderRole != Roles.Seller && senderRole != Roles.Mfr)
+        {
+            throw new ArgumentException("Yalnızca satıcı veya üretici hesapları bağlantı kurabilir.");
+        }
+
+        if (receiver.Role != Roles.Seller && receiver.Role != Roles.Mfr)
+        {
+            throw new ArgumentException("Yalnızca satıcı veya üretici hesaplarına bağlantı isteği gönderebilirsiniz.");
         }
 
         if (receiver.Role == senderRole)
@@ -169,8 +176,24 @@ public sealed class ConnectionService : IConnectionService
             throw new KeyNotFoundException("Kullanıcılardan biri bulunamadı.");
         }
 
-        var sellerId = user.Role == Roles.Seller ? user.Id : sender.Id;
-        var mfrId = user.Role == Roles.Mfr ? user.Id : sender.Id;
+        // Katılımcıların tam olarak bir satıcı ve bir üretici olduğunu doğrula;
+        // aksi halde (örn. admin hesabı) kendi kendine bağlantı oluşmasını engelle.
+        string sellerId;
+        string mfrId;
+        if (user.Role == Roles.Seller && sender.Role == Roles.Mfr)
+        {
+            sellerId = user.Id;
+            mfrId = sender.Id;
+        }
+        else if (user.Role == Roles.Mfr && sender.Role == Roles.Seller)
+        {
+            sellerId = sender.Id;
+            mfrId = user.Id;
+        }
+        else
+        {
+            throw new ArgumentException("Bağlantı yalnızca bir satıcı ile bir üretici arasında kurulabilir.");
+        }
 
         var areConnected = await _userConnectionRepository.AreConnectedAsync(sellerId, mfrId);
         if (!areConnected)
@@ -249,11 +272,11 @@ public sealed class ConnectionService : IConnectionService
     {
         try
         {
-            await _hubContext.Clients.Users(userIds).SendAsync(method);
+            await _mediator.Publish(new UserNotificationEvent(userIds, method));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "SignalR notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
+            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
         }
     }
 
@@ -261,11 +284,11 @@ public sealed class ConnectionService : IConnectionService
     {
         try
         {
-            await _hubContext.Clients.User(userId).SendAsync(method);
+            await _mediator.Publish(new UserNotificationEvent(new[] { userId }, method));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "SignalR notification '{Method}' failed for user: {UserId}", method, userId);
+            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for user: {UserId}", method, userId);
         }
     }
 }

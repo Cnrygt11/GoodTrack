@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using Microsoft.Extensions.Logging;
@@ -24,7 +25,12 @@ public class CatalogController : BaseApiController
         _logger = logger;
     }
 
+    /// <summary>
+    /// Retrieves the seller's product catalog.
+    /// </summary>
     [HttpGet]
+    [ProducesResponseType(typeof(ApiResponse<List<CatalogProductResponseDto>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCatalog()
     {
         var userId = GetCurrentUserId();
@@ -38,7 +44,13 @@ public class CatalogController : BaseApiController
         return Ok(new ApiResponse<List<CatalogProductResponseDto>>(response));
     }
 
+    /// <summary>
+    /// Adds a new product to the catalog.
+    /// </summary>
     [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<CatalogProductResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AddCatalogProduct([FromBody] CreateCatalogProductDto dto)
     {
         var userId = GetCurrentUserId();
@@ -47,29 +59,25 @@ public class CatalogController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
-        if (dto == null)
-        {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
-        }
-
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
         var response = await _catalogService.AddCatalogProductAsync(userId, dto);
         
-        return Created(string.Empty, new ApiResponse<object>(new { product = response, message = "Ürün başarıyla kataloğa eklendi." }));
+        return Created(string.Empty, new ApiResponse<CatalogProductResponseDto>(response, "Ürün başarıyla kataloğa eklendi."));
     }
 
+    /// <summary>
+    /// Updates a catalog product.
+    /// </summary>
     [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<CatalogProductResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateCatalogProduct(string id, [FromBody] CreateCatalogProductDto dto)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
         {
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
-        }
-
-        if (dto == null)
-        {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
         if (string.IsNullOrWhiteSpace(id))
@@ -80,10 +88,16 @@ public class CatalogController : BaseApiController
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
         var response = await _catalogService.UpdateCatalogProductAsync(userId, id, dto);
         
-        return Ok(new ApiResponse<object>(new { product = response, message = "Ürün kataloğu başarıyla güncellendi." }));
+        return Ok(new ApiResponse<CatalogProductResponseDto>(response, "Ürün kataloğu başarıyla güncellendi."));
     }
 
+    /// <summary>
+    /// Deletes a catalog product.
+    /// </summary>
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteCatalogProduct(string id)
     {
         var userId = GetCurrentUserId();

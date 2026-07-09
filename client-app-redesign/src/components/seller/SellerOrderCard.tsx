@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import { ListFilter } from '../../types/orders';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
@@ -141,3 +141,4 @@ export default function SellerOrderCard({
     </div>
   );
 }
+

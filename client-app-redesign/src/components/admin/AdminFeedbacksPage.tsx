@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronDown, ChevronUp, Terminal, User, Clock, Bug, Lightbulb, MessageSquare, Loader2, RefreshCw } from 'lucide-react';
-import { api, Feedback } from '../../services/api';
+import { api, Feedback } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { extractErrorMessage } from '../../utils/errorUtils';
 
@@ -218,3 +218,4 @@ export default function AdminFeedbacksPage() {
     </div>
   );
 }
+

@@ -14,22 +14,29 @@ using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Infrastructure;
 
+using MediatR;
+using GoodTrack.API.Features.Common.Events;
+
 namespace GoodTrack.API.Services;
 
 public sealed class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
     private readonly ICatalogRepository _catalogRepository;
-    private readonly IHubContext<TrackingHub> _hubContext;
+    private readonly IUserRepository _userRepository;
+    private readonly IUserConnectionRepository _userConnectionRepository;
+    private readonly IMediator _mediator;
     private readonly IImageStorageService _imageStorageService;
     private readonly ICreditsService _creditsService;
     private readonly AppDbContext _context;
     private readonly ILogger<ProductService> _logger;
 
     public ProductService(
-        IProductRepository productRepository, 
+        IProductRepository productRepository,
         ICatalogRepository catalogRepository,
-        IHubContext<TrackingHub> hubContext,
+        IUserRepository userRepository,
+        IUserConnectionRepository userConnectionRepository,
+        IMediator mediator,
         IImageStorageService imageStorageService,
         ICreditsService creditsService,
         AppDbContext context,
@@ -37,7 +44,9 @@ public sealed class ProductService : IProductService
     {
         _productRepository = productRepository;
         _catalogRepository = catalogRepository;
-        _hubContext = hubContext;
+        _userRepository = userRepository;
+        _userConnectionRepository = userConnectionRepository;
+        _mediator = mediator;
         _imageStorageService = imageStorageService;
         _creditsService = creditsService;
         _context = context;
@@ -45,6 +54,21 @@ public sealed class ProductService : IProductService
     }
 
     private const int MaxImageBase64Length = 7_000_000;
+
+    private async Task ValidateManufacturerAsync(string sellerId, string manufacturerId, CancellationToken cancellationToken = default)
+    {
+        var manufacturer = await _userRepository.GetByIdAsync(manufacturerId, cancellationToken);
+        if (manufacturer == null || !manufacturer.Role.Equals(Roles.Mfr, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Seçilen üretici bulunamadı veya geçersiz.");
+        }
+
+        var isConnected = await _userConnectionRepository.AreConnectedAsync(sellerId, manufacturerId, cancellationToken);
+        if (!isConnected)
+        {
+            throw new UnauthorizedAccessException("Yalnızca bağlantılı olduğunuz üreticilere sipariş gönderebilirsiniz.");
+        }
+    }
 
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
     {
@@ -73,7 +97,7 @@ public sealed class ProductService : IProductService
         return products.Select(MapToResponseDto).ToList();
     }
 
-    public async Task<ProductResponseDto> CreateOrderAsync(string sellerId, string sellerName, CreateProductDto dto)
+    public async Task<ProductResponseDto> CreateOrderAsync(string sellerId, string sellerName, CreateProductDto dto, CancellationToken cancellationToken = default)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
@@ -84,6 +108,8 @@ public sealed class ProductService : IProductService
         {
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
+
+        await ValidateManufacturerAsync(sellerId, dto.ManufacturerId, cancellationToken);
 
         var order = new Product
         {
@@ -144,7 +170,7 @@ public sealed class ProductService : IProductService
         return MapToResponseDto(order);
     }
 
-    public async Task<ProductResponseDto> UpdateProductAsync(string sellerId, string orderId, UpdateProductDto dto)
+    public async Task<ProductResponseDto> UpdateProductAsync(string sellerId, string orderId, UpdateProductDto dto, CancellationToken cancellationToken = default)
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
@@ -156,7 +182,9 @@ public sealed class ProductService : IProductService
             throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
         }
 
-        var existing = await _productRepository.GetByIdAsync(orderId);
+        await ValidateManufacturerAsync(sellerId, dto.ManufacturerId, cancellationToken);
+
+        var existing = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (existing == null)
         {
             throw new KeyNotFoundException("Sipariş bulunamadı!");
@@ -241,7 +269,7 @@ public sealed class ProductService : IProductService
         return MapToResponseDto(existing);
     }
 
-    public async Task DeleteProductAsync(string sellerId, string orderId)
+    public async Task DeleteProductAsync(string sellerId, string orderId, CancellationToken cancellationToken = default)
     {
         var existing = await _productRepository.GetByIdAsync(orderId);
         if (existing == null)
@@ -263,8 +291,22 @@ public sealed class ProductService : IProductService
         string? image = existing.Image;
         string? defectImage = existing.DefectImage;
 
-        await _productRepository.DeleteAsync(orderId);
-        await _creditsService.RefundCreditAsync(sellerId);
+        // EF Core Database Transaction başlatılıyor
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        try
+        {
+            await _productRepository.DeleteAsync(orderId);
+            await _creditsService.RefundCreditAsync(sellerId);
+
+            // Adımlar başarılıysa commit et
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            // Adımlardan biri hata verirse tüm işlemleri geri al (Rollback)
+            await transaction.RollbackAsync();
+            throw;
+        }
 
         await TryDeleteImageAsync(image, sellerId, orderId);
         await TryDeleteDefectImageAsync(defectImage, sellerId, orderId);
@@ -328,11 +370,6 @@ public sealed class ProductService : IProductService
         return MapToResponseDto(product);
     }
 
-    public async Task<int> MigrateProductStatusesAsync()
-    {
-        return await _productRepository.MigrateStatusesAsync();
-    }
-
     public async Task MarkStatusAsReadAsync(string userId, string role, string status)
     {
         await _productRepository.MarkProductsAsReadAsync(userId, role, status);
@@ -372,11 +409,11 @@ public sealed class ProductService : IProductService
     {
         try
         {
-            await _hubContext.Clients.Users(userIds).SendAsync(method);
+            await _mediator.Publish(new UserNotificationEvent(userIds, method));
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "SignalR notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
+            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
         }
     }
 }

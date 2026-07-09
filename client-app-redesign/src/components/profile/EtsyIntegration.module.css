@@ -1,0 +1,328 @@
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+.headerContainer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.iconWrapper {
+  background-color: rgba(241, 100, 30, 0.1);
+  padding: 10px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.alertDanger {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.alertDangerText {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.alertSuccess {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.alertSuccessText {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 0;
+}
+
+.loadingText {
+  margin-left: 8px;
+}
+
+/* Card & Panels */
+.card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--bg-card);
+  margin-bottom: 24px;
+}
+
+.cardTitle {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cardDescription {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.etsyButton {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #F1641E;
+  border-color: #F1641E;
+  padding: 10px 20px;
+}
+
+.etsyButton:hover {
+  background-color: #d65315;
+  border-color: #d65315;
+}
+
+/* Connection List */
+.connectionList {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.listHeader {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.storeCard {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background-color: var(--bg-card-glow);
+}
+
+.storeHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.storeInfoContainer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.storeIconCircle {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: rgba(16, 185, 129, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storeTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.storeMeta {
+  font-size: 12px;
+  color: var(--muted);
+  display: block;
+  margin-top: 6px;
+}
+
+.webhookSection {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.webhookTitle {
+  margin: 0 0 12px 0;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.webhookRow {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.label {
+  font-size: 11px;
+  color: var(--muted);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.webhookUrlInput {
+  flex: 1;
+  font-size: 12px;
+  font-family: monospace;
+  background-color: var(--bg-input-disabled);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+
+.inputGroup {
+  display: flex;
+  gap: 8px;
+}
+
+.secretForm {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-top: 8px;
+}
+
+.secretInput {
+  font-size: 13px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-input);
+  color: var(--text);
+  width: 100%;
+}
+
+.syncGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.syncCard {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--bg-card);
+}
+
+.syncTitle {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Mock Panel */
+.mockCard {
+  padding: 20px;
+  border: 1px solid rgba(241, 100, 30, 0.2);
+  border-radius: 12px;
+  background-color: rgba(241, 100, 30, 0.02);
+  margin-top: 24px;
+}
+
+.mockTitle {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #F1641E;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mockAlert {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  font-size: 12px;
+}
+
+.mockForm {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.mockFormGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mockInput {
+  font-size: 12px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--bg-input);
+  color: var(--text);
+}
+
+.mockSubmitRow {
+  grid-column: span 2;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.emptyState {
+  padding: 20px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}

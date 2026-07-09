@@ -9,6 +9,8 @@ using Microsoft.Extensions.Configuration;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Services;
 using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.DTOs.Etsy;
+using Microsoft.AspNetCore.Http;
 
 namespace GoodTrack.API.Controllers;
 
@@ -32,7 +34,16 @@ public class EtsyAuthController : BaseApiController
         _configuration = configuration;
     }
 
+    /// <summary>
+    /// Initiates the Etsy OAuth connection flow by generating the authorization URL.
+    /// </summary>
+    /// <param name="dto">The callback and frontend URL payload.</param>
+    /// <returns>The OAuth URL inside an ApiResponse wrapper.</returns>
     [HttpPost("connect")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
     public IActionResult Connect([FromBody] ConnectRequestDto dto)
     {
         var userId = GetCurrentUserId();
@@ -133,13 +144,5 @@ public class EtsyAuthController : BaseApiController
 
             return Redirect(errorRedirectUrl);
         }
-    }
-
-    public class ConnectRequestDto
-    {
-        public string Keystring { get; set; } = string.Empty;
-        public string SharedSecret { get; set; } = string.Empty;
-        public string CallbackUrl { get; set; } = string.Empty;
-        public string FrontendUrl { get; set; } = string.Empty;
     }
 }

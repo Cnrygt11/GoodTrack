@@ -28,4 +28,7 @@ public class ApiResponse<T> : ApiResponse
     {
         Data = default;
     }
+
+    public static ApiResponse<T> Ok(T data, string? message = null) => new(data, message);
 }
+

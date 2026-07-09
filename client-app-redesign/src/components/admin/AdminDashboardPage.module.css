@@ -1,0 +1,50 @@
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.dashboard {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.statRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.statIcon {
+  opacity: 0.5;
+  color: var(--muted);
+}
+
+.alertBox {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.refreshButton {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.emptyState {
+  padding: 40px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.boldText {
+  font-weight: 600;
+}

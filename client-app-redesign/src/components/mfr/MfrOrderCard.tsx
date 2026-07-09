@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User, AlertTriangle } from 'lucide-react';
-import { Product } from '../../services/api';
+import { Product } from '../../services/apiClient';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
 import Lightbox from '../ui/Lightbox';
@@ -249,3 +249,4 @@ function MfrBtn({ color, onClick, children, icon, fullWidth, bordered, dark }: M
     </button>
   );
 }
+

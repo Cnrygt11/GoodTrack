@@ -1,16 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using Microsoft.Extensions.Logging;
+using MediatR;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Common;
+using GoodTrack.API.Features.Products;
+using GoodTrack.API.Features.Products.CreateOrder;
+using GoodTrack.API.Features.Products.UpdateOrderStatus;
+using GoodTrack.API.Features.Products.DeleteProduct;
 
 namespace GoodTrack.API.Controllers;
 
@@ -18,6 +24,7 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class ProductsController : BaseApiController
 {
+    private readonly IMediator _mediator;
     private readonly IProductService _productService;
     private readonly IOrderWorkflowService _orderWorkflowService;
     private readonly ILogger<ProductsController> _logger;
@@ -38,10 +45,12 @@ public class ProductsController : BaseApiController
     };
 
     public ProductsController(
+        IMediator mediator,
         IProductService productService, 
         IOrderWorkflowService orderWorkflowService,
         ILogger<ProductsController> logger)
     {
+        _mediator = mediator;
         _productService = productService;
         _orderWorkflowService = orderWorkflowService;
         _logger = logger;
@@ -58,9 +67,9 @@ public class ProductsController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
         }
 
-        _logger.LogInformation("Retrieving products list for User: {UserId} with Role: {Role}", userId, role);
-        var response = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
-        return Ok(new ApiResponse<List<ProductResponseDto>>(response));
+        var query = new GetProductsForUserQuery(userId, role);
+        var result = await _mediator.Send(query, cancellationToken);
+        return Ok(result);
     }
 
     [HttpPost]
@@ -80,13 +89,21 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
-        _logger.LogInformation("Seller user {UserId} is submitting a new production order: {Code}", userId, dto.Code);
-        var response = await _productService.CreateOrderAsync(userId, userName, dto);
+        var command = new CreateOrderCommand(userId, userName, dto);
+        var result = await _mediator.Send(command);
 
-        return CreatedAtAction(nameof(GetById), new { id = response.Id }, new ApiResponse<object>(new { product = response, message = "Sipariş başarıyla üretime gönderildi." }));
+        if (result.Data is null)
+        {
+            return BadRequest(ApiResponse.Fail("Sipariş oluşturulamadı."));
+        }
+
+        return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, new ApiResponse<object>(new { product = result.Data, message = "Sipariş başarıyla üretime gönderildi." }));
     }
 
     [HttpPut("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
     {
         var userId = GetCurrentUserId();
@@ -107,15 +124,14 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail($"Geçersiz durum bilgisi: {request.Status}"));
         }
 
-        _logger.LogInformation("User {UserId} with role {Role} is changing status of order {Id} to: {Status}", userId, role, id, request.Status);
-
-        await _orderWorkflowService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
-        return Ok(new ApiResponse<object>(new { id, status = request.Status, message = "Sipariş durumu başarıyla güncellendi." }));
+        var command = new UpdateOrderStatusCommand(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 
     [HttpPut("{id}")]
     [Authorize(Roles = Roles.Seller)]
-    public async Task<IActionResult> Update(string id, [FromBody] UpdateProductDto dto)
+    public async Task<IActionResult> Update(string id, [FromBody] UpdateProductDto dto, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -134,7 +150,7 @@ public class ProductsController : BaseApiController
         }
 
         _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
-        var response = await _productService.UpdateProductAsync(userId, id, dto);
+        var response = await _productService.UpdateProductAsync(userId, id, dto, cancellationToken);
 
         return Ok(new ApiResponse<object>(new { product = response, message = "Sipariş başarıyla güncellendi." }));
     }
@@ -167,6 +183,9 @@ public class ProductsController : BaseApiController
 
     [HttpDelete("{id}")]
     [Authorize(Roles = Roles.Seller)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string id)
     {
         var userId = GetCurrentUserId();
@@ -180,18 +199,9 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
         }
 
-        _logger.LogInformation("Seller user {UserId} is deleting production order: {Id}", userId, id);
-        await _productService.DeleteProductAsync(userId, id);
-        return NoContent();
-    }
-
-    [HttpPost("status-migrations")]
-    [Authorize(Roles = Roles.Admin)]
-    public async Task<IActionResult> MigrateStatuses()
-    {
-        _logger.LogInformation("Admin triggered a status migration.");
-        var count = await _productService.MigrateProductStatusesAsync();
-        return Ok(ApiResponse.Ok($"{count} sipariş başarıyla güncellendi."));
+        var command = new DeleteProductCommand(userId, id);
+        var result = await _mediator.Send(command);
+        return Ok(result);
     }
 
     [HttpPost("read-status")]

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
@@ -51,15 +52,37 @@ public sealed class CreditsService : ICreditsService
     /// <inheritdoc />
     public async Task DeductForOrderAsync(string userId, CancellationToken cancellationToken = default)
     {
+        // Krediler xmin (RowVersion) ile optimistic-lock'landığından, aynı kullanıcının
+        // eşzamanlı sipariş oluşturması çakışmaya yol açabilir. Böyle bir durumda güncel
+        // bakiyeyi yeniden okuyup işlemi sınırlı sayıda tekrar deneriz.
+        const int maxAttempts = 3;
+
         var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
 
-        if (record.Credits < CreditCost.OrderCreation)
+        for (int attempt = 1; ; attempt++)
         {
-            throw new InsufficientCreditsException("Krediniz yetersiz! Lütfen sipariş oluşturabilmek için planınızı yükseltin.");
-        }
+            if (record.Credits < CreditCost.OrderCreation)
+            {
+                throw new InsufficientCreditsException("Krediniz yetersiz! Lütfen sipariş oluşturabilmek için planınızı yükseltin.");
+            }
 
-        record.Credits -= CreditCost.OrderCreation;
-        await _creditsRepository.SaveAsync(record, cancellationToken);
+            record.Credits -= CreditCost.OrderCreation;
+
+            try
+            {
+                await _creditsRepository.SaveAsync(record, cancellationToken);
+                return;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt < maxAttempts)
+            {
+                // Başka bir işlem bakiyeyi bu arada değiştirdi: güncel değerleri (Credits + xmin)
+                // veritabanından yeniden yükle ve döngüde tekrar dene.
+                foreach (var entry in ex.Entries)
+                {
+                    await entry.ReloadAsync(cancellationToken);
+                }
+            }
+        }
     }
 
     /// <inheritdoc />

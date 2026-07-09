@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { api } from '../services/api';
+import { api } from '../services/apiClient';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
@@ -111,3 +111,4 @@ export default function useFeedback() {
     resetForm
   };
 }
+
