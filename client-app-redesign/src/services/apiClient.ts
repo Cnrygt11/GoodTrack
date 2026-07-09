@@ -592,7 +592,7 @@ export const api = {
     });
   },
 
-  testMockEtsyWebhook(payload: any): Promise<{ message: string }> {
+  testMockEtsyWebhook(payload: EtsyWebhookMockPayload): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/webhook/test-mock', {
       method: 'POST',
       body: JSON.stringify(payload)

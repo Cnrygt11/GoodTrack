@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="GoodTrack.API.Tests/GoodTrack.API.Tests.csproj" />
+  <Project Path="GoodTrack.API/GoodTrack.API.csproj" />
+</Solution>

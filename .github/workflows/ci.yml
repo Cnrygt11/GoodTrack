@@ -21,16 +21,24 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore Dependencies
-      run: dotnet restore GoodTrack.API/GoodTrack.API.csproj
+      run: dotnet restore GoodTrack.slnx
 
     - name: Build Project
-      run: dotnet build GoodTrack.API/GoodTrack.API.csproj --configuration Release --no-restore
+      run: dotnet build GoodTrack.slnx --configuration Release --no-restore
 
-    - name: Run Unit Tests
-      run: dotnet test GoodTrack.API.Tests/GoodTrack.API.Tests.csproj --configuration Release
+    - name: Run Unit Tests (with coverage)
+      run: dotnet test GoodTrack.API.Tests/GoodTrack.API.Tests.csproj --configuration Release --no-build --collect:"XPlat Code Coverage"
+
+    - name: Upload coverage artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: backend-coverage
+        path: '**/TestResults/**/coverage.cobertura.xml'
+        if-no-files-found: warn
 
   frontend-ci:
-    name: Frontend Build
+    name: Frontend Build, Types & Lint
     runs-on: ubuntu-latest
 
     steps:
@@ -48,6 +56,20 @@ jobs:
       run: |
         cd client-app-redesign
         npm ci
+
+    # Blocking: type-checking must pass.
+    - name: Type Check
+      run: |
+        cd client-app-redesign
+        npx tsc --noEmit
+
+    # Non-blocking for now: legacy react-hooks lint findings are tracked
+    # separately (DataContext optimistic engine migration). Kept visible in CI.
+    - name: Lint (report only)
+      continue-on-error: true
+      run: |
+        cd client-app-redesign
+        npm run lint
 
     - name: Build Production Bundle
       run: |
