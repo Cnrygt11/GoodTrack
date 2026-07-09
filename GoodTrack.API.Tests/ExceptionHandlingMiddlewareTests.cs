@@ -44,6 +44,8 @@ public class ExceptionHandlingMiddlewareTests
         var responseJson = JsonSerializer.Deserialize<JsonElement>(responseText);
 
         responseJson.GetProperty("message").GetString().Should().Be("Geçersiz argüman");
+        // Error body follows the same ApiResponse shape as controllers (success:false)
+        responseJson.GetProperty("success").GetBoolean().Should().BeFalse();
     }
 
     [Fact]

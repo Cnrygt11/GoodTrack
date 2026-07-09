@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Middlewares;
@@ -79,7 +80,12 @@ public class ExceptionHandlingMiddleware
 
         context.Response.StatusCode = (int)statusCode;
 
-        var payload = JsonSerializer.Serialize(new { message });
+        // Hata gövdesini de controller'lardaki başarı yanıtlarıyla aynı ApiResponse
+        // şekline sok ({ success:false, message }). Böylece frontend'in envelope
+        // çözümleyicisi (success alanına bakar) bunu doğru şekilde hata olarak algılar.
+        var payload = JsonSerializer.Serialize(
+            ApiResponse.Fail(message),
+            new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
         return context.Response.WriteAsync(payload);
     }
 }
