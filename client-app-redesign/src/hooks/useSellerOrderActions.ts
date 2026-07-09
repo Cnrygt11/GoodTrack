@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, FormEvent } from 'react';
-import { useData } from '../context/DataContext';
+import { useProductsQuery, useProductActions } from './useProductsData';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -43,7 +43,8 @@ export default function useSellerOrderActions(
   /** Shared loading ref from useSellerOrderForm so both hooks control the same flag. */
   externalLoading: { isRef: React.MutableRefObject<boolean>; set: (v: boolean) => void },
 ): UseSellerOrderActionsReturn {
-  const { products, loadProducts, optimisticUpdateProduct, rollbackProducts } = useData();
+  const { products } = useProductsQuery();
+  const { loadProducts, optimisticUpdateProduct, rollbackProducts } = useProductActions();
   const { showToast } = useToast();
   const { language, t } = useSettings();
   const confirm = useConfirm();

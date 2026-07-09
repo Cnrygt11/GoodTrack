@@ -1,9 +1,9 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
-import { useData } from './DataContext';
 import { connectionKeys } from '../hooks/useConnectionsData';
+import { productKeys } from '../hooks/useProductsData';
 import { getHubUrl } from '../services/apiClient';
 import { AUTH_STORAGE_KEYS } from '../constants/authKeys';
 
@@ -11,14 +11,8 @@ const SignalRContext = createContext<HubConnection | null>(null);
 
 export function SignalRProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { loadProducts } = useData();
   const queryClient = useQueryClient();
   const [connection, setConnection] = useState<HubConnection | null>(null);
-
-  // Store latest callback in a ref so the effect doesn't re-run when it is recreated.
-  // (queryClient is stable across renders, so it can be referenced directly.)
-  const loadProductsRef = useRef(loadProducts);
-  useEffect(() => { loadProductsRef.current = loadProducts; }, [loadProducts]);
 
   useEffect(() => {
     if (!user) {
@@ -55,7 +49,7 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     // Setup event listeners — always call the latest version via ref
     newConnection.on('ReceiveOrderUpdate', () => {
       if (import.meta.env.DEV) console.log('[SignalR] Received Order Update Notification.');
-      loadProductsRef.current();
+      queryClient.invalidateQueries({ queryKey: productKeys.products });
     });
 
     newConnection.on('ReceiveConnectionRequest', () => {

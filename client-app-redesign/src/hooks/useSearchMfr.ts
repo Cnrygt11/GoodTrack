@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, UserProfile, ConnectionRequest } from '../services/apiClient';
-import { useData } from '../context/DataContext';
+import { useProductsQuery } from './useProductsData';
 import useCredits from './useCredits';
 import { connectionKeys, useConnectionsQuery, useSentRequestsQuery } from './useConnectionsData';
 import { useToast } from '../context/ToastContext';
@@ -26,7 +26,7 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { products } = useData();
+  const { products } = useProductsQuery();
   const { connections } = useConnectionsQuery();
   const { sentRequests } = useSentRequestsQuery();
   const queryClient = useQueryClient();

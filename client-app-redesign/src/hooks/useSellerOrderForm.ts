@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
-import { useData } from '../context/DataContext';
+import { useProductsQuery, useProductActions } from './useProductsData';
 import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
 import { useConnectionsQuery } from './useConnectionsData';
 import useCredits from './useCredits';
@@ -60,14 +60,14 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
+  const { products } = useProductsQuery();
   const {
-    products,
     loadProducts,
     optimisticAddProduct,
     optimisticUpdateProduct,
     optimisticRemoveProduct,
     rollbackProducts,
-  } = useData();
+  } = useProductActions();
   const { connections } = useConnectionsQuery();
   const { catalogProducts } = useCatalogProducts();
   const { extraFieldDefs, loadExtraFields } = useExtraFieldDefs();

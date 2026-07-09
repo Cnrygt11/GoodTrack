@@ -3,7 +3,6 @@ import { SettingsProvider } from './context/SettingsContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { ToastProvider } from './context/ToastContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { DataProvider } from './context/DataContext';
 import { SignalRProvider } from './context/SignalRContext';
 import Layout from './components/Layout';
 import AppRoutes from './routes/AppRoutes';
@@ -35,11 +34,9 @@ export default function App() {
           <ConfirmProvider>
             <ToastProvider>
               <AuthProvider>
-                <DataProvider>
-                  <SignalRProvider>
-                    <AppContent />
-                  </SignalRProvider>
-                </DataProvider>
+                <SignalRProvider>
+                  <AppContent />
+                </SignalRProvider>
               </AuthProvider>
             </ToastProvider>
           </ConfirmProvider>

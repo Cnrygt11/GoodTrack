@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Product, api } from '../services/apiClient';
 import { ListFilter, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
-import { useData } from '../context/DataContext';
+import { useProductActions } from './useProductsData';
 
 interface UseSellerOrderBadgesReturn {
   unseenIds: Record<string, string[]>;
@@ -43,7 +43,7 @@ export default function useSellerOrderBadges(
 ): UseSellerOrderBadgesReturn {
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>(EMPTY_RECORD);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>(ZERO_RECORD);
-  const { markStatusAsReadLocally } = useData();
+  const { markStatusAsReadLocally } = useProductActions();
 
   useEffect(() => {
     const nextUnseen: Record<string, string[]> = EMPTY_RECORD();

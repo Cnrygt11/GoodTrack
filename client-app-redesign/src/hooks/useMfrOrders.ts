@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import { useProductsQuery, useProductActions } from './useProductsData';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/apiClient';
@@ -10,7 +10,8 @@ import { ORDER_STATUS } from '../utils/constants';
 export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
 
 export default function useMfrOrders() {
-  const { products, loadProducts, optimisticUpdateProduct, rollbackProducts, markStatusAsReadLocally } = useData();
+  const { products } = useProductsQuery();
+  const { loadProducts, optimisticUpdateProduct, rollbackProducts, markStatusAsReadLocally } = useProductActions();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, FormEvent } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { useData } from '../context/DataContext';
+import { useProductsQuery } from './useProductsData';
 import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
 import { useConnectionsQuery } from './useConnectionsData';
 import { useSettings } from '../context/SettingsContext';
@@ -26,7 +26,7 @@ import useSellerOrderActions from './useSellerOrderActions';
  *   - Passing context values up to consumers
  */
 export default function useSellerOrders() {
-  const { products } = useData();
+  const { products } = useProductsQuery();
   const { connections } = useConnectionsQuery();
   const { catalogProducts } = useCatalogProducts();
   const { extraFieldDefs } = useExtraFieldDefs();
