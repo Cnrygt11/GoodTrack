@@ -138,12 +138,19 @@ public sealed class AppDbContext : DbContext
         if (auditEntries == null || auditEntries.Count == 0) return;
 
         var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var logs = auditEntries.Select(a => a.ToAuditLog(userId)).ToList();
 
-        foreach (var auditEntry in auditEntries)
+        try
         {
-            AuditLogs.Add(auditEntry.ToAuditLog(userId));
+            AuditLogs.AddRange(logs);
+            base.SaveChanges();
         }
-        base.SaveChanges();
+        catch (Exception ex)
+        {
+            // Audit is best-effort: an audit-log failure must never break the business operation.
+            DetachAuditLogs(logs);
+            Serilog.Log.Warning(ex, "Audit log persistence failed; continuing without audit for this operation.");
+        }
     }
 
     private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries)
@@ -151,12 +158,31 @@ public sealed class AppDbContext : DbContext
         if (auditEntries == null || auditEntries.Count == 0) return;
 
         var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var logs = auditEntries.Select(a => a.ToAuditLog(userId)).ToList();
 
-        foreach (var auditEntry in auditEntries)
+        try
         {
-            AuditLogs.Add(auditEntry.ToAuditLog(userId));
+            await AuditLogs.AddRangeAsync(logs);
+            await base.SaveChangesAsync();
         }
-        await base.SaveChangesAsync();
+        catch (Exception ex)
+        {
+            // Audit is best-effort: an audit-log failure must never break the business operation.
+            DetachAuditLogs(logs);
+            Serilog.Log.Warning(ex, "Audit log persistence failed; continuing without audit for this operation.");
+        }
+    }
+
+    private void DetachAuditLogs(List<AuditLog> logs)
+    {
+        foreach (var log in logs)
+        {
+            var entry = Entry(log);
+            if (entry.State != EntityState.Detached)
+            {
+                entry.State = EntityState.Detached;
+            }
+        }
     }
 
     // Değişiklikleri geçici tutan yardımcı iç sınıf
