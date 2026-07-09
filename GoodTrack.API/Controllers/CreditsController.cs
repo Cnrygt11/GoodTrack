@@ -3,11 +3,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.Http;
 using System.Threading.Tasks;
-using MediatR;
 using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.DTOs.Credits;
 using GoodTrack.API.Models;
-using GoodTrack.API.Features.Credits;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Constants;
 using System.Threading;
@@ -18,22 +16,20 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class CreditsController : BaseApiController
 {
-    private readonly IMediator _mediator;
     private readonly ICreditsService _creditsService;
 
-    public CreditsController(IMediator mediator, ICreditsService creditsService)
+    public CreditsController(ICreditsService creditsService)
     {
-        _mediator = mediator;
         _creditsService = creditsService;
     }
 
     /// <summary>
-    /// Gets current credits for the authenticated user using CQRS Query.
+    /// Gets current credits for the authenticated user.
     /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<UserCredit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetCredits()
+    public async Task<IActionResult> GetCredits(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -41,19 +37,18 @@ public class CreditsController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
         }
 
-        var query = new GetUserCreditsQuery(userId);
-        var result = await _mediator.Send(query);
-        return Ok(result);
+        var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
+        return Ok(ApiResponse<UserCredit>.Ok(credits));
     }
 
     /// <summary>
-    /// Upgrades the user plan using CQRS Command.
+    /// Upgrades the user plan.
     /// </summary>
     [HttpPost("upgrade")]
     [ProducesResponseType(typeof(ApiResponse<UserCredit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> UpgradePlan([FromBody] UpgradePlanRequest request)
+    public async Task<IActionResult> UpgradePlan([FromBody] UpgradePlanRequest request, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -61,9 +56,8 @@ public class CreditsController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
         }
 
-        var command = new UpgradePlanCommand(userId, request.Plan);
-        var result = await _mediator.Send(command);
-        return Ok(result);
+        var updatedCredits = await _creditsService.UpgradePlanAsync(userId, request.Plan, cancellationToken);
+        return Ok(ApiResponse<UserCredit>.Ok(updatedCredits));
     }
 
     /// <summary>

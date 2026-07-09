@@ -28,8 +28,7 @@ try
     builder.Services.AddControllers();
     builder.Services.AddHttpContextAccessor();
 
-    // MediatR + FluentValidation
-    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+    // FluentValidation
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<FeedbackInputDtoValidator>();
 

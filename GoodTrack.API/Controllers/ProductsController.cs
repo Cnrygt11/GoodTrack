@@ -8,15 +8,10 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 using Microsoft.Extensions.Logging;
-using MediatR;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Common;
-using GoodTrack.API.Features.Products;
-using GoodTrack.API.Features.Products.CreateOrder;
-using GoodTrack.API.Features.Products.UpdateOrderStatus;
-using GoodTrack.API.Features.Products.DeleteProduct;
 
 namespace GoodTrack.API.Controllers;
 
@@ -24,7 +19,6 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class ProductsController : BaseApiController
 {
-    private readonly IMediator _mediator;
     private readonly IProductService _productService;
     private readonly IOrderWorkflowService _orderWorkflowService;
     private readonly ILogger<ProductsController> _logger;
@@ -45,12 +39,10 @@ public class ProductsController : BaseApiController
     };
 
     public ProductsController(
-        IMediator mediator,
-        IProductService productService, 
+        IProductService productService,
         IOrderWorkflowService orderWorkflowService,
         ILogger<ProductsController> logger)
     {
-        _mediator = mediator;
         _productService = productService;
         _orderWorkflowService = orderWorkflowService;
         _logger = logger;
@@ -67,9 +59,8 @@ public class ProductsController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
         }
 
-        var query = new GetProductsForUserQuery(userId, role);
-        var result = await _mediator.Send(query, cancellationToken);
-        return Ok(result);
+        var products = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
+        return Ok(new ApiResponse<List<ProductResponseDto>>(products));
     }
 
     [HttpPost]
@@ -89,15 +80,10 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
         }
 
-        var command = new CreateOrderCommand(userId, userName, dto);
-        var result = await _mediator.Send(command);
+        _logger.LogInformation("Creating order code {Code} for Seller: {SellerId}", dto.Code, userId);
+        var product = await _productService.CreateOrderAsync(userId, userName, dto);
 
-        if (result.Data is null)
-        {
-            return BadRequest(ApiResponse.Fail("Sipariş oluşturulamadı."));
-        }
-
-        return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, new ApiResponse<object>(new { product = result.Data, message = "Sipariş başarıyla üretime gönderildi." }));
+        return CreatedAtAction(nameof(GetById), new { id = product.Id }, new ApiResponse<object>(new { product, message = "Sipariş başarıyla üretime gönderildi." }));
     }
 
     [HttpPut("{id}/status")]
@@ -124,9 +110,9 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail($"Geçersiz durum bilgisi: {request.Status}"));
         }
 
-        var command = new UpdateOrderStatusCommand(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
-        var result = await _mediator.Send(command);
-        return Ok(result);
+        _logger.LogInformation("Updating status of order {Id} to {Status} by User {UserId}", id, request.Status, userId);
+        await _orderWorkflowService.UpdateOrderStatusAsync(userId, role, id, request.Status, request.DefectNote, request.DefectImage);
+        return Ok(new ApiResponse<object>(new { id, status = request.Status }, "Sipariş durumu başarıyla güncellendi."));
     }
 
     [HttpPut("{id}")]
@@ -199,9 +185,9 @@ public class ProductsController : BaseApiController
             return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
         }
 
-        var command = new DeleteProductCommand(userId, id);
-        var result = await _mediator.Send(command);
-        return Ok(result);
+        _logger.LogInformation("Seller {UserId} deleting order {Id}", userId, id);
+        await _productService.DeleteProductAsync(userId, id);
+        return Ok(ApiResponse.Ok("Sipariş başarıyla silindi."));
     }
 
     [HttpPost("read-status")]

@@ -10,15 +10,12 @@ using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
 
-using MediatR;
-using GoodTrack.API.Features.Common.Events;
-
 namespace GoodTrack.API.Services;
 
 public sealed class OrderWorkflowService : IOrderWorkflowService
 {
     private readonly IProductRepository _productRepository;
-    private readonly IMediator _mediator;
+    private readonly INotificationService _notificationService;
     private readonly IImageStorageService _imageStorageService;
     private readonly IImageCleanupService _imageCleanupService;
     private readonly ICreditsService _creditsService;
@@ -27,14 +24,14 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
 
     public OrderWorkflowService(
         IProductRepository productRepository,
-        IMediator mediator,
+        INotificationService notificationService,
         IImageStorageService imageStorageService,
         IImageCleanupService imageCleanupService,
         ICreditsService creditsService,
         ILogger<OrderWorkflowService> logger)
     {
         _productRepository = productRepository;
-        _mediator = mediator;
+        _notificationService = notificationService;
         _imageStorageService = imageStorageService;
         _imageCleanupService = imageCleanupService;
         _creditsService = creditsService;
@@ -404,15 +401,9 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         });
     }
 
-    private async Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
+    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
     {
-        try
-        {
-            await _mediator.Publish(new UserNotificationEvent(userIds, method));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
-        }
+        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
+        return _notificationService.NotifyUsersAsync(userIds, method);
     }
 }

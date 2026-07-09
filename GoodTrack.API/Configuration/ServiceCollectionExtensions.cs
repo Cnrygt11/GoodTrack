@@ -111,6 +111,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IImageStorageService, Base64ImageStorageService>();
         services.AddScoped<IImageCleanupService, ImageCleanupService>();
         services.AddScoped<ICreditsService, CreditsService>();
+        services.AddScoped<IFeedbackService, FeedbackService>();
+        services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IEmailService, MailKitEmailService>();
 
         // Etsy integration: typed HttpClient + OAuth + orchestration service

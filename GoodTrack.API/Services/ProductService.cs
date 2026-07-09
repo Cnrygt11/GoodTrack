@@ -14,9 +14,6 @@ using GoodTrack.API.Constants;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Infrastructure;
 
-using MediatR;
-using GoodTrack.API.Features.Common.Events;
-
 namespace GoodTrack.API.Services;
 
 public sealed class ProductService : IProductService
@@ -24,7 +21,7 @@ public sealed class ProductService : IProductService
     private readonly IProductRepository _productRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserConnectionRepository _userConnectionRepository;
-    private readonly IMediator _mediator;
+    private readonly INotificationService _notificationService;
     private readonly IImageStorageService _imageStorageService;
     private readonly IImageCleanupService _imageCleanupService;
     private readonly ICreditsService _creditsService;
@@ -35,7 +32,7 @@ public sealed class ProductService : IProductService
         IProductRepository productRepository,
         IUserRepository userRepository,
         IUserConnectionRepository userConnectionRepository,
-        IMediator mediator,
+        INotificationService notificationService,
         IImageStorageService imageStorageService,
         IImageCleanupService imageCleanupService,
         ICreditsService creditsService,
@@ -45,7 +42,7 @@ public sealed class ProductService : IProductService
         _productRepository = productRepository;
         _userRepository = userRepository;
         _userConnectionRepository = userConnectionRepository;
-        _mediator = mediator;
+        _notificationService = notificationService;
         _imageStorageService = imageStorageService;
         _imageCleanupService = imageCleanupService;
         _creditsService = creditsService;
@@ -360,15 +357,9 @@ public sealed class ProductService : IProductService
         };
     }
 
-    private async Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
+    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
     {
-        try
-        {
-            await _mediator.Publish(new UserNotificationEvent(userIds, method));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
-        }
+        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
+        return _notificationService.NotifyUsersAsync(userIds, method);
     }
 }

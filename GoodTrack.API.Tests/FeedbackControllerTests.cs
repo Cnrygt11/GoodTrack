@@ -5,24 +5,23 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Xunit;
+using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Controllers;
 using GoodTrack.API.DTOs.Feedback;
 using GoodTrack.API.DTOs.Common;
 using System.Security.Claims;
-using MediatR;
-using GoodTrack.API.Features.Feedbacks.SubmitFeedback;
 
 namespace GoodTrack.API.Tests;
 
 public class FeedbackControllerTests
 {
-    private readonly Mock<IMediator> _mediatorMock;
+    private readonly Mock<IFeedbackService> _feedbackServiceMock;
     private readonly FeedbackController _controller;
 
     public FeedbackControllerTests()
     {
-        _mediatorMock = new Mock<IMediator>();
-        _controller = new FeedbackController(_mediatorMock.Object);
+        _feedbackServiceMock = new Mock<IFeedbackService>();
+        _controller = new FeedbackController(_feedbackServiceMock.Object);
 
         // Mock User Claims (HttpContext yetkilendirme simülasyonu)
         var userClaims = new ClaimsPrincipal(new ClaimsIdentity(new[]
@@ -37,7 +36,7 @@ public class FeedbackControllerTests
     }
 
     [Fact]
-    public async Task SubmitFeedback_ShouldSendCommandAndReturnOk()
+    public async Task SubmitFeedback_ShouldCallServiceAndReturnOk()
     {
         // Arrange
         var input = new FeedbackInputDto
@@ -47,24 +46,20 @@ public class FeedbackControllerTests
             BrowserInfo = "Chrome/Windows"
         };
 
-        var expectedResponse = ApiResponse<string>.Ok("Geri bildiriminiz başarıyla iletildi.");
-
-        _mediatorMock.Setup(m => m.Send(It.IsAny<SubmitFeedbackCommand>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(expectedResponse);
+        _feedbackServiceMock
+            .Setup(s => s.SubmitFeedbackAsync("user-123", input.Title, input.Message, input.BrowserInfo, It.IsAny<CancellationToken>()))
+            .ReturnsAsync("Geri bildiriminiz başarıyla iletildi.");
 
         // Act
-        var result = await _controller.SubmitFeedback(input);
+        var result = await _controller.SubmitFeedback(input, CancellationToken.None);
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         var apiResponse = okResult.Value.Should().BeOfType<ApiResponse<string>>().Subject;
         apiResponse.Success.Should().BeTrue();
-        
-        _mediatorMock.Verify(m => m.Send(It.Is<SubmitFeedbackCommand>(c => 
-            c.UserId == "user-123" &&
-            c.Title == "Hata Raporu" &&
-            c.Message == "Etsy senkronizasyonu yarıda kesiliyor." &&
-            c.BrowserInfo == "Chrome/Windows"
-        ), It.IsAny<CancellationToken>()), Times.Once);
+
+        _feedbackServiceMock.Verify(s => s.SubmitFeedbackAsync(
+            "user-123", "Hata Raporu", "Etsy senkronizasyonu yarıda kesiliyor.", "Chrome/Windows",
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 }

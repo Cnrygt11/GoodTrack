@@ -22,7 +22,7 @@ public class ConnectionServiceTests
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IConnectionRequestRepository> _connectionRequestRepositoryMock;
     private readonly Mock<IUserConnectionRepository> _userConnectionRepositoryMock;
-    private readonly Mock<MediatR.IMediator> _mediatorMock;
+    private readonly Mock<INotificationService> _notificationServiceMock;
     private readonly Mock<ILogger<ConnectionService>> _loggerMock;
     private readonly ConnectionService _connectionService;
 
@@ -31,14 +31,14 @@ public class ConnectionServiceTests
         _userRepositoryMock = new Mock<IUserRepository>();
         _connectionRequestRepositoryMock = new Mock<IConnectionRequestRepository>();
         _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
-        _mediatorMock = new Mock<MediatR.IMediator>();
+        _notificationServiceMock = new Mock<INotificationService>();
         _loggerMock = new Mock<ILogger<ConnectionService>>();
 
         _connectionService = new ConnectionService(
             _userRepositoryMock.Object,
             _connectionRequestRepositoryMock.Object,
             _userConnectionRepositoryMock.Object,
-            _mediatorMock.Object,
+            _notificationServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -94,7 +94,7 @@ public class ConnectionServiceTests
 
         // Assert
         _userConnectionRepositoryMock.Verify(r => r.DeleteAsync(userId, targetId, It.IsAny<CancellationToken>()), Times.Once);
-        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionUpdate" && e.UserIds.Contains(userId) && e.UserIds.Contains(targetId)), It.IsAny<CancellationToken>()), Times.Once);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.Is<IReadOnlyList<string>>(ids => ids.Contains(userId) && ids.Contains(targetId)), "ReceiveConnectionUpdate", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public class ConnectionServiceTests
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.Is<ConnectionRequest>(
             req => req.SenderId == senderId && req.ReceiverId == receiverUser.Id && req.Status == "pending")), Times.Once);
         
-        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionRequest" || e.Method == "ReceiveConnectionUpdate"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionRequest" || m == "ReceiveConnectionUpdate"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -210,7 +210,7 @@ public class ConnectionServiceTests
         request.Status.Should().Be("accepted");
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(request), Times.Once);
 
-        _mediatorMock.Verify(m => m.Publish(It.Is<GoodTrack.API.Features.Common.Events.UserNotificationEvent>(e => e.Method == "ReceiveConnectionUpdate" || e.Method == "ReceiveConnectionRequest"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionUpdate" || m == "ReceiveConnectionRequest"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]

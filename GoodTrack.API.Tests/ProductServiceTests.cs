@@ -52,14 +52,13 @@ public class ProductServiceTests : IDisposable
 
         _userRepositoryMock = new Mock<IUserRepository>();
         _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
-        var mediatorMock = new Mock<MediatR.IMediator>();
         _imageStorageServiceMock = new Mock<IImageStorageService>();
 
         _productService = new ProductService(
             _productRepository,
             _userRepositoryMock.Object,
             _userConnectionRepositoryMock.Object,
-            mediatorMock.Object,
+            Mock.Of<INotificationService>(),
             _imageStorageServiceMock.Object,
             Mock.Of<IImageCleanupService>(),
             _creditsService,

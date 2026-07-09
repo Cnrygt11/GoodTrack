@@ -11,9 +11,6 @@ using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
 
-using MediatR;
-using GoodTrack.API.Features.Common.Events;
-
 namespace GoodTrack.API.Services;
 
 public sealed class ConnectionService : IConnectionService
@@ -21,20 +18,20 @@ public sealed class ConnectionService : IConnectionService
     private readonly IUserRepository _userRepository;
     private readonly IConnectionRequestRepository _connectionRequestRepository;
     private readonly IUserConnectionRepository _userConnectionRepository;
-    private readonly IMediator _mediator;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<ConnectionService> _logger;
 
     public ConnectionService(
         IUserRepository userRepository,
         IConnectionRequestRepository connectionRequestRepository,
         IUserConnectionRepository userConnectionRepository,
-        IMediator mediator,
+        INotificationService notificationService,
         ILogger<ConnectionService> logger)
     {
         _userRepository = userRepository;
         _connectionRequestRepository = connectionRequestRepository;
         _userConnectionRepository = userConnectionRepository;
-        _mediator = mediator;
+        _notificationService = notificationService;
         _logger = logger;
     }
 
@@ -268,27 +265,14 @@ public sealed class ConnectionService : IConnectionService
         CreatedAt = r.CreatedAt
     };
 
-    private async Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
+    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
     {
-        try
-        {
-            await _mediator.Publish(new UserNotificationEvent(userIds, method));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for users: {UserIds}", method, string.Join(", ", userIds));
-        }
+        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
+        return _notificationService.NotifyUsersAsync(userIds, method);
     }
 
-    private async Task SafeNotifyUserAsync(string userId, string method)
+    private Task SafeNotifyUserAsync(string userId, string method)
     {
-        try
-        {
-            await _mediator.Publish(new UserNotificationEvent(new[] { userId }, method));
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "MediatR event-driven notification '{Method}' failed for user: {UserId}", method, userId);
-        }
+        return _notificationService.NotifyUsersAsync(new[] { userId }, method);
     }
 }

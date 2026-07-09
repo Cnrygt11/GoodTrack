@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Threading;
 using System.Threading.Tasks;
-using MediatR;
+using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Feedback;
 using GoodTrack.API.DTOs.Common;
-using GoodTrack.API.Features.Feedbacks.SubmitFeedback;
 using Microsoft.AspNetCore.Http;
 
 namespace GoodTrack.API.Controllers;
@@ -14,21 +14,21 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class FeedbackController : BaseApiController
 {
-    private readonly IMediator _mediator;
+    private readonly IFeedbackService _feedbackService;
 
-    public FeedbackController(IMediator mediator)
+    public FeedbackController(IFeedbackService feedbackService)
     {
-        _mediator = mediator;
+        _feedbackService = feedbackService;
     }
 
     /// <summary>
-    /// Submits user feedback using CQRS Command.
+    /// Submits user feedback.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> SubmitFeedback([FromBody] FeedbackInputDto input)
+    public async Task<IActionResult> SubmitFeedback([FromBody] FeedbackInputDto input, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId is null)
@@ -36,8 +36,7 @@ public class FeedbackController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
         }
 
-        var command = new SubmitFeedbackCommand(userId, input.Title, input.Message, input.BrowserInfo);
-        var result = await _mediator.Send(command);
-        return Ok(result);
+        var message = await _feedbackService.SubmitFeedbackAsync(userId, input.Title, input.Message, input.BrowserInfo, cancellationToken);
+        return Ok(ApiResponse<string>.Ok(message));
     }
 }

@@ -26,13 +26,12 @@ public class OrderWorkflowServiceTests
     public OrderWorkflowServiceTests()
     {
         _productRepositoryMock = new Mock<IProductRepository>();
-        var mediatorMock = new Mock<MediatR.IMediator>();
         _imageStorageServiceMock = new Mock<IImageStorageService>();
         _creditsServiceMock = new Mock<ICreditsService>();
 
         _workflowService = new OrderWorkflowService(
             _productRepositoryMock.Object,
-            mediatorMock.Object,
+            Mock.Of<INotificationService>(),
             _imageStorageServiceMock.Object,
             Mock.Of<IImageCleanupService>(),
             _creditsServiceMock.Object,
