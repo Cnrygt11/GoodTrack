@@ -1,0 +1,528 @@
+/* ===== Responsive B2B Directory Grid ===== */
+.b2b-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 850px) {
+  .b2b-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== SearchMfrPage ===== */
+
+.smfr-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.smfr-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+}
+.smfr-header h1 {
+  margin: 0;
+  font-size: 26px;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+.smfr-header p {
+  margin: 8px 0 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.smfr-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.smfr-filters-card {
+  padding: 20px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.smfr-filters-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.smfr-filters-title {
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.5px;
+  color: var(--accent-seller);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.smfr-reset-btn {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.smfr-search-wrap {
+  position: relative;
+}
+.smfr-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+}
+.smfr-search-input {
+  width: 100%;
+  padding-left: 36px;
+  font-size: 13px;
+}
+
+.filter-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+.filter-checkbox-list {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.filter-checkbox-list--full {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px;
+  background: var(--surface);
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
+.filter-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+.filter-checkbox-item--checked {
+  background: var(--accent-seller-glow);
+}
+.filter-checkbox-item--checked span {
+  color: var(--accent-seller);
+}
+.filter-checkbox-item--unchecked span {
+  color: var(--text);
+}
+.filter-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.filter-toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.smfr-results {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.smfr-results-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+}
+.smfr-results-bar strong {
+  color: var(--text);
+}
+
+.smfr-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.mfr-card {
+  padding: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+  justify-content: space-between;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+.mfr-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+.mfr-card-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.mfr-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1.5px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.mfr-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+.mfr-avatar-initials {
+  font-weight: 600;
+  color: var(--accent-mfr);
+  font-size: 15px;
+}
+.mfr-name-block {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.mfr-fullname {
+  font-size: 14.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-seller);
+  font-weight: 600;
+}
+.mfr-handle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.mfr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.mfr-city-badge {
+  font-size: 11px;
+  background: var(--surface2);
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+.mfr-match-badge {
+  font-size: 11px;
+  background: var(--accent-seller-glow);
+  color: var(--accent-seller);
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--accent-seller);
+  font-weight: 600;
+}
+
+.mfr-bio {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 0 0 14px 0;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.mfr-bio--empty {
+  font-size: 13px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0 0 14px 0;
+}
+
+.mfr-keywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+.mfr-keyword-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.mfr-gallery {
+  margin-bottom: 14px;
+}
+.mfr-gallery-label {
+  font-size: 11px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.mfr-gallery-strip {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.mfr-gallery-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  cursor: zoom-in;
+}
+.mfr-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mfr-card-action {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.mfr-status-pill {
+  width: 100%;
+  padding: 8px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.mfr-status-pill--connected {
+  color: var(--success);
+}
+.mfr-status-pill--pending {
+  color: var(--accent-seller);
+}
+.mfr-connect-btn {
+  width: 100%;
+  background: var(--accent-seller) !important;
+  color: var(--color-on-accent) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px !important;
+  font-weight: 600;
+}
+
+/* ===== B2B MANUFACTURER DIRECTORY SEARCH STYLES ===== */
+.smfr-no-cities-msg {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.smfr-loading-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 0 !important;
+  gap: 16px;
+}
+
+.smfr-loader-icon {
+  color: var(--accent-seller);
+}
+
+.smfr-loading-text {
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.smfr-error-card {
+  text-align: center;
+  padding: 50px 20px !important;
+}
+
+.smfr-error-icon {
+  color: var(--danger);
+  margin-bottom: 16px;
+}
+
+.smfr-error-title {
+  color: var(--danger);
+  margin-bottom: 12px;
+}
+
+.smfr-error-msg {
+  color: var(--muted);
+  max-width: 400px;
+  margin: 0 auto 24px auto;
+}
+
+.smfr-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.smfr-empty-card {
+  padding: 60px 20px !important;
+  text-align: center;
+}
+
+.smfr-empty-icon {
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.smfr-map-pin {
+  color: var(--danger);
+}
+
+.smfr-loadmore-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 28px;
+  padding-bottom: 20px;
+}
+
+.smfr-loadmore-btn {
+  padding: 10px 24px !important;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Locked Manufacturer Search Page */
+.smfr-locked-container {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+}
+
+.smfr-locked-blur {
+  filter: blur(5px);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.45;
+}
+
+.smfr-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(1px);
+  z-index: 10;
+  border-radius: var(--radius);
+  padding: 30px;
+  text-align: center;
+}
+
+.smfr-lock-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 40px;
+  max-width: 480px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  animation: scaleUp 0.3s ease-out;
+}
+
+.smfr-lock-icon {
+  color: var(--accent-seller, #f59e0b);
+  animation: pulse 2s infinite;
+}
+
+.smfr-lock-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  letter-spacing: 1px;
+  color: var(--text);
+}
+
+.smfr-lock-progress {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent-seller);
+  background: rgba(245, 158, 11, 0.08);
+  padding: 8px 20px;
+  border-radius: 20px;
+  margin-top: 4px;
+}
+
+.smfr-lock-overlay--clickable {
+  cursor: pointer;
+}

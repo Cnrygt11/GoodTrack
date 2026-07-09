@@ -26,7 +26,6 @@ public sealed class FeedbackService : IFeedbackService
 
         var feedback = new Feedback
         {
-            Id = Guid.NewGuid().ToString(),
             UserId = userId,
             Username = user.Username,
             Role = user.Role,

@@ -1,0 +1,613 @@
+/* ===== MOCK PAYMENT MODAL STYLES ===== */
+.payment-simulation-modal {
+  position: relative;
+  width: 460px;
+  max-width: 100%;
+  color: var(--text, #ffffff);
+}
+
+.payment-modal-close-btn {
+  position: absolute;
+  top: -15px;
+  right: -15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.payment-modal-close-btn:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.payment-modal-header {
+  margin-bottom: 16px;
+}
+
+.payment-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.payment-modal-title {
+  margin: 0;
+  font-family: var(--font-heading, 'Bebas Neue', sans-serif);
+  font-size: 24px !important;
+  letter-spacing: 2px !important;
+  color: var(--text);
+  line-height: 1;
+}
+
+.sparkle-glow-icon {
+  color: var(--accent-seller, #f59e0b);
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.5));
+}
+
+.payment-modal-subtitle {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-seller, #f59e0b);
+  background: rgba(245, 158, 11, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-block;
+}
+
+.payment-modal-alert {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px dashed rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.alert-banner-icon {
+  color: var(--accent-seller, #f59e0b);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.alert-banner-text {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+.selected-plan-badge {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.plan-badge-label {
+  display: block;
+  font-size: 9px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-badge-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+.selected-plan-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent-seller, #f59e0b);
+}
+
+.price-term {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* 3D-Like Virtual Credit Card Flip */
+.virtual-card-container {
+  perspective: 1000px;
+  width: 100%;
+  height: 190px;
+  margin-bottom: 24px;
+}
+
+.virtual-card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.virtual-card-container.flipped .virtual-card {
+  transform: rotateY(180deg);
+}
+
+.virtual-card-front,
+.virtual-card-back {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: 14px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.virtual-card-front {
+  background: linear-gradient(135deg, #1e1b4b 0%, #311005 60%, #170701 100%);
+}
+
+.virtual-card-back {
+  background: linear-gradient(135deg, #170701 0%, #1e1b4b 100%);
+  transform: rotateY(180deg);
+  padding: 20px 0;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.card-glass-glow {
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 70%);
+  transform: rotate(30deg);
+  pointer-events: none;
+}
+
+.card-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-chip {
+  width: 40px;
+  height: 30px;
+  background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  border-radius: 6px;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  padding: 2px;
+  gap: 2px;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.chip-line {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 2px;
+}
+
+.card-logo {
+  font-family: var(--font-heading, 'Bebas Neue', sans-serif);
+  font-size: 16px;
+  letter-spacing: 1.5px;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.card-middle-row {
+  margin: 15px 0;
+}
+
+.card-number-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 20px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow: 1px 2px 2px rgba(0, 0, 0, 0.8);
+  word-spacing: 3px;
+}
+
+.card-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.card-holder-info,
+.card-expiry-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-bottom-label {
+  font-size: 7.5px;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.card-bottom-value {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: bold;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+  text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.card-black-strip {
+  width: 100%;
+  height: 38px;
+  background: #000000;
+  margin-top: 10px;
+}
+
+.card-cvc-strip {
+  width: 85%;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.8);
+  margin: 0 auto;
+  border-radius: 4px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding-right: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.signature-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 80%;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.05),
+    rgba(0, 0, 0, 0.05) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.cvc-bubble-display {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 14px;
+  font-weight: bold;
+  color: #000000;
+  letter-spacing: 1px;
+}
+
+.card-back-text {
+  font-size: 7px;
+  color: rgba(255, 255, 255, 0.35);
+  line-height: 1.3;
+  padding: 0 20px;
+  text-align: center;
+}
+
+/* Form Styles */
+.payment-checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-form-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 6px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.payment-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.payment-form-field.half {
+  flex: 1;
+}
+
+.payment-form-row {
+  display: flex;
+  gap: 12px;
+}
+
+.payment-form-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.payment-form-input {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 13px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.payment-form-input:focus {
+  outline: none;
+  border-color: var(--accent-seller, #f59e0b);
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.15);
+}
+
+.payment-form-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 14px;
+  gap: 12px;
+}
+
+.btn-fill-test-card {
+  background: transparent;
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+  color: var(--accent-seller, #f59e0b);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-fill-test-card:hover {
+  background: rgba(245, 158, 11, 0.08);
+  border-style: solid;
+}
+
+.btn-pay-submit {
+  background: var(--accent-seller, #f59e0b);
+  border: none;
+  color: #000000;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.25);
+}
+
+.btn-pay-submit:hover {
+  background: #fbbf24;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(245, 158, 11, 0.35);
+}
+
+.btn-pay-submit:active {
+  transform: translateY(0);
+}
+
+/* Processing and Success Screen */
+.payment-processing-panel {
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.payment-spinner-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.spinning-loader-icon {
+  color: var(--accent-seller, #f59e0b);
+  animation: spin 1s linear infinite;
+}
+
+.processing-text-sequence {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.processing-status-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+
+/* Dots bounce animation */
+.progress-dots-wave {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.progress-dots-wave .dot {
+  width: 5px;
+  height: 5px;
+  background: var(--accent-seller, #f59e0b);
+  border-radius: 50%;
+  animation: dotWave 1.2s infinite ease-in-out;
+}
+
+.progress-dots-wave .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.progress-dots-wave .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes dotWave {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+/* Success Screen */
+.payment-success-animation {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.success-checkmark-circle {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 2px solid #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.2);
+  animation: scaleBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.checkmark-success-icon {
+  color: #10b981;
+  animation: drawCheck 0.3s ease-in-out 0.2s both;
+}
+
+.payment-success-title {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.payment-success-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+@keyframes scaleBounce {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes drawCheck {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Disabled Filter Card Styles for Free Plan */
+.smfr-filters-card--disabled {
+  opacity: 0.55;
+  pointer-events: none;
+  user-select: none;
+  cursor: not-allowed !important;
+}
+
+.filter-checkbox-item--disabled,
+.filter-toggle-item--disabled {
+  cursor: not-allowed !important;
+  color: var(--text-muted, #7c7c8a) !important;
+}
+
+/* Catalog Manufacturer Selection Dropdown Styling */
+.catalog-mfr-select {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background-color: var(--surface2) !important;
+  color: var(--text) !important;
+  cursor: pointer;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.catalog-mfr-select:focus {
+  border-color: var(--accent-seller);
+}
+
+.catalog-mfr-select option {
+  background-color: #1e1e2d !important; /* Windows/Chrome için koyu arka plan */
+  color: #f3f4f6 !important; /* Açık renk yazı */
+}
+
+.light-theme .catalog-mfr-select option {
+  background-color: #ffffff !important; /* Açık arka plan */
+  color: #1e1b4b !important; /* Koyu renk yazı */
+}

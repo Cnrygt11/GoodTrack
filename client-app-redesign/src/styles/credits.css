@@ -1,0 +1,66 @@
+/* Navbar Widget */
+.credits-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface2, rgba(255, 255, 255, 0.05));
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  height: 32px;
+  box-sizing: border-box;
+}
+
+.credits-widget:hover {
+  background: var(--accent-seller-glow, rgba(245, 158, 11, 0.1));
+  border-color: var(--accent-seller, #f59e0b);
+}
+
+.credits-widget--low {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.credits-widget--low:hover {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
+}
+
+.credits-widget--low .credits-widget-balance {
+  color: #fbbf24; /* Warning Yellow */
+  font-weight: 600;
+}
+
+.credits-widget-icon {
+  color: var(--accent-seller, #f59e0b);
+}
+
+.credits-widget-plan {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+}
+
+.credits-widget-divider {
+  color: var(--border);
+  opacity: 0.6;
+}
+
+.credits-widget-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-seller);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ===== Credits page styles moved to CreditsPage.module.css ===== */
