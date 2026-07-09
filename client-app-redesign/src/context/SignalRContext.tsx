@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
+import { connectionKeys } from '../hooks/useConnectionsData';
 import { getHubUrl } from '../services/apiClient';
 import { AUTH_STORAGE_KEYS } from '../constants/authKeys';
 
@@ -9,20 +11,14 @@ const SignalRContext = createContext<HubConnection | null>(null);
 
 export function SignalRProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
-  const { loadProducts, loadIncomingRequests, loadSentRequests, refreshConnections } = useData();
+  const { loadProducts } = useData();
+  const queryClient = useQueryClient();
   const [connection, setConnection] = useState<HubConnection | null>(null);
 
-  // Store latest callbacks in refs so the effect doesn't re-run when they are recreated.
-  // This prevents unnecessary WebSocket disconnects/reconnects on every render.
+  // Store latest callback in a ref so the effect doesn't re-run when it is recreated.
+  // (queryClient is stable across renders, so it can be referenced directly.)
   const loadProductsRef = useRef(loadProducts);
-  const loadIncomingRequestsRef = useRef(loadIncomingRequests);
-  const loadSentRequestsRef = useRef(loadSentRequests);
-  const refreshConnectionsRef = useRef(refreshConnections);
-
   useEffect(() => { loadProductsRef.current = loadProducts; }, [loadProducts]);
-  useEffect(() => { loadIncomingRequestsRef.current = loadIncomingRequests; }, [loadIncomingRequests]);
-  useEffect(() => { loadSentRequestsRef.current = loadSentRequests; }, [loadSentRequests]);
-  useEffect(() => { refreshConnectionsRef.current = refreshConnections; }, [refreshConnections]);
 
   useEffect(() => {
     if (!user) {
@@ -65,15 +61,15 @@ export function SignalRProvider({ children }: { children: React.ReactNode }) {
     newConnection.on('ReceiveConnectionRequest', () => {
       if (import.meta.env.DEV) console.log('[SignalR] Received Connection Request List Notification. Scheduling fetch...');
       setTimeout(() => {
-        loadIncomingRequestsRef.current();
-        loadSentRequestsRef.current();
+        queryClient.invalidateQueries({ queryKey: connectionKeys.incoming });
+        queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
       }, 1000);
     });
 
     newConnection.on('ReceiveConnectionUpdate', () => {
       if (import.meta.env.DEV) console.log('[SignalR] Received Connection Listing Notification. Scheduling fetch...');
       setTimeout(() => {
-        refreshConnectionsRef.current();
+        queryClient.invalidateQueries({ queryKey: connectionKeys.connections });
       }, 1000);
     });
 

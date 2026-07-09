@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
-import { useData } from '../context/DataContext';
 import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
+import { useConnectionsQuery } from './useConnectionsData';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -9,7 +9,7 @@ import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useCatalog() {
-  const { connections } = useData();
+  const { connections } = useConnectionsQuery();
   const { catalogProducts, loadCatalog } = useCatalogProducts();
   const { extraFieldDefs } = useExtraFieldDefs();
   const { showToast } = useToast();

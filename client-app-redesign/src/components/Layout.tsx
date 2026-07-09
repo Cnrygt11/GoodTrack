@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { useData } from '../context/DataContext';
+import { useIncomingRequestsQuery } from '../hooks/useConnectionsData';
 import { ROUTES } from '../constants/routes';
 import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
 import FeedbackModal from './ui/FeedbackModal';
@@ -15,7 +15,7 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const { user, logout } = useAuth();
   const { theme, language, toggleTheme, setLanguage, t } = useSettings();
-  const { incomingRequests } = useData();
+  const { incomingRequests } = useIncomingRequestsQuery();
   const navigate = useNavigate();
   const location = useLocation();
   const currentPath = location.pathname;

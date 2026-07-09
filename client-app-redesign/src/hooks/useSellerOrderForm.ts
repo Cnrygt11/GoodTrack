@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useData } from '../context/DataContext';
 import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
+import { useConnectionsQuery } from './useConnectionsData';
 import useCredits from './useCredits';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -62,12 +63,12 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   const {
     products,
     loadProducts,
-    connections,
     optimisticAddProduct,
     optimisticUpdateProduct,
     optimisticRemoveProduct,
     rollbackProducts,
   } = useData();
+  const { connections } = useConnectionsQuery();
   const { catalogProducts } = useCatalogProducts();
   const { extraFieldDefs, loadExtraFields } = useExtraFieldDefs();
   const { fetchCredits } = useCredits();

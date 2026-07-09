@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, UserProfile, ConnectionRequest } from '../services/apiClient';
 import { useData } from '../context/DataContext';
 import useCredits from './useCredits';
+import { connectionKeys, useConnectionsQuery, useSentRequestsQuery } from './useConnectionsData';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
@@ -24,7 +26,10 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { products, connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
+  const { products } = useData();
+  const { connections } = useConnectionsQuery();
+  const { sentRequests } = useSentRequestsQuery();
+  const queryClient = useQueryClient();
   const { plan } = useCredits();
   const { showToast } = useToast();
   const { t, language } = useSettings();
@@ -55,12 +60,8 @@ export default function useSearchMfr() {
     return null;
   }, [plan]);
 
-  // Load B2B connections and sent requests on mount to ensure fresh state
-  useEffect(() => {
-    refreshConnections().catch(console.error);
-    loadSentRequests().catch(console.error);
-  }, [refreshConnections, loadSentRequests]);
-  
+  // (Bağlantı ve gönderilen istek verileri React Query tarafından mount'ta otomatik çekilir.)
+
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
@@ -159,34 +160,36 @@ export default function useSearchMfr() {
       status: 'pending',
       createdAt: new Date().toISOString()
     };
-    const prevSent = [...sentRequests];
-    
+    const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
+
     // Optimistic Update
-    optimisticAddSentRequest(tempRequest);
+    queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) => [...(old ?? []), tempRequest]);
 
     try {
       await api.sendConnectionRequest(username);
+      await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
     } catch (err: unknown) {
       // Rollback on failure
-      rollbackSentRequests(prevSent);
+      queryClient.setQueryData(connectionKeys.sent, prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [showToast, sentRequests, optimisticAddSentRequest, rollbackSentRequests]);
+  }, [showToast, queryClient]);
 
   const handleCancelConnection = useCallback(async (requestId: string) => {
-    const prevSent = [...sentRequests];
+    const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
 
     // Optimistic Update
-    optimisticRemoveSentRequest(requestId);
+    queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) => (old ?? []).filter(r => r.id !== requestId));
 
     try {
       await api.deleteSentRequest(requestId);
+      await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
     } catch (err: unknown) {
       // Rollback on failure
-      rollbackSentRequests(prevSent);
+      queryClient.setQueryData(connectionKeys.sent, prevSent);
       showToast(extractErrorMessage(err));
     }
-  }, [showToast, sentRequests, optimisticRemoveSentRequest, rollbackSentRequests]);
+  }, [showToast, queryClient]);
 
   return {
     loading,

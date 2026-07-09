@@ -1,31 +1,19 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { api, Product, ConnectionUser, ConnectionRequest } from '../services/apiClient';
+import { api, Product } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
+
+// NOTE: Credits, catalog, extra-fields and the connections/requests domains have all
+// been migrated to React Query (see hooks/useCredits, useCatalogData, useConnectionsData).
+// DataContext now owns only the orders (products) domain, which still uses the hand-rolled
+// optimistic-merge engine below; migrating it to React Query is the remaining step.
 
 interface DataContextType {
   products: Product[];
-  connections: ConnectionUser[];
-  incomingRequests: ConnectionRequest[];
-  sentRequests: ConnectionRequest[];
   loadProducts: () => Promise<void>;
-  refreshConnections: () => Promise<void>;
-  loadIncomingRequests: () => Promise<void>;
-  loadSentRequests: () => Promise<void>;
 
   // Semantic optimistic actions — replaces raw setState dispatchers
-  optimisticAddSentRequest: (req: ConnectionRequest) => void;
-  optimisticRemoveSentRequest: (requestId: string) => void;
-  rollbackSentRequests: (prev: ConnectionRequest[]) => void;
-
-  optimisticAddConnection: (conn: ConnectionUser) => void;
-  optimisticRemoveConnection: (targetId: string) => void;
-  rollbackConnections: (prev: ConnectionUser[]) => void;
-
-  optimisticRemoveIncoming: (requestId: string) => void;
-  rollbackIncomingRequests: (prev: ConnectionRequest[]) => void;
-
   optimisticAddProduct: (prod: Product) => void;
   optimisticUpdateProduct: (prod: Product) => void;
   optimisticRemoveProduct: (productId: string) => void;
@@ -40,13 +28,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
   const [products, setProductsState] = useState<Product[]>([]);
-  const [connections, setConnectionsState] = useState<ConnectionUser[]>([]);
-  const [incomingRequests, setIncomingRequests] = useState<ConnectionRequest[]>([]);
-  const [sentRequests, setSentRequests] = useState<ConnectionRequest[]>([]);
-
-  // Optimistic tracking — kept internal, not exposed via context
-  const optimisticConnections = useRef<Map<string, { user: ConnectionUser, timestamp: number }>>(new Map());
-  const optimisticRemovals = useRef<Map<string, number>>(new Map());
 
   // Optimistic tracking for products
   const optimisticProducts = useRef<Map<string, { product: Product, timestamp: number }>>(new Map());
@@ -144,56 +125,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
-  /**
-   * Smart setConnections: merges optimistic additions and removals into
-   * server-returned lists to prevent flicker during in-flight requests.
-   * When called with a function (optimistic mutation) it updates the tracking maps.
-   * When called with an array (server data load) it applies active optimistic state.
-   */
-  const setConnections = useCallback((value: React.SetStateAction<ConnectionUser[]>) => {
-    setConnectionsState(prev => {
-      const next = value instanceof Function ? value(prev) : value;
-      const now = Date.now();
-
-      if (typeof value === 'function') {
-        // Optimistic change — update tracking maps
-        if (next.length > prev.length) {
-          const added = next.filter((n: ConnectionUser) => !prev.some((p: ConnectionUser) => p.id === n.id));
-          for (const conn of added) {
-            optimisticRemovals.current.delete(conn.id);
-            optimisticConnections.current.set(conn.id, { user: conn, timestamp: now });
-          }
-        } else if (next.length < prev.length) {
-          const removed = prev.filter((p: ConnectionUser) => !next.some((n: ConnectionUser) => n.id === p.id));
-          for (const conn of removed) {
-            optimisticConnections.current.delete(conn.id);
-            optimisticRemovals.current.set(conn.id, now);
-          }
-        }
-        return next;
-      } else {
-        // API Load or Rollback — clean up expired entries (TTL 15s) then merge
-        for (const [id, item] of optimisticConnections.current.entries()) {
-          if (now - item.timestamp > 15000) optimisticConnections.current.delete(id);
-        }
-        for (const [id, timestamp] of optimisticRemovals.current.entries()) {
-          if (now - timestamp > 15000) optimisticRemovals.current.delete(id);
-        }
-
-        // Apply active removals then active additions
-        let merged = next.filter((c: ConnectionUser) => !optimisticRemovals.current.has(c.id));
-        for (const [id, item] of optimisticConnections.current.entries()) {
-          if (merged.some((c: ConnectionUser) => c.id === id)) {
-            optimisticConnections.current.delete(id);
-          } else {
-            merged.push(item.user);
-          }
-        }
-        return merged;
-      }
-    });
-  }, []);
-
   // ─── Load actions ───────────────────────────────────────────────────────────
 
   const loadProducts = useCallback(async () => {
@@ -205,77 +136,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       console.error('Failed to load products:', extractErrorMessage(err));
       showToast('Siparişler yüklenirken hata oluştu.');
     }
-  }, [user, showToast]);
-
-  const refreshConnections = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await api.getConnections();
-      setConnections(data);
-    } catch (err: unknown) {
-      console.error('Failed to load connections:', extractErrorMessage(err));
-      showToast('Bağlantılar yüklenirken hata oluştu.');
-    }
-  }, [user, setConnections, showToast]);
-
-  const loadIncomingRequests = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await api.getIncomingRequests();
-      setIncomingRequests(data);
-    } catch (err: unknown) {
-      console.error('Failed to load incoming connection requests:', extractErrorMessage(err));
-      showToast('Gelen bağlantı istekleri yüklenirken hata oluştu.');
-    }
-  }, [user, showToast]);
-
-  const loadSentRequests = useCallback(async () => {
-    if (!user) return;
-    try {
-      const data = await api.getSentRequests();
-      setSentRequests(data);
-    } catch (err: unknown) {
-      console.error('Failed to load sent connection requests:', extractErrorMessage(err));
-      showToast('Gönderilen bağlantı istekleri yüklenirken hata oluştu.');
-    }
-  }, [user, showToast]);
+  }, [user, showToast, setProducts]);
 
   // ─── Semantic optimistic actions ────────────────────────────────────────────
-
-  const optimisticAddSentRequest = useCallback((req: ConnectionRequest) => {
-    setSentRequests(prev => [...prev, req]);
-  }, []);
-
-  const optimisticRemoveSentRequest = useCallback((requestId: string) => {
-    setSentRequests(prev => prev.filter(r => r.id !== requestId));
-  }, []);
-
-  const rollbackSentRequests = useCallback((prev: ConnectionRequest[]) => {
-    setSentRequests(prev);
-  }, []);
-
-  const optimisticAddConnection = useCallback((conn: ConnectionUser) => {
-    setConnections(prev => [...prev, conn]);
-  }, [setConnections]);
-
-  const optimisticRemoveConnection = useCallback((targetId: string) => {
-    setConnections(prev => prev.filter(c => c.id !== targetId));
-  }, [setConnections]);
-
-  const rollbackConnections = useCallback((prev: ConnectionUser[]) => {
-    // Direct rollback: clear optimistic tracking for the rolled-back items then restore
-    optimisticConnections.current.clear();
-    optimisticRemovals.current.clear();
-    setConnectionsState(prev);
-  }, []);
-
-  const optimisticRemoveIncoming = useCallback((requestId: string) => {
-    setIncomingRequests(prev => prev.filter(r => r.id !== requestId));
-  }, []);
-
-  const rollbackIncomingRequests = useCallback((prev: ConnectionRequest[]) => {
-    setIncomingRequests(prev);
-  }, []);
 
   const optimisticAddProduct = useCallback((prod: Product) => {
     setProducts(prev => [...prev, prod]);
@@ -299,11 +162,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const markStatusAsReadLocally = useCallback((status: string, role: string) => {
     setProductsState(prev => prev.map(p => {
       const currentStatus = p.status || (p.isDefective ? 'defective' : (p.completed ? 'completed' : (p.isPendingApproval ? 'awaiting' : 'production')));
-      
+
       let match = false;
       const lowerStatus = status.toLowerCase();
       const lowerCurrent = currentStatus.toLowerCase();
-      
+
       if (lowerStatus === 'defective') {
         match = lowerCurrent === 'defective' || lowerCurrent === 'missing';
       } else if (lowerStatus === 'shipped') {
@@ -330,35 +193,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (user) {
       loadProducts();
-      refreshConnections();
-      loadIncomingRequests();
-      loadSentRequests();
     } else {
       setProducts([]);
-      setConnections([]);
-      setIncomingRequests([]);
-      setSentRequests([]);
     }
-  }, [user, loadProducts, refreshConnections, loadIncomingRequests, loadSentRequests, setConnections]);
+  }, [user, loadProducts, setProducts]);
 
   return (
     <DataContext.Provider value={{
       products,
-      connections,
-      incomingRequests,
-      sentRequests,
       loadProducts,
-      refreshConnections,
-      loadIncomingRequests,
-      loadSentRequests,
-      optimisticAddSentRequest,
-      optimisticRemoveSentRequest,
-      rollbackSentRequests,
-      optimisticAddConnection,
-      optimisticRemoveConnection,
-      rollbackConnections,
-      optimisticRemoveIncoming,
-      rollbackIncomingRequests,
       optimisticAddProduct,
       optimisticUpdateProduct,
       optimisticRemoveProduct,
@@ -375,4 +218,3 @@ export function useData() {
   if (!context) throw new Error('useData must be used within DataProvider');
   return context;
 }
-
