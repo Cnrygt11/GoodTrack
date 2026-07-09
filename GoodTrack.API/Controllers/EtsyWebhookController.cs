@@ -124,7 +124,7 @@ public class EtsyWebhookController : BaseApiController
                 var receiptId = segments[^1].TrimEnd('/');
 
                 _logger.LogInformation("Webhook triggered order paid processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
-                
+
                 await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
             }
             catch (Exception ex)

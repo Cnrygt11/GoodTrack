@@ -23,6 +23,9 @@ jobs:
     - name: Restore Dependencies
       run: dotnet restore GoodTrack.slnx
 
+    - name: Format Check (whitespace)
+      run: dotnet format whitespace GoodTrack.slnx --verify-no-changes
+
     - name: Build Project
       run: dotnet build GoodTrack.slnx --configuration Release --no-restore
 

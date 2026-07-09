@@ -186,7 +186,7 @@ public sealed class ProfileService : IProfileService
     public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, bool mustHaveGallery = false, bool mustHaveAvatar = false)
     {
         var (users, nextCursor) = await _userRepository.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
-        
+
         var items = users.Select(MapToProfileDto).ToList();
 
         return new PagedResultDto<UserProfileDto>

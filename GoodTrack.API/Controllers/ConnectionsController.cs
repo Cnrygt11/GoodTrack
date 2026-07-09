@@ -59,7 +59,7 @@ public class ConnectionsController : BaseApiController
 
         _logger.LogInformation("User {SenderId} ({Username}) is sending a connection request to user: {Target}", senderId, senderUsername, username);
         await _connectionService.SendConnectionRequestAsync(senderId, senderUsername, senderRole, username);
-        
+
         return Created(string.Empty, ApiResponse.Ok("Bağlantı isteği gönderildi."));
     }
 

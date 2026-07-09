@@ -61,7 +61,7 @@ public class CatalogController : BaseApiController
 
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
         var response = await _catalogService.AddCatalogProductAsync(userId, dto);
-        
+
         return Created(string.Empty, new ApiResponse<CatalogProductResponseDto>(response, "Ürün başarıyla kataloğa eklendi."));
     }
 
@@ -87,7 +87,7 @@ public class CatalogController : BaseApiController
 
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
         var response = await _catalogService.UpdateCatalogProductAsync(userId, id, dto);
-        
+
         return Ok(new ApiResponse<CatalogProductResponseDto>(response, "Ürün kataloğu başarıyla güncellendi."));
     }
 

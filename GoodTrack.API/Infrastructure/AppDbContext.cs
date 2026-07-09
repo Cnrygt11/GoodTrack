@@ -56,9 +56,9 @@ public sealed class AppDbContext : DbContext
 
             var applyMethod = typeof(ModelBuilder)
                 .GetMethods()
-                .First(m => m.Name == nameof(ModelBuilder.ApplyConfiguration) 
-                            && m.GetParameters().Length == 1 
-                            && m.GetParameters()[0].ParameterType.IsGenericType 
+                .First(m => m.Name == nameof(ModelBuilder.ApplyConfiguration)
+                            && m.GetParameters().Length == 1
+                            && m.GetParameters()[0].ParameterType.IsGenericType
                             && m.GetParameters()[0].ParameterType.GetGenericTypeDefinition() == typeof(IEntityTypeConfiguration<>))
                 .MakeGenericMethod(entityType);
 

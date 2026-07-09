@@ -39,7 +39,7 @@ public class AuthController : BaseApiController
         _logger.LogInformation("Processing register request for username: {Username}", request.Username);
         string baseUrl = $"{Request.Scheme}://{Request.Host}";
         await _authService.RegisterAsync(request, baseUrl);
-        
+
         return Created(string.Empty, ApiResponse.Ok("Kullanıcı başarıyla kaydedildi."));
     }
 

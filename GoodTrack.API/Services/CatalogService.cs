@@ -123,7 +123,7 @@ public sealed class CatalogService : ICatalogService
         existing.Text = dto.Text;
         existing.Length = dto.Length;
         existing.Extras = dto.Extras;
-        
+
         await _catalogRepository.SaveAsync(existing);
         return MapToResponseDto(existing);
     }

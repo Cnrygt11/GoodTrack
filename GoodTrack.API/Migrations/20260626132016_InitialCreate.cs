@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using GoodTrack.API.Models;
 using Microsoft.EntityFrameworkCore.Migrations;
 

@@ -30,7 +30,7 @@ public sealed class PostgresUserConnectionRepository : IUserConnectionRepository
     {
         return await _context.Set<UserConnection>()
             .AsNoTracking()
-            .AnyAsync(c => (c.SellerId == sellerId && c.ManufacturerId == manufacturerId) || 
+            .AnyAsync(c => (c.SellerId == sellerId && c.ManufacturerId == manufacturerId) ||
                            (c.SellerId == manufacturerId && c.ManufacturerId == sellerId), cancellationToken);
     }
 

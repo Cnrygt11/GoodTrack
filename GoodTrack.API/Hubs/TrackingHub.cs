@@ -26,7 +26,7 @@ public class TrackingHub : Hub
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
         var userId = Context.UserIdentifier;
-        _logger.LogInformation("Client disconnected: {ConnectionId} for User: {UserId}. Exception: {Message}", 
+        _logger.LogInformation("Client disconnected: {ConnectionId} for User: {UserId}. Exception: {Message}",
             Context.ConnectionId, userId, exception?.Message ?? "None");
         await base.OnDisconnectedAsync(exception);
     }

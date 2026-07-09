@@ -15,7 +15,7 @@ public class SensitiveDataMaskingEnricher : ILogEventEnricher
         foreach (var property in logEvent.Properties)
         {
             var key = property.Key.ToLower();
-            
+
             // 1. Direct property name match
             if (Array.Exists(SensitiveKeys, k => key.Contains(k)))
             {

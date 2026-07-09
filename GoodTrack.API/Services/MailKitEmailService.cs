@@ -48,7 +48,7 @@ public sealed class MailKitEmailService : IEmailService
             message.Body = bodyBuilder.ToMessageBody();
 
             using var client = new SmtpClient();
-            
+
             var secureSocketOption = SecureSocketOptions.StartTls;
             if (port == 465)
             {

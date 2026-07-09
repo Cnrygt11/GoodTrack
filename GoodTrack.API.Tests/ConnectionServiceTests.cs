@@ -132,7 +132,7 @@ public class ConnectionServiceTests
         // Assert
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.Is<ConnectionRequest>(
             req => req.SenderId == senderId && req.ReceiverId == receiverUser.Id && req.Status == "pending")), Times.Once);
-        
+
         _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionRequest" || m == "ReceiveConnectionUpdate"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 

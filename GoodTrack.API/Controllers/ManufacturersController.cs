@@ -72,7 +72,7 @@ public class ManufacturersController : BaseApiController
 
     [HttpGet("search")]
     public async Task<IActionResult> Search(
-        [FromQuery] string? city, 
+        [FromQuery] string? city,
         [FromQuery] string? keyword,
         [FromQuery] bool mustHaveGallery,
         [FromQuery] bool mustHaveAvatar,

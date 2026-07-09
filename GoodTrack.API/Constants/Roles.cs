@@ -7,6 +7,6 @@ namespace GoodTrack.API.Constants;
 public static class Roles
 {
     public const string Seller = "seller";
-    public const string Mfr    = "mfr";
-    public const string Admin  = "admin";
+    public const string Mfr = "mfr";
+    public const string Admin = "admin";
 }

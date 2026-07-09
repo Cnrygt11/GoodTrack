@@ -6,15 +6,15 @@ namespace GoodTrack.API.Constants;
 /// </summary>
 public static class OrderStatus
 {
-    public const string Awaiting   = "awaiting";
+    public const string Awaiting = "awaiting";
     public const string Production = "production";
-    public const string Completed  = "completed";
-    public const string Delivered  = "delivered";
-    public const string Broken     = "broken";
-    public const string Corrected  = "corrected";
-    public const string Defective  = "defective";
-    public const string Missing    = "missing";
-    public const string ToShip     = "to_ship";
-    public const string Shipped    = "shipped";
-    public const string Cancelled  = "cancelled";
+    public const string Completed = "completed";
+    public const string Delivered = "delivered";
+    public const string Broken = "broken";
+    public const string Corrected = "corrected";
+    public const string Defective = "defective";
+    public const string Missing = "missing";
+    public const string ToShip = "to_ship";
+    public const string Shipped = "shipped";
+    public const string Cancelled = "cancelled";
 }

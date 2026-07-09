@@ -22,7 +22,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         {
             builder.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()::text");
         }
-        
+
         builder.Property(u => u.Username).IsRequired().HasMaxLength(100);
         builder.Property(u => u.PasswordHash).IsRequired();
         builder.Property(u => u.Role).IsRequired().HasMaxLength(20);

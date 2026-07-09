@@ -47,8 +47,9 @@ public class EtsySyncController : BaseApiController
         }
 
         var connections = await _etsyService.GetConnectionsAsync(userId, cancellationToken);
-        var result = connections.Select(c => new { 
-            shopId = c.EtsyShopId, 
+        var result = connections.Select(c => new
+        {
+            shopId = c.EtsyShopId,
             shopName = c.EtsyShopName,
             isActive = c.IsActive,
             tokenExpiresAt = c.TokenExpiresAt,
@@ -124,9 +125,10 @@ public class EtsySyncController : BaseApiController
         try
         {
             var imported = await _etsyService.FetchAndImportEtsyListingsAsync(userId, cancellationToken);
-            return Ok(new ApiResponse<object>(new { 
-                count = imported.Count, 
-                message = "Etsy mağazanızdaki ürünler başarıyla GoodTrack kataloğuna çekildi. Lütfen katalog sayfasından üretici atamalarını tamamlayınız." 
+            return Ok(new ApiResponse<object>(new
+            {
+                count = imported.Count,
+                message = "Etsy mağazanızdaki ürünler başarıyla GoodTrack kataloğuna çekildi. Lütfen katalog sayfasından üretici atamalarını tamamlayınız."
             }));
         }
         catch (Exception ex)

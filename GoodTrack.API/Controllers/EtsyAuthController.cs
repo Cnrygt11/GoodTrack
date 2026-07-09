@@ -24,7 +24,7 @@ public class EtsyAuthController : BaseApiController
     private static readonly ConcurrentDictionary<string, string> StateToFrontendUrl = new();
 
     public EtsyAuthController(
-        IEtsyService etsyService, 
+        IEtsyService etsyService,
         ILogger<EtsyAuthController> logger,
         IConfiguration configuration)
     {
@@ -113,9 +113,9 @@ public class EtsyAuthController : BaseApiController
             var connection = await _etsyService.ExchangeStateForTokensAsync(state, code, cancellationToken);
 
             _logger.LogInformation("Etsy connection successful. Redirecting user to frontend: {Url}", frontendUrl);
-            
+
             // Başarılı yönlendirme
-            var redirectUrl = frontendUrl.Contains("?") 
+            var redirectUrl = frontendUrl.Contains("?")
                 ? $"{frontendUrl}&etsy_connected=true&shop_name={Uri.EscapeDataString(connection.EtsyShopName)}"
                 : $"{frontendUrl}?etsy_connected=true&shop_name={Uri.EscapeDataString(connection.EtsyShopName)}";
 
@@ -124,7 +124,7 @@ public class EtsyAuthController : BaseApiController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to complete Etsy OAuth connection.");
-            
+
             // Hatalı yönlendirme
             var errorRedirectUrl = frontendUrl.Contains("?")
                 ? $"{frontendUrl}&etsy_connected=false&error={Uri.EscapeDataString(ex.Message)}"
