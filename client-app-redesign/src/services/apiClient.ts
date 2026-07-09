@@ -1,5 +1,3 @@
-import { AUTH_STORAGE_KEYS } from '../constants/authKeys';
-
 let rawBaseUrl = '/api';
 
 if (typeof window !== 'undefined') {
@@ -218,10 +216,26 @@ export interface FeedbackInput {
   browserInfo?: string;
 }
 
+export interface EtsyWebhookMockTransaction {
+  listing_id: number;
+  quantity: number;
+  title: string;
+  variations: { formatted_name: string; formatted_value: string }[];
+  personalization: string;
+}
+
 export interface EtsyWebhookMockPayload {
-  keystring: string;
-  sharedSecret: string;
-  shopId: string;
+  event_type: string;
+  shop_id: string;
+  mock_receipt: {
+    receipt_id: number;
+    name: string;
+    first_line: string;
+    second_line: string;
+    city: string;
+    country_iso: string;
+    transactions: EtsyWebhookMockTransaction[];
+  };
 }
 
 export class ApiError extends Error {

@@ -73,7 +73,7 @@ export default function AdminDashboardPage() {
       {error && (
         <div className={styles.alertBox}>
           <span>{error}</span>
-          <button type="button" className={`btn-secondary ${styles.refreshButton}`} onClick={fetchUsers}>
+          <button type="button" className={`btn-secondary ${styles.refreshButton}`} onClick={() => fetchUsers()}>
             <RefreshCw size={12} />
             <span>Yeniden Dene</span>
           </button>
@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
       <div className="admin-table-container">
         <div className="admin-table-header">
           <h2>{t('tabUsers')}</h2>
-          <button type="button" className="btn-secondary btn-icon" onClick={fetchUsers} title="Refresh" disabled={loading}>
+          <button type="button" className="btn-secondary btn-icon" onClick={() => fetchUsers()} title="Refresh" disabled={loading}>
             <RefreshCw size={14} className={loading ? 'spinner' : ''} />
           </button>
         </div>

@@ -1,25 +1,8 @@
 import { apiCall } from './apiClient';
+// Tek kaynak: AdminUser/Feedback tipleri apiClient'ta tanımlı (tip tekrarını önler).
+import type { AdminUser, Feedback } from './apiClient';
 
-export interface AdminUser {
-  id: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  role: string;
-  createdAt: string;
-}
-
-export interface Feedback {
-  id: string;
-  userId: string;
-  username: string;
-  role: string;
-  title: string;
-  message: string;
-  browserInfo: string;
-  createdAt: string;
-}
+export type { AdminUser, Feedback };
 
 export const adminApi = {
   getUsers(): Promise<AdminUser[]> {
