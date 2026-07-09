@@ -7,7 +7,6 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using GoodTrack.API.Abstractions.Services;
-using GoodTrack.API.Services;
 using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.DTOs.Etsy;
 using Microsoft.AspNetCore.Http;
@@ -107,22 +106,11 @@ public class EtsyAuthController : BaseApiController
             return BadRequest("Geçersiz veya süresi dolmuş istek (state eşleşmedi).");
         }
 
-        // EtsyService içindeki bekleyen bağlantı durumunu bulmak için EtsyService'in static ConcurrentDictionary'sine erişmemiz gerekir.
-        // Onu doğrudan EtsyService içindeki ExchangeCodeForTokensAsync metodu yönetiyor.
-        // Yalnızca state değerini geçirmemiz yeterlidir.
-        // Ancak bizim metod imzası userId, keystring, sharedSecret, codeVerifier alıyor.
-        // Bunları EtsyService içindeki ConcurrentDictionary'den çekelim.
+        // State üzerinden bekleyen OAuth bağlantısını çözüp token takasını gerçekleştir.
+        // (Bekleyen state -> code_verifier eşlemesi servis katmanında tutulur.)
         try
         {
-            // EtsyService içindeki ConcurrentDictionary'e erişmek için IEtsyService arayüzümüzü genişletmek yerine
-            // EtsyService'in kendi içindeki Exchange metodunda state üzerinden bu aramayı yapmasını sağlayacağız.
-            // Bu sebeple EtsyService.cs dosyasında ExchangeCodeForTokensAsync metodunu state üzerinden çalışacak şekilde güncelleyeceğiz.
-            // Şimdi, state üzerinden token takasını gerçekleştirelim.
-            // Bu düzenlemeyi yapmak için önce EtsyService'in Exchange metodunu çağıracağız.
-            
-            // EtsyService.cs'te state ile token takası yapan bir overload veya ana metot güncellemesi yapacağız.
-            // Geri dönüşte doğrudan Exchange metodunu çağırıyoruz:
-            var connection = await ((EtsyService)_etsyService).ExchangeStateForTokensAsync(state, code, cancellationToken);
+            var connection = await _etsyService.ExchangeStateForTokensAsync(state, code, cancellationToken);
 
             _logger.LogInformation("Etsy connection successful. Redirecting user to frontend: {Url}", frontendUrl);
             

@@ -11,6 +11,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Services;
+using GoodTrack.API.Services.Etsy;
 using Microsoft.AspNetCore.HttpOverrides;
 using Serilog;
 using Serilog.Formatting.Compact;
@@ -109,6 +110,7 @@ try
     builder.Services.AddScoped<IFieldRepository, PostgresFieldRepository>();
     builder.Services.AddScoped<IFeedbackRepository, PostgresFeedbackRepository>();
     builder.Services.AddScoped<ICreditsRepository, PostgresCreditsRepository>();
+    builder.Services.AddScoped<IEtsyConnectionRepository, PostgresEtsyConnectionRepository>();
 
     // Register Services
     builder.Services.AddScoped<IAuthService, AuthService>();
@@ -121,7 +123,12 @@ try
     builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
     builder.Services.AddScoped<ICreditsService, CreditsService>();
     builder.Services.AddScoped<IEmailService, MailKitEmailService>();
-    builder.Services.AddHttpClient();
+    // Etsy integration: typed HttpClient + OAuth + orchestration service
+    builder.Services.AddHttpClient<IEtsyApiClient, EtsyApiClient>(client =>
+    {
+        client.BaseAddress = new Uri("https://api.etsy.com/");
+    });
+    builder.Services.AddScoped<IEtsyOAuthService, EtsyOAuthService>();
     builder.Services.AddScoped<IEtsyService, EtsyService>();
 
     // Configure JWT Authentication
