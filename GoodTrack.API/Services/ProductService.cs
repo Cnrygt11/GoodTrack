@@ -22,32 +22,32 @@ namespace GoodTrack.API.Services;
 public sealed class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
-    private readonly ICatalogRepository _catalogRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserConnectionRepository _userConnectionRepository;
     private readonly IMediator _mediator;
     private readonly IImageStorageService _imageStorageService;
+    private readonly IImageCleanupService _imageCleanupService;
     private readonly ICreditsService _creditsService;
     private readonly AppDbContext _context;
     private readonly ILogger<ProductService> _logger;
 
     public ProductService(
         IProductRepository productRepository,
-        ICatalogRepository catalogRepository,
         IUserRepository userRepository,
         IUserConnectionRepository userConnectionRepository,
         IMediator mediator,
         IImageStorageService imageStorageService,
+        IImageCleanupService imageCleanupService,
         ICreditsService creditsService,
         AppDbContext context,
         ILogger<ProductService> logger)
     {
         _productRepository = productRepository;
-        _catalogRepository = catalogRepository;
         _userRepository = userRepository;
         _userConnectionRepository = userConnectionRepository;
         _mediator = mediator;
         _imageStorageService = imageStorageService;
+        _imageCleanupService = imageCleanupService;
         _creditsService = creditsService;
         _context = context;
         _logger = logger;
@@ -207,19 +207,19 @@ public sealed class ProductService : IProductService
             {
                 ValidateImageSize(newImage, "Sipariş görseli");
                 existing.Image = await _imageStorageService.StoreImageAsync(newImage);
-                await TryDeleteImageAsync(oldImage, sellerId, orderId);
+                await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
             }
             else if (string.IsNullOrEmpty(newImage))
             {
                 existing.Image = null;
-                await TryDeleteImageAsync(oldImage, sellerId, orderId);
+                await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
             }
             else
             {
                 existing.Image = newImage;
                 if (oldImage != newImage)
                 {
-                    await TryDeleteImageAsync(oldImage, sellerId, orderId);
+                    await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
                 }
             }
         }
@@ -271,7 +271,7 @@ public sealed class ProductService : IProductService
 
     public async Task DeleteProductAsync(string sellerId, string orderId, CancellationToken cancellationToken = default)
     {
-        var existing = await _productRepository.GetByIdAsync(orderId);
+        var existing = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (existing == null)
         {
             throw new KeyNotFoundException("Sipariş bulunamadı!");
@@ -308,55 +308,10 @@ public sealed class ProductService : IProductService
             throw;
         }
 
-        await TryDeleteImageAsync(image, sellerId, orderId);
-        await TryDeleteDefectImageAsync(defectImage, sellerId, orderId);
+        await _imageCleanupService.DeleteOrderImageIfUnusedAsync(image, sellerId, orderId);
+        await _imageCleanupService.DeleteDefectImageIfUnusedAsync(defectImage, sellerId, orderId);
 
         await SafeNotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate");
-    }
-
-    private async Task TryDeleteImageAsync(string? imageUrl, string sellerId, string currentProductId)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl)) return;
-
-        if (imageUrl.StartsWith("data:image"))
-        {
-            await _imageStorageService.DeleteImageAsync(imageUrl);
-            return;
-        }
-
-        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.Image == imageUrl);
-        if (isUsedInOthers) return;
-
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
-        if (isUsedInCatalog) return;
-
-        await _imageStorageService.DeleteImageAsync(imageUrl);
-    }
-
-    private async Task TryDeleteDefectImageAsync(string? imageUrl, string sellerId, string currentProductId)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl)) return;
-
-        if (imageUrl.StartsWith("data:image"))
-        {
-            await _imageStorageService.DeleteImageAsync(imageUrl);
-            return;
-        }
-
-        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.DefectImage == imageUrl);
-        if (isUsedInOthers) return;
-
-        bool isUsedAsMain = otherProducts.Exists(p => p.Image == imageUrl);
-        if (isUsedAsMain) return;
-
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
-        if (isUsedInCatalog) return;
-
-        await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
     public async Task<ProductResponseDto?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)

@@ -19,7 +19,6 @@ namespace GoodTrack.API.Tests;
 public class OrderWorkflowServiceTests
 {
     private readonly Mock<IProductRepository> _productRepositoryMock;
-    private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
     private readonly Mock<IImageStorageService> _imageStorageServiceMock;
     private readonly Mock<ICreditsService> _creditsServiceMock;
     private readonly OrderWorkflowService _workflowService;
@@ -27,16 +26,15 @@ public class OrderWorkflowServiceTests
     public OrderWorkflowServiceTests()
     {
         _productRepositoryMock = new Mock<IProductRepository>();
-        _catalogRepositoryMock = new Mock<ICatalogRepository>();
         var mediatorMock = new Mock<MediatR.IMediator>();
         _imageStorageServiceMock = new Mock<IImageStorageService>();
         _creditsServiceMock = new Mock<ICreditsService>();
 
         _workflowService = new OrderWorkflowService(
             _productRepositoryMock.Object,
-            _catalogRepositoryMock.Object,
             mediatorMock.Object,
             _imageStorageServiceMock.Object,
+            Mock.Of<IImageCleanupService>(),
             _creditsServiceMock.Object,
             Mock.Of<ILogger<OrderWorkflowService>>());
     }

@@ -121,6 +121,7 @@ try
     builder.Services.AddScoped<ICatalogService, CatalogService>();
     builder.Services.AddScoped<IFieldService, FieldService>();
     builder.Services.AddScoped<IImageStorageService, Base64ImageStorageService>();
+    builder.Services.AddScoped<IImageCleanupService, ImageCleanupService>();
     builder.Services.AddScoped<ICreditsService, CreditsService>();
     builder.Services.AddScoped<IEmailService, MailKitEmailService>();
     // Etsy integration: typed HttpClient + OAuth + orchestration service

@@ -18,25 +18,25 @@ namespace GoodTrack.API.Services;
 public sealed class OrderWorkflowService : IOrderWorkflowService
 {
     private readonly IProductRepository _productRepository;
-    private readonly ICatalogRepository _catalogRepository;
     private readonly IMediator _mediator;
     private readonly IImageStorageService _imageStorageService;
+    private readonly IImageCleanupService _imageCleanupService;
     private readonly ICreditsService _creditsService;
     private readonly ILogger<OrderWorkflowService> _logger;
     private readonly Dictionary<string, StatusTransitionRule> _transitionRules;
 
     public OrderWorkflowService(
-        IProductRepository productRepository, 
-        ICatalogRepository catalogRepository,
+        IProductRepository productRepository,
         IMediator mediator,
         IImageStorageService imageStorageService,
+        IImageCleanupService imageCleanupService,
         ICreditsService creditsService,
         ILogger<OrderWorkflowService> logger)
     {
         _productRepository = productRepository;
-        _catalogRepository = catalogRepository;
         _mediator = mediator;
         _imageStorageService = imageStorageService;
+        _imageCleanupService = imageCleanupService;
         _creditsService = creditsService;
         _logger = logger;
 
@@ -78,7 +78,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                         string? oldDefectImage = p.DefectImage;
                         p.DefectNote = null;
                         p.DefectImage = null;
-                        await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+                        await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
 
                         return (oldStatus == OrderStatus.Awaiting || oldStatus == OrderStatus.Corrected)
                             ? "Sipariş üretici tarafından onaylandı ve üretime alındı."
@@ -376,18 +376,18 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         {
             ValidateImageSize(newDefectImage, "Hata görseli");
             p.DefectImage = await _imageStorageService.StoreImageAsync(newDefectImage);
-            await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+            await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
         }
         else if (string.IsNullOrEmpty(newDefectImage))
         {
             p.DefectImage = null;
-            await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+            await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
         }
         else
         {
             p.DefectImage = newDefectImage;
             if (oldDefectImage != newDefectImage)
-                await TryDeleteDefectImageAsync(oldDefectImage, p.SellerId, p.Id);
+                await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
         }
     }
 
@@ -402,30 +402,6 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             UserId = userId,
             UserName = userName
         });
-    }
-
-    private async Task TryDeleteDefectImageAsync(string? imageUrl, string sellerId, string currentProductId)
-    {
-        if (string.IsNullOrWhiteSpace(imageUrl)) return;
-
-        if (imageUrl.StartsWith("data:image"))
-        {
-            await _imageStorageService.DeleteImageAsync(imageUrl);
-            return;
-        }
-
-        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.DefectImage == imageUrl);
-        if (isUsedInOthers) return;
-
-        bool isUsedAsMain = otherProducts.Exists(p => p.Image == imageUrl);
-        if (isUsedAsMain) return;
-
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
-        if (isUsedInCatalog) return;
-
-        await _imageStorageService.DeleteImageAsync(imageUrl);
     }
 
     private async Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)

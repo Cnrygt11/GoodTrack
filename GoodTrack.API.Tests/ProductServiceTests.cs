@@ -26,7 +26,6 @@ public class ProductServiceTests : IDisposable
     private readonly AppDbContext _context;
     private readonly PostgresProductRepository _productRepository;
     private readonly PostgresCreditsRepository _creditsRepository;
-    private readonly Mock<ICatalogRepository> _catalogRepositoryMock;
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IUserConnectionRepository> _userConnectionRepositoryMock;
     private readonly Mock<IImageStorageService> _imageStorageServiceMock;
@@ -51,7 +50,6 @@ public class ProductServiceTests : IDisposable
         _creditsRepository = new PostgresCreditsRepository(_context);
         _creditsService = new CreditsService(_creditsRepository);
 
-        _catalogRepositoryMock = new Mock<ICatalogRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
         _userConnectionRepositoryMock = new Mock<IUserConnectionRepository>();
         var mediatorMock = new Mock<MediatR.IMediator>();
@@ -59,11 +57,11 @@ public class ProductServiceTests : IDisposable
 
         _productService = new ProductService(
             _productRepository,
-            _catalogRepositoryMock.Object,
             _userRepositoryMock.Object,
             _userConnectionRepositoryMock.Object,
             mediatorMock.Object,
             _imageStorageServiceMock.Object,
+            Mock.Of<IImageCleanupService>(),
             _creditsService,
             _context,
             Mock.Of<Microsoft.Extensions.Logging.ILogger<ProductService>>());
