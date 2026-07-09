@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Mvc;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Serilog;
 using Serilog.Formatting.Compact;
 using GoodTrack.API.Configuration;
+using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.Validators;
 
 Log.Logger = new LoggerConfiguration()
@@ -31,6 +33,21 @@ try
     // FluentValidation
     builder.Services.AddFluentValidationAutoValidation();
     builder.Services.AddValidatorsFromAssemblyContaining<FeedbackInputDtoValidator>();
+
+    // Return model-validation failures in the same ApiResponse shape as the rest of the
+    // API (so the frontend's { success:false, message } envelope handling recognizes them),
+    // instead of ASP.NET's default ProblemDetails.
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var message = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m)) ?? "Geçersiz istek.";
+            return new BadRequestObjectResult(ApiResponse.Fail(message));
+        };
+    });
 
     builder.Services.AddOpenApiWithBearerAuth();
 
