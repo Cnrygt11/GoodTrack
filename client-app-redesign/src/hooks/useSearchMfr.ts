@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, UserProfile, ConnectionRequest } from '../services/apiClient';
 import { useData } from '../context/DataContext';
+import useCredits from './useCredits';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
@@ -23,7 +24,8 @@ export const PRODUCTION_CITIES = [
 ];
 
 export default function useSearchMfr() {
-  const { products, plan, connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
+  const { products, connections, sentRequests, loadSentRequests, refreshConnections, optimisticAddSentRequest, optimisticRemoveSentRequest, rollbackSentRequests } = useData();
+  const { plan } = useCredits();
   const { showToast } = useToast();
   const { t, language } = useSettings();
 

@@ -1,9 +1,18 @@
 import { useCallback } from 'react';
-import { useData } from '../context/DataContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
-import { SubscriptionPlanDetail } from '../services/apiClient';
+import { api, SubscriptionPlanDetail } from '../services/apiClient';
+
+/**
+ * React Query anahtarları — kredi/plan verisini geçersiz kılmak (invalidate) için paylaşılır.
+ */
+export const creditsKeys = {
+  credits: ['credits'] as const,
+  plans: ['credits', 'plans'] as const,
+};
 
 /**
  * Return type interface for the useCredits custom hook.
@@ -28,46 +37,63 @@ export interface UseCreditsReturn {
 }
 
 /**
- * Custom hook to manage the billing and subscription credit operations.
- * Delegates states and api logic to global DataContext for seamless synchronization.
+ * Abonelik/kredi durumunu React Query ile yöneten hook. Sunucu durumu artık
+ * DataContext yerine React Query cache'inde tutulur (yalnız seller rolü için çekilir).
  */
 export default function useCredits(): UseCreditsReturn {
-  const {
-    balance,
-    plan,
-    renewsAt,
-    planDetails,
-    isCreditsLoading,
-    isUpgrading,
-    refreshCredits,
-    upgradePlan: upgradePlanContext
-  } = useData();
-
+  const { user } = useAuth();
   const { showToast } = useToast();
   const { t } = useSettings();
+  const queryClient = useQueryClient();
 
-  const upgradePlan = useCallback(async (planName: string): Promise<boolean> => {
-    try {
-      const success = await upgradePlanContext(planName);
-      if (success) {
+  const isSeller = user?.role === 'seller';
+
+  const creditsQuery = useQuery({
+    queryKey: creditsKeys.credits,
+    queryFn: () => api.getCredits(),
+    enabled: isSeller,
+  });
+
+  const plansQuery = useQuery({
+    queryKey: creditsKeys.plans,
+    queryFn: () => api.getPlans(),
+    enabled: isSeller,
+  });
+
+  const upgradeMutation = useMutation({
+    mutationFn: (planName: string) => api.upgradePlan(planName),
+    onSuccess: (res) => {
+      // Yükseltme sonucu güncel krediyi döndürür; cache'i doğrudan tazele.
+      queryClient.setQueryData(creditsKeys.credits, res.credits);
+    },
+  });
+
+  const upgradePlan = useCallback(
+    async (planName: string): Promise<boolean> => {
+      try {
+        await upgradeMutation.mutateAsync(planName);
         showToast(t('upgradeSuccess'));
+        return true;
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+        return false;
       }
-      return success;
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-      return false;
-    }
-  }, [upgradePlanContext, showToast, t]);
+    },
+    [upgradeMutation, showToast, t]
+  );
+
+  const fetchCredits = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: creditsKeys.credits });
+  }, [queryClient]);
 
   return {
-    balance,
-    plan,
-    renewsAt,
-    planDetails,
-    isLoading: isCreditsLoading,
-    isUpgrading,
+    balance: creditsQuery.data?.credits ?? 0,
+    plan: creditsQuery.data?.plan ?? 'Free',
+    renewsAt: creditsQuery.data?.renewsAt ?? '',
+    planDetails: plansQuery.data ?? [],
+    isLoading: creditsQuery.isLoading,
+    isUpgrading: upgradeMutation.isPending,
     upgradePlan,
-    fetchCredits: refreshCredits,
+    fetchCredits,
   };
 }
-

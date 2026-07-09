@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useData } from '../context/DataContext';
+import useCredits from './useCredits';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -68,8 +69,8 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     optimisticUpdateProduct,
     optimisticRemoveProduct,
     rollbackProducts,
-    refreshCredits
   } = useData();
+  const { fetchCredits } = useCredits();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
@@ -260,7 +261,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         optimisticRemoveProduct(tempId);
         optimisticAddProduct(data.product);
         await loadProducts();
-        await refreshCredits();
+        await fetchCredits();
       } catch (err: unknown) {
         rollbackProducts(prevProducts);
         if (err instanceof ApiError && err.status === 402) {
@@ -309,7 +310,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     handleClearForm,
     confirm,
     navigate,
-    refreshCredits,
+    fetchCredits,
   ]);
 
   const handleAddFieldSubmit = useCallback(async (e: FormEvent) => {

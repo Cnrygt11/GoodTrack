@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef, SubscriptionPlanDetail } from '../services/apiClient';
+import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 interface DataContextType {
@@ -17,16 +17,6 @@ interface DataContextType {
   loadSentRequests: () => Promise<void>;
   loadCatalog: () => Promise<void>;
   loadExtraFields: () => Promise<void>;
-
-  // Credits & Billing System
-  balance: number;
-  plan: string;
-  renewsAt: string;
-  planDetails: SubscriptionPlanDetail[];
-  isCreditsLoading: boolean;
-  isUpgrading: boolean;
-  refreshCredits: () => Promise<void>;
-  upgradePlan: (planName: string) => Promise<boolean>;
 
   // Semantic optimistic actions — replaces raw setState dispatchers
   optimisticAddSentRequest: (req: ConnectionRequest) => void;
@@ -59,14 +49,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [sentRequests, setSentRequests] = useState<ConnectionRequest[]>([]);
   const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
   const [extraFieldDefs, setExtraFieldDefs] = useState<ExtraFieldDef[]>([]);
-
-  // Credits States
-  const [balance, setBalance] = useState<number>(0);
-  const [plan, setPlan] = useState<string>('Free');
-  const [renewsAt, setRenewsAt] = useState<string>('');
-  const [planDetails, setPlanDetails] = useState<SubscriptionPlanDetail[]>([]);
-  const [isCreditsLoading, setIsCreditsLoading] = useState<boolean>(true);
-  const [isUpgrading, setIsUpgrading] = useState<boolean>(false);
 
   // Optimistic tracking — kept internal, not exposed via context
   const optimisticConnections = useRef<Map<string, { user: ConnectionUser, timestamp: number }>>(new Map());
@@ -371,45 +353,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  // --- Credits Callbacks ---
-  const refreshCredits = useCallback(async () => {
-    if (!user || user.role !== 'seller') return;
-    try {
-      const data = await api.getCredits();
-      setBalance(data.credits);
-      setPlan(data.plan);
-      setRenewsAt(data.renewsAt);
-    } catch (err: unknown) {
-      console.error('Failed to load user credits:', err);
-      showToast('Kredi bilgileri yüklenirken hata oluştu.');
-    }
-  }, [user, showToast]);
-
-  const loadPlans = useCallback(async () => {
-    try {
-      const data = await api.getPlans();
-      setPlanDetails(data);
-    } catch (err: unknown) {
-      console.error('Failed to load subscription plans:', err);
-      showToast('Abonelik planları yüklenirken hata oluştu.');
-    }
-  }, [showToast]);
-
-  const upgradePlan = useCallback(async (planName: string): Promise<boolean> => {
-    setIsUpgrading(true);
-    try {
-      const res = await api.upgradePlan(planName);
-      setBalance(res.credits.credits);
-      setPlan(res.credits.plan);
-      setRenewsAt(res.credits.renewsAt);
-      setIsUpgrading(false);
-      return true;
-    } catch (err: unknown) {
-      setIsUpgrading(false);
-      throw err;
-    }
-  }, []);
-
   // ─── Initial load ────────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -421,11 +364,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       if (user.role === 'seller') {
         loadExtraFields();
         loadCatalog();
-        
-        setIsCreditsLoading(true);
-        Promise.all([refreshCredits(), loadPlans()]).finally(() => {
-          setIsCreditsLoading(false);
-        });
       }
     } else {
       setProducts([]);
@@ -434,13 +372,8 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       setSentRequests([]);
       setCatalogProducts([]);
       setExtraFieldDefs([]);
-      
-      setBalance(0);
-      setPlan('Free');
-      setRenewsAt('');
-      setPlanDetails([]);
     }
-  }, [user, loadProducts, loadExtraFields, loadCatalog, refreshConnections, loadIncomingRequests, loadSentRequests, setConnections, refreshCredits, loadPlans]);
+  }, [user, loadProducts, loadExtraFields, loadCatalog, refreshConnections, loadIncomingRequests, loadSentRequests, setConnections]);
 
   return (
     <DataContext.Provider value={{
@@ -469,14 +402,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       optimisticRemoveProduct,
       rollbackProducts,
       markStatusAsReadLocally,
-      balance,
-      plan,
-      renewsAt,
-      planDetails,
-      isCreditsLoading,
-      isUpgrading,
-      refreshCredits,
-      upgradePlan,
     }}>
       {children}
     </DataContext.Provider>
