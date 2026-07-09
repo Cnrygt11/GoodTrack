@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, FormEvent } from 'react';
 import { useData } from '../context/DataContext';
+import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
 import useCredits from './useCredits';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -58,18 +59,17 @@ interface UseSellerOrderFormReturn {
  * Includes catalog auto-fill, image compression, field management and CRUD handlers.
  */
 export default function useSellerOrderForm(): UseSellerOrderFormReturn {
-  const { 
+  const {
     products,
-    loadProducts, 
-    extraFieldDefs, 
-    loadExtraFields, 
-    catalogProducts, 
+    loadProducts,
     connections,
     optimisticAddProduct,
     optimisticUpdateProduct,
     optimisticRemoveProduct,
     rollbackProducts,
   } = useData();
+  const { catalogProducts } = useCatalogProducts();
+  const { extraFieldDefs, loadExtraFields } = useExtraFieldDefs();
   const { fetchCredits } = useCredits();
   const { showToast } = useToast();
   const { language, t } = useSettings();

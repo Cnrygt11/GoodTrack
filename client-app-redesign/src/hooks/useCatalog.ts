@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useData } from '../context/DataContext';
+import { useCatalogProducts, useExtraFieldDefs } from './useCatalogData';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -8,12 +9,9 @@ import { compressImage } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useCatalog() {
-  const {
-    connections,
-    catalogProducts,
-    loadCatalog,
-    extraFieldDefs
-  } = useData();
+  const { connections } = useData();
+  const { catalogProducts, loadCatalog } = useCatalogProducts();
+  const { extraFieldDefs } = useExtraFieldDefs();
   const { showToast } = useToast();
   const { language, t } = useSettings();
   const confirm = useConfirm();

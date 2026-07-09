@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
-import { api, Product, ConnectionUser, ConnectionRequest, CatalogProduct, ExtraFieldDef } from '../services/apiClient';
+import { api, Product, ConnectionUser, ConnectionRequest } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 interface DataContextType {
@@ -9,14 +9,10 @@ interface DataContextType {
   connections: ConnectionUser[];
   incomingRequests: ConnectionRequest[];
   sentRequests: ConnectionRequest[];
-  catalogProducts: CatalogProduct[];
-  extraFieldDefs: ExtraFieldDef[];
   loadProducts: () => Promise<void>;
   refreshConnections: () => Promise<void>;
   loadIncomingRequests: () => Promise<void>;
   loadSentRequests: () => Promise<void>;
-  loadCatalog: () => Promise<void>;
-  loadExtraFields: () => Promise<void>;
 
   // Semantic optimistic actions — replaces raw setState dispatchers
   optimisticAddSentRequest: (req: ConnectionRequest) => void;
@@ -47,8 +43,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [connections, setConnectionsState] = useState<ConnectionUser[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<ConnectionRequest[]>([]);
   const [sentRequests, setSentRequests] = useState<ConnectionRequest[]>([]);
-  const [catalogProducts, setCatalogProducts] = useState<CatalogProduct[]>([]);
-  const [extraFieldDefs, setExtraFieldDefs] = useState<ExtraFieldDef[]>([]);
 
   // Optimistic tracking — kept internal, not exposed via context
   const optimisticConnections = useRef<Map<string, { user: ConnectionUser, timestamp: number }>>(new Map());
@@ -246,28 +240,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, showToast]);
 
-  const loadCatalog = useCallback(async () => {
-    if (!user || user.role !== 'seller') return;
-    try {
-      const data = await api.getCatalog();
-      setCatalogProducts(data);
-    } catch (err: unknown) {
-      console.error('Failed to load catalog:', extractErrorMessage(err));
-      showToast('Katalog yüklenirken hata oluştu.');
-    }
-  }, [user, showToast]);
-
-  const loadExtraFields = useCallback(async () => {
-    if (!user || user.role !== 'seller') return;
-    try {
-      const data = await api.getFields();
-      setExtraFieldDefs(data);
-    } catch (err: unknown) {
-      console.error('Failed to load extra fields:', extractErrorMessage(err));
-      showToast('Özel alanlar yüklenirken hata oluştu.');
-    }
-  }, [user, showToast]);
-
   // ─── Semantic optimistic actions ────────────────────────────────────────────
 
   const optimisticAddSentRequest = useCallback((req: ConnectionRequest) => {
@@ -361,19 +333,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       refreshConnections();
       loadIncomingRequests();
       loadSentRequests();
-      if (user.role === 'seller') {
-        loadExtraFields();
-        loadCatalog();
-      }
     } else {
       setProducts([]);
       setConnections([]);
       setIncomingRequests([]);
       setSentRequests([]);
-      setCatalogProducts([]);
-      setExtraFieldDefs([]);
     }
-  }, [user, loadProducts, loadExtraFields, loadCatalog, refreshConnections, loadIncomingRequests, loadSentRequests, setConnections]);
+  }, [user, loadProducts, refreshConnections, loadIncomingRequests, loadSentRequests, setConnections]);
 
   return (
     <DataContext.Provider value={{
@@ -381,14 +347,10 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       connections,
       incomingRequests,
       sentRequests,
-      catalogProducts,
-      extraFieldDefs,
       loadProducts,
       refreshConnections,
       loadIncomingRequests,
       loadSentRequests,
-      loadCatalog,
-      loadExtraFields,
       optimisticAddSentRequest,
       optimisticRemoveSentRequest,
       rollbackSentRequests,
