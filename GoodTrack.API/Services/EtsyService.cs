@@ -27,6 +27,7 @@ public sealed class EtsyService : IEtsyService
     private readonly IEtsyOAuthService _oauthService;
     private readonly IEtsyConnectionRepository _connectionRepository;
     private readonly IProductService _productService;
+    private readonly IOrderWorkflowService _orderWorkflowService;
     private readonly ILogger<EtsyService> _logger;
 
     public EtsyService(
@@ -35,6 +36,7 @@ public sealed class EtsyService : IEtsyService
         IEtsyOAuthService oauthService,
         IEtsyConnectionRepository connectionRepository,
         IProductService productService,
+        IOrderWorkflowService orderWorkflowService,
         ILogger<EtsyService> logger)
     {
         _context = context;
@@ -42,27 +44,18 @@ public sealed class EtsyService : IEtsyService
         _oauthService = oauthService;
         _connectionRepository = connectionRepository;
         _productService = productService;
+        _orderWorkflowService = orderWorkflowService;
         _logger = logger;
     }
 
-    public string GenerateOAuthUrl(string userId, string keystring, string sharedSecret, string redirectUri, out string codeVerifier)
+    public Task<string> GenerateOAuthUrlAsync(string userId, string keystring, string callbackUrl, string frontendUrl, CancellationToken cancellationToken = default)
     {
-        return _oauthService.GenerateOAuthUrl(userId, keystring, sharedSecret, redirectUri, out codeVerifier);
+        return _oauthService.GenerateOAuthUrlAsync(userId, keystring, callbackUrl, frontendUrl, cancellationToken);
     }
 
-    public async Task<EtsyConnection> ExchangeStateForTokensAsync(string state, string authorizationCode, CancellationToken cancellationToken = default)
+    public Task<PendingConnectionState?> ConsumeOAuthStateAsync(string state, CancellationToken cancellationToken = default)
     {
-        var pending = _oauthService.ConsumePendingConnection(state)
-            ?? throw new InvalidOperationException("Pending OAuth connection state not found or expired.");
-
-        return await ExchangeCodeForTokensAsync(
-            pending.UserId,
-            pending.Keystring,
-            pending.SharedSecret,
-            authorizationCode,
-            pending.CodeVerifier,
-            pending.CallbackUrl,
-            cancellationToken);
+        return _oauthService.ConsumePendingConnectionAsync(state, cancellationToken);
     }
 
     public async Task<EtsyConnection> ExchangeCodeForTokensAsync(string userId, string keystring, string sharedSecret, string authorizationCode, string codeVerifier, string redirectUri, CancellationToken cancellationToken = default)
@@ -286,12 +279,21 @@ public sealed class EtsyService : IEtsyService
                 continue;
             }
 
-            // Zaten bu receipt_id ve listing_id ile sipariş oluşturulmuş mu kontrol et (Duplicate prevention)
-            var orderCode = $"etsy-{receipt.ReceiptId}-{transaction.ListingId}";
-            var existingOrder = await _context.Products.FirstOrDefaultAsync(p => p.Code == orderCode && p.SellerId == userId, cancellationToken);
+            // Sipariş kodu = ürünün SKU'su (yoksa katalog ürün kodu).
+            // Etsy kimliği Code'da değil, Product.EtsyReceiptId / EtsyTransactionId alanlarında tutulur.
+            var orderCode = !string.IsNullOrWhiteSpace(transaction.Sku)
+                ? transaction.Sku!
+                : catalogProduct.ProductCode;
+
+            // Duplicate önleme transaction bazlıdır: aynı receipt içinde aynı ürünün farklı ekstra
+            // özelliklerle alınması Etsy'de ayrı transaction'lara bölünür → ayrı siparişler oluşur.
+            // (transaction_id yoksa geriye dönük uyum için listing_id'ye düşülür.)
+            var transactionKey = transaction.TransactionId != 0 ? transaction.TransactionId : transaction.ListingId;
+            var existingOrder = await _context.Products.FirstOrDefaultAsync(
+                p => p.SellerId == userId && p.EtsyTransactionId == transactionKey, cancellationToken);
             if (existingOrder != null)
             {
-                _logger.LogInformation("Order {OrderCode} already exists. Skipping.", orderCode);
+                _logger.LogInformation("Order for Etsy transaction {TransactionId} already exists. Skipping.", transactionKey);
                 continue;
             }
 
@@ -321,24 +323,91 @@ public sealed class EtsyService : IEtsyService
                 };
             }
 
-            // Sipariş bilgilerini de ek özellik olarak ekleyelim
-            extras["Etsy Sipariş No"] = new ExtraValue { Name = "Etsy Sipariş No", Type = "text", Value = receipt.ReceiptId.ToString() };
-            extras["Müşteri Adı"] = new ExtraValue { Name = "Müşteri Adı", Type = "text", Value = receipt.Name };
-            extras["Adres"] = new ExtraValue { Name = "Adres", Type = "text", Value = $"{receipt.FirstLine} {receipt.SecondLine}, {receipt.City}, {receipt.CountryIso}" };
+            // NOT: Etsy sipariş no, müşteri adı ve adres artık 'extras' içinde DEĞİL.
+            // Bunlar Product üzerinde ayrı alanlarda tutulur; müşteri adı/adresi üreticiye
+            // gönderilen yanıtlarda gizlenir. Extras yalnızca üretim için gerekli bilgileri taşır.
 
             var createProductDto = new CreateProductDto
             {
                 Code = orderCode,
                 Image = catalogProduct.Image,
-                Text = transaction.Title,
+                Text = null, // Etsy listing başlığı sipariş kartında gereksiz gürültü yaratıyordu
                 Length = catalogProduct.Length,
                 Extras = extras,
+                Quantity = transaction.Quantity < 1 ? 1 : transaction.Quantity,
+                EtsyReceiptId = receipt.ReceiptId,
+                EtsyTransactionId = transactionKey,
+                CustomerName = receipt.Name,
+                ShippingAddress = FormatAddress(receipt),
                 ManufacturerId = catalogProduct.ManufacturerId,
                 ManufacturerName = catalogProduct.ManufacturerName
             };
 
             await _productService.CreateOrderAsync(userId, sellerUsername, createProductDto);
-            _logger.LogInformation("Created GoodTrack order {OrderCode} automatically from Etsy purchase.", orderCode);
+            _logger.LogInformation(
+                "Created GoodTrack order {OrderCode} (Etsy receipt {ReceiptId}, transaction {TransactionId}) automatically from Etsy purchase.",
+                orderCode, receipt.ReceiptId, transactionKey);
+        }
+    }
+
+    /// <summary>
+    /// Receipt adres alanlarını tek satıra birleştirir. Boş alanlar atlanır
+    /// (aksi halde ", ," gibi bozuk çıktılar oluşuyordu).
+    /// </summary>
+    private static string FormatAddress(DTOs.Etsy.EtsyReceipt receipt)
+    {
+        var parts = new[]
+        {
+            $"{receipt.FirstLine} {receipt.SecondLine}".Trim(),
+            receipt.City,
+            receipt.State,
+            receipt.Zip,
+            receipt.CountryIso
+        };
+
+        return string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+    }
+
+    /// <summary>
+    /// Etsy'de iptal edilen bir siparişin (receipt) GoodTrack karşılığını işler. Üretim
+    /// durumuna göre ya doğrudan iptal edilir ya da üreticiye iptal talebi gönderilir
+    /// (bkz. <see cref="IOrderWorkflowService.ApplyExternalCancellationAsync"/>).
+    /// İlgili receipt'e ait siparişler <see cref="Product.EtsyReceiptId"/> üzerinden bulunur;
+    /// Etsy API'sine tekrar gitmeye gerek yoktur.
+    /// </summary>
+    public async Task ProcessEtsyOrderCancellationAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Processing Etsy order cancellation. ReceiptId: {ReceiptId}", receiptId);
+
+        if (!long.TryParse(receiptId, out var receiptIdValue))
+        {
+            _logger.LogError("Invalid Etsy receipt id '{ReceiptId}' in cancellation request. Ignoring.", receiptId);
+            return;
+        }
+
+        var orderIds = await _context.Products
+            .Where(p => p.SellerId == userId && p.EtsyReceiptId == receiptIdValue)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+
+        if (orderIds.Count == 0)
+        {
+            _logger.LogWarning("No GoodTrack orders found for canceled Etsy receipt {ReceiptId}. Nothing to cancel.", receiptId);
+            return;
+        }
+
+        foreach (var orderId in orderIds)
+        {
+            try
+            {
+                var outcome = await _orderWorkflowService.ApplyExternalCancellationAsync(
+                    userId, orderId, "Sipariş Etsy üzerinde iptal edildi.");
+                _logger.LogInformation("Applied Etsy cancellation to GoodTrack order {OrderId} (receipt {ReceiptId}). Outcome: {Outcome}", orderId, receiptId, outcome);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to apply Etsy cancellation to GoodTrack order {OrderId} for receipt {ReceiptId}.", orderId, receiptId);
+            }
         }
     }
 

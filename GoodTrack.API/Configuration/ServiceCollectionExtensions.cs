@@ -92,6 +92,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFeedbackRepository, PostgresFeedbackRepository>();
         services.AddScoped<ICreditsRepository, PostgresCreditsRepository>();
         services.AddScoped<IEtsyConnectionRepository, PostgresEtsyConnectionRepository>();
+        services.AddScoped<IEtsyOAuthStateRepository, PostgresEtsyOAuthStateRepository>();
 
         return services;
     }

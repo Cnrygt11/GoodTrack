@@ -11,6 +11,8 @@ import {
   Archive,
 } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../ui/Pagination';
 import OrderForm from './OrderForm';
 import SellerOrderCard from './SellerOrderCard';
 import AddFieldModal from './AddFieldModal';
@@ -20,6 +22,8 @@ import CatalogPage from '../catalog/CatalogPage';
 import { ListFilter } from '../../types/orders';
 import { ORDER_STATUS } from '../../utils/constants';
 import styles from './SellerPage.module.css';
+
+const PAGE_SIZE = 20;
 
 function getTabIcon(tab: ListFilter) {
   const size = 20;
@@ -108,6 +112,14 @@ export default function SellerPage() {
     openBrokenDetails,
     closeBrokenDetails,
   } = useSellerOrders();
+
+  // Aktif durum sekmesindeki siparişleri 20'şerlik sayfalara böl.
+  // Sekme veya sıralama değişince 1. sayfaya döner (resetKey).
+  const { pageItems, currentPage, totalPages, setCurrentPage } = usePagination(
+    filteredProducts,
+    PAGE_SIZE,
+    `${listFilter}|${sortOrder}`,
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const tabListRef = useRef<HTMLButtonElement>(null);
@@ -297,7 +309,7 @@ export default function SellerPage() {
                 <p>{t('noOrdersFoundInTab')}</p>
               </div>
             ) : (
-              filteredProducts.map((p) => (
+              pageItems.map((p) => (
                 <SellerOrderCard
                   key={p.id}
                   product={p}
@@ -318,6 +330,12 @@ export default function SellerPage() {
               ))
             )}
           </div>
+
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
         </>
       )}
 

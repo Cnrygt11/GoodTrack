@@ -22,6 +22,18 @@ public class CreateProductDto
 
     public Dictionary<string, ExtraValue>? Extras { get; set; }
 
+    public int Quantity { get; set; } = 1;
+
+    // Etsy kaynaklı siparişlerde doldurulur; manuel siparişlerde null kalır.
+    public long? EtsyReceiptId { get; set; }
+    public long? EtsyTransactionId { get; set; }
+
+    [MaxLength(200)]
+    public string? CustomerName { get; set; }
+
+    [MaxLength(500)]
+    public string? ShippingAddress { get; set; }
+
     [Required(ErrorMessage = "Üretici ID zorunludur.")]
     [MaxLength(50)]
     [JsonPropertyName("mfrId")]

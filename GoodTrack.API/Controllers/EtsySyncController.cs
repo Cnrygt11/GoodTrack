@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -210,27 +211,32 @@ public class EtsySyncController : BaseApiController
                         $"Lütfen katalog sayfasından üretici atayınız."));
                 }
 
-                var orderCode = $"etsy-mock-{request.MockReceipt.ReceiptId}-{transaction.ListingId}";
+                var transactionKey = transaction.TransactionId != 0 ? transaction.TransactionId : transaction.ListingId;
+                var orderCode = catalogProduct.ProductCode;
 
-                // Zaten var mı kontrol et (Duplicate prevention)
-                var existingOrder = await _context.Products.FirstOrDefaultAsync(p => p.Code == orderCode && p.SellerId == userId, cancellationToken);
+                // Zaten var mı kontrol et (Duplicate prevention — transaction bazlı)
+                var existingOrder = await _context.Products.FirstOrDefaultAsync(
+                    p => p.SellerId == userId && p.EtsyTransactionId == transactionKey, cancellationToken);
                 if (existingOrder != null)
                 {
                     continue;
                 }
 
-                // Varyasyonları ve kişiselleştirmeyi 'extras' alanına ekle
+                // Varyasyonları ve kişiselleştirmeyi 'extras' alanına ekle.
+                // Gerçek Etsy JSON'u yapıştırılabildiği için değerler HTML-decode edilir
+                // (ör. "Buyer&#39;s Note" → "Buyer's Note", "26&quot;" → 26").
                 var extras = new Dictionary<string, ExtraValue>();
 
                 if (transaction.Variations != null)
                 {
                     foreach (var variation in transaction.Variations)
                     {
-                        extras[variation.FormattedName] = new ExtraValue
+                        var name = Decode(variation.FormattedName);
+                        extras[name] = new ExtraValue
                         {
-                            Name = variation.FormattedName,
+                            Name = name,
                             Type = "text",
-                            Value = variation.FormattedValue
+                            Value = Decode(variation.FormattedValue)
                         };
                     }
                 }
@@ -241,21 +247,30 @@ public class EtsySyncController : BaseApiController
                     {
                         Name = "Kişiselleştirme",
                         Type = "text",
-                        Value = transaction.Personalization
+                        Value = Decode(transaction.Personalization)
                     };
                 }
 
-                extras["Etsy Sipariş No"] = new ExtraValue { Name = "Etsy Sipariş No", Type = "text", Value = request.MockReceipt.ReceiptId.ToString() };
-                extras["Müşteri Adı"] = new ExtraValue { Name = "Müşteri Adı", Type = "text", Value = request.MockReceipt.Name };
-                extras["Adres"] = new ExtraValue { Name = "Adres", Type = "text", Value = $"{request.MockReceipt.FirstLine} {request.MockReceipt.SecondLine}, {request.MockReceipt.City}, {request.MockReceipt.CountryIso}" };
+                // Etsy sipariş no / müşteri adı / adres artık extras'ta değil, ayrı alanlarda tutulur.
+                var addressParts = new[]
+                {
+                    Decode($"{request.MockReceipt.FirstLine} {request.MockReceipt.SecondLine}".Trim()),
+                    Decode(request.MockReceipt.City),
+                    Decode(request.MockReceipt.CountryIso)
+                };
 
                 var createProductDto = new CreateProductDto
                 {
                     Code = orderCode,
                     Image = catalogProduct.Image,
-                    Text = transaction.Title,
+                    Text = null,
                     Length = catalogProduct.Length,
                     Extras = extras,
+                    Quantity = transaction.Quantity < 1 ? 1 : transaction.Quantity,
+                    EtsyReceiptId = request.MockReceipt.ReceiptId,
+                    EtsyTransactionId = transactionKey,
+                    CustomerName = Decode(request.MockReceipt.Name),
+                    ShippingAddress = string.Join(", ", addressParts.Where(p => !string.IsNullOrWhiteSpace(p))),
                     ManufacturerId = catalogProduct.ManufacturerId,
                     ManufacturerName = catalogProduct.ManufacturerName
                 };
@@ -277,6 +292,13 @@ public class EtsySyncController : BaseApiController
             return StatusCode(500, ApiResponse.Fail($"Mock webhook işletilirken hata oluştu: {ex.Message}"));
         }
     }
+
+    /// <summary>
+    /// Etsy metin alanlarını HTML-decode eder. Gerçek akışta bu, EtsyApiClient içindeki
+    /// HtmlDecodingStringConverter tarafından yapılır; mock uç noktası kendi DTO'larını
+    /// model binding ile aldığı için burada ayrıca uygulanır.
+    /// </summary>
+    private static string Decode(string? value) => string.IsNullOrEmpty(value) ? string.Empty : WebUtility.HtmlDecode(value);
 
     // ── Mock Webhook DTO Tanımları ──────────────────────────────────────────
 
@@ -318,6 +340,9 @@ public class EtsySyncController : BaseApiController
 
     public class MockTransaction
     {
+        [JsonPropertyName("transaction_id")]
+        public long TransactionId { get; set; }
+
         [JsonPropertyName("listing_id")]
         public long ListingId { get; set; }
 

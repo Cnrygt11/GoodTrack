@@ -33,6 +33,9 @@ public sealed class EtsyShopResult
 
 public sealed class EtsyListingsContainer
 {
+    [JsonPropertyName("count")]
+    public int Count { get; set; }
+
     [JsonPropertyName("results")]
     public List<EtsyListingResult>? Results { get; set; }
 }
@@ -105,6 +108,9 @@ public sealed class EtsyReceipt
 
 public sealed class EtsyTransaction
 {
+    [JsonPropertyName("transaction_id")]
+    public long TransactionId { get; set; }
+
     [JsonPropertyName("listing_id")]
     public long ListingId { get; set; }
 

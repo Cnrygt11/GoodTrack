@@ -287,4 +287,83 @@ public class ProductServiceTests : IDisposable
         await act.Should().ThrowAsync<ArgumentException>()
             .WithMessage("*üretici bulunamadı*");
     }
+
+    // ── Müşteri bilgisi gizliliği ────────────────────────────────────────────
+    // Etsy siparişlerinde müşteri adı ve teslimat adresi saklanır ama ÜRETİCİYE
+    // gönderilen yanıtlarda asla yer almamalıdır (UI'da gizlemek yeterli değil).
+
+    private Product SeedEtsyOrder(string sellerId = "seller-pii", string mfrId = "mfr-pii")
+    {
+        var product = new Product
+        {
+            Id = "order-pii",
+            Code = "NECKLACE-01",
+            SellerId = sellerId,
+            ManufacturerId = mfrId,
+            SellerName = "Seller",
+            ManufacturerName = "Mfr",
+            Status = OrderStatus.Awaiting,
+            EtsyReceiptId = 4107987442,
+            EtsyTransactionId = 4532071610,
+            CustomerName = "Ada Lovelace",
+            ShippingAddress = "1 Main St, London, GB",
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Products.Add(product);
+        _context.SaveChanges();
+        return product;
+    }
+
+    [Fact]
+    public async Task GetUserProducts_AsSeller_IncludesCustomerInfoAndEtsyReceiptId()
+    {
+        SeedEtsyOrder();
+
+        var result = await _productService.GetUserProductsAsync("seller-pii", Roles.Seller);
+
+        result.Should().ContainSingle();
+        result[0].CustomerName.Should().Be("Ada Lovelace");
+        result[0].ShippingAddress.Should().Be("1 Main St, London, GB");
+        result[0].EtsyReceiptId.Should().Be(4107987442);
+        result[0].Code.Should().Be("NECKLACE-01");
+    }
+
+    [Fact]
+    public async Task GetUserProducts_AsManufacturer_HidesCustomerNameAndAddress()
+    {
+        SeedEtsyOrder();
+
+        var result = await _productService.GetUserProductsAsync("mfr-pii", Roles.Mfr);
+
+        result.Should().ContainSingle();
+        result[0].CustomerName.Should().BeNull();
+        result[0].ShippingAddress.Should().BeNull();
+        // Etsy sipariş no ve SKU üretici için gerekli; gizlenmez.
+        result[0].EtsyReceiptId.Should().Be(4107987442);
+        result[0].Code.Should().Be("NECKLACE-01");
+    }
+
+    [Fact]
+    public async Task GetProductById_AsManufacturer_HidesCustomerNameAndAddress()
+    {
+        SeedEtsyOrder();
+
+        var result = await _productService.GetProductByIdAsync("mfr-pii", Roles.Mfr, "order-pii");
+
+        result.Should().NotBeNull();
+        result!.CustomerName.Should().BeNull();
+        result.ShippingAddress.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetProductById_AsSeller_IncludesCustomerNameAndAddress()
+    {
+        SeedEtsyOrder();
+
+        var result = await _productService.GetProductByIdAsync("seller-pii", Roles.Seller, "order-pii");
+
+        result.Should().NotBeNull();
+        result!.CustomerName.Should().Be("Ada Lovelace");
+        result.ShippingAddress.Should().Be("1 Main St, London, GB");
+    }
 }

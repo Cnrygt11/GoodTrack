@@ -29,19 +29,32 @@ interface OrderFormProps {
 }
 
 export default function OrderForm({
-  t, editingProduct,
-  productCode, setProductCode, autofillSuccess,
-  orderImage, imageFileName, onImageChange,
-  orderText, setOrderText,
-  mfrId, setMfrId, connections,
-  extraFieldDefs, extraValues, onExtraValueChange, onRemoveField,
-  onOpenFieldModal, actionLoading, onClearForm, onSetActiveTab, onSubmit
+  t,
+  editingProduct,
+  productCode,
+  setProductCode,
+  autofillSuccess,
+  orderImage,
+  imageFileName,
+  onImageChange,
+  orderText,
+  setOrderText,
+  mfrId,
+  setMfrId,
+  connections,
+  extraFieldDefs,
+  extraValues,
+  onExtraValueChange,
+  onRemoveField,
+  onOpenFieldModal,
+  actionLoading,
+  onClearForm,
+  onSetActiveTab,
+  onSubmit,
 }: OrderFormProps) {
   return (
     <>
-      <h2>
-        {editingProduct ? t('editOrderHeading') : t('createOrderHeading')}
-      </h2>
+      <h2>{editingProduct ? t('editOrderHeading') : t('createOrderHeading')}</h2>
 
       <div className="form-card">
         <h3>{t('productInfo')}</h3>
@@ -57,21 +70,14 @@ export default function OrderForm({
                 required
               />
               {autofillSuccess && (
-                <span className="form-feedback-success">
-                  ✓ {t('autofillMatch')}
-                </span>
+                <span className="form-feedback-success">✓ {t('autofillMatch')}</span>
               )}
             </div>
 
             <div className="form-group">
               <label>{t('productImage')}</label>
               <div className="image-upload-area">
-                <input
-                  type="file"
-                  accept="image/*"
-                  id="field-image"
-                  onChange={onImageChange}
-                />
+                <input type="file" accept="image/*" id="field-image" onChange={onImageChange} />
                 {!orderImage ? (
                   <>
                     <div className="upload-icon">
@@ -82,34 +88,36 @@ export default function OrderForm({
                 ) : (
                   <>
                     <img className="image-preview" src={orderImage} alt="preview" />
-                    <span className="filename-preview">
-                      {imageFileName.substring(0, 16)}...
-                    </span>
+                    <span className="filename-preview">{imageFileName.substring(0, 16)}...</span>
                   </>
                 )}
               </div>
             </div>
 
-            <div className="form-group">
-              <label>{t('customText')}</label>
-              <input
-                type="text"
-                placeholder={t('enterTextPlaceholder')}
-                value={orderText}
-                onChange={(e) => setOrderText(e.target.value)}
-              />
-            </div>
+            {/* Yeni sipariş oluşturmada bu alan gösterilmez — kullanıcı özel bir bilgi
+                eklemek isterse aşağıdaki "ek özellik ekle" mekanizmasını kullanır.
+                Mevcut siparişlerde zaten kayıtlı bir metin olabileceğinden düzenleme
+                modunda alan görünmeye devam eder. */}
+            {editingProduct && (
+              <div className="form-group">
+                <label>{t('customText')}</label>
+                <input
+                  type="text"
+                  placeholder={t('enterTextPlaceholder')}
+                  value={orderText}
+                  onChange={(e) => setOrderText(e.target.value)}
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label>{t('mfrToSend')}</label>
-              <select
-                value={mfrId}
-                onChange={(e) => setMfrId(e.target.value)}
-                required
-              >
+              <select value={mfrId} onChange={(e) => setMfrId(e.target.value)} required>
                 <option value="">{t('selectDefault')}</option>
-                {connections.map(c => (
-                  <option key={c.id} value={c.id}>{c.username}</option>
+                {connections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.username}
+                  </option>
                 ))}
               </select>
             </div>
@@ -117,7 +125,7 @@ export default function OrderForm({
 
           {/* Dynamic Extra Fields */}
           <div className="extra-fields">
-            {extraFieldDefs.map(def => (
+            {extraFieldDefs.map((def) => (
               <div className="extra-field-row" key={def.id}>
                 <span className="field-label">{def.name}</span>
                 <span className="field-type">
@@ -138,8 +146,10 @@ export default function OrderForm({
                       onChange={(e) => onExtraValueChange(def.id, e.target.value)}
                     >
                       <option value="">{t('selectDefault')}</option>
-                      {(def.options || []).map(o => (
-                        <option key={o} value={o}>{o}</option>
+                      {(def.options || []).map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
                       ))}
                     </select>
                   )}
@@ -180,15 +190,14 @@ export default function OrderForm({
             >
               {editingProduct ? t('cancelBtn') : t('clearBtn')}
             </button>
-            <button
-              type="submit"
-              className="btn-primary btn-flex-inline"
-              disabled={actionLoading}
-            >
-              {actionLoading
-                ? <Loader2 className="animate-spin" size={16} />
-                : (editingProduct ? <CheckCircle2 size={16} /> : <Send size={16} />)
-              }
+            <button type="submit" className="btn-primary btn-flex-inline" disabled={actionLoading}>
+              {actionLoading ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : editingProduct ? (
+                <CheckCircle2 size={16} />
+              ) : (
+                <Send size={16} />
+              )}
               {editingProduct ? t('saveChanges') : t('sendToProduction')}
             </button>
           </div>
@@ -197,4 +206,3 @@ export default function OrderForm({
     </>
   );
 }
-

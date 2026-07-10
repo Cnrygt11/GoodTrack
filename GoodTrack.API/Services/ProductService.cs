@@ -91,7 +91,9 @@ public sealed class ProductService : IProductService
             throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
         }
 
-        return products.Select(MapToResponseDto).ToList();
+        // Üretici müşteri adı/adresi görmemeli.
+        var includeCustomerInfo = role != Roles.Mfr;
+        return products.Select(p => MapToResponseDto(p, includeCustomerInfo)).ToList();
     }
 
     public async Task<ProductResponseDto> CreateOrderAsync(string sellerId, string sellerName, CreateProductDto dto, CancellationToken cancellationToken = default)
@@ -115,6 +117,11 @@ public sealed class ProductService : IProductService
             Text = dto.Text,
             Length = dto.Length,
             Extras = dto.Extras,
+            Quantity = dto.Quantity < 1 ? 1 : dto.Quantity,
+            EtsyReceiptId = dto.EtsyReceiptId,
+            EtsyTransactionId = dto.EtsyTransactionId,
+            CustomerName = dto.CustomerName,
+            ShippingAddress = dto.ShippingAddress,
             ManufacturerId = dto.ManufacturerId,
             ManufacturerName = dto.ManufacturerName,
             SellerId = sellerId,
@@ -319,7 +326,7 @@ public sealed class ProductService : IProductService
         if (role == Roles.Seller && product.SellerId != userId) return null;
         if (role == Roles.Mfr && product.ManufacturerId != userId) return null;
 
-        return MapToResponseDto(product);
+        return MapToResponseDto(product, includeCustomerInfo: role != Roles.Mfr);
     }
 
     public async Task MarkStatusAsReadAsync(string userId, string role, string status)
@@ -327,16 +334,24 @@ public sealed class ProductService : IProductService
         await _productRepository.MarkProductsAsReadAsync(userId, role, status);
     }
 
-    private static ProductResponseDto MapToResponseDto(Product product)
+    /// <summary>
+    /// Product → DTO eşlemesi. <paramref name="includeCustomerInfo"/> false ise müşteri adı ve
+    /// teslimat adresi yanıttan çıkarılır (üretici bu bilgileri görmemelidir).
+    /// </summary>
+    private static ProductResponseDto MapToResponseDto(Product product, bool includeCustomerInfo = true)
     {
         return new ProductResponseDto
         {
+            EtsyReceiptId = product.EtsyReceiptId,
+            CustomerName = includeCustomerInfo ? product.CustomerName : null,
+            ShippingAddress = includeCustomerInfo ? product.ShippingAddress : null,
             Id = product.Id,
             Code = product.Code,
             Image = product.Image,
             Text = product.Text,
             Length = product.Length,
             Extras = product.Extras,
+            Quantity = product.Quantity,
             Completed = product.Completed,
             IsDefective = product.IsDefective,
             IsPendingApproval = product.IsPendingApproval,

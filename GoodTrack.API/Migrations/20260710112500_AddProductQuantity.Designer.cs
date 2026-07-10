@@ -5,6 +5,7 @@ using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoodTrack.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710112500_AddProductQuantity")]
+    partial class AddProductQuantity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -270,57 +273,6 @@ namespace GoodTrack.API.Migrations
                     b.ToTable("etsy_connections", (string)null);
                 });
 
-            modelBuilder.Entity("GoodTrack.API.Models.EtsyOAuthState", b =>
-                {
-                    b.Property<string>("State")
-                        .HasMaxLength(64)
-                        .HasColumnType("character varying(64)")
-                        .HasColumnName("state");
-
-                    b.Property<string>("CallbackUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("callback_url");
-
-                    b.Property<string>("CodeVerifier")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("code_verifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expires_at");
-
-                    b.Property<string>("FrontendUrl")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("frontend_url");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("State")
-                        .HasName("pk_etsy_oauth_states");
-
-                    b.HasIndex("ExpiresAt")
-                        .HasDatabaseName("ix_etsy_oauth_states_expires_at");
-
-                    b.HasIndex("UserId")
-                        .HasDatabaseName("ix_etsy_oauth_states_user_id");
-
-                    b.ToTable("etsy_oauth_states", (string)null);
-                });
-
             modelBuilder.Entity("GoodTrack.API.Models.ExtraFieldDef", b =>
                 {
                     b.Property<string>("Id")
@@ -447,11 +399,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("CustomerName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("customer_name");
-
                     b.Property<string>("DefectImage")
                         .HasMaxLength(7000000)
                         .HasColumnType("character varying(7000000)")
@@ -461,14 +408,6 @@ namespace GoodTrack.API.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("defect_note");
-
-                    b.Property<long?>("EtsyReceiptId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("etsy_receipt_id");
-
-                    b.Property<long?>("EtsyTransactionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("etsy_transaction_id");
 
                     b.Property<Dictionary<string, ExtraValue>>("Extras")
                         .HasColumnType("jsonb")
@@ -541,11 +480,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("seller_name");
 
-                    b.Property<string>("ShippingAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("shipping_address");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -565,12 +499,6 @@ namespace GoodTrack.API.Migrations
 
                     b.HasIndex("SellerId")
                         .HasDatabaseName("ix_products_seller_id");
-
-                    b.HasIndex("SellerId", "EtsyReceiptId")
-                        .HasDatabaseName("ix_products_seller_id_etsy_receipt_id");
-
-                    b.HasIndex("SellerId", "EtsyTransactionId")
-                        .HasDatabaseName("ix_products_seller_id_etsy_transaction_id");
 
                     b.ToTable("products", (string)null);
                 });
@@ -802,16 +730,6 @@ namespace GoodTrack.API.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_etsy_connections_users_user_id");
-                });
-
-            modelBuilder.Entity("GoodTrack.API.Models.EtsyOAuthState", b =>
-                {
-                    b.HasOne("GoodTrack.API.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_etsy_oauth_states_users_user_id");
                 });
 
             modelBuilder.Entity("GoodTrack.API.Models.UserCredit", b =>

@@ -31,9 +31,12 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.SellerName).HasMaxLength(200);
         builder.Property(p => p.ManufacturerName).HasMaxLength(200);
         builder.Property(p => p.CreatedAt).IsRequired();
+        builder.Property(p => p.Quantity).HasDefaultValue(1);
         builder.Property(p => p.Text).HasMaxLength(1000);
         builder.Property(p => p.Length).HasMaxLength(50);
         builder.Property(p => p.DefectNote).HasMaxLength(1000);
+        builder.Property(p => p.CustomerName).HasMaxLength(200);
+        builder.Property(p => p.ShippingAddress).HasMaxLength(500);
 
         if (!_isSqlite)
         {
@@ -55,5 +58,9 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(p => p.SellerId);
         builder.HasIndex(p => p.ManufacturerId);
+
+        // Etsy senkronizasyonu: duplicate kontrolü (transaction) ve iptal eşleştirmesi (receipt).
+        builder.HasIndex(p => new { p.SellerId, p.EtsyTransactionId });
+        builder.HasIndex(p => new { p.SellerId, p.EtsyReceiptId });
     }
 }

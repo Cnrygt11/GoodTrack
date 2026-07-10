@@ -1,0 +1,60 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 24px 0 8px;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.pagination-btn:hover:not(:disabled):not(.pagination-btn--active) {
+  background: var(--surface-hover);
+  border-color: var(--border-hover);
+}
+
+/* Role-agnostic "current page" indicator — güçlü ve tema uyumlu (koyu/açık). */
+.pagination-btn--active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
+  cursor: default;
+}
+
+.pagination-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pagination-nav {
+  padding: 0 8px;
+}
+
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 24px;
+  height: 36px;
+  color: var(--muted);
+  user-select: none;
+}

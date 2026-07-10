@@ -1,8 +1,13 @@
+import { useMemo } from 'react';
 import { Package, Sparkles, Loader2 } from 'lucide-react';
 import useCatalog from '../../hooks/useCatalog';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../ui/Pagination';
 import CatalogForm from './CatalogForm';
 import CatalogItemCard from './CatalogItemCard';
 import { ExtraFieldDef } from '../../services/apiClient';
+
+const PAGE_SIZE = 20;
 
 interface CatalogPageProps {
   extraFieldDefs: ExtraFieldDef[];
@@ -37,6 +42,13 @@ export default function CatalogPage({
     handleSyncEtsyListings,
     handleAssignManufacturer,
   } = useCatalog();
+
+  // En yeni ürün önce (mevcut davranış), ardından 20'şerlik sayfalama
+  const orderedProducts = useMemo(() => [...catalogProducts].reverse(), [catalogProducts]);
+  const { pageItems, currentPage, totalPages, setCurrentPage } = usePagination(
+    orderedProducts,
+    PAGE_SIZE,
+  );
 
   return (
     <div id="catalog-screen">
@@ -115,19 +127,19 @@ export default function CatalogPage({
             <p style={{ margin: 0, color: 'var(--muted)' }}>{t('noCatalogProducts')}</p>
           </div>
         ) : (
-          [...catalogProducts]
-            .reverse()
-            .map((p) => (
-              <CatalogItemCard
-                key={p.id}
-                product={p}
-                connections={connections}
-                onAssignMfr={handleAssignManufacturer}
-                onDelete={handleDelete}
-              />
-            ))
+          pageItems.map((p) => (
+            <CatalogItemCard
+              key={p.id}
+              product={p}
+              connections={connections}
+              onAssignMfr={handleAssignManufacturer}
+              onDelete={handleDelete}
+            />
+          ))
         )}
       </div>
+
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
     </div>
   );
 }

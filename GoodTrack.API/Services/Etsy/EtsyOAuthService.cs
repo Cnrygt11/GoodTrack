@@ -1,48 +1,62 @@
 using System;
-using System.Collections.Concurrent;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services.Etsy;
 
 /// <summary>
 /// Etsy OAuth (PKCE) URL üretimi ve bekleyen bağlantı state yönetimi.
-/// State kayıtları şimdilik in-memory tutulur (tek instance varsayımı); çok instance'lı
-/// dağıtımda kalıcı/paylaşımlı bir depoya (DB/cache) taşınmalıdır.
+/// State kayıtları kalıcı depoda (etsy_oauth_states) tutulur: yeniden başlatma ve
+/// çok instance'lı dağıtım güvenlidir, süresi dolan kayıtlar temizlenir.
 /// </summary>
 public sealed class EtsyOAuthService : IEtsyOAuthService
 {
-    private static readonly ConcurrentDictionary<string, PendingConnectionState> PendingConnections = new();
-
     private static readonly TimeSpan PendingStateTtl = TimeSpan.FromMinutes(15);
 
+    private readonly IEtsyOAuthStateRepository _stateRepository;
     private readonly ILogger<EtsyOAuthService> _logger;
 
-    public EtsyOAuthService(ILogger<EtsyOAuthService> logger)
+    public EtsyOAuthService(IEtsyOAuthStateRepository stateRepository, ILogger<EtsyOAuthService> logger)
     {
+        _stateRepository = stateRepository;
         _logger = logger;
     }
 
-    public string GenerateOAuthUrl(string userId, string keystring, string sharedSecret, string redirectUri, out string codeVerifier)
+    public async Task<string> GenerateOAuthUrlAsync(
+        string userId,
+        string keystring,
+        string callbackUrl,
+        string frontendUrl,
+        CancellationToken cancellationToken = default)
     {
-        codeVerifier = GenerateCodeVerifier();
+        var codeVerifier = GenerateCodeVerifier();
         var codeChallenge = GenerateCodeChallenge(codeVerifier);
         var state = Guid.NewGuid().ToString("N");
 
-        PurgeExpiredStates();
-
-        PendingConnections[state] = new PendingConnectionState
+        // Fırsatçı temizlik: ayrı bir arka plan servisi olmadan sızıntıyı önler.
+        var purged = await _stateRepository.DeleteExpiredAsync(cancellationToken);
+        if (purged > 0)
         {
+            _logger.LogInformation("Purged {Count} expired Etsy OAuth state(s).", purged);
+        }
+
+        var now = DateTime.UtcNow;
+        await _stateRepository.AddAsync(new EtsyOAuthState
+        {
+            State = state,
             UserId = userId,
-            Keystring = keystring,
-            SharedSecret = sharedSecret,
             CodeVerifier = codeVerifier,
-            CallbackUrl = redirectUri,
-            CreatedAt = DateTime.UtcNow
-        };
+            CallbackUrl = callbackUrl,
+            FrontendUrl = frontendUrl,
+            CreatedAt = now,
+            ExpiresAt = now.Add(PendingStateTtl)
+        }, cancellationToken);
 
         _logger.LogInformation("Generating Etsy OAuth URL for User {UserId} with state {State}", userId, state);
 
@@ -50,30 +64,28 @@ public sealed class EtsyOAuthService : IEtsyOAuthService
         return "https://www.etsy.com/oauth/connect?" +
                "response_type=code" +
                $"&client_id={keystring}" +
-               $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+               $"&redirect_uri={Uri.EscapeDataString(callbackUrl)}" +
                $"&scope={scope}" +
                $"&state={state}" +
                $"&code_challenge={codeChallenge}" +
                "&code_challenge_method=S256";
     }
 
-    public PendingConnectionState? ConsumePendingConnection(string state)
+    public async Task<PendingConnectionState?> ConsumePendingConnectionAsync(string state, CancellationToken cancellationToken = default)
     {
-        return PendingConnections.TryRemove(state, out var pending) ? pending : null;
-    }
-
-    private static void PurgeExpiredStates()
-    {
-        var now = DateTime.UtcNow;
-        var expiredKeys = PendingConnections
-            .Where(kvp => now - kvp.Value.CreatedAt > PendingStateTtl)
-            .Select(kvp => kvp.Key)
-            .ToList();
-
-        foreach (var key in expiredKeys)
+        var entity = await _stateRepository.ConsumeAsync(state, cancellationToken);
+        if (entity == null)
         {
-            PendingConnections.TryRemove(key, out _);
+            return null;
         }
+
+        return new PendingConnectionState
+        {
+            UserId = entity.UserId,
+            CodeVerifier = entity.CodeVerifier,
+            CallbackUrl = entity.CallbackUrl,
+            FrontendUrl = entity.FrontendUrl
+        };
     }
 
     private static string GenerateCodeVerifier()

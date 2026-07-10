@@ -31,6 +31,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<UserCredit> UserCredits => Set<UserCredit>();
     public DbSet<UserConnection> UserConnections => Set<UserConnection>();
     public DbSet<EtsyConnection> EtsyConnections => Set<EtsyConnection>();
+    public DbSet<EtsyOAuthState> EtsyOAuthStates => Set<EtsyOAuthState>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

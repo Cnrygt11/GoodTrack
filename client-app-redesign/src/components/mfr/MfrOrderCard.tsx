@@ -1,5 +1,16 @@
 import React, { useMemo } from 'react';
-import { Package, CheckCircle2, Info, Calendar, Tag, Ruler, User, AlertTriangle } from 'lucide-react';
+import {
+  Package,
+  CheckCircle2,
+  Info,
+  Calendar,
+  Tag,
+  Ruler,
+  User,
+  AlertTriangle,
+  Layers,
+  ShoppingBag,
+} from 'lucide-react';
 import { Product } from '../../services/apiClient';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
@@ -16,7 +27,7 @@ const ACTION_BAR_STATUSES = [
   ORDER_STATUS.MISSING as string,
   ORDER_STATUS.SHIPPED as string,
   ORDER_STATUS.CANCELLED as string,
-  ORDER_STATUS.TO_SHIP as string
+  ORDER_STATUS.TO_SHIP as string,
 ];
 
 interface MfrOrderCardProps {
@@ -45,23 +56,41 @@ export default function MfrOrderCard({
 
   const dateStr = useMemo(() => {
     if (!p.createdAt) return '—';
-    return new Date(p.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' });
+    return new Date(p.createdAt).toLocaleDateString(t('dateLocale'), {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
   }, [p.createdAt, t]);
 
   const timeStr = useMemo(() => {
     if (!p.createdAt) return '';
-    return new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' });
+    return new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }, [p.createdAt, t]);
 
-  const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
-  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'mfr', isReproduction: p.isReproduction });
+  const status =
+    p.status ||
+    (p.isDefective
+      ? ORDER_STATUS.DEFECTIVE
+      : p.completed
+        ? ORDER_STATUS.COMPLETED
+        : p.isPendingApproval
+          ? ORDER_STATUS.AWAITING
+          : ORDER_STATUS.PRODUCTION);
+  const sc = getStatusConfig(status, t, {
+    iconSize: 11,
+    role: 'mfr',
+    isReproduction: p.isReproduction,
+  });
   const accentColor = getMfrCardAccentColor(status);
 
   const hasActionBar = ACTION_BAR_STATUSES.includes(status);
 
   return (
     <div className="mfr-theme moc-card">
-
       {/* Colored left accent bar — color is dynamic, inline kept intentionally */}
       <div className="moc-accent-bar" style={{ background: accentColor }} />
 
@@ -71,31 +100,48 @@ export default function MfrOrderCard({
           className="moc-unseen-dot"
           style={{ background: sc.color, boxShadow: `0 0 8px ${sc.color}` }}
           title={t('unseenDotTitle')}
-          onClick={(e) => { e.stopPropagation(); onMarkAsSeen(p.id, activeTab); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarkAsSeen(p.id, activeTab);
+          }}
         />
       )}
 
       {/* Main body */}
       <div className="moc-body">
-
         {/* Thumbnail */}
         <div
           className={`moc-thumb${p.image ? ' moc-thumb--clickable' : ''}`}
           onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
           title={p.image ? t('clickToInspectDetails') : undefined}
         >
-          {p.image
-            ? <img src={p.image} alt="ürün" />
-            : <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
-          }
+          {p.image ? (
+            <img src={p.image} alt="ürün" />
+          ) : (
+            <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
+          )}
         </div>
 
         {/* Info column */}
         <div className="moc-info">
-
           {/* Code + Status badge */}
           <div className="moc-title-row">
             <span className="moc-code">{p.code}</span>
+            {p.etsyReceiptId && (
+              <span
+                className="order-etsy-badge"
+                title={`${t('etsyOrderNoLabel')}: ${p.etsyReceiptId}`}
+              >
+                <ShoppingBag size={11} />
+                {t('etsyOrderNoLabel')}: {p.etsyReceiptId}
+              </span>
+            )}
+            {(p.quantity ?? 1) > 1 && (
+              <span className="order-qty-badge" title={`${t('quantityLabel')}: ${p.quantity}`}>
+                <Layers size={11} />
+                {t('quantityLabel')}: {p.quantity}
+              </span>
+            )}
             {/* bg/border/color are dynamic — minimal inline kept */}
             <span
               className="moc-status-badge"
@@ -106,7 +152,11 @@ export default function MfrOrderCard({
             {p.cancelRequested && (
               <span
                 className="moc-status-badge"
-                style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#ef4444' }}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  color: '#ef4444',
+                }}
               >
                 {t('cancelRequestPending')}
               </span>
@@ -124,7 +174,8 @@ export default function MfrOrderCard({
             {p.length && (
               <span className="order-chip">
                 <Ruler size={10} style={{ color: 'var(--accent-mfr)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length} {t('inchSuffix')}
+                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length}{' '}
+                {t('inchSuffix')}
               </span>
             )}
             {p.sellerName && (
@@ -147,15 +198,28 @@ export default function MfrOrderCard({
           <div className="moc-meta-row">
             <span className="moc-date-span">
               <Calendar size={11} style={{ opacity: 0.7 }} />
-              {t('sentDateLabel')}: <strong style={{ color: 'var(--text)' }}>{dateStr} {timeStr}</strong>
+              {t('sentDateLabel')}:{' '}
+              <strong style={{ color: 'var(--text)' }}>
+                {dateStr} {timeStr}
+              </strong>
             </span>
             {p.completedAt && (
               <span className="moc-completed-span">
                 <CheckCircle2 size={11} />
-                {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short' })}</strong>
+                {t('completedDateLabel')}:{' '}
+                <strong>
+                  {new Date(p.completedAt).toLocaleDateString(t('dateLocale'), {
+                    day: '2-digit',
+                    month: 'short',
+                  })}
+                </strong>
               </span>
             )}
-            {!(status === 'shipped' || status === 'cancelled' || status === ORDER_STATUS.TO_SHIP) && (
+            {!(
+              status === 'shipped' ||
+              status === 'cancelled' ||
+              status === ORDER_STATUS.TO_SHIP
+            ) && (
               <button type="button" className="timeline-link" onClick={() => onOpenTimeline(p)}>
                 <Info size={11} />
                 {t('btnViewTimeline')}
@@ -170,38 +234,95 @@ export default function MfrOrderCard({
         <div className="order-action-bar">
           {p.cancelRequested ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-              <div style={{ color: 'var(--danger)', fontSize: '12.5px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+              <div
+                style={{
+                  color: 'var(--danger)',
+                  fontSize: '12.5px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginBottom: '4px',
+                }}
+              >
                 <AlertTriangle size={14} />
                 {t('sellerRequestedCancellation')}
               </div>
               <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-                <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>{t('cancelReqApprove')}</MfrBtn>
-                <MfrBtn color="#ef4444" onClick={() => onRespondCancel?.(p.id, false)}>{t('cancelReqReject')}</MfrBtn>
+                <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>
+                  {t('cancelReqApprove')}
+                </MfrBtn>
+                <MfrBtn color="#ef4444" onClick={() => onRespondCancel?.(p.id, false)}>
+                  {t('cancelReqReject')}
+                </MfrBtn>
               </div>
             </div>
           ) : (
             <>
               {(status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED) && (
                 <>
-                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}>{t('btnApproveProduction')}</MfrBtn>
-                  <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.BROKEN)}>{t('btnMarkBroken')}</MfrBtn>
+                  <MfrBtn
+                    color="var(--accent-mfr)"
+                    dark
+                    onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}
+                  >
+                    {t('btnApproveProduction')}
+                  </MfrBtn>
+                  <MfrBtn color="#ef4444" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.BROKEN)}>
+                    {t('btnMarkBroken')}
+                  </MfrBtn>
                 </>
               )}
               {status === ORDER_STATUS.PRODUCTION && (
-                <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.COMPLETED)} fullWidth>{t('btnFinishProduction')}</MfrBtn>
+                <MfrBtn
+                  color="#22c55e"
+                  onClick={() => onUpdateStatus(p.id, ORDER_STATUS.COMPLETED)}
+                  fullWidth
+                >
+                  {t('btnFinishProduction')}
+                </MfrBtn>
               )}
               {status === ORDER_STATUS.COMPLETED && (
-                <MfrBtn color="#00bcd4" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)} fullWidth>{t('btnDeliver')}</MfrBtn>
+                <MfrBtn
+                  color="#00bcd4"
+                  onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)}
+                  fullWidth
+                >
+                  {t('btnDeliver')}
+                </MfrBtn>
               )}
               {(status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING) && (
                 <>
-                  <MfrBtn color="var(--surface2)" bordered onClick={() => onOpenDefectDetails(p)}>{t('btnDetails')}</MfrBtn>
-                  <MfrBtn color="var(--accent-mfr)" dark onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}>{t('btnReproduce')}</MfrBtn>
-                  <MfrBtn color="#22c55e" onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)}>{t('btnDeliverFixed')}</MfrBtn>
+                  <MfrBtn color="var(--surface2)" bordered onClick={() => onOpenDefectDetails(p)}>
+                    {t('btnDetails')}
+                  </MfrBtn>
+                  <MfrBtn
+                    color="var(--accent-mfr)"
+                    dark
+                    onClick={() => onUpdateStatus(p.id, ORDER_STATUS.PRODUCTION)}
+                  >
+                    {t('btnReproduce')}
+                  </MfrBtn>
+                  <MfrBtn
+                    color="#22c55e"
+                    onClick={() => onUpdateStatus(p.id, ORDER_STATUS.DELIVERED)}
+                  >
+                    {t('btnDeliverFixed')}
+                  </MfrBtn>
                 </>
               )}
-              {(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED || status === ORDER_STATUS.TO_SHIP) && (
-                <MfrBtn color="var(--muted)" bordered icon={<Info size={12} />} onClick={() => onOpenTimeline(p)} fullWidth>{t('btnViewTimeline')}</MfrBtn>
+              {(status === ORDER_STATUS.SHIPPED ||
+                status === ORDER_STATUS.CANCELLED ||
+                status === ORDER_STATUS.TO_SHIP) && (
+                <MfrBtn
+                  color="var(--muted)"
+                  bordered
+                  icon={<Info size={12} />}
+                  onClick={() => onOpenTimeline(p)}
+                  fullWidth
+                >
+                  {t('btnViewTimeline')}
+                </MfrBtn>
               )}
             </>
           )}
@@ -209,7 +330,12 @@ export default function MfrOrderCard({
       )}
 
       {p.image && (
-        <Lightbox isOpen={isLightboxOpen} src={p.image} onClose={() => setIsLightboxOpen(false)} altText={p.code} />
+        <Lightbox
+          isOpen={isLightboxOpen}
+          src={p.image}
+          onClose={() => setIsLightboxOpen(false)}
+          altText={p.code}
+        />
       )}
     </div>
   );
@@ -234,7 +360,9 @@ function MfrBtn({ color, onClick, children, icon, fullWidth, bordered, dark }: M
     bordered ? 'mfr-btn--bordered' : '',
     !bordered && dark ? 'mfr-btn--dark' : '',
     !bordered && !dark ? 'mfr-btn--light' : '',
-  ].filter(Boolean).join(' ');
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <button
@@ -249,4 +377,3 @@ function MfrBtn({ color, onClick, children, icon, fullWidth, bordered, dark }: M
     </button>
   );
 }
-

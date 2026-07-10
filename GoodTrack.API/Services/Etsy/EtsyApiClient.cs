@@ -19,6 +19,15 @@ namespace GoodTrack.API.Services.Etsy;
 /// </summary>
 public sealed class EtsyApiClient : IEtsyApiClient
 {
+    /// <summary>
+    /// Etsy yanıtlarındaki tüm string alanlar HTML-decode edilir
+    /// (ör. "Buyer&amp;#39;s Note" → "Buyer's Note", "26&amp;quot;" → 26").
+    /// </summary>
+    private static readonly JsonSerializerOptions EtsyJsonOptions = new()
+    {
+        Converters = { new HtmlDecodingStringConverter() }
+    };
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<EtsyApiClient> _logger;
 
@@ -109,23 +118,56 @@ public sealed class EtsyApiClient : IEtsyApiClient
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<EtsyShopResult>(json);
+        return JsonSerializer.Deserialize<EtsyShopResult>(json, EtsyJsonOptions);
     }
 
     public async Task<EtsyListingsContainer?> GetActiveListingsAsync(string shopId, EtsyCredentials credentials, CancellationToken cancellationToken = default)
     {
-        var request = BuildAuthorizedRequest(HttpMethod.Get, $"v3/application/shops/{shopId}/listings/active?limit=100", credentials);
+        // Etsy tek çağrıda en fazla 100 listing döner. Mağazanın TÜM aktif ürünlerini
+        // almak için offset ile sayfa sayfa gezip sonuçları birleştiriyoruz.
+        const int pageSize = 100;
+        const int maxPages = 50; // Güvenlik tavanı: 50 x 100 = 5000 listing
 
-        var response = await _httpClient.SendAsync(request, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        var aggregated = new List<EtsyListingResult>();
+        var offset = 0;
+
+        for (var page = 0; page < maxPages; page++)
         {
-            var err = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogError("Failed to fetch active listings for shop {ShopId}. Status: {Status}, Error: {Error}", shopId, response.StatusCode, err);
-            return null;
+            var url = $"v3/application/shops/{shopId}/listings/active?limit={pageSize}&offset={offset}";
+            var request = BuildAuthorizedRequest(HttpMethod.Get, url, credentials);
+
+            var response = await _httpClient.SendAsync(request, cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var err = await response.Content.ReadAsStringAsync(cancellationToken);
+                _logger.LogError("Failed to fetch active listings for shop {ShopId}. Status: {Status}, Offset: {Offset}, Error: {Error}", shopId, response.StatusCode, offset, err);
+
+                // İlk sayfa başarısızsa hiç veri yok → null (mevcut davranış).
+                // Sonraki sayfada hata olursa o ana dek toplananlarla kısmi başarı dön.
+                return offset == 0 ? null : new EtsyListingsContainer { Count = aggregated.Count, Results = aggregated };
+            }
+
+            var json = await response.Content.ReadAsStringAsync(cancellationToken);
+            var pageContainer = JsonSerializer.Deserialize<EtsyListingsContainer>(json, EtsyJsonOptions);
+
+            var pageResults = pageContainer?.Results;
+            if (pageResults == null || pageResults.Count == 0)
+            {
+                break;
+            }
+
+            aggregated.AddRange(pageResults);
+
+            // Bu sayfa tam dolu değilse son sayfadayız; ya da bildirilen toplam sayıya ulaştık.
+            if (pageResults.Count < pageSize || aggregated.Count >= pageContainer!.Count)
+            {
+                break;
+            }
+
+            offset += pageSize;
         }
 
-        var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<EtsyListingsContainer>(json);
+        return new EtsyListingsContainer { Count = aggregated.Count, Results = aggregated };
     }
 
     public async Task<string?> GetListingSkuAsync(long listingId, EtsyCredentials credentials, CancellationToken cancellationToken = default)
@@ -141,7 +183,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
             }
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var inventory = JsonSerializer.Deserialize<EtsyInventoryContainer>(json);
+            var inventory = JsonSerializer.Deserialize<EtsyInventoryContainer>(json, EtsyJsonOptions);
             return inventory?.Products?.FirstOrDefault()?.Sku;
         }
         catch (Exception ex)
@@ -164,7 +206,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
             }
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var imageContainer = JsonSerializer.Deserialize<EtsyListingImagesContainer>(json);
+            var imageContainer = JsonSerializer.Deserialize<EtsyListingImagesContainer>(json, EtsyJsonOptions);
             var firstImage = imageContainer?.Results?.FirstOrDefault();
 
             if (firstImage == null || string.IsNullOrEmpty(firstImage.Url570xN))
@@ -195,7 +237,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<EtsyReceipt>(json);
+        return JsonSerializer.Deserialize<EtsyReceipt>(json, EtsyJsonOptions);
     }
 
     public async Task<EtsyReceiptsContainer?> GetPaidReceiptsAsync(string shopId, EtsyCredentials credentials, int limit, CancellationToken cancellationToken = default)
@@ -211,7 +253,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
-        return JsonSerializer.Deserialize<EtsyReceiptsContainer>(json);
+        return JsonSerializer.Deserialize<EtsyReceiptsContainer>(json, EtsyJsonOptions);
     }
 
     private static HttpRequestMessage BuildAuthorizedRequest(HttpMethod method, string relativeUrl, EtsyCredentials credentials)

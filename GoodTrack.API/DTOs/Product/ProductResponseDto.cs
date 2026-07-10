@@ -13,6 +13,7 @@ public class ProductResponseDto
     public string? Text { get; set; }
     public string? Length { get; set; }
     public Dictionary<string, ExtraValue>? Extras { get; set; }
+    public int Quantity { get; set; } = 1;
     public bool Completed { get; set; }
     public bool IsDefective { get; set; }
     public bool IsPendingApproval { get; set; }
@@ -34,6 +35,16 @@ public class ProductResponseDto
     public string ManufacturerName { get; set; } = string.Empty;
 
     public bool CancelRequested { get; set; }
+
+    /// <summary>Etsy sipariş numarası (varsa). Manuel siparişlerde null.</summary>
+    public long? EtsyReceiptId { get; set; }
+
+    /// <summary>Müşteri adı. Üretici rolüne yapılan yanıtlarda daima null döner.</summary>
+    public string? CustomerName { get; set; }
+
+    /// <summary>Teslimat adresi. Üretici rolüne yapılan yanıtlarda daima null döner.</summary>
+    public string? ShippingAddress { get; set; }
+
     public bool IsReadBySeller { get; set; }
     public bool IsReadByMfr { get; set; }
 }

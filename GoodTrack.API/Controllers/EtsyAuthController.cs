@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
-using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -20,9 +19,6 @@ public class EtsyAuthController : BaseApiController
     private readonly ILogger<EtsyAuthController> _logger;
     private readonly IConfiguration _configuration;
 
-    // OAuth callback eşleştirmesi için geçici hafıza
-    private static readonly ConcurrentDictionary<string, string> StateToFrontendUrl = new();
-
     public EtsyAuthController(
         IEtsyService etsyService,
         ILogger<EtsyAuthController> logger,
@@ -31,6 +27,14 @@ public class EtsyAuthController : BaseApiController
         _etsyService = etsyService;
         _logger = logger;
         _configuration = configuration;
+    }
+
+    /// <summary>Platform düzeyindeki Etsy API anahtarlarını okur.</summary>
+    private (string Keystring, string SharedSecret) GetPlatformCredentials()
+    {
+        var keystring = _configuration["Etsy:Keystring"] ?? Environment.GetEnvironmentVariable("ETSY_KEYSTRING") ?? string.Empty;
+        var sharedSecret = _configuration["Etsy:SharedSecret"] ?? Environment.GetEnvironmentVariable("ETSY_SHARED_SECRET") ?? string.Empty;
+        return (keystring, sharedSecret);
     }
 
     /// <summary>
@@ -43,7 +47,7 @@ public class EtsyAuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
-    public IActionResult Connect([FromBody] ConnectRequestDto dto)
+    public async Task<IActionResult> Connect([FromBody] ConnectRequestDto dto, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         if (userId == null)
@@ -51,14 +55,7 @@ public class EtsyAuthController : BaseApiController
             return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
         }
 
-        // Platform düzeyindeki Etsy API anahtarlarını oku
-        var keystring = _configuration["Etsy:Keystring"] ?? Environment.GetEnvironmentVariable("ETSY_KEYSTRING") ?? string.Empty;
-        var sharedSecret = _configuration["Etsy:SharedSecret"] ?? Environment.GetEnvironmentVariable("ETSY_SHARED_SECRET") ?? string.Empty;
-
-        // Geriye uyumluluk veya lokal test için DTO'dan gelen değerleri de kontrol et
-        if (string.IsNullOrEmpty(keystring)) keystring = dto.Keystring;
-        if (string.IsNullOrEmpty(sharedSecret)) sharedSecret = dto.SharedSecret;
-
+        var (keystring, sharedSecret) = GetPlatformCredentials();
         if (string.IsNullOrEmpty(keystring) || string.IsNullOrEmpty(sharedSecret))
         {
             return BadRequest(ApiResponse.Fail("Sistem Etsy API anahtarları yapılandırılmamış. Lütfen sistem yöneticinizle iletişime geçin."));
@@ -69,21 +66,8 @@ public class EtsyAuthController : BaseApiController
             return BadRequest(ApiResponse.Fail("Eksik parametre. CallbackUrl ve FrontendUrl zorunludur."));
         }
 
-        // OAuth URL üret
-        string codeVerifier;
-        var oauthUrl = _etsyService.GenerateOAuthUrl(userId, keystring, sharedSecret, dto.CallbackUrl, out codeVerifier);
-
-        // State değerini URL'den çıkar ve frontend URL'i ile eşleştir
-        var uri = new Uri(oauthUrl);
-        var queryParams = System.Web.HttpUtility.ParseQueryString(uri.Query);
-        var state = queryParams["state"];
-
-        if (!string.IsNullOrEmpty(state))
-        {
-            StateToFrontendUrl[state] = dto.FrontendUrl;
-            // code_verifier bilgisini de bu state ile ilişkilendirilmiş şekilde EtsyService içinde saklıyoruz
-            _logger.LogInformation("Stored state mapping. State: {State}, FrontendUrl: {FrontendUrl}", state, dto.FrontendUrl);
-        }
+        // State (code_verifier + frontend url dahil) kalıcı depoya yazılır; tek kaynak-of-truth.
+        var oauthUrl = await _etsyService.GenerateOAuthUrlAsync(userId, keystring, dto.CallbackUrl, dto.FrontendUrl, cancellationToken);
 
         return Ok(new ApiResponse<object>(new { oauthUrl }));
     }
@@ -92,45 +76,57 @@ public class EtsyAuthController : BaseApiController
     [HttpGet("callback")]
     public async Task<IActionResult> Callback([FromQuery] string code, [FromQuery] string state, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Received Etsy OAuth callback. Code: {Code}, State: {State}", code, state);
+        _logger.LogInformation("Received Etsy OAuth callback. State: {State}", state);
 
         if (string.IsNullOrEmpty(code) || string.IsNullOrEmpty(state))
         {
             return BadRequest("Eksik OAuth geri dönüş parametreleri.");
         }
 
-        // State'e karşılık gelen frontend yönlendirme adresini al
-        if (!StateToFrontendUrl.TryRemove(state, out var frontendUrl))
+        // State'i tek kullanımlık olarak tüket. Kullanıcı, code_verifier, callback ve
+        // frontend adresi tek bir kayıttan gelir (eskiden iki ayrı in-memory sözlükteydi).
+        var pending = await _etsyService.ConsumeOAuthStateAsync(state, cancellationToken);
+        if (pending == null)
         {
-            _logger.LogError("Invalid or expired state: {State}", state);
+            _logger.LogError("Invalid or expired Etsy OAuth state: {State}", state);
             return BadRequest("Geçersiz veya süresi dolmuş istek (state eşleşmedi).");
         }
 
-        // State üzerinden bekleyen OAuth bağlantısını çözüp token takasını gerçekleştir.
-        // (Bekleyen state -> code_verifier eşlemesi servis katmanında tutulur.)
+        var (keystring, sharedSecret) = GetPlatformCredentials();
+        if (string.IsNullOrEmpty(keystring) || string.IsNullOrEmpty(sharedSecret))
+        {
+            _logger.LogError("Etsy platform credentials are not configured; cannot complete OAuth callback.");
+            return BuildRedirect(pending.FrontendUrl, "etsy_connected=false&error=" + Uri.EscapeDataString("Etsy API anahtarları yapılandırılmamış."));
+        }
+
         try
         {
-            var connection = await _etsyService.ExchangeStateForTokensAsync(state, code, cancellationToken);
+            var connection = await _etsyService.ExchangeCodeForTokensAsync(
+                pending.UserId,
+                keystring,
+                sharedSecret,
+                code,
+                pending.CodeVerifier,
+                pending.CallbackUrl,
+                cancellationToken);
 
-            _logger.LogInformation("Etsy connection successful. Redirecting user to frontend: {Url}", frontendUrl);
+            _logger.LogInformation("Etsy connection successful. Redirecting user to frontend: {Url}", pending.FrontendUrl);
 
-            // Başarılı yönlendirme
-            var redirectUrl = frontendUrl.Contains("?")
-                ? $"{frontendUrl}&etsy_connected=true&shop_name={Uri.EscapeDataString(connection.EtsyShopName)}"
-                : $"{frontendUrl}?etsy_connected=true&shop_name={Uri.EscapeDataString(connection.EtsyShopName)}";
-
-            return Redirect(redirectUrl);
+            return BuildRedirect(pending.FrontendUrl,
+                $"etsy_connected=true&shop_name={Uri.EscapeDataString(connection.EtsyShopName)}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to complete Etsy OAuth connection.");
 
-            // Hatalı yönlendirme
-            var errorRedirectUrl = frontendUrl.Contains("?")
-                ? $"{frontendUrl}&etsy_connected=false&error={Uri.EscapeDataString(ex.Message)}"
-                : $"{frontendUrl}?etsy_connected=false&error={Uri.EscapeDataString(ex.Message)}";
-
-            return Redirect(errorRedirectUrl);
+            return BuildRedirect(pending.FrontendUrl,
+                $"etsy_connected=false&error={Uri.EscapeDataString(ex.Message)}");
         }
+    }
+
+    private RedirectResult BuildRedirect(string frontendUrl, string query)
+    {
+        var separator = frontendUrl.Contains('?') ? "&" : "?";
+        return Redirect($"{frontendUrl}{separator}{query}");
     }
 }

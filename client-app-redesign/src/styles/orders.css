@@ -1536,3 +1536,36 @@
 .color-danger {
   color: var(--danger) !important;
 }
+
+/* Sipariş kartı rozetleri — kod satırında dikkat çekici şekilde gösterilir.
+   Yan yana durabildikleri için iki farklı renk ailesi kullanılır. */
+.order-qty-badge,
+.order-etsy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.order-qty-badge svg,
+.order-etsy-badge svg {
+  flex-shrink: 0;
+}
+
+/* Adet — indigo */
+.order-qty-badge {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  box-shadow: 0 1px 4px rgba(79, 70, 229, 0.35);
+}
+
+/* Etsy sipariş no — Etsy marka turuncusu */
+.order-etsy-badge {
+  background: linear-gradient(135deg, #f1641e 0%, #d2500f 100%);
+  box-shadow: 0 1px 4px rgba(241, 100, 30, 0.4);
+}

@@ -97,66 +97,113 @@ public class EtsyWebhookController : BaseApiController
             return Ok(); // Etsy webhook'u iptal etmesin diye 200 döneriz.
         }
 
-        // 6. İmzayı doğrula
+        // 6. İmzayı doğrula. Bu uç nokta [AllowAnonymous] olduğundan imza TEK koruma katmanıdır:
+        //    signing secret tanımlı değilse isteği ASLA işleme alma (güvenli varsayılan).
         if (string.IsNullOrEmpty(etsyConnection.WebhookSigningSecret))
         {
-            _logger.LogWarning("WebhookSigningSecret is not set for ShopId: {ShopId}. Ignoring signature verification.", payload.ShopId);
+            _logger.LogError(
+                "WebhookSigningSecret is not configured for ShopId: {ShopId}. Rejecting webhook — cannot verify authenticity.",
+                payload.ShopId);
+            return Unauthorized("Bu mağaza için webhook imza anahtarı tanımlanmamış.");
         }
-        else
+
+        if (!VerifySignature(webhookId!, webhookTimestampStr!, rawBody, etsyConnection.WebhookSigningSecret, webhookSignature!))
         {
-            var isValid = VerifySignature(webhookId!, webhookTimestampStr!, rawBody, etsyConnection.WebhookSigningSecret, webhookSignature!);
-            if (!isValid)
-            {
-                _logger.LogWarning("Webhook signature verification failed for ShopId: {ShopId}", payload.ShopId);
-                return Unauthorized("Geçersiz imza (Signature mismatch).");
-            }
+            _logger.LogWarning("Webhook signature verification failed for ShopId: {ShopId}", payload.ShopId);
+            return Unauthorized("Geçersiz imza (Signature mismatch).");
         }
 
-        // 7. Yalnızca order.paid olayı için sipariş oluşturma işlemini tetikle
-        if (payload.EventType.Equals("order.paid", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                // Resource URL'den sipariş ID'sini çekelim. URL formatı:
-                // https://api.etsy.com/v3/application/shops/{YOUR_SHOP_ID}/receipts/{RECEIPT_ID}
-                var uri = new Uri(payload.ResourceUrl);
-                var segments = uri.Segments;
-                var receiptId = segments[^1].TrimEnd('/');
+        // 7. Desteklenen olay tiplerini işle: order.paid (sipariş oluştur), order.canceled (sipariş iptal et).
+        //    Etsy iptal olayı Amerikan yazımıyla "order.canceled" (tek 'l') gelir.
+        var isPaid = payload.EventType.Equals("order.paid", StringComparison.OrdinalIgnoreCase);
+        var isCanceled = payload.EventType.Equals("order.canceled", StringComparison.OrdinalIgnoreCase)
+            || payload.EventType.Equals("order.cancelled", StringComparison.OrdinalIgnoreCase);
 
-                _logger.LogInformation("Webhook triggered order paid processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
-
-                await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing webhook order synchronization.");
-                return StatusCode(500, "Sipariş senkronizasyonu sırasında iç sunucu hatası oluştu.");
-            }
-        }
-        else
+        if (!isPaid && !isCanceled)
         {
             _logger.LogInformation("Ignoring unsupported webhook event type: {EventType}", payload.EventType);
+            return Ok();
+        }
+
+        try
+        {
+            // Resource URL'den sipariş (receipt) ID'sini çekelim. URL formatı:
+            // https://api.etsy.com/v3/application/shops/{YOUR_SHOP_ID}/receipts/{RECEIPT_ID}
+            var uri = new Uri(payload.ResourceUrl);
+            var receiptId = uri.Segments[^1].TrimEnd('/');
+
+            if (isPaid)
+            {
+                _logger.LogInformation("Webhook triggered order paid processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
+                await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
+            }
+            else
+            {
+                _logger.LogInformation("Webhook triggered order cancellation processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
+                await _etsyService.ProcessEtsyOrderCancellationAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing webhook order event {EventType}.", payload.EventType);
+            return StatusCode(500, "Sipariş senkronizasyonu sırasında iç sunucu hatası oluştu.");
         }
 
         return Ok();
     }
 
+    private const string SigningSecretPrefix = "whsec_";
+
+    /// <summary>
+    /// Webhook imzasını doğrular. İmzalanan içerik "{webhook-id}.{webhook-timestamp}.{body}",
+    /// anahtar ise signing secret'ın "whsec_" önekinden sonraki base64 kısmıdır (HMAC-SHA256 → base64).
+    ///
+    /// webhook-signature başlığı iki biçimde gelebilir:
+    ///   - düz base64:            "g0hM9SsE+OTP..."
+    ///   - sürüm önekli ve çoklu: "v1,g0hM9SsE+OTP... v2,MzJsNDk4..."
+    /// (Etsy, Svix altyapısını whitelabel başlıklarla kullanır.) Her iki biçim de desteklenir.
+    /// Karşılaştırma timing attack'e karşı sabit zamanlıdır.
+    /// </summary>
     private bool VerifySignature(string webhookId, string timestamp, string rawBody, string signingSecret, string headerSignature)
     {
         try
         {
-            var secretBase64 = signingSecret.Contains("_") ? signingSecret.Split('_')[1] : signingSecret;
+            // "whsec_" önekini at. Not: kalan base64 gövdesinde de '_' bulunabileceğinden Split('_') kullanılmaz.
+            var secretBase64 = signingSecret.StartsWith(SigningSecretPrefix, StringComparison.Ordinal)
+                ? signingSecret[SigningSecretPrefix.Length..]
+                : signingSecret;
+
             var secretBytes = Convert.FromBase64String(secretBase64);
 
             var signedContent = $"{webhookId}.{timestamp}.{rawBody}";
             var contentBytes = Encoding.UTF8.GetBytes(signedContent);
 
-            using (var hmac = new HMACSHA256(secretBytes))
+            using var hmac = new HMACSHA256(secretBytes);
+            var expectedBytes = hmac.ComputeHash(contentBytes);
+
+            foreach (var token in headerSignature.Split(' ', StringSplitOptions.RemoveEmptyEntries))
             {
-                var hashBytes = hmac.ComputeHash(contentBytes);
-                var expectedSignature = Convert.ToBase64String(hashBytes);
-                return string.Equals(expectedSignature, headerSignature, StringComparison.Ordinal);
+                // "v1,<base64>" → virgülden sonrası; düz base64 ise olduğu gibi.
+                var commaIndex = token.IndexOf(',');
+                var candidate = commaIndex >= 0 ? token[(commaIndex + 1)..] : token;
+
+                byte[] candidateBytes;
+                try
+                {
+                    candidateBytes = Convert.FromBase64String(candidate);
+                }
+                catch (FormatException)
+                {
+                    continue; // Bu token base64 değil; sonraki imzayı dene.
+                }
+
+                if (CryptographicOperations.FixedTimeEquals(expectedBytes, candidateBytes))
+                {
+                    return true;
+                }
             }
+
+            return false;
         }
         catch (Exception ex)
         {

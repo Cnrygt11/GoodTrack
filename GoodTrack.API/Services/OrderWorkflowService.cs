@@ -314,6 +314,69 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate");
     }
 
+    public async Task<ExternalCancellationOutcome> ApplyExternalCancellationAsync(string sellerId, string orderId, string reason)
+    {
+        var product = await _productRepository.GetByIdAsync(orderId);
+        if (product == null)
+            throw new KeyNotFoundException("Sipariş bulunamadı!");
+
+        if (product.SellerId != sellerId)
+            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+
+        string currentStatus = ResolveCurrentStatus(product);
+        var cancelReason = string.IsNullOrWhiteSpace(reason) ? "Sipariş dış platformda iptal edildi." : reason;
+
+        // Zaten iptal edilmiş → idempotent no-op (webhook tekrar teslimatı güvenli).
+        if (currentStatus == OrderStatus.Cancelled)
+        {
+            return ExternalCancellationOutcome.AlreadyCancelled;
+        }
+
+        // Üretim öncesi (bekliyor/düzeltildi/bozuk) → doğrudan iptal. Kredi iadesi YAPILMAZ.
+        if (currentStatus is OrderStatus.Awaiting or OrderStatus.Corrected or OrderStatus.Broken)
+        {
+            product.Status = OrderStatus.Cancelled;
+            product.CancelRequested = false;
+            product.IsPendingApproval = false;
+            product.IsDefective = false;
+            product.Completed = false;
+            AppendLog(product, sellerId, product.SellerName, cancelReason);
+            product.IsReadBySeller = false;
+            product.IsReadByMfr = false;
+            await _productRepository.SaveAsync(product);
+            await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate");
+            return ExternalCancellationOutcome.Cancelled;
+        }
+
+        // Üretimde → doğrudan iptal edilemez; üreticiye iptal talebi gönderilir.
+        if (currentStatus == OrderStatus.Production)
+        {
+            if (product.CancelRequested)
+            {
+                return ExternalCancellationOutcome.CancellationAlreadyRequested;
+            }
+
+            product.CancelRequested = true;
+            AppendLog(product, sellerId, product.SellerName,
+                $"{cancelReason} Sipariş üretimde olduğu için üreticiye iptal talebi gönderildi.");
+            product.IsReadBySeller = false;
+            product.IsReadByMfr = false;
+            await _productRepository.SaveAsync(product);
+            await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate");
+            return ExternalCancellationOutcome.CancellationRequested;
+        }
+
+        // Üretim sonrası (tamamlandı/teslim/kargo/hatalı/eksik) → otomatik iptal edilemez.
+        // Durumu değiştirmeden bilgilendirme kaydı düşülür ki taraflar manuel değerlendirebilsin.
+        AppendLog(product, sellerId, product.SellerName,
+            $"{cancelReason} Ancak sipariş üretim sürecinde ilerlediği için otomatik iptal edilemedi; lütfen manuel olarak değerlendiriniz.");
+        product.IsReadBySeller = false;
+        product.IsReadByMfr = false;
+        await _productRepository.SaveAsync(product);
+        await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate");
+        return ExternalCancellationOutcome.RequiresManualReview;
+    }
+
     private static void ValidateOwnership(Product product, string userId, string role)
     {
         if (role == Roles.Seller)

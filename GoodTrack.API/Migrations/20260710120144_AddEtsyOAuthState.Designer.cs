@@ -5,6 +5,7 @@ using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoodTrack.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710120144_AddEtsyOAuthState")]
+    partial class AddEtsyOAuthState
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -447,11 +450,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<string>("CustomerName")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("customer_name");
-
                     b.Property<string>("DefectImage")
                         .HasMaxLength(7000000)
                         .HasColumnType("character varying(7000000)")
@@ -461,14 +459,6 @@ namespace GoodTrack.API.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("defect_note");
-
-                    b.Property<long?>("EtsyReceiptId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("etsy_receipt_id");
-
-                    b.Property<long?>("EtsyTransactionId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("etsy_transaction_id");
 
                     b.Property<Dictionary<string, ExtraValue>>("Extras")
                         .HasColumnType("jsonb")
@@ -541,11 +531,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("seller_name");
 
-                    b.Property<string>("ShippingAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
-                        .HasColumnName("shipping_address");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -565,12 +550,6 @@ namespace GoodTrack.API.Migrations
 
                     b.HasIndex("SellerId")
                         .HasDatabaseName("ix_products_seller_id");
-
-                    b.HasIndex("SellerId", "EtsyReceiptId")
-                        .HasDatabaseName("ix_products_seller_id_etsy_receipt_id");
-
-                    b.HasIndex("SellerId", "EtsyTransactionId")
-                        .HasDatabaseName("ix_products_seller_id_etsy_transaction_id");
 
                     b.ToTable("products", (string)null);
                 });

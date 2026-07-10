@@ -103,6 +103,13 @@ export interface Product {
   text: string;
   length: string;
   extras: { [fieldId: string]: ExtraFieldValue };
+  quantity?: number;
+  /** Etsy sipariş numarası (varsa). Manuel siparişlerde yok. */
+  etsyReceiptId?: number | null;
+  /** Yalnızca satıcıya döner; üretici yanıtlarında daima null. */
+  customerName?: string | null;
+  /** Yalnızca satıcıya döner; üretici yanıtlarında daima null. */
+  shippingAddress?: string | null;
   completed: boolean;
   isDefective?: boolean;
   defectNote?: string;
@@ -267,7 +274,7 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
-    headers
+    headers,
   });
 
   if (response.status === 401) {
@@ -295,7 +302,7 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
   if (parsed && typeof parsed === 'object' && 'success' in parsed) {
     const envelope = parsed as ApiResponseEnvelope<T>;
     if (envelope.success) {
-      return envelope.data !== undefined ? envelope.data : parsed as T;
+      return envelope.data !== undefined ? envelope.data : (parsed as T);
     } else {
       throw new ApiError(envelope.message || 'İşlem başarısız oldu.', response.status);
     }
@@ -388,7 +395,12 @@ export const api = {
     });
   },
 
-  updateOrderStatus(productId: string, status: string, defectNote?: string | null, defectImage?: string | null): Promise<{ message: string }> {
+  updateOrderStatus(
+    productId: string,
+    status: string,
+    defectNote?: string | null,
+    defectImage?: string | null,
+  ): Promise<{ message: string }> {
     return apiCall<{ message: string }>(`/products/${productId}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status, defectNote, defectImage }),
@@ -398,11 +410,14 @@ export const api = {
   markStatusAsRead(status: string): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/products/read-status', {
       method: 'POST',
-      body: JSON.stringify({ status })
+      body: JSON.stringify({ status }),
     });
   },
 
-  updateProduct(productId: string, productData: Product): Promise<{ product: Product; message: string }> {
+  updateProduct(
+    productId: string,
+    productData: Product,
+  ): Promise<{ product: Product; message: string }> {
     return apiCall<{ product: Product; message: string }>(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
@@ -433,14 +448,19 @@ export const api = {
     return apiCall<CatalogProduct[]>('/catalog');
   },
 
-  addCatalogProduct(catalogData: CreateCatalogProductPayload): Promise<{ product: CatalogProduct; message: string }> {
+  addCatalogProduct(
+    catalogData: CreateCatalogProductPayload,
+  ): Promise<{ product: CatalogProduct; message: string }> {
     return apiCall<{ product: CatalogProduct; message: string }>('/catalog', {
       method: 'POST',
       body: JSON.stringify(catalogData),
     });
   },
 
-  updateCatalogProduct(id: string, catalogData: UpdateCatalogProductPayload): Promise<{ product: CatalogProduct; message: string }> {
+  updateCatalogProduct(
+    id: string,
+    catalogData: UpdateCatalogProductPayload,
+  ): Promise<{ product: CatalogProduct; message: string }> {
     return apiCall<{ product: CatalogProduct; message: string }>(`/catalog/${id}`, {
       method: 'PUT',
       body: JSON.stringify(catalogData),
@@ -482,21 +502,25 @@ export const api = {
   verifyPassword(password: string): Promise<{ success: boolean; message: string }> {
     return apiCall<{ success: boolean; message: string }>('/auth/verify-password', {
       method: 'POST',
-      body: JSON.stringify({ password })
+      body: JSON.stringify({ password }),
     });
   },
 
-  changePassword(oldPassword: string, newPassword: string, confirmNewPassword: string): Promise<{ message: string }> {
+  changePassword(
+    oldPassword: string,
+    newPassword: string,
+    confirmNewPassword: string,
+  ): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/auth/change-password', {
       method: 'POST',
-      body: JSON.stringify({ oldPassword, newPassword, confirmNewPassword })
+      body: JSON.stringify({ oldPassword, newPassword, confirmNewPassword }),
     });
   },
 
   updateProfile(profileData: Partial<UserProfile>): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/profile', {
       method: 'PUT',
-      body: JSON.stringify(profileData)
+      body: JSON.stringify(profileData),
     });
   },
 
@@ -506,7 +530,7 @@ export const api = {
     cursor?: string,
     limit?: number,
     mustHaveGallery?: boolean,
-    mustHaveAvatar?: boolean
+    mustHaveAvatar?: boolean,
   ): Promise<{ items: UserProfile[]; nextCursor: string | null }> {
     const params = new URLSearchParams();
     if (city) params.append('city', city);
@@ -515,13 +539,15 @@ export const api = {
     if (limit) params.append('limit', limit.toString());
     if (mustHaveGallery) params.append('mustHaveGallery', 'true');
     if (mustHaveAvatar) params.append('mustHaveAvatar', 'true');
-    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(`/manufacturers/search?${params.toString()}`);
+    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(
+      `/manufacturers/search?${params.toString()}`,
+    );
   },
 
   submitFeedback(payload: FeedbackInput): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/feedback', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   },
 
@@ -531,7 +557,7 @@ export const api = {
 
   deleteUser(userId: string): Promise<{ message: string }> {
     return apiCall<{ message: string }>(`/admin/users/${userId}`, {
-      method: 'DELETE'
+      method: 'DELETE',
     });
   },
 
@@ -550,52 +576,76 @@ export const api = {
   upgradePlan(plan: string): Promise<{ message: string; credits: UserCredit }> {
     return apiCall<{ message: string; credits: UserCredit }>('/credits/upgrade', {
       method: 'POST',
-      body: JSON.stringify({ plan })
+      body: JSON.stringify({ plan }),
     });
   },
 
   // ── Etsy Entegrasyonu API Çağrıları ────────────────────────────────────────
-  connectEtsy(payload: { keystring: string; sharedSecret: string; callbackUrl: string; frontendUrl: string }): Promise<{ oauthUrl: string }> {
+  connectEtsy(payload: {
+    keystring: string;
+    sharedSecret: string;
+    callbackUrl: string;
+    frontendUrl: string;
+  }): Promise<{ oauthUrl: string }> {
     return apiCall<{ oauthUrl: string }>('/etsyauth/connect', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   },
 
-  getEtsyConnections(): Promise<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null }[]> {
-    return apiCall<{ shopId: string; shopName: string; isActive: boolean; tokenExpiresAt: string; webhookSigningSecret: string | null }[]>('/etsysync/connections');
+  getEtsyConnections(): Promise<
+    {
+      shopId: string;
+      shopName: string;
+      isActive: boolean;
+      tokenExpiresAt: string;
+      webhookSigningSecret: string | null;
+    }[]
+  > {
+    return apiCall<
+      {
+        shopId: string;
+        shopName: string;
+        isActive: boolean;
+        tokenExpiresAt: string;
+        webhookSigningSecret: string | null;
+      }[]
+    >('/etsysync/connections');
   },
 
-  updateEtsyWebhookSecret(shopId: string, webhookSigningSecret: string | null): Promise<{ message: string }> {
+  updateEtsyWebhookSecret(
+    shopId: string,
+    webhookSigningSecret: string | null,
+  ): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/connection/webhook-secret', {
       method: 'POST',
-      body: JSON.stringify({ etsyShopId: shopId, webhookSigningSecret })
+      body: JSON.stringify({ etsyShopId: shopId, webhookSigningSecret }),
     });
   },
 
   disconnectEtsyShop(shopId: string): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/connection/disconnect', {
       method: 'POST',
-      body: JSON.stringify({ etsyShopId: shopId })
+      body: JSON.stringify({ etsyShopId: shopId }),
     });
   },
 
   syncEtsyListings(): Promise<{ count: number; message: string }> {
     return apiCall<{ count: number; message: string }>('/etsysync/sync-listings', {
-      method: 'POST'
+      method: 'POST',
     });
   },
 
   syncEtsyOrders(): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/sync-orders', {
-      method: 'POST'
+      method: 'POST',
     });
   },
 
   testMockEtsyWebhook(payload: EtsyWebhookMockPayload): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/webhook/test-mock', {
       method: 'POST',
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
-  }
+  },
 };

@@ -1,9 +1,13 @@
 import { Factory, Package, Clock, CheckCircle2, XCircle, Archive, Play } from 'lucide-react';
 import useMfrOrders, { MfrTab } from '../../hooks/useMfrOrders';
+import usePagination from '../../hooks/usePagination';
+import Pagination from '../ui/Pagination';
 import MfrOrderCard from './MfrOrderCard';
 import DefectDetailsModal from './DefectDetailsModal';
 import BrokenReportModal from './BrokenReportModal';
 import { ORDER_STATUS } from '../../utils/constants';
+
+const PAGE_SIZE = 20;
 
 function getTabIcon(tab: MfrTab, active: boolean) {
   const size = 20;
@@ -16,7 +20,9 @@ function getTabIcon(tab: MfrTab, active: boolean) {
     case ORDER_STATUS.PRODUCTION:
       return <Play size={size} style={{ color }} />;
     case ORDER_STATUS.COMPLETED:
-      return <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />;
+      return (
+        <CheckCircle2 size={size} style={{ color: active ? 'var(--success)' : 'var(--muted)' }} />
+      );
     case ORDER_STATUS.DELIVERED:
       return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
     case ORDER_STATUS.DEFECTIVE:
@@ -49,8 +55,16 @@ export default function MfrPage() {
     handleBrokenSubmit,
     handleRespondCancel,
     actionLoading,
-    filteredProducts
+    filteredProducts,
   } = useMfrOrders();
+
+  // Aktif durum sekmesindeki siparişleri 20'şerlik sayfalara böl.
+  // Sekme veya sıralama değişince 1. sayfaya döner (resetKey).
+  const { pageItems, currentPage, totalPages, setCurrentPage } = usePagination(
+    filteredProducts,
+    PAGE_SIZE,
+    `${activeTab}|${sortOrder}`,
+  );
 
   const tabs = [
     { key: ORDER_STATUS.AWAITING, label: t('tabAwaiting') },
@@ -59,19 +73,20 @@ export default function MfrPage() {
     { key: ORDER_STATUS.COMPLETED, label: t('tabCompleted') },
     { key: ORDER_STATUS.DELIVERED, label: t('tabDelivered') },
     { key: ORDER_STATUS.DEFECTIVE, label: t('tabIssuesMfr') },
-    { key: ORDER_STATUS.SHIPPED, label: t('tabArchiveMfr') }
+    { key: ORDER_STATUS.SHIPPED, label: t('tabArchiveMfr') },
   ];
 
   return (
     <div id="mfr-screen" className="mfr-theme mfr-screen">
       {/* Dashboard Title */}
       <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
-        {t('productionDashboardTitlePart1')} <span className="mfr-accent">{t('productionDashboardTitlePart2')}</span>
+        {t('productionDashboardTitlePart1')}{' '}
+        <span className="mfr-accent">{t('productionDashboardTitlePart2')}</span>
       </h2>
 
       {/* Dashboard Cards Grid */}
       <div className="mfr-page-tabs-grid">
-        {tabs.map(tab => {
+        {tabs.map((tab) => {
           const isActive = activeTab === tab.key;
           const count = badgeCounts[tab.key] || 0;
           return (
@@ -80,17 +95,9 @@ export default function MfrPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`mfr-page-tab-btn ${isActive ? 'mfr-page-tab-btn--active' : ''}`}
             >
-              <div className="mfr-page-tab-icon">
-                {getTabIcon(tab.key, isActive)}
-              </div>
-              <span className="mfr-page-tab-label">
-                {tab.label}
-              </span>
-              {count > 0 && (
-                <span className="mfr-page-tab-badge">
-                  {count}
-                </span>
-              )}
+              <div className="mfr-page-tab-icon">{getTabIcon(tab.key, isActive)}</div>
+              <span className="mfr-page-tab-label">{tab.label}</span>
+              {count > 0 && <span className="mfr-page-tab-badge">{count}</span>}
             </button>
           );
         })}
@@ -100,7 +107,9 @@ export default function MfrPage() {
       <div className="mfr-list-header">
         <h3>
           {t('orderListLabel')}{' '}
-          <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>{tabs.find(t => t.key === activeTab)?.label}</span>
+          <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>
+            {tabs.find((t) => t.key === activeTab)?.label}
+          </span>
         </h3>
 
         {/* Sort Selector */}
@@ -123,12 +132,10 @@ export default function MfrPage() {
             <div className="empty-icon">
               <Factory size={36} />
             </div>
-            <p>
-              {t('noOrdersInTab')}
-            </p>
+            <p>{t('noOrdersInTab')}</p>
           </div>
         ) : (
-          filteredProducts.map(p => (
+          pageItems.map((p) => (
             <MfrOrderCard
               key={p.id}
               product={p}
@@ -144,6 +151,8 @@ export default function MfrPage() {
         )}
       </div>
 
+      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+
       <DefectDetailsModal
         isOpen={isDetailsModalOpen}
         onClose={closeDefectDetails}
@@ -156,8 +165,6 @@ export default function MfrPage() {
         onSubmit={handleBrokenSubmit}
         actionLoading={actionLoading}
       />
-
     </div>
   );
 }
-

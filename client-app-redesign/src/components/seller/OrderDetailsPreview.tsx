@@ -2,7 +2,19 @@ import { Product } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { ORDER_STATUS } from '../../utils/constants';
-import { Tag, Ruler, Factory, CheckCircle2, Calendar, Info, AlertTriangle } from 'lucide-react';
+import {
+  Tag,
+  Ruler,
+  Factory,
+  CheckCircle2,
+  Calendar,
+  Info,
+  AlertTriangle,
+  Layers,
+  ShoppingBag,
+  User,
+  MapPin,
+} from 'lucide-react';
 
 interface OrderDetailsPreviewProps {
   product: Product;
@@ -29,19 +41,27 @@ export default function OrderDetailsPreview({
     <div className="seller-order-card-info">
       {/* Code + Status badge */}
       <div className="seller-order-card-header">
-        <span className="seller-order-card-code">
-          {p.code}
-        </span>
-        <span 
+        <span className="seller-order-card-code">{p.code}</span>
+        {p.etsyReceiptId && (
+          <span className="order-etsy-badge" title={`${t('etsyOrderNoLabel')}: ${p.etsyReceiptId}`}>
+            <ShoppingBag size={11} />
+            {t('etsyOrderNoLabel')}: {p.etsyReceiptId}
+          </span>
+        )}
+        {(p.quantity ?? 1) > 1 && (
+          <span className="order-qty-badge" title={`${t('quantityLabel')}: ${p.quantity}`}>
+            <Layers size={11} />
+            {t('quantityLabel')}: {p.quantity}
+          </span>
+        )}
+        <span
           className="seller-order-card-status"
           style={{ background: sc.bg, border: `1px solid ${sc.border}`, color: sc.color }}
         >
           {sc.icon} {sc.label}
         </span>
         {p.cancelRequested && (
-          <span className="seller-order-card-cancel-requested">
-            {t('cancelRequestPending')}
-          </span>
+          <span className="seller-order-card-cancel-requested">{t('cancelRequestPending')}</span>
         )}
         {status === 'broken' && p.defectNote && (
           <button
@@ -78,6 +98,19 @@ export default function OrderDetailsPreview({
             <strong>{t('mfrLabel')}:</strong> {p.mfrName}
           </span>
         )}
+        {/* Müşteri bilgileri yalnızca satıcıya döner (backend üreticiye null gönderir). */}
+        {p.customerName && (
+          <span className="order-chip">
+            <User size={10} />
+            <strong>{t('customerLabel')}:</strong> {p.customerName}
+          </span>
+        )}
+        {p.shippingAddress && (
+          <span className="order-chip">
+            <MapPin size={10} />
+            <strong>{t('addressLabel')}:</strong> {p.shippingAddress}
+          </span>
+        )}
         {Object.entries(p.extras || {}).map(([key, item]) => {
           if (!item.value) return null;
           return (
@@ -92,20 +125,25 @@ export default function OrderDetailsPreview({
       <div className="seller-order-card-header">
         <span className="seller-order-card-date">
           <Calendar size={11} />
-          {t('sentDateLabel')}: <strong>{dateStr} {timeStr}</strong>
+          {t('sentDateLabel')}:{' '}
+          <strong>
+            {dateStr} {timeStr}
+          </strong>
         </span>
         {p.completedAt && (
           <span className="seller-order-card-date completed">
             <CheckCircle2 size={11} />
-            {t('completedDateLabel')}: <strong>{new Date(p.completedAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short' })}</strong>
+            {t('completedDateLabel')}:{' '}
+            <strong>
+              {new Date(p.completedAt).toLocaleDateString(t('dateLocale'), {
+                day: '2-digit',
+                month: 'short',
+              })}
+            </strong>
           </span>
         )}
         {!(status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED) && (
-          <button
-            type="button"
-            onClick={() => onViewTimeline(p)}
-            className="timeline-link"
-          >
+          <button type="button" onClick={() => onViewTimeline(p)} className="timeline-link">
             <Info size={11} />
             {t('btnViewTimeline')}
           </button>
@@ -114,4 +152,3 @@ export default function OrderDetailsPreview({
     </div>
   );
 }
-
