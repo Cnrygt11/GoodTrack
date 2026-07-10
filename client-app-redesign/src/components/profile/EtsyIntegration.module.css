@@ -108,14 +108,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: #F1641E;
-  border-color: #F1641E;
+  background-color: var(--accent-seller);
+  border-color: var(--accent-seller);
   padding: 10px 20px;
 }
 
 .etsyButton:hover {
-  background-color: #d65315;
-  border-color: #d65315;
+  filter: brightness(1.1);
 }
 
 /* Connection List */
@@ -273,7 +272,7 @@
   margin: 0 0 8px 0;
   font-size: 14px;
   font-weight: 600;
-  color: #F1641E;
+  color: #f1641e;
   display: flex;
   align-items: center;
   gap: 6px;

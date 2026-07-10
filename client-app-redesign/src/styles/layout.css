@@ -209,13 +209,15 @@
 .seller-theme .segmented-btn.active {
   background: var(--accent-seller);
   color: var(--color-on-accent);
-  box-shadow: 0 4px 12px var(--accent-seller-glow);
 }
 
 .mfr-theme .segmented-btn.active {
   background: var(--accent-mfr);
-  color: var(--color-on-accent);
-  box-shadow: 0 4px 12px var(--accent-mfr-glow);
+  color: #05262c;
+}
+
+.light-theme .mfr-theme .segmented-btn.active {
+  color: #fff;
 }
 
 .topbar-actions {
@@ -266,16 +268,18 @@
 
 .nav-btn--active.nav-btn--seller {
   border-color: var(--accent-seller);
-  background: var(--accent-seller-gradient);
+  background: var(--accent-seller);
   color: var(--color-on-accent);
-  box-shadow: 0 4px 12px var(--accent-seller-glow);
 }
 
 .nav-btn--active.nav-btn--mfr {
   border-color: var(--accent-mfr);
-  background: var(--accent-mfr-gradient);
-  color: var(--color-on-accent);
-  box-shadow: 0 4px 12px var(--accent-mfr-glow);
+  background: var(--accent-mfr);
+  color: #05262c;
+}
+
+.light-theme .nav-btn--active.nav-btn--mfr {
+  color: #fff;
 }
 
 .topbar-user-label {

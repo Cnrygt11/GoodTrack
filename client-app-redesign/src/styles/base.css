@@ -5,7 +5,9 @@
 }
 
 body {
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--bg-grid);
+  background-size: 26px 26px;
   color: var(--text);
   font-family: var(--font-body);
   min-height: 100vh;

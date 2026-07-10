@@ -25,17 +25,11 @@
 }
 
 .seller-theme .feedback-fab {
-  background: var(--accent-seller-gradient);
-  box-shadow:
-    0 8px 32px var(--accent-seller-glow),
-    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  background: var(--accent-seller);
 }
 
 .mfr-theme .feedback-fab {
-  background: var(--accent-mfr-gradient);
-  box-shadow:
-    0 8px 32px var(--accent-mfr-glow),
-    inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  background: var(--accent-mfr);
   color: #030302;
 }
 

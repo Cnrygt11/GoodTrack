@@ -15,6 +15,10 @@ export const translations = {
     hasAccount: 'Hesabınız var mı? Giriş yapın.',
     welcomeBack: 'HOŞ GELDİNİZ',
     joinUs: 'ARAMIZA KATILIN',
+    loginTitle: 'Tekrar hoş geldiniz',
+    loginSubtitle: 'Devam etmek için hesabınıza giriş yapın.',
+    registerTitle: 'Hesabınızı oluşturun',
+    registerSubtitle: 'Dakikalar içinde GoodTrack kullanmaya başlayın.',
     roleRequired: 'Lütfen rol seçin!',
     passwordMismatch: 'Şifreler eşleşmiyor!',
     loginSuccess: 'Giriş başarılı!',
@@ -30,7 +34,8 @@ export const translations = {
     upgradeBtn: 'Planı Yükselt',
     currentPlanBadge: 'Aktif Plan',
     features: 'Özellikler',
-    insufficientCredits: 'Krediniz yetersiz! Sipariş oluşturmak için planınızı yükseltmeniz gerekmektedir.',
+    insufficientCredits:
+      'Krediniz yetersiz! Sipariş oluşturmak için planınızı yükseltmeniz gerekmektedir.',
     upgradeSuccess: 'Planınız başarıyla yükseltildi!',
     navCredits: 'Kredi',
     creditsLowWarning: 'Krediniz Azalıyor!',
@@ -57,7 +62,8 @@ export const translations = {
     // Mock Payment Simulation
     paymentSimulationTitle: 'Güvenli Ödeme Simülasyonu',
     paymentSimulationSubtitle: 'Kapalı Beta Test Modu',
-    paymentSimulationAlert: 'Şu an kapalı beta aşamasındayız. Lütfen gerçek kredi kartı bilgilerinizi girmeyiniz. Test kartını kullanarak süreci simüle edebilirsiniz.',
+    paymentSimulationAlert:
+      'Şu an kapalı beta aşamasındayız. Lütfen gerçek kredi kartı bilgilerinizi girmeyiniz. Test kartını kullanarak süreci simüle edebilirsiniz.',
     cardHolderName: 'Kart Sahibinin Adı Soyadı',
     cardNumber: 'Kart Numarası',
     expiryDate: 'Son Kullanma Tarihi (AA/YY)',
@@ -191,7 +197,8 @@ export const translations = {
     enterOldPassword: 'Lütfen şifrenizi değiştirmek için önce mevcut şifrenizi girerek onaylayın.',
     enterNewPassword: 'Lütfen yeni şifrenizi belirleyin.',
     btnBackToProfile: 'Hesap Bilgilerine Dön',
-    phoneRequired: 'Telefon numarası formatı geçersiz! En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir.',
+    phoneRequired:
+      'Telefon numarası formatı geçersiz! En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir.',
     btnPendingOrders: 'Bekleyen Siparişler',
     btnCompletedOrders: 'Tamamlanan Siparişler',
     mfrPendingTitle: 'BEKLEYEN SİPARİŞLER',
@@ -243,7 +250,8 @@ export const translations = {
     bioLimitError: 'Tanıtım metni en fazla 500 karakter olmalıdır!',
     keywordLimitError: 'En fazla 3 kategori seçebilirsiniz!',
     b2bDirectoryTitle: 'B2B ÜRETİCİ REHBERİ',
-    b2bDirectorySubtitle: 'Kategori ve şehir filtrelerini kullanarak en uygun üretim ortaklarını bulun.',
+    b2bDirectorySubtitle:
+      'Kategori ve şehir filtrelerini kullanarak en uygun üretim ortaklarını bulun.',
     filtersHeader: 'Arama Filtreleri',
     filterByCity: 'Şehre Göre Filtrele (Kesin Eşleşme)',
     filterByCategory: 'Kategoriye Göre Filtrele',
@@ -363,10 +371,13 @@ export const translations = {
     mfrBusinessInfo: 'Üretici Firma Bilgileri',
     btnReplace: 'Değiştir',
     btnAddImage: 'Görsel Ekle',
-    mfrVisibilityWarning: 'Uyarı: Üretici arama dizininde çıkmak için en az 3 tanıtım görseli yüklemelisiniz.',
-    mfrVisibilitySubLabel: 'Bu ayar açık olduğunda satıcılar şehir ve kategoriler ile sizi arayıp bulabilir.',
+    mfrVisibilityWarning:
+      'Uyarı: Üretici arama dizininde çıkmak için en az 3 tanıtım görseli yüklemelisiniz.',
+    mfrVisibilitySubLabel:
+      'Bu ayar açık olduğunda satıcılar şehir ve kategoriler ile sizi arayıp bulabilir.',
     verificationEmailSent: 'Doğrulama E-postası Gönderildi',
-    verificationEmailInstruction: 'Lütfen {username} hesabı için e-posta kutunuzu kontrol edin ve size gönderdiğimiz doğrulama linkine tıklayın. Hesabınız aktif edildiğinde giriş yapabilirsiniz.',
+    verificationEmailInstruction:
+      'Lütfen {username} hesabı için e-posta kutunuzu kontrol edin ve size gönderdiğimiz doğrulama linkine tıklayın. Hesabınız aktif edildiğinde giriş yapabilirsiniz.',
     backToLogin: 'Giriş Sayfasına Dön',
     dontHaveAccount: 'Hesabınız yok mu?',
     firstNameLabel: 'İSİM',
@@ -382,22 +393,63 @@ export const translations = {
     brokenOrderExplanation: 'Bozuk Sipariş Açıklaması',
     landingLangOption: 'ENGLISH',
     landingGoToPanel: 'Panelime Git',
-    landingHeroTitle1: 'B2B SİPARİŞ VE ÜRETİM',
-    landingHeroTitle2: 'TAKİP PLATFORMU',
-    landingHeroDesc: 'Satıcılar ile üreticiler arasındaki sipariş süreçlerini, anlık durum güncellemelerini ve kalite kontrol süreçlerini tek ekrandan profesyonelce yönetin.',
+    landingHeroTitleA: 'Üretimden teslimata,',
+    landingHeroTitleB: 'tam kontrol.',
+    landingHeroDesc:
+      'Satıcılar ile üreticiler arasındaki sipariş süreçlerini, anlık durum güncellemelerini ve kalite kontrol süreçlerini tek ekrandan profesyonelce yönetin.',
     landingGetStartedFree: 'Ücretsiz Kayıt Ol',
     landingLoginBtn: 'Giriş Yap',
     landingForSellers: 'Satıcılar (Sellers) İçin',
-    landingForSellersDesc: 'Müşterilerinizin özel siparişlerini üreticilere anında iletin. Özelleştirilebilir alanlar ekleyerek her siparişi en ince detayına kadar tanımlayın.',
+    landingForSellersDesc:
+      'Müşterilerinizin özel siparişlerini üreticilere anında iletin. Özelleştirilebilir alanlar ekleyerek her siparişi en ince detayına kadar tanımlayın.',
     landingSellerFeature1: 'Akıllı ürün kataloğu entegrasyonu',
     landingSellerFeature2: 'Dinamik özellik tanımlama (Renk, Boyut vb.)',
     landingSellerFeature3: 'Üretici ağ bağlantısı ve anlık onay',
     landingForMfrs: 'Üreticiler (Manufacturers) İçin',
-    landingForMfrsDesc: 'Gelen üretim taleplerini organize edin. Hatalı veya eksik durumları resimli hata bildirimi ile satıcıya anında raporlayarak fireyi azaltın.',
+    landingForMfrsDesc:
+      'Gelen üretim taleplerini organize edin. Hatalı veya eksik durumları resimli hata bildirimi ile satıcıya anında raporlayarak fireyi azaltın.',
     landingMfrFeature1: 'Hata / Kusur görsel yükleme sistemi',
     landingMfrFeature2: 'Tarihsel sipariş zaman tüneli',
     landingMfrFeature3: 'Gerçek zamanlı SignalR bildirimleri',
-    landingAllRightsReserved: 'TÜM HAKLARI SAKLIDIR.',
+    landingAllRightsReserved: 'Tüm hakları saklıdır.',
+    landingNavFeatures: 'Özellikler',
+    landingNavHow: 'Nasıl Çalışır',
+    landingNavRoles: 'Kimler İçin',
+    landingBadge: 'B2B Sipariş & Üretim Takip Platformu',
+    landingPvInProd: 'Üretimde',
+    landingPvShipped: 'Kargoda',
+    landingPvDelivered: 'Teslim Edildi',
+    landingFeaturesTitle: 'İhtiyacınız olan her şey',
+    landingFeaturesDesc:
+      'Sipariş yönetiminden kalite kontrole; satıcı ve üreticileri aynı masada buluşturan yetenekler.',
+    landingFeatOrdersTitle: 'Uçtan Uca Sipariş Takibi',
+    landingFeatOrdersDesc:
+      'Her siparişi oluşturulma anından teslimata kadar durum geçmişiyle birlikte izleyin.',
+    landingFeatRealtimeTitle: 'Gerçek Zamanlı Bildirimler',
+    landingFeatRealtimeDesc: 'Durum değişikliklerinden ve yeni taleplerden anında haberdar olun.',
+    landingFeatDefectTitle: 'Görselli Hata Bildirimi',
+    landingFeatDefectDesc:
+      'Kusurlu veya eksik ürünleri fotoğraflı raporlarla belgeleyin, fireyi azaltın.',
+    landingFeatCatalogTitle: 'Akıllı Ürün Kataloğu',
+    landingFeatCatalogDesc:
+      'Ürünlerinizi dinamik özellik alanlarıyla tanımlayın, siparişlerde tekrar kullanın.',
+    landingFeatEtsyTitle: 'Etsy Entegrasyonu',
+    landingFeatEtsyDesc: 'Etsy mağazanızdaki siparişleri otomatik olarak platforma aktarın.',
+    landingFeatPlansTitle: 'Esnek Planlar',
+    landingFeatPlansDesc: 'İşletmenizin ölçeğine uygun kredi tabanlı abonelik planları.',
+    landingHowTitle: 'Üç adımda başlayın',
+    landingHowDesc: 'Kurulum gerektirmez; kaydolun, bağlanın ve takibe başlayın.',
+    landingStep1Title: 'Hesabınızı oluşturun',
+    landingStep1Desc: 'Satıcı veya üretici rolüyle dakikalar içinde ücretsiz kaydolun.',
+    landingStep2Title: 'Ağınızı kurun',
+    landingStep2Desc: 'Üreticilere bağlantı isteği gönderin, gelen talepleri tek tıkla onaylayın.',
+    landingStep3Title: 'Siparişleri izleyin',
+    landingStep3Desc:
+      'Üretim durumunu, hata raporlarını ve teslimatı tek zaman tünelinden yönetin.',
+    landingRolesTitle: 'İki taraf için tek platform',
+    landingRolesDesc: 'GoodTrack, satıcı ve üretici iş akışlarını aynı dilde buluşturur.',
+    landingCtaTitle: 'Başlamaya hazır mısınız?',
+    landingCtaDesc: 'Ücretsiz hesabınızı oluşturun, ilk siparişinizi bugün gönderin.',
     notSpecified: 'Belirtilmemiş',
     mfrProfile: 'Üretici Profili',
     sellerProfile: 'Satıcı Profili',
@@ -431,7 +483,8 @@ export const translations = {
     cancelOrderTitle: 'Siparişi İptal Et',
     cancelOrderConfirm: 'Siparişi iptal etmek istediğinize emin misiniz?',
     requestCancelTitle: 'İptal Talebi Gönder',
-    requestCancelConfirm: 'Üretimde olan bu sipariş için iptal talebi göndermek istediğinize emin misiniz?',
+    requestCancelConfirm:
+      'Üretimde olan bu sipariş için iptal talebi göndermek istediğinize emin misiniz?',
     verifyOrderTitle: 'Siparişi Doğrula',
     verifyOrderConfirm: 'Bu siparişi DOĞRU olarak onaylamak istediğinize emin misiniz?',
     shipOrderTitle: 'Kargoya Ver',
@@ -456,7 +509,8 @@ export const translations = {
     rejectRequestTitle: 'İsteği Reddet',
     rejectRequestConfirm: 'Bu bağlantı isteğini reddetmek istediğinize emin misiniz?',
     removeConnectionTitle: 'Bağlantıyı Kaldır',
-    removeConnectionConfirm: 'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)',
+    removeConnectionConfirm:
+      'Bu bağlantıyı kaldırmak istediğinize emin misiniz? (Mevcut siparişler korunacaktır)',
     disconnectConfirmBtn: 'Bağlantıyı Kes',
     catalogDeleteMsgFull: 'Bu ürünü katalogdan silmek istediğinize emin misiniz?',
     catalogDeleteTitle: 'Katalogdan Sil',
@@ -528,6 +582,10 @@ export const translations = {
     hasAccount: 'Already have an account? Login.',
     welcomeBack: 'WELCOME BACK',
     joinUs: 'JOIN US',
+    loginTitle: 'Welcome back',
+    loginSubtitle: 'Sign in to your account to continue.',
+    registerTitle: 'Create your account',
+    registerSubtitle: 'Start using GoodTrack in minutes.',
     roleRequired: 'Please select a role!',
     passwordMismatch: 'Passwords do not match!',
     loginSuccess: 'Login successful!',
@@ -570,7 +628,8 @@ export const translations = {
     // Mock Payment Simulation
     paymentSimulationTitle: 'Secure Payment Simulation',
     paymentSimulationSubtitle: 'Closed Beta Test Mode',
-    paymentSimulationAlert: 'We are currently in closed beta. Please do not enter real credit card details. You can simulate the process using the test card.',
+    paymentSimulationAlert:
+      'We are currently in closed beta. Please do not enter real credit card details. You can simulate the process using the test card.',
     cardHolderName: 'Cardholder Name',
     cardNumber: 'Card Number',
     expiryDate: 'Expiry Date (MM/YY)',
@@ -704,7 +763,8 @@ export const translations = {
     enterOldPassword: 'Please enter and confirm your current password to change your password.',
     enterNewPassword: 'Please set your new password.',
     btnBackToProfile: 'Back to Account Details',
-    phoneRequired: 'Phone number format is invalid! Must be at least 10 chars, containing only digits, space, +, -, ().',
+    phoneRequired:
+      'Phone number format is invalid! Must be at least 10 chars, containing only digits, space, +, -, ().',
     btnPendingOrders: 'Pending Orders',
     btnCompletedOrders: 'Completed Orders',
     mfrPendingTitle: 'PENDING ORDERS',
@@ -756,7 +816,8 @@ export const translations = {
     bioLimitError: 'Introduction must not exceed 500 characters!',
     keywordLimitError: 'You can select at most 3 categories!',
     b2bDirectoryTitle: 'B2B MANUFACTURER DIRECTORY',
-    b2bDirectorySubtitle: 'Find the most suitable manufacturing partners using category and city filters.',
+    b2bDirectorySubtitle:
+      'Find the most suitable manufacturing partners using category and city filters.',
     filtersHeader: 'Search Filters',
     filterByCity: 'Filter by City (Absolute Match)',
     filterByCategory: 'Filter by Category',
@@ -876,10 +937,13 @@ export const translations = {
     mfrBusinessInfo: 'Manufacturer Business Info',
     btnReplace: 'Replace',
     btnAddImage: 'Add Image',
-    mfrVisibilityWarning: 'Warning: You must upload at least 3 presentation images to appear in the search directory.',
-    mfrVisibilitySubLabel: 'When enabled, sellers can search and find your shop by city and categories.',
+    mfrVisibilityWarning:
+      'Warning: You must upload at least 3 presentation images to appear in the search directory.',
+    mfrVisibilitySubLabel:
+      'When enabled, sellers can search and find your shop by city and categories.',
     verificationEmailSent: 'Verification Email Sent',
-    verificationEmailInstruction: 'Please check your inbox for user {username} and click the verification link we sent you. You can log in once your account is activated.',
+    verificationEmailInstruction:
+      'Please check your inbox for user {username} and click the verification link we sent you. You can log in once your account is activated.',
     backToLogin: 'Back to Login',
     dontHaveAccount: "Don't have an account?",
     firstNameLabel: 'FIRST NAME',
@@ -895,22 +959,65 @@ export const translations = {
     brokenOrderExplanation: 'Broken Order Explanation',
     landingLangOption: 'TÜRKÇE',
     landingGoToPanel: 'Go to Panel',
-    landingHeroTitle1: 'B2B ORDER & PRODUCTION',
-    landingHeroTitle2: 'TRACKING SYSTEM',
-    landingHeroDesc: 'Professionally manage order workflows, real-time updates, and quality control processes between sellers and manufacturers on a single dashboard.',
+    landingHeroTitleA: 'From production to delivery,',
+    landingHeroTitleB: 'full control.',
+    landingHeroDesc:
+      'Professionally manage order workflows, real-time updates, and quality control processes between sellers and manufacturers on a single dashboard.',
     landingGetStartedFree: 'Get Started Free',
     landingLoginBtn: 'Login',
     landingForSellers: 'For Sellers',
-    landingForSellersDesc: 'Transmit customized customer orders to manufacturers instantly. Define custom features and manage client specifications with ease.',
+    landingForSellersDesc:
+      'Transmit customized customer orders to manufacturers instantly. Define custom features and manage client specifications with ease.',
     landingSellerFeature1: 'Smart product catalog integration',
     landingSellerFeature2: 'Dynamic custom field definitions',
     landingSellerFeature3: 'Manufacturer networking and instant approval',
     landingForMfrs: 'For Manufacturers',
-    landingForMfrsDesc: 'Organize incoming production pipelines. Report defects or missing elements with photographic evidence to reduce communication delays.',
+    landingForMfrsDesc:
+      'Organize incoming production pipelines. Report defects or missing elements with photographic evidence to reduce communication delays.',
     landingMfrFeature1: 'Defect and missing item image logging',
     landingMfrFeature2: 'Historical order timeline visualizer',
     landingMfrFeature3: 'Real-time SignalR notifications',
-    landingAllRightsReserved: 'ALL RIGHTS RESERVED.',
+    landingAllRightsReserved: 'All rights reserved.',
+    landingNavFeatures: 'Features',
+    landingNavHow: 'How It Works',
+    landingNavRoles: 'Who It’s For',
+    landingBadge: 'B2B Order & Production Tracking Platform',
+    landingPvInProd: 'In Production',
+    landingPvShipped: 'Shipped',
+    landingPvDelivered: 'Delivered',
+    landingFeaturesTitle: 'Everything you need',
+    landingFeaturesDesc:
+      'From order management to quality control; the capabilities that bring sellers and manufacturers to the same table.',
+    landingFeatOrdersTitle: 'End-to-End Order Tracking',
+    landingFeatOrdersDesc:
+      'Follow every order from creation to delivery with its full status history.',
+    landingFeatRealtimeTitle: 'Real-Time Notifications',
+    landingFeatRealtimeDesc: 'Get instantly notified about status changes and new requests.',
+    landingFeatDefectTitle: 'Visual Defect Reports',
+    landingFeatDefectDesc:
+      'Document defective or missing items with photo reports and reduce waste.',
+    landingFeatCatalogTitle: 'Smart Product Catalog',
+    landingFeatCatalogDesc:
+      'Define your products with dynamic custom fields and reuse them across orders.',
+    landingFeatEtsyTitle: 'Etsy Integration',
+    landingFeatEtsyDesc: 'Automatically import orders from your Etsy shop into the platform.',
+    landingFeatPlansTitle: 'Flexible Plans',
+    landingFeatPlansDesc: 'Credit-based subscription plans that scale with your business.',
+    landingHowTitle: 'Get started in three steps',
+    landingHowDesc: 'No setup required; sign up, connect, and start tracking.',
+    landingStep1Title: 'Create your account',
+    landingStep1Desc: 'Register for free in minutes as a seller or a manufacturer.',
+    landingStep2Title: 'Build your network',
+    landingStep2Desc:
+      'Send connection requests to manufacturers and approve incoming ones in one click.',
+    landingStep3Title: 'Track your orders',
+    landingStep3Desc:
+      'Manage production status, defect reports and delivery from a single timeline.',
+    landingRolesTitle: 'One platform for both sides',
+    landingRolesDesc:
+      'GoodTrack brings seller and manufacturer workflows together in a shared language.',
+    landingCtaTitle: 'Ready to get started?',
+    landingCtaDesc: 'Create your free account and send your first order today.',
     notSpecified: 'Not specified',
     mfrProfile: 'Manufacturer Profile',
     sellerProfile: 'Seller Profile',
@@ -944,7 +1051,8 @@ export const translations = {
     cancelOrderTitle: 'Cancel Order',
     cancelOrderConfirm: 'Are you sure you want to cancel this order?',
     requestCancelTitle: 'Request Cancellation',
-    requestCancelConfirm: 'Are you sure you want to request cancellation for this order in production?',
+    requestCancelConfirm:
+      'Are you sure you want to request cancellation for this order in production?',
     verifyOrderTitle: 'Verify Order',
     verifyOrderConfirm: 'Are you sure you want to approve this order as CORRECT?',
     shipOrderTitle: 'Ship Order',
@@ -1024,7 +1132,7 @@ export const translations = {
     roleMfrLabel: 'Manufacturer',
     roleAdminLabel: 'Administrator',
     feedbackBrowserInfo: 'Browser & System Details',
-  }
+  },
 } as const;
 
 export type Language = 'tr' | 'en';
@@ -1032,46 +1140,64 @@ export type TranslationKey = keyof typeof translations.tr;
 
 export function translateLogMessage(msg: string, lang: Language): string {
   if (lang === 'tr') {
-    if (msg.startsWith("Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.")) {
-      return "Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.";
+    if (
+      msg.startsWith(
+        'Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.',
+      )
+    ) {
+      return 'Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.';
     }
-    if (msg.startsWith("Sipariş satıcı tarafından HATALI olarak işaretlendi.")) {
-      return "Sipariş satıcı tarafından HATALI olarak işaretlendi.";
+    if (msg.startsWith('Sipariş satıcı tarafından HATALI olarak işaretlendi.')) {
+      return 'Sipariş satıcı tarafından HATALI olarak işaretlendi.';
     }
-    if (msg.startsWith("Sipariş satıcı tarafından EKSİK olarak işaretlendi.")) {
-      return "Sipariş satıcı tarafından EKSİK olarak işaretlendi.";
+    if (msg.startsWith('Sipariş satıcı tarafından EKSİK olarak işaretlendi.')) {
+      return 'Sipariş satıcı tarafından EKSİK olarak işaretlendi.';
     }
     return msg;
   }
 
-  if (msg.startsWith("Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.")) {
-    return "Order marked as Broken by manufacturer due to insufficient or unclear details.";
+  if (
+    msg.startsWith(
+      'Sipariş detayları yetersiz veya anlaşılmaz olduğu için üretici tarafından Bozuk olarak işaretlendi.',
+    )
+  ) {
+    return 'Order marked as Broken by manufacturer due to insufficient or unclear details.';
   }
 
-  if (msg.startsWith("Sipariş satıcı tarafından HATALI olarak işaretlendi.")) {
-    return "Order marked as DEFECTIVE by seller.";
+  if (msg.startsWith('Sipariş satıcı tarafından HATALI olarak işaretlendi.')) {
+    return 'Order marked as DEFECTIVE by seller.';
   }
 
-  if (msg.startsWith("Sipariş satıcı tarafından EKSİK olarak işaretlendi.")) {
-    return "Order marked as MISSING by seller.";
+  if (msg.startsWith('Sipariş satıcı tarafından EKSİK olarak işaretlendi.')) {
+    return 'Order marked as MISSING by seller.';
   }
 
   const staticTranslations: Record<string, string> = {
-    "Sipariş oluşturuldu ve üretici onayına gönderildi.": "Order created and sent to manufacturer for approval.",
-    "Sipariş detayları satıcı tarafından düzeltildi ve tekrar gönderildi.": "Order details corrected by seller and resent.",
-    "Sipariş detayları satıcı tarafından güncellendi.": "Order details updated by seller.",
-    "Sipariş satıcı tarafından iptal edildi.": "Order cancelled by seller.",
-    "Sipariş üretici tarafından onaylandı ve üretime alındı.": "Order approved by manufacturer and moved to production.",
-    "Sorunlu sipariş üretici tarafından tekrar üretime alındı.": "Defective order moved back to production by manufacturer.",
-    "Üretici siparişin üretimini tamamladı.": "Manufacturer completed the production of the order.",
-    "Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.": "Order delivered by manufacturer. Awaiting seller inspection.",
-    "Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.": "Corrected/missing order delivered by manufacturer. Awaiting seller inspection.",
-    "Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.": "Order inspected by seller and approved as CORRECT.",
-    "Sipariş satıcı tarafından kargolandı.": "Order shipped by seller.",
-    "Sipariş için satıcı tarafından iptal talebi gönderildi.": "Cancellation request sent by seller.",
-    "Sipariş iptal talebi üretici tarafından onaylandı ve sipariş iptal edildi.": "Cancellation request approved by manufacturer; order cancelled.",
-    "Sipariş iptal talebi üretici tarafından reddedildi. Üretime devam ediliyor.": "Cancellation request rejected by manufacturer. Production continues.",
-    "Sipariş durumu otomatik olarak eşleştirildi.": "Order status matched automatically."
+    'Sipariş oluşturuldu ve üretici onayına gönderildi.':
+      'Order created and sent to manufacturer for approval.',
+    'Sipariş detayları satıcı tarafından düzeltildi ve tekrar gönderildi.':
+      'Order details corrected by seller and resent.',
+    'Sipariş detayları satıcı tarafından güncellendi.': 'Order details updated by seller.',
+    'Sipariş satıcı tarafından iptal edildi.': 'Order cancelled by seller.',
+    'Sipariş üretici tarafından onaylandı ve üretime alındı.':
+      'Order approved by manufacturer and moved to production.',
+    'Sorunlu sipariş üretici tarafından tekrar üretime alındı.':
+      'Defective order moved back to production by manufacturer.',
+    'Üretici siparişin üretimini tamamladı.': 'Manufacturer completed the production of the order.',
+    'Sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.':
+      'Order delivered by manufacturer. Awaiting seller inspection.',
+    'Düzeltilen/eksik sipariş üretici tarafından teslim edildi. Satıcı kontrolü bekleniyor.':
+      'Corrected/missing order delivered by manufacturer. Awaiting seller inspection.',
+    'Sipariş satıcı tarafından kontrol edildi ve DOĞRU olarak onaylandı.':
+      'Order inspected by seller and approved as CORRECT.',
+    'Sipariş satıcı tarafından kargolandı.': 'Order shipped by seller.',
+    'Sipariş için satıcı tarafından iptal talebi gönderildi.':
+      'Cancellation request sent by seller.',
+    'Sipariş iptal talebi üretici tarafından onaylandı ve sipariş iptal edildi.':
+      'Cancellation request approved by manufacturer; order cancelled.',
+    'Sipariş iptal talebi üretici tarafından reddedildi. Üretime devam ediliyor.':
+      'Cancellation request rejected by manufacturer. Production continues.',
+    'Sipariş durumu otomatik olarak eşleştirildi.': 'Order status matched automatically.',
   };
 
   return staticTranslations[msg] || msg;

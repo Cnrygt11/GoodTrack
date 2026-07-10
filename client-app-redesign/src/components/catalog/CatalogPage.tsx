@@ -13,7 +13,7 @@ interface CatalogPageProps {
 export default function CatalogPage({
   extraFieldDefs,
   onOpenFieldModal,
-  onRemoveField
+  onRemoveField,
 }: CatalogPageProps) {
   const {
     connections,
@@ -35,20 +35,27 @@ export default function CatalogPage({
     handleDelete,
     syncEtsyLoading,
     handleSyncEtsyListings,
-    handleAssignManufacturer
+    handleAssignManufacturer,
   } = useCatalog();
 
   return (
     <div id="catalog-screen">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+        }}
+      >
         <h2 style={{ marginBottom: 0 }}>
-          {t('productCatalogTitlePart1')} <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
+          {t('productCatalogTitlePart1')}{' '}
+          <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
         </h2>
         <button
-          className="btn-primary"
+          className="btn-primary btn-etsy-sync"
           onClick={handleSyncEtsyListings}
           disabled={syncEtsyLoading}
-          style={{ fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#F1641E', borderColor: '#F1641E', padding: '8px 16px' }}
         >
           {syncEtsyLoading ? (
             <>
@@ -86,30 +93,41 @@ export default function CatalogPage({
       />
 
       <h2>
-        {t('registeredCatalogProductsTitlePart1')} <span className="seller-accent">{t('registeredCatalogProductsTitlePart2')}</span>
+        {t('registeredCatalogProductsTitlePart1')}{' '}
+        <span className="seller-accent">{t('registeredCatalogProductsTitlePart2')}</span>
       </h2>
 
       <div className="product-list">
         {catalogProducts.length === 0 ? (
-          <div className="empty-state" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '40px 0' }}>
+          <div
+            className="empty-state"
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '40px 0',
+            }}
+          >
             <div className="empty-icon">
               <Package size={36} style={{ color: 'var(--muted)' }} />
             </div>
             <p style={{ margin: 0, color: 'var(--muted)' }}>{t('noCatalogProducts')}</p>
           </div>
         ) : (
-          [...catalogProducts].reverse().map(p => (
-            <CatalogItemCard
-              key={p.id}
-              product={p}
-              connections={connections}
-              onAssignMfr={handleAssignManufacturer}
-              onDelete={handleDelete}
-            />
-          ))
+          [...catalogProducts]
+            .reverse()
+            .map((p) => (
+              <CatalogItemCard
+                key={p.id}
+                product={p}
+                connections={connections}
+                onAssignMfr={handleAssignManufacturer}
+                onDelete={handleDelete}
+              />
+            ))
         )}
       </div>
     </div>
   );
 }
-

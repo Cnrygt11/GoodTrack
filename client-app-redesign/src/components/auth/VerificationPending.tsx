@@ -13,18 +13,12 @@ export default function VerificationPending({
 }: VerificationPendingProps) {
   return (
     <div className="auth-verification-pending">
-      <div className="verification-pending-icon">
-        ✉️
-      </div>
-      <h3>
-        {t('verificationEmailSent')}
-      </h3>
-      <p>
-        {t('verificationEmailInstruction').replace('{username}', verificationUsername)}
-      </p>
-      <button 
-        type="button" 
-        className="btn-primary auth-width-full" 
+      <div className="verification-pending-icon">✉️</div>
+      <h3>{t('verificationEmailSent')}</h3>
+      <p>{t('verificationEmailInstruction').replace('{username}', verificationUsername)}</p>
+      <button
+        type="button"
+        className="auth-submit seller"
         onClick={() => {
           setVerificationPending(false);
         }}

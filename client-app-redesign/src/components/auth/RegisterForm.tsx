@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { User, Lock, Mail, Phone, Shield, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 
 interface RegisterFormProps {
@@ -67,100 +67,89 @@ export default function RegisterForm({
   const [showRegPassword, setShowRegPassword] = useState(false);
 
   return (
-    <form onSubmit={onSubmit} noValidate>
-      <div className="auth-form-title-wrapper">
-        <h2>{t('register')}</h2>
-        <div className="auth-form-title-underline mfr" />
+    <form onSubmit={onSubmit} noValidate className="auth-form">
+      <div className="auth-heading">
+        <h1>{t('registerTitle')}</h1>
+        <p>{t('registerSubtitle')}</p>
       </div>
 
       {/* Name Row */}
       <div className="auth-grid-2">
-        <div className="form-group">
-          <label>{t('firstNameLabel')}</label>
-          <div className="auth-relative-flex-center">
-            <User size={14} />
-            <input 
-              type="text" 
-              placeholder={t('firstNamePlaceholder')} 
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className={getFieldClassName('firstName')}
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="reg-firstname">{t('firstNameLabel')}</label>
+          <input
+            id="reg-firstname"
+            type="text"
+            autoComplete="given-name"
+            placeholder={t('firstNamePlaceholder')}
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            className={getFieldClassName('firstName')}
+          />
           {showErrors && formErrors.firstName && (
-            <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '3px', display: 'block' }}>
-              {formErrors.firstName}
-            </span>
+            <span className="auth-field-error">{formErrors.firstName}</span>
           )}
         </div>
-        <div className="form-group">
-          <label>{t('lastNameLabel')}</label>
-          <div className="auth-relative-flex-center">
-            <User size={14} />
-            <input 
-              type="text" 
-              placeholder={t('lastNamePlaceholder')} 
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className={getFieldClassName('lastName')}
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="reg-lastname">{t('lastNameLabel')}</label>
+          <input
+            id="reg-lastname"
+            type="text"
+            autoComplete="family-name"
+            placeholder={t('lastNamePlaceholder')}
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            className={getFieldClassName('lastName')}
+          />
           {showErrors && formErrors.lastName && (
-            <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '3px', display: 'block' }}>
-              {formErrors.lastName}
-            </span>
+            <span className="auth-field-error">{formErrors.lastName}</span>
           )}
         </div>
       </div>
-      
+
       {/* Username Field */}
-      <div className="form-group mb-14">
-        <label>{t('username')}</label>
-        <div className="auth-relative-flex-center">
-          <User size={16} />
-          <input 
-            type="text" 
-            placeholder={t('username')} 
-            value={regUsername}
-            onChange={(e) => setRegUsername(e.target.value)}
-            className={getFieldClassName('regUsername')}
-          />
-        </div>
+      <div className="auth-field">
+        <label htmlFor="reg-username">{t('username')}</label>
+        <input
+          id="reg-username"
+          type="text"
+          autoComplete="username"
+          placeholder={t('username')}
+          value={regUsername}
+          onChange={(e) => setRegUsername(e.target.value)}
+          className={getFieldClassName('regUsername')}
+        />
         {showErrors && formErrors.regUsername && (
-          <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-            {formErrors.regUsername}
-          </span>
+          <span className="auth-field-error">{formErrors.regUsername}</span>
         )}
       </div>
 
       {/* Email Field */}
-      <div className="form-group mb-14">
-        <label>{t('emailAddressLabel')}</label>
-        <div className="auth-relative-flex-center">
-          <Mail size={16} />
-          <input 
-            type="email" 
-            placeholder={t('emailAddressPlaceholder')} 
-            value={regEmail}
-            onChange={(e) => setRegEmail(e.target.value)}
-            className={getFieldClassName('regEmail')}
-          />
-        </div>
+      <div className="auth-field">
+        <label htmlFor="reg-email">{t('emailAddressLabel')}</label>
+        <input
+          id="reg-email"
+          type="email"
+          autoComplete="email"
+          placeholder={t('emailAddressPlaceholder')}
+          value={regEmail}
+          onChange={(e) => setRegEmail(e.target.value)}
+          className={getFieldClassName('regEmail')}
+        />
         {showErrors && formErrors.regEmail && (
-          <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-            {formErrors.regEmail}
-          </span>
+          <span className="auth-field-error">{formErrors.regEmail}</span>
         )}
       </div>
 
       {/* Phone Field */}
-      <div className="form-group mb-14">
-        <label>{t('phone')}</label>
+      <div className="auth-field">
+        <label htmlFor="reg-phone">{t('phone')}</label>
         <div className="auth-phone-row">
           <select
             value={countryCode}
             onChange={(e) => setCountryCode(e.target.value)}
             className={getSelectClassName('phoneBody')}
+            aria-label={t('phone')}
           >
             <option value="+90">🇹🇷 +90</option>
             <option value="+1">🇺🇸 +1</option>
@@ -168,36 +157,34 @@ export default function RegisterForm({
             <option value="+49">🇩🇪 +49</option>
             <option value="+33">🇫🇷 +33</option>
             <option value="+39">🇮🇹 +39</option>
-            <option value="+34">🇪span +34</option>
+            <option value="+34">🇪🇸 +34</option>
             <option value="+994">🇦🇿 +994</option>
           </select>
-          <div className="auth-flex-grow-relative">
-            <Phone size={14} />
-            <input 
-              type="text" 
-              placeholder="555 123 4567" 
-              value={phoneBody}
-              onChange={(e) => setPhoneBody(e.target.value)}
-              className={getFieldClassName('phoneBody')}
-            />
-          </div>
+          <input
+            id="reg-phone"
+            type="text"
+            autoComplete="tel-national"
+            placeholder="555 123 4567"
+            value={phoneBody}
+            onChange={(e) => setPhoneBody(e.target.value)}
+            className={getFieldClassName('phoneBody')}
+          />
         </div>
         {showErrors && formErrors.phoneBody && (
-          <span style={{ color: 'var(--danger)', fontSize: '11px', marginTop: '4px', display: 'block' }}>
-            {formErrors.phoneBody}
-          </span>
+          <span className="auth-field-error">{formErrors.phoneBody}</span>
         )}
       </div>
 
       {/* Passwords Row */}
       <div className="auth-grid-2">
-        <div className="form-group">
-          <label>{t('password')}</label>
-          <div className="auth-relative-flex-center">
-            <Lock size={14} />
-            <input 
-              type={showRegPassword ? 'text' : 'password'} 
-              placeholder={t('password')} 
+        <div className="auth-field">
+          <label htmlFor="reg-password">{t('password')}</label>
+          <div className="auth-input-wrap">
+            <input
+              id="reg-password"
+              type={showRegPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              placeholder={t('password')}
               value={regPassword}
               onChange={(e) => setRegPassword(e.target.value)}
               className={getFieldClassName('regPassword')}
@@ -205,97 +192,78 @@ export default function RegisterForm({
             <button
               type="button"
               onClick={() => setShowRegPassword(!showRegPassword)}
-              className="auth-password-toggle small-right"
+              className="auth-password-toggle"
+              aria-label={t('password')}
             >
               {showRegPassword ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
           {showErrors && formErrors.regPassword && (
-            <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '3px', display: 'block' }}>
-              {formErrors.regPassword}
-            </span>
+            <span className="auth-field-error">{formErrors.regPassword}</span>
           )}
         </div>
-        <div className="form-group">
-          <label>{t('confirmPassword')}</label>
-          <div className="auth-relative-flex-center">
-            <Lock size={14} />
-            <input 
-              type={showRegPassword ? 'text' : 'password'} 
-              placeholder={t('confirmPassword')} 
-              value={regConfirm}
-              onChange={(e) => setRegConfirm(e.target.value)}
-              className={getFieldClassName('regConfirm')}
-            />
-          </div>
+        <div className="auth-field">
+          <label htmlFor="reg-confirm">{t('confirmPassword')}</label>
+          <input
+            id="reg-confirm"
+            type={showRegPassword ? 'text' : 'password'}
+            autoComplete="new-password"
+            placeholder={t('confirmPassword')}
+            value={regConfirm}
+            onChange={(e) => setRegConfirm(e.target.value)}
+            className={getFieldClassName('regConfirm')}
+          />
           {showErrors && formErrors.regConfirm && (
-            <span style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '3px', display: 'block' }}>
-              {formErrors.regConfirm}
-            </span>
+            <span className="auth-field-error">{formErrors.regConfirm}</span>
           )}
         </div>
       </div>
 
       {/* Role Field */}
-      <div className="form-group mb-24">
-        <label>{t('selectRole')}</label>
-        <div className="auth-relative-flex-center">
-          <Shield size={16} />
-          <select 
-            value={regRole}
-            onChange={(e) => setRegRole(e.target.value as 'seller' | 'mfr' | 'admin')}
-            className={`${getSelectClassName('regRole')} full-width-icon`}
-          >
-            <option value="seller">
-              {t('seller')} {t('roleSellerInfo')}
-            </option>
-            <option value="mfr">
-              {t('mfr')} {t('roleMfrInfo')}
-            </option>
-            {adminMode && (
-              <option value="admin">
-                {t('roleAdminLabel')}
-              </option>
-            )}
-          </select>
-        </div>
+      <div className="auth-field">
+        <label htmlFor="reg-role">{t('selectRole')}</label>
+        <select
+          id="reg-role"
+          value={regRole}
+          onChange={(e) => setRegRole(e.target.value as 'seller' | 'mfr' | 'admin')}
+          className={getSelectClassName('regRole')}
+        >
+          <option value="seller">
+            {t('seller')} {t('roleSellerInfo')}
+          </option>
+          <option value="mfr">
+            {t('mfr')} {t('roleMfrInfo')}
+          </option>
+          {adminMode && <option value="admin">{t('roleAdminLabel')}</option>}
+        </select>
       </div>
 
       {/* Admin Secret Field */}
       {regRole === 'admin' && (
-        <div className="form-group mb-24">
+        <div className="auth-field">
           <label htmlFor="admin-secret">{t('adminSecretLabel')}</label>
-          <div className="auth-relative-flex-center">
-            <Lock size={16} />
-            <input
-              id="admin-secret"
-              type="password"
-              value={adminSecret}
-              onChange={(e) => setAdminSecret(e.target.value)}
-              placeholder={t('adminSecretPlaceholder')}
-              className={`${getFieldClassName('adminSecret')} full-width-icon`}
-              required
-            />
-          </div>
+          <input
+            id="admin-secret"
+            type="password"
+            value={adminSecret}
+            onChange={(e) => setAdminSecret(e.target.value)}
+            placeholder={t('adminSecretPlaceholder')}
+            className={getFieldClassName('adminSecret')}
+            required
+          />
         </div>
       )}
 
-      <button 
-        type="submit" 
-        className="btn-primary auth-submit-btn mfr" 
-        disabled={submitting}
-      >
+      <button type="submit" className="auth-submit mfr" disabled={submitting}>
         {submitting ? <Loader2 className="animate-spin" size={18} /> : t('register')}
       </button>
 
-      <div className="auth-footer-link-wrapper">
-        <span style={{ color: 'var(--muted)' }}>
-          {t('alreadyHaveAccount')}{' '}
-        </span>
-        <Link to="/login" style={{ color: 'var(--accent-mfr)', fontWeight: '600', textDecoration: 'none' }}>
+      <p className="auth-alt-action">
+        {t('alreadyHaveAccount')}{' '}
+        <Link to="/login" className="auth-alt-link mfr">
           {t('login')}
         </Link>
-      </div>
+      </p>
     </form>
   );
 }
