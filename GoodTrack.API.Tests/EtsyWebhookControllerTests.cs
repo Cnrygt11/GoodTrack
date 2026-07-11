@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -12,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
+using Microsoft.Extensions.Configuration;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Controllers;
@@ -40,7 +42,7 @@ public class EtsyWebhookControllerTests : IDisposable
     private readonly Mock<IProductService> _productServiceMock = new();
     private readonly Mock<IOrderWorkflowService> _orderWorkflowMock = new();
     private readonly EtsyService _etsyService;
-    private readonly EtsyWebhookController _controller;
+    private EtsyWebhookController _controller;
 
     public EtsyWebhookControllerTests()
     {
@@ -60,7 +62,19 @@ public class EtsyWebhookControllerTests : IDisposable
             _orderWorkflowMock.Object,
             Mock.Of<ILogger<EtsyService>>());
 
-        _controller = new EtsyWebhookController(_context, _etsyService, Mock.Of<ILogger<EtsyWebhookController>>());
+        _controller = BuildController();
+    }
+
+    /// <summary>Verilen platform secret ile controller kurar (null → platform secret tanımlı değil).</summary>
+    private EtsyWebhookController BuildController(string? platformSecret = null)
+    {
+        var settings = new Dictionary<string, string?>();
+        if (platformSecret != null)
+        {
+            settings["Etsy:WebhookSigningSecret"] = platformSecret;
+        }
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
+        return new EtsyWebhookController(_context, _etsyService, configuration, Mock.Of<ILogger<EtsyWebhookController>>());
     }
 
     public void Dispose()
@@ -220,6 +234,39 @@ public class EtsyWebhookControllerTests : IDisposable
         _orderWorkflowMock.Verify(
             s => s.ApplyExternalCancellationAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
+    }
+
+    [Fact]
+    public async Task HandleWebhook_PlatformSecretConfigured_ShopWithoutSecret_IsProcessed()
+    {
+        // Commercial senaryosu: satıcı signing secret GİRMEDEN mağazasını bağlar.
+        // Platform (uygulama) düzeyindeki secret webhook'u doğrular.
+        _controller = BuildController(platformSecret: SigningSecret);
+        SeedActiveConnection(signingSecret: null);
+        SeedOrder("o1", etsyReceiptId: 999);
+
+        SetRequest(CanceledPayload());
+
+        var result = await _controller.HandleWebhook(CancellationToken.None);
+
+        result.Should().BeOfType<OkResult>();
+        _orderWorkflowMock.Verify(s => s.ApplyExternalCancellationAsync("u1", "o1", It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task HandleWebhook_PlatformSecretTakesPrecedenceOverShopSecret()
+    {
+        // Platform secret varsa, mağaza secret'ı farklı/yanlış olsa bile platform secret kullanılır.
+        _controller = BuildController(platformSecret: SigningSecret);
+        SeedActiveConnection(signingSecret: "whsec_Zm9vYmFyLXdyb25nLXNlY3JldA=="); // farklı, yanlış secret
+        SeedOrder("o1", etsyReceiptId: 999);
+
+        SetRequest(CanceledPayload()); // imza platform secret (SecretBase64) ile üretiliyor
+
+        var result = await _controller.HandleWebhook(CancellationToken.None);
+
+        result.Should().BeOfType<OkResult>();
+        _orderWorkflowMock.Verify(s => s.ApplyExternalCancellationAsync("u1", "o1", It.IsAny<string>()), Times.Once);
     }
 
     [Fact]

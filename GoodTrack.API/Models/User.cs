@@ -39,6 +39,14 @@ public class User
 
     public bool IsActive { get; set; } = true;
 
+    /// <summary>
+    /// Soft-delete (deaktivasyon) zaman damgası. Null = aktif hesap.
+    /// Değer varsa hesap kullanıcı tarafından deaktive edilmiştir; giriş yapılamaz,
+    /// aramada görünmez. Doğru şifreyle girişte otomatik reaktive olur (DeactivatedAt = null).
+    /// Not: E-posta doğrulaması <see cref="IsActive"/> ile yönetilir; deaktivasyondan ayrıdır.
+    /// </summary>
+    public DateTime? DeactivatedAt { get; set; }
+
     public string VerificationToken { get; set; } = string.Empty;
 
     public string VerificationTokenExpiresAt { get; set; } = string.Empty;

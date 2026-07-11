@@ -22,17 +22,20 @@ public sealed class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IEtsyConnectionRepository _etsyConnectionRepository;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
 
     public AuthService(
         IUserRepository userRepository,
         IPasswordHasher<User> passwordHasher,
+        IEtsyConnectionRepository etsyConnectionRepository,
         IConfiguration configuration,
         ILogger<AuthService> logger)
     {
         _userRepository = userRepository;
         _passwordHasher = passwordHasher;
+        _etsyConnectionRepository = etsyConnectionRepository;
         _configuration = configuration;
         _logger = logger;
     }
@@ -61,6 +64,20 @@ public sealed class AuthService : IAuthService
         if (verificationResult == PasswordVerificationResult.Failed)
         {
             throw new UnauthorizedAccessException("Geçersiz kullanıcı adı veya şifre!");
+        }
+
+        // Deaktive (soft-delete) hesap, doğru şifreyle girişte otomatik reaktive olur.
+        // Deaktivasyonda pasifleştirilen Etsy bağlantıları da geri açılır.
+        if (user.DeactivatedAt != null)
+        {
+            user.DeactivatedAt = null;
+            var connections = await _etsyConnectionRepository.GetAllForUserAsync(user.Id);
+            foreach (var connection in connections)
+            {
+                connection.IsActive = true;
+            }
+            await _etsyConnectionRepository.SaveChangesAsync();
+            _logger.LogInformation("User {UserId} reactivated their account on login.", user.Id);
         }
 
         var token = GenerateJwtToken(user);

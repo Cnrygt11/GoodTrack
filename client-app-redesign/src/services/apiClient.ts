@@ -524,6 +524,13 @@ export const api = {
     });
   },
 
+  deactivateAccount(password: string): Promise<{ message: string }> {
+    return apiCall<{ message: string }>('/profile/deactivate', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
+
   searchManufacturers(
     city?: string,
     keyword?: string,

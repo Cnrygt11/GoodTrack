@@ -8,18 +8,28 @@ using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Models;
 using GoodTrack.API.Infrastructure.Configurations;
 
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.DataProtection.EntityFrameworkCore;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
 namespace GoodTrack.API.Infrastructure;
 
-public sealed class AppDbContext : DbContext
+public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    // Test/DI dışı senaryolarda tutarlı tek bir provider paylaşılır (model cache uyumu için).
+    private static readonly IDataProtectionProvider FallbackProtectionProvider = new EphemeralDataProtectionProvider();
 
-    public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor httpContextAccessor) : base(options)
+    private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly IDataProtectionProvider _dataProtectionProvider;
+
+    public AppDbContext(
+        DbContextOptions<AppDbContext> options,
+        IHttpContextAccessor httpContextAccessor,
+        IDataProtectionProvider? dataProtectionProvider = null) : base(options)
     {
         _httpContextAccessor = httpContextAccessor;
+        _dataProtectionProvider = dataProtectionProvider ?? FallbackProtectionProvider;
     }
 
     public DbSet<User> Users => Set<User>();
@@ -32,6 +42,13 @@ public sealed class AppDbContext : DbContext
     public DbSet<UserConnection> UserConnections => Set<UserConnection>();
     public DbSet<EtsyConnection> EtsyConnections => Set<EtsyConnection>();
     public DbSet<EtsyOAuthState> EtsyOAuthStates => Set<EtsyOAuthState>();
+
+    /// <summary>
+    /// Data Protection anahtar halkasının kalıcı deposu (production'da restart/multi-instance
+    /// arasında token şifreleme anahtarları korunur). Data Protection bu tabloyu okurken
+    /// EtsyConnection converter'ını tetiklemez; döngü oluşmaz.
+    /// </summary>
+    public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -65,6 +82,27 @@ public sealed class AppDbContext : DbContext
 
             applyMethod.Invoke(modelBuilder, new[] { configInstance });
         }
+
+        ConfigureEtsyConnectionEncryption(modelBuilder);
+    }
+
+    /// <summary>
+    /// EtsyConnection'daki hassas alanları (OAuth token'ları ve secret'lar) at-rest şifreler.
+    /// Reflection ile uygulanan configuration'lardan SONRA çalışır; ilgili kolonların
+    /// uzunluğunu şifreli çıktıyı taşıyacak şekilde büyütür ve converter'ı bağlar.
+    /// ApiKeyKeystring public bir tanımlayıcıdır (client_id), şifrelenmez.
+    /// </summary>
+    private void ConfigureEtsyConnectionEncryption(ModelBuilder modelBuilder)
+    {
+        var protector = _dataProtectionProvider.CreateProtector("GoodTrack.EtsyConnection.v1");
+        var converter = new EncryptedStringConverter(protector);
+
+        var entity = modelBuilder.Entity<EtsyConnection>();
+        entity.Property(e => e.AccessToken).HasMaxLength(2000).HasConversion(converter);
+        entity.Property(e => e.RefreshToken).HasMaxLength(2000).HasConversion(converter);
+        entity.Property(e => e.ApiKeySharedSecret).HasMaxLength(2000).HasConversion(converter);
+        // WebhookSigningSecret nullable: null değerler zaten converter'a gönderilmez.
+        entity.Property(e => e.WebhookSigningSecret).HasMaxLength(2000).HasConversion(converter!);
     }
 
     public override int SaveChanges()

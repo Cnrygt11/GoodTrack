@@ -1,5 +1,6 @@
 import React from 'react';
 import { Store, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
 import { useEtsyIntegration } from '../../hooks/useEtsyIntegration';
 import { EtsyStoreConnector } from './parts/EtsyStoreConnector';
 import { EtsyActiveStoresList } from './parts/EtsyActiveStoresList';
@@ -7,11 +8,13 @@ import { EtsyMockWebhookPanel } from './parts/EtsyMockWebhookPanel';
 import styles from './EtsyIntegration.module.css';
 
 export default function EtsyIntegration() {
+  const { t } = useSettings();
   const {
     loading,
     connections,
     error,
     connectLoading,
+    platformWebhookConfigured,
     webhookSecrets,
     setWebhookSecrets,
     webhookLoadings,
@@ -28,7 +31,7 @@ export default function EtsyIntegration() {
     disconnectShop,
     syncListings,
     syncOrders,
-    sendMockWebhook
+    sendMockWebhook,
   } = useEtsyIntegration();
 
   const [copied, setCopied] = React.useState(false);
@@ -69,28 +72,32 @@ export default function EtsyIntegration() {
 
       {error && (
         <div className={styles.alertDanger}>
-          <AlertCircle size={16} style={{ color: 'var(--danger)', marginTop: '2px', flexShrink: 0 }} />
+          <AlertCircle
+            size={16}
+            style={{ color: 'var(--danger)', marginTop: '2px', flexShrink: 0 }}
+          />
           <span className={styles.alertDangerText}>{error}</span>
         </div>
       )}
 
       {actionSuccessMessage && (
         <div className={styles.alertSuccess}>
-          <CheckCircle2 size={16} style={{ color: 'var(--success)', marginTop: '2px', flexShrink: 0 }} />
+          <CheckCircle2
+            size={16}
+            style={{ color: 'var(--success)', marginTop: '2px', flexShrink: 0 }}
+          />
           <span className={styles.alertSuccessText}>{actionSuccessMessage}</span>
         </div>
       )}
 
       {/* 1. Yeni Mağaza Bağlama (Form) */}
-      <EtsyStoreConnector 
-        connectLoading={connectLoading} 
-        handleConnect={handleConnect} 
-      />
+      <EtsyStoreConnector connectLoading={connectLoading} handleConnect={handleConnect} />
 
       {/* 2. Bağlı Mağazalar Listesi ve İşlemler */}
       {connections.length > 0 ? (
         <EtsyActiveStoresList
           connections={connections}
+          platformWebhookConfigured={platformWebhookConfigured}
           webhookSecrets={webhookSecrets}
           setWebhookSecrets={setWebhookSecrets}
           webhookLoadings={webhookLoadings}
@@ -106,9 +113,7 @@ export default function EtsyIntegration() {
           handleSyncOrders={syncOrders}
         />
       ) : (
-        <div className={styles.emptyState}>
-          Henüz bağlanmış bir Etsy mağazası bulunmuyor.
-        </div>
+        <div className={styles.emptyState}>Henüz bağlanmış bir Etsy mağazası bulunmuyor.</div>
       )}
 
       {/* 3. Simülasyon Test Aracı */}
@@ -119,6 +124,9 @@ export default function EtsyIntegration() {
         connections={connections}
         sendMockWebhook={sendMockWebhook}
       />
+
+      {/* Marka ayrımı — GoodTrack, Etsy'nin resmi uygulaması değildir. */}
+      <p className={styles.trademarkNote}>{t('etsyTrademarkNote')}</p>
     </div>
   );
 }

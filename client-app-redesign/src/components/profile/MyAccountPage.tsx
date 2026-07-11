@@ -9,9 +9,9 @@ import MfrBusinessFields from './MfrBusinessFields';
 import ProductShowcaseGallery from './ProductShowcaseGallery';
 import PasswordChangeForm from './PasswordChangeForm';
 import EtsyIntegration from './EtsyIntegration';
+import DeactivateAccountSection from './DeactivateAccountSection';
 
 export default function MyAccountPage() {
-  
   const {
     profile,
     loading,
@@ -43,7 +43,7 @@ export default function MyAccountPage() {
     handleRemoveProductImage,
     handleReplaceProductImage,
     handleToggleKeyword,
-    handleSaveProfile
+    handleSaveProfile,
   } = useProfile();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -84,8 +84,16 @@ export default function MyAccountPage() {
   return (
     <div className="profile-page">
       {!isMfr && (
-        <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', borderBottom: '1px solid var(--border)', paddingBottom: '12px' }}>
-          <button 
+        <div
+          style={{
+            display: 'flex',
+            gap: '12px',
+            marginBottom: '24px',
+            borderBottom: '1px solid var(--border)',
+            paddingBottom: '12px',
+          }}
+        >
+          <button
             type="button"
             className={`btn-tab ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setSearchParams({ tab: 'profile' })}
@@ -100,13 +108,13 @@ export default function MyAccountPage() {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             <User size={14} />
             Profil Bilgileri
           </button>
-          <button 
+          <button
             type="button"
             className={`btn-tab ${activeTab === 'integrations' ? 'active' : ''}`}
             onClick={() => setSearchParams({ tab: 'integrations' })}
@@ -114,14 +122,15 @@ export default function MyAccountPage() {
               padding: '8px 16px',
               borderRadius: '8px',
               border: 'none',
-              backgroundColor: activeTab === 'integrations' ? 'rgba(241, 100, 30, 0.1)' : 'transparent',
+              backgroundColor:
+                activeTab === 'integrations' ? 'rgba(241, 100, 30, 0.1)' : 'transparent',
               color: activeTab === 'integrations' ? '#F1641E' : 'var(--text)',
               fontWeight: 600,
               fontSize: '14px',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
             }}
           >
             <Store size={14} />
@@ -132,107 +141,112 @@ export default function MyAccountPage() {
 
       {passwordFlow.flowStep === 'profile' ? (
         activeTab === 'profile' ? (
-          <form onSubmit={handleSaveProfile} className="card profile-form">
-            <ProfileAvatarSection
-              t={t}
-              profilePicture={profilePicture}
-              firstName={firstName}
-              lastName={lastName}
-              role={profile.role}
-              roleLabel={roleLabel}
-              avatarInputRef={avatarInputRef}
-              handleProfilePictureChange={handleProfilePictureChange}
-              handleRemoveProfilePicture={handleRemoveProfilePicture}
-            />
+          <>
+            <form onSubmit={handleSaveProfile} className="card profile-form">
+              <ProfileAvatarSection
+                t={t}
+                profilePicture={profilePicture}
+                firstName={firstName}
+                lastName={lastName}
+                role={profile.role}
+                roleLabel={roleLabel}
+                avatarInputRef={avatarInputRef}
+                handleProfilePictureChange={handleProfilePictureChange}
+                handleRemoveProfilePicture={handleRemoveProfilePicture}
+              />
 
-            <GeneralProfileFields
-              t={t}
-              username={profile.username}
-              firstName={firstName}
-              setFirstName={setFirstName}
-              lastName={lastName}
-              setLastName={setLastName}
-              email={email}
-              setEmail={setEmail}
-              phoneNumber={phoneNumber}
-              setPhoneNumber={setPhoneNumber}
-            />
+              <GeneralProfileFields
+                t={t}
+                username={profile.username}
+                firstName={firstName}
+                setFirstName={setFirstName}
+                lastName={lastName}
+                setLastName={setLastName}
+                email={email}
+                setEmail={setEmail}
+                phoneNumber={phoneNumber}
+                setPhoneNumber={setPhoneNumber}
+              />
 
-            {isMfr && (
-              <>
-                <MfrBusinessFields
-                  t={t}
-                  city={city}
-                  setCity={setCity}
-                  address={address}
-                  setAddress={setAddress}
-                  bio={bio}
-                  setBio={setBio}
-                  keywords={keywords}
-                  handleToggleKeyword={handleToggleKeyword}
-                />
+              {isMfr && (
+                <>
+                  <MfrBusinessFields
+                    t={t}
+                    city={city}
+                    setCity={setCity}
+                    address={address}
+                    setAddress={setAddress}
+                    bio={bio}
+                    setBio={setBio}
+                    keywords={keywords}
+                    handleToggleKeyword={handleToggleKeyword}
+                  />
 
-                <ProductShowcaseGallery
-                  t={t}
-                  productImages={productImages}
-                  galleryInputRef={galleryInputRef}
-                  replaceInputRefs={replaceInputRefs}
-                  handleAddProductImage={handleAddProductImage}
-                  handleRemoveProductImage={handleRemoveProductImage}
-                  handleReplaceProductImage={handleReplaceProductImage}
-                />
+                  <ProductShowcaseGallery
+                    t={t}
+                    productImages={productImages}
+                    galleryInputRef={galleryInputRef}
+                    replaceInputRefs={replaceInputRefs}
+                    handleAddProductImage={handleAddProductImage}
+                    handleRemoveProductImage={handleRemoveProductImage}
+                    handleReplaceProductImage={handleReplaceProductImage}
+                  />
 
-                {/* Visibility Toggle */}
-                <div className="profile-visibility-row">
-                  <div>
-                    <strong style={{ fontSize: '14px', display: 'block' }}>{t('visibilityLabel')}</strong>
-                    <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                      {t('mfrVisibilitySubLabel')}
-                    </span>
+                  {/* Visibility Toggle */}
+                  <div className="profile-visibility-row">
+                    <div>
+                      <strong style={{ fontSize: '14px', display: 'block' }}>
+                        {t('visibilityLabel')}
+                      </strong>
+                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                        {t('mfrVisibilitySubLabel')}
+                      </span>
+                    </div>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={isVisibleToSellers}
+                        onChange={(e) => setIsVisibleToSellers(e.target.checked)}
+                      />
+                      <span className="slider round" />
+                    </label>
                   </div>
-                  <label className="switch">
-                    <input 
-                      type="checkbox" 
-                      checked={isVisibleToSellers}
-                      onChange={(e) => setIsVisibleToSellers(e.target.checked)}
-                    />
-                    <span className="slider round" />
-                  </label>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            <div className="profile-actions-footer">
-              <button 
-                type="button"
-                className="btn-secondary btn-change-password" 
-                onClick={() => passwordFlow.setFlowStep('verify-password')}
-              >
-                <Key size={14} />
-                {t('changePasswordBtn')}
-              </button>
+              <div className="profile-actions-footer">
+                <button
+                  type="button"
+                  className="btn-secondary btn-change-password"
+                  onClick={() => passwordFlow.setFlowStep('verify-password')}
+                >
+                  <Key size={14} />
+                  {t('changePasswordBtn')}
+                </button>
 
-              <button 
-                type="submit" 
-                className="btn-primary btn-save-profile" 
-                disabled={profileLoading}
-              >
-                {profileLoading ? <Loader2 className="animate-spin" size={14} /> : <CheckCircle2 size={14} />}
-                {t('saveProfileBtn')}
-              </button>
-            </div>
-          </form>
+                <button
+                  type="submit"
+                  className="btn-primary btn-save-profile"
+                  disabled={profileLoading}
+                >
+                  {profileLoading ? (
+                    <Loader2 className="animate-spin" size={14} />
+                  ) : (
+                    <CheckCircle2 size={14} />
+                  )}
+                  {t('saveProfileBtn')}
+                </button>
+              </div>
+            </form>
+            <DeactivateAccountSection />
+          </>
         ) : (
           <div className="card" style={{ padding: '24px' }}>
             <EtsyIntegration />
           </div>
         )
       ) : (
-        <PasswordChangeForm
-          passwordFlow={passwordFlow}
-          accentColor={accentColor}
-          glowBg={glowBg}
-        />
+        <PasswordChangeForm passwordFlow={passwordFlow} accentColor={accentColor} glowBg={glowBg} />
       )}
     </div>
   );

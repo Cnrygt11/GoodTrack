@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
@@ -16,16 +17,55 @@ public sealed class ProfileService : IProfileService
 {
     private readonly IUserRepository _userRepository;
     private readonly IImageStorageService _imageStorageService;
+    private readonly IEtsyConnectionRepository _etsyConnectionRepository;
+    private readonly IPasswordHasher<User> _passwordHasher;
     private readonly ILogger<ProfileService> _logger;
 
     public ProfileService(
         IUserRepository userRepository,
         IImageStorageService imageStorageService,
+        IEtsyConnectionRepository etsyConnectionRepository,
+        IPasswordHasher<User> passwordHasher,
         ILogger<ProfileService> logger)
     {
         _userRepository = userRepository;
         _imageStorageService = imageStorageService;
+        _etsyConnectionRepository = etsyConnectionRepository;
+        _passwordHasher = passwordHasher;
         _logger = logger;
+    }
+
+    public async Task DeactivateAccountAsync(string userId, string password)
+    {
+        var user = await _userRepository.GetByIdAsync(userId)
+            ?? throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+
+        // Güvenlik: hassas işlem, şifre onayı iste.
+        if (string.IsNullOrEmpty(password) ||
+            _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password) == PasswordVerificationResult.Failed)
+        {
+            throw new UnauthorizedAccessException("Şifre hatalı.");
+        }
+
+        if (user.DeactivatedAt != null)
+        {
+            return; // zaten deaktive (idempotent)
+        }
+
+        user.DeactivatedAt = DateTime.UtcNow;
+        user.RefreshToken = string.Empty; // mevcut oturum yenilenemez
+        await _userRepository.SaveAsync(user);
+
+        // Etsy senkronu dursun: bağlantıları pasifleştir (webhook reddedilir, otomatik sync durur).
+        // Token/bağlantı kaydı KORUNUR; reaktivasyonda geri açılır.
+        var connections = await _etsyConnectionRepository.GetAllForUserAsync(userId);
+        foreach (var connection in connections)
+        {
+            connection.IsActive = false;
+        }
+        await _etsyConnectionRepository.SaveChangesAsync();
+
+        _logger.LogInformation("User {UserId} deactivated their account (soft-delete).", userId);
     }
 
     public async Task<UserProfileDto> GetProfileAsync(string userId)
@@ -47,7 +87,7 @@ public sealed class ProfileService : IProfileService
         }
 
         var user = await _userRepository.GetByUsernameAsync(username.Trim().ToLower());
-        if (user == null)
+        if (user == null || user.DeactivatedAt != null)
         {
             throw new KeyNotFoundException("Kullanıcı bulunamadı.");
         }

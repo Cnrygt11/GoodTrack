@@ -47,6 +47,15 @@ public sealed class EtsyListingResult
 
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
+
+    // listings/batch?includes=Images,Inventory ile gömülü gelen ilişkiler
+    // (listings/active bunları döndürmez; N+1'i önlemek için batch kullanılır).
+
+    [JsonPropertyName("images")]
+    public List<EtsyListingImageResult>? Images { get; set; }
+
+    [JsonPropertyName("inventory")]
+    public EtsyInventoryContainer? Inventory { get; set; }
 }
 
 public sealed class EtsyListingImagesContainer

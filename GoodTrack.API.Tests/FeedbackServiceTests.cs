@@ -51,7 +51,9 @@ public class FeedbackServiceTests
         saved.Title.Should().Be("Başlık");
         saved.Message.Should().Be("Mesaj");
         saved.BrowserInfo.Should().Be("Chrome");
-        saved.Id.Should().NotBeNullOrWhiteSpace();
+        // Not: Id'yi servis değil repository üretir (bkz. PostgresFeedbackRepository.SaveAsync).
+        // Repository burada mock'landığı için Id doğal olarak boştur; bu davranış
+        // FeedbackRepositoryTests içinde gerçek repository ile doğrulanır.
     }
 
     [Fact]

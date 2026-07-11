@@ -170,60 +170,50 @@ public sealed class EtsyApiClient : IEtsyApiClient
         return new EtsyListingsContainer { Count = aggregated.Count, Results = aggregated };
     }
 
-    public async Task<string?> GetListingSkuAsync(long listingId, EtsyCredentials credentials, CancellationToken cancellationToken = default)
+    public async Task<EtsyListingsContainer?> GetListingsBatchAsync(IEnumerable<long> listingIds, EtsyCredentials credentials, CancellationToken cancellationToken = default)
     {
-        try
+        var ids = string.Join(",", listingIds);
+        if (string.IsNullOrEmpty(ids))
         {
-            var request = BuildAuthorizedRequest(HttpMethod.Get, $"v3/application/listings/{listingId}/inventory", credentials);
-
-            var response = await _httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var inventory = JsonSerializer.Deserialize<EtsyInventoryContainer>(json, EtsyJsonOptions);
-            return inventory?.Products?.FirstOrDefault()?.Sku;
+            return new EtsyListingsContainer { Count = 0, Results = new List<EtsyListingResult>() };
         }
-        catch (Exception ex)
+
+        var url = $"v3/application/listings/batch?listing_ids={ids}&includes=Images,Inventory";
+        var request = BuildAuthorizedRequest(HttpMethod.Get, url, credentials);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning(ex, "Failed to fetch inventory/SKU for Listing: {ListingId}", listingId);
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogError("Failed to fetch listings batch. Status: {Status}, Error: {Error}", response.StatusCode, err);
             return null;
         }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<EtsyListingsContainer>(json, EtsyJsonOptions);
     }
 
-    public async Task<string> GetListingImageAsBase64Async(string listingId, EtsyCredentials credentials, CancellationToken cancellationToken = default)
+    public async Task<string> DownloadImageAsBase64Async(string imageUrl, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrEmpty(imageUrl))
+        {
+            return string.Empty;
+        }
+
         try
         {
-            var request = BuildAuthorizedRequest(HttpMethod.Get, $"v3/application/listings/{listingId}/images", credentials);
-
-            var response = await _httpClient.SendAsync(request, cancellationToken);
-            if (!response.IsSuccessStatusCode)
-            {
-                return string.Empty;
-            }
-
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            var imageContainer = JsonSerializer.Deserialize<EtsyListingImagesContainer>(json, EtsyJsonOptions);
-            var firstImage = imageContainer?.Results?.FirstOrDefault();
-
-            if (firstImage == null || string.IsNullOrEmpty(firstImage.Url570xN))
-            {
-                return string.Empty;
-            }
-
-            var imageBytes = await _httpClient.GetByteArrayAsync(firstImage.Url570xN, cancellationToken);
+            var imageBytes = await _httpClient.GetByteArrayAsync(imageUrl, cancellationToken);
             return $"data:image/jpeg;base64,{Convert.ToBase64String(imageBytes)}";
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to download listing image for {ListingId}", listingId);
+            _logger.LogWarning(ex, "Failed to download listing image from {ImageUrl}", imageUrl);
             return string.Empty;
         }
     }
 
+    // NOT (Etsy API Terms): Receipt/sipariş yanıtları alıcı kişisel verisi (isim, adres) içerir.
+    // Bu veriler BİLİNÇLİ olarak önbelleğe alınmaz; her seferinde canlı çekilir.
     public async Task<EtsyReceipt?> GetReceiptAsync(string shopId, string receiptId, EtsyCredentials credentials, CancellationToken cancellationToken = default)
     {
         var request = BuildAuthorizedRequest(HttpMethod.Get, $"v3/application/shops/{shopId}/receipts/{receiptId}", credentials);

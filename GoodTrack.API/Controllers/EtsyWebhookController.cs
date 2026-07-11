@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Infrastructure;
@@ -21,16 +22,36 @@ public class EtsyWebhookController : BaseApiController
 {
     private readonly AppDbContext _context;
     private readonly IEtsyService _etsyService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<EtsyWebhookController> _logger;
 
     public EtsyWebhookController(
         AppDbContext context,
         IEtsyService etsyService,
+        IConfiguration configuration,
         ILogger<EtsyWebhookController> logger)
     {
         _context = context;
         _etsyService = etsyService;
+        _configuration = configuration;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Etsy webhook aboneliği ve signing secret UYGULAMA (platform) düzeyindedir:
+    /// commercial app'in webhook portalında bir kez tanımlanır ve tüm satıcıların
+    /// webhook'ları bu tek secret ile imzalanır (payload'daki shop_id hangi satıcı
+    /// olduğunu belirtir). Bu yüzden platform secret'ı önceliklidir.
+    ///
+    /// Geriye dönük uyum / personal access dönemi için, platform secret tanımlı
+    /// değilse mağaza bazlı secret'a düşülür. Commercial'a geçişte tek yapılacak:
+    /// Etsy:WebhookSigningSecret (veya ETSY_WEBHOOK_SIGNING_SECRET) değerini set etmek.
+    /// </summary>
+    private string? ResolvePlatformSigningSecret()
+    {
+        var secret = _configuration["Etsy:WebhookSigningSecret"]
+            ?? Environment.GetEnvironmentVariable("ETSY_WEBHOOK_SIGNING_SECRET");
+        return string.IsNullOrWhiteSpace(secret) ? null : secret;
     }
 
     [HttpPost("webhook")]
@@ -97,17 +118,19 @@ public class EtsyWebhookController : BaseApiController
             return Ok(); // Etsy webhook'u iptal etmesin diye 200 döneriz.
         }
 
-        // 6. İmzayı doğrula. Bu uç nokta [AllowAnonymous] olduğundan imza TEK koruma katmanıdır:
-        //    signing secret tanımlı değilse isteği ASLA işleme alma (güvenli varsayılan).
-        if (string.IsNullOrEmpty(etsyConnection.WebhookSigningSecret))
+        // 6. İmzayı doğrula. Bu uç nokta [AllowAnonymous] olduğundan imza TEK koruma katmanıdır.
+        //    Önce platform (uygulama) secret'ı, yoksa mağaza bazlı secret kullanılır.
+        //    Hiçbiri yoksa istek ASLA işlenmez (güvenli varsayılan).
+        var signingSecret = ResolvePlatformSigningSecret() ?? etsyConnection.WebhookSigningSecret;
+        if (string.IsNullOrEmpty(signingSecret))
         {
             _logger.LogError(
-                "WebhookSigningSecret is not configured for ShopId: {ShopId}. Rejecting webhook — cannot verify authenticity.",
+                "No webhook signing secret available (neither platform-level Etsy:WebhookSigningSecret nor shop secret for ShopId: {ShopId}). Rejecting webhook — cannot verify authenticity.",
                 payload.ShopId);
-            return Unauthorized("Bu mağaza için webhook imza anahtarı tanımlanmamış.");
+            return Unauthorized("Webhook imza anahtarı yapılandırılmamış.");
         }
 
-        if (!VerifySignature(webhookId!, webhookTimestampStr!, rawBody, etsyConnection.WebhookSigningSecret, webhookSignature!))
+        if (!VerifySignature(webhookId!, webhookTimestampStr!, rawBody, signingSecret, webhookSignature!))
         {
             _logger.LogWarning("Webhook signature verification failed for ShopId: {ShopId}", payload.ShopId);
             return Unauthorized("Geçersiz imza (Signature mismatch).");

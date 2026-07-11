@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
@@ -24,18 +25,36 @@ public class EtsySyncController : BaseApiController
     private readonly AppDbContext _context;
     private readonly IEtsyService _etsyService;
     private readonly IProductService _productService;
+    private readonly IConfiguration _configuration;
     private readonly ILogger<EtsySyncController> _logger;
 
     public EtsySyncController(
         AppDbContext context,
         IEtsyService etsyService,
         IProductService productService,
+        IConfiguration configuration,
         ILogger<EtsySyncController> logger)
     {
         _context = context;
         _etsyService = etsyService;
         _productService = productService;
+        _configuration = configuration;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Etsy webhook yapılandırma durumu. Platform (uygulama) düzeyinde bir signing secret
+    /// tanımlıysa (commercial mod), satıcıların mağaza-başı manuel secret girmesine gerek yoktur;
+    /// UI bu bilgiye göre manuel alanı gizler.
+    /// </summary>
+    [HttpGet("webhook-config")]
+    public IActionResult GetWebhookConfig()
+    {
+        var platformSecret = _configuration["Etsy:WebhookSigningSecret"]
+            ?? Environment.GetEnvironmentVariable("ETSY_WEBHOOK_SIGNING_SECRET");
+        var platformConfigured = !string.IsNullOrWhiteSpace(platformSecret);
+
+        return Ok(new ApiResponse<object>(new { platformConfigured }));
     }
 
     [HttpGet("connections")]

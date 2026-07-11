@@ -18,6 +18,7 @@ export function useEtsyIntegration() {
 
   // Connection and actions loading states
   const [connectLoading, setConnectLoading] = useState(false);
+  const [platformWebhookConfigured, setPlatformWebhookConfigured] = useState(false);
   const [webhookSecrets, setWebhookSecrets] = useState<Record<string, string>>({});
   const [webhookLoadings, setWebhookLoadings] = useState<Record<string, boolean>>({});
   const [webhookSuccesses, setWebhookSuccesses] = useState<Record<string, boolean>>({});
@@ -37,11 +38,15 @@ export function useEtsyIntegration() {
   const fetchConnectionInfo = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await etsyApi.getConnections();
+      const [data, config] = await Promise.all([
+        etsyApi.getConnections(),
+        etsyApi.getWebhookConfig(),
+      ]);
       setConnections(data || []);
-      
+      setPlatformWebhookConfigured(config?.platformConfigured ?? false);
+
       const secrets: Record<string, string> = {};
-      (data || []).forEach(conn => {
+      (data || []).forEach((conn) => {
         secrets[conn.shopId] = conn.webhookSigningSecret || '';
       });
       setWebhookSecrets(secrets);
@@ -63,11 +68,23 @@ export function useEtsyIntegration() {
     const errorMsg = params.get('error');
     if (hasError && errorMsg) {
       setError(decodeURIComponent(errorMsg));
-      window.history.replaceState({}, document.title, window.location.pathname + '?tab=integrations');
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + '?tab=integrations',
+      );
     } else if (params.get('etsy_connected') === 'true') {
       const shopName = params.get('shop_name');
-      setActionSuccessMessage(shopName ? `${decodeURIComponent(shopName)} mağazası başarıyla bağlandı!` : 'Etsy mağazası başarıyla bağlandı!');
-      window.history.replaceState({}, document.title, window.location.pathname + '?tab=integrations');
+      setActionSuccessMessage(
+        shopName
+          ? `${decodeURIComponent(shopName)} mağazası başarıyla bağlandı!`
+          : 'Etsy mağazası başarıyla bağlandı!',
+      );
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + '?tab=integrations',
+      );
     }
   }, [fetchConnectionInfo]);
 
@@ -80,7 +97,7 @@ export function useEtsyIntegration() {
 
       const result = await etsyApi.connect({
         callbackUrl,
-        frontendUrl
+        frontendUrl,
       });
 
       if (result && result.oauthUrl) {
@@ -94,35 +111,42 @@ export function useEtsyIntegration() {
     }
   }, []);
 
-  const updateWebhookSecret = useCallback(async (shopId: string) => {
-    setWebhookLoadings(prev => ({ ...prev, [shopId]: true }));
-    setWebhookSuccesses(prev => ({ ...prev, [shopId]: false }));
-    setActionSuccessMessage(null);
+  const updateWebhookSecret = useCallback(
+    async (shopId: string) => {
+      setWebhookLoadings((prev) => ({ ...prev, [shopId]: true }));
+      setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
+      setActionSuccessMessage(null);
 
-    try {
-      const secret = webhookSecrets[shopId] || '';
-      await etsyApi.updateWebhookSecret(shopId, secret || null);
-      
-      setWebhookSuccesses(prev => ({ ...prev, [shopId]: true }));
-      setConnections(prev => prev.map(c => c.shopId === shopId ? { ...c, webhookSigningSecret: secret || null } : c));
-      
-      setActionSuccessMessage('Webhook imza doğrulama anahtarı başarıyla güncellendi.');
-      setTimeout(() => {
-        setWebhookSuccesses(prev => ({ ...prev, [shopId]: false }));
-        setActionSuccessMessage(null);
-      }, 3000);
-    } catch (err: unknown) {
-      setError('Webhook Signing Secret güncellenemedi: ' + extractErrorMessage(err));
-    } finally {
-      setWebhookLoadings(prev => ({ ...prev, [shopId]: false }));
-    }
-  }, [webhookSecrets]);
+      try {
+        const secret = webhookSecrets[shopId] || '';
+        await etsyApi.updateWebhookSecret(shopId, secret || null);
+
+        setWebhookSuccesses((prev) => ({ ...prev, [shopId]: true }));
+        setConnections((prev) =>
+          prev.map((c) =>
+            c.shopId === shopId ? { ...c, webhookSigningSecret: secret || null } : c,
+          ),
+        );
+
+        setActionSuccessMessage('Webhook imza doğrulama anahtarı başarıyla güncellendi.');
+        setTimeout(() => {
+          setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
+          setActionSuccessMessage(null);
+        }, 3000);
+      } catch (err: unknown) {
+        setError('Webhook Signing Secret güncellenemedi: ' + extractErrorMessage(err));
+      } finally {
+        setWebhookLoadings((prev) => ({ ...prev, [shopId]: false }));
+      }
+    },
+    [webhookSecrets],
+  );
 
   const disconnectShop = useCallback(async (shopId: string) => {
     if (window.confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
       try {
         await etsyApi.disconnect(shopId);
-        setConnections(prev => prev.filter(c => c.shopId !== shopId));
+        setConnections((prev) => prev.filter((c) => c.shopId !== shopId));
         setActionSuccessMessage('Etsy mağaza bağlantısı başarıyla kesildi.');
         setTimeout(() => setActionSuccessMessage(null), 3000);
       } catch (err: unknown) {
@@ -185,6 +209,7 @@ export function useEtsyIntegration() {
     error,
     setError,
     connectLoading,
+    platformWebhookConfigured,
     webhookSecrets,
     setWebhookSecrets,
     webhookLoadings,
@@ -202,7 +227,6 @@ export function useEtsyIntegration() {
     disconnectShop,
     syncListings,
     syncOrders,
-    sendMockWebhook
+    sendMockWebhook,
   };
 }
-

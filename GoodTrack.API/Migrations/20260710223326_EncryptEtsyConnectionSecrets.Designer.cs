@@ -5,6 +5,7 @@ using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoodTrack.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260710223326_EncryptEtsyConnectionSecrets")]
+    partial class EncryptEtsyConnectionSecrets
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -606,10 +609,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("created_at");
 
-                    b.Property<DateTime?>("DeactivatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deactivated_at");
-
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -796,29 +795,6 @@ namespace GoodTrack.API.Migrations
                         .HasDatabaseName("ix_user_credits_user_id");
 
                     b.ToTable("user_credits", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("FriendlyName")
-                        .HasColumnType("text")
-                        .HasColumnName("friendly_name");
-
-                    b.Property<string>("Xml")
-                        .HasColumnType("text")
-                        .HasColumnName("xml");
-
-                    b.HasKey("Id")
-                        .HasName("pk_data_protection_keys");
-
-                    b.ToTable("data_protection_keys", (string)null);
                 });
 
             modelBuilder.Entity("GoodTrack.API.Models.EtsyConnection", b =>

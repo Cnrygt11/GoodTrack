@@ -334,6 +334,14 @@ export default function LandingPage() {
             </span>
             Good<span className="auth-wordmark-accent">Track</span>
           </Link>
+          <div className="landing-footer-links">
+            <Link to="/privacy" className="landing-footer-link">
+              {t('footerPrivacy')}
+            </Link>
+            <Link to="/terms" className="landing-footer-link">
+              {t('footerTerms')}
+            </Link>
+          </div>
           <span className="landing-footer-copy">
             © {new Date().getFullYear()} GoodTrack. {t('landingAllRightsReserved')}
           </span>

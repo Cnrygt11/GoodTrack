@@ -13,6 +13,8 @@ import UserProfileDetailPage from '../components/profile/UserProfileDetailPage';
 import AdminDashboardPage from '../components/admin/AdminDashboardPage';
 import AdminFeedbacksPage from '../components/admin/AdminFeedbacksPage';
 import CreditsPage from '../components/credits/CreditsPage';
+import PrivacyPolicyPage from '../components/legal/PrivacyPolicyPage';
+import TermsOfServicePage from '../components/legal/TermsOfServicePage';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -53,7 +55,9 @@ function OrderDetailRedirect() {
 
   if (!user) return <Navigate to="/login" replace />;
   if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
-  return <Navigate to={user.role === 'mfr' ? `/mfr/orders/${id}` : `/seller/orders/${id}`} replace />;
+  return (
+    <Navigate to={user.role === 'mfr' ? `/mfr/orders/${id}` : `/seller/orders/${id}`} replace />
+  );
 }
 
 function ProfileRedirect() {
@@ -111,15 +115,9 @@ export default function AppRoutes() {
       />
 
       {/* Seller Nested Routes */}
-      <Route
-        path="/seller"
-        element={<Navigate to="/seller/orders" replace />}
-      />
+      <Route path="/seller" element={<Navigate to="/seller/orders" replace />} />
 
-      <Route
-        path="/seller/order-page"
-        element={<Navigate to="/seller/orders" replace />}
-      />
+      <Route path="/seller/order-page" element={<Navigate to="/seller/orders" replace />} />
 
       <Route
         path="/seller/orders"
@@ -185,10 +183,7 @@ export default function AppRoutes() {
       />
 
       {/* Manufacturer Nested Routes */}
-      <Route
-        path="/mfr"
-        element={<Navigate to="/mfr/orders" replace />}
-      />
+      <Route path="/mfr" element={<Navigate to="/mfr/orders" replace />} />
 
       <Route
         path="/mfr/orders"
@@ -236,10 +231,7 @@ export default function AppRoutes() {
       />
 
       {/* Admin Protected Routes */}
-      <Route
-        path="/admin"
-        element={<Navigate to="/admin/dashboard" replace />}
-      />
+      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
       <Route
         path="/admin/dashboard"
@@ -260,30 +252,19 @@ export default function AppRoutes() {
       />
 
       {/* Legacy/General Fallback Routes */}
-      <Route
-        path="/catalog"
-        element={<Navigate to="/seller/orders" replace />}
-      />
+      <Route path="/catalog" element={<Navigate to="/seller/orders" replace />} />
 
-      <Route
-        path="/search-mfr"
-        element={<Navigate to="/seller/search-mfr" replace />}
-      />
+      <Route path="/search-mfr" element={<Navigate to="/seller/search-mfr" replace />} />
 
-      <Route
-        path="/profile"
-        element={<ProfileRedirect />}
-      />
+      <Route path="/profile" element={<ProfileRedirect />} />
 
-      <Route
-        path="/orders/:id"
-        element={<OrderDetailRedirect />}
-      />
+      <Route path="/orders/:id" element={<OrderDetailRedirect />} />
 
-      <Route
-        path="/connections"
-        element={<ConnectionsRedirect />}
-      />
+      <Route path="/connections" element={<ConnectionsRedirect />} />
+
+      {/* Public legal pages (Etsy başvurusu + kullanıcılar için, login gerektirmez) */}
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsOfServicePage />} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

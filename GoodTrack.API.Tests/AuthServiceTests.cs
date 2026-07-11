@@ -21,6 +21,7 @@ public class AuthServiceTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
     private readonly Mock<IPasswordHasher<User>> _passwordHasherMock;
+    private readonly Mock<IEtsyConnectionRepository> _etsyConnectionRepositoryMock;
     private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
     private readonly AuthService _authService;
@@ -29,12 +30,14 @@ public class AuthServiceTests
     {
         _userRepositoryMock = new Mock<IUserRepository>();
         _passwordHasherMock = new Mock<IPasswordHasher<User>>();
+        _etsyConnectionRepositoryMock = new Mock<IEtsyConnectionRepository>();
         _configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<AuthService>>();
 
         _authService = new AuthService(
             _userRepositoryMock.Object,
             _passwordHasherMock.Object,
+            _etsyConnectionRepositoryMock.Object,
             _configurationMock.Object,
             _loggerMock.Object);
     }
@@ -163,6 +166,39 @@ public class AuthServiceTests
         refreshRes.RefreshToken.Should().NotBe(returnedRefreshToken);
 
         // Clean up env
+        Environment.SetEnvironmentVariable("JWT_KEY", null);
+    }
+
+    [Fact]
+    public async Task Login_DeactivatedUser_CorrectPassword_ReactivatesAndReenablesEtsy()
+    {
+        var user = new User
+        {
+            Id = "u1",
+            Username = "testuser",
+            PasswordHash = "hash",
+            Role = Roles.Seller,
+            IsActive = true,
+            DeactivatedAt = DateTime.UtcNow.AddDays(-3) // deaktive
+        };
+
+        var jwtKey = "super_secret_key_123_super_secret_key_123";
+        Environment.SetEnvironmentVariable("JWT_KEY", jwtKey);
+        _configurationMock.Setup(c => c["Jwt:Key"]).Returns(jwtKey);
+
+        _userRepositoryMock.Setup(r => r.GetByUsernameAsync("testuser", It.IsAny<CancellationToken>())).ReturnsAsync(user);
+        _passwordHasherMock.Setup(h => h.VerifyHashedPassword(user, "hash", "password")).Returns(PasswordVerificationResult.Success);
+
+        var connections = new List<EtsyConnection> { new() { IsActive = false } };
+        _etsyConnectionRepositoryMock.Setup(r => r.GetAllForUserAsync("u1", It.IsAny<CancellationToken>())).ReturnsAsync(connections);
+
+        var result = await _authService.LoginAsync(new LoginRequest { Username = "testuser", Password = "password" });
+
+        result.Token.Should().NotBeNullOrEmpty();
+        user.DeactivatedAt.Should().BeNull();                 // reaktive oldu
+        connections.Should().OnlyContain(c => c.IsActive);    // Etsy geri açıldı
+        _etsyConnectionRepositoryMock.Verify(r => r.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
         Environment.SetEnvironmentVariable("JWT_KEY", null);
     }
 }

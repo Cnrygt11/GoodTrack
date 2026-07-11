@@ -100,4 +100,30 @@ public class ProfileController : BaseApiController
         await _profileService.UpdateProfileAsync(userId, dto);
         return Ok(ApiResponse.Ok("Profil başarıyla güncellendi."));
     }
+
+    /// <summary>
+    /// Deactivates (soft-deletes) the current user's account after password confirmation.
+    /// The session ends; the user can reactivate by logging in again with the correct password.
+    /// </summary>
+    [HttpPost("deactivate")]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeactivateAccount([FromBody] DeactivateAccountDto dto)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+        }
+
+        try
+        {
+            await _profileService.DeactivateAccountAsync(userId, dto?.Password ?? string.Empty);
+            return Ok(ApiResponse.Ok("Hesabınız deaktive edildi. Doğru şifreyle giriş yaparak yeniden aktifleştirebilirsiniz."));
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(ApiResponse.Fail("Şifre hatalı."));
+        }
+    }
 }

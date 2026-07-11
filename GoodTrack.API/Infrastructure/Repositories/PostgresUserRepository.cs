@@ -56,7 +56,7 @@ public sealed class PostgresUserRepository : IUserRepository
     {
         return await _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers)
+            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers && u.DeactivatedAt == null)
             .ToListAsync(cancellationToken);
     }
 
@@ -71,7 +71,7 @@ public sealed class PostgresUserRepository : IUserRepository
     {
         var query = _context.Users
             .AsNoTracking()
-            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers);
+            .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers && u.DeactivatedAt == null);
 
         if (!string.IsNullOrWhiteSpace(city))
         {
@@ -145,10 +145,31 @@ public sealed class PostgresUserRepository : IUserRepository
     public async Task DeleteUserAsync(string id, CancellationToken cancellationToken = default)
     {
         var user = await _context.Users.FindAsync(new object?[] { id }, cancellationToken);
-        if (user != null)
+        if (user == null)
         {
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync(cancellationToken);
+            return;
         }
+
+        // Kullanıcı fiziksel silindiğinde, User'a FK cascade'i OLMAYAN ilişkili kayıtları
+        // uygulama seviyesinde temizle (orphan bırakma). Kullanıcı hem satıcı hem üretici
+        // olabileceğinden her iki alan da kontrol edilir. EtsyConnection / EtsyOAuthState /
+        // UserCredit zaten FK cascade ile silinir.
+        var products = await _context.Products
+            .Where(p => p.SellerId == id || p.ManufacturerId == id)
+            .ToListAsync(cancellationToken);
+        _context.Products.RemoveRange(products);
+
+        var catalog = await _context.CatalogProducts
+            .Where(c => c.SellerId == id || c.ManufacturerId == id)
+            .ToListAsync(cancellationToken);
+        _context.CatalogProducts.RemoveRange(catalog);
+
+        var connections = await _context.UserConnections
+            .Where(uc => uc.SellerId == id || uc.ManufacturerId == id)
+            .ToListAsync(cancellationToken);
+        _context.UserConnections.RemoveRange(connections);
+
+        _context.Users.Remove(user);
+        await _context.SaveChangesAsync(cancellationToken); // tek transaction (atomik)
     }
 }

@@ -185,5 +185,44 @@ public class EtsyApiClientTests
         result!.Results!.Single().Title.Should().Be("Buyer's Choice 26\" Chain");
     }
 
+    [Fact]
+    public async Task GetListingsBatch_CallsBatchEndpointWithIncludes_AndParsesImagesInventory()
+    {
+        var json = """
+        {"count":1,"results":[
+          {"listing_id":111,"title":"Necklace",
+           "images":[{"url_570xN":"https://i.etsystatic.com/1.jpg"}],
+           "inventory":{"products":[{"sku":"NECK-01"}]}}
+        ]}
+        """;
+        var handler = new StubHandler(new Func<HttpRequestMessage, HttpResponseMessage>[] { _ => Json(json) });
+        var client = BuildClient(handler);
+
+        var result = await client.GetListingsBatchAsync(new long[] { 111, 222 }, Credentials);
+
+        result.Should().NotBeNull();
+        var listing = result!.Results!.Single();
+        listing.Inventory!.Products!.Single().Sku.Should().Be("NECK-01");
+        listing.Images!.Single().Url570xN.Should().Be("https://i.etsystatic.com/1.jpg");
+
+        var reqUri = handler.Requests.Single();
+        reqUri.PathAndQuery.Should().Contain("listings/batch");
+        reqUri.PathAndQuery.Should().Contain("111");
+        reqUri.PathAndQuery.Should().Contain("222");
+        reqUri.PathAndQuery.Should().Contain("includes=Images");
+    }
+
+    [Fact]
+    public async Task GetListingsBatch_EmptyIds_MakesNoRequest()
+    {
+        var handler = new StubHandler(Array.Empty<Func<HttpRequestMessage, HttpResponseMessage>>());
+        var client = BuildClient(handler);
+
+        var result = await client.GetListingsBatchAsync(Array.Empty<long>(), Credentials);
+
+        result!.Results.Should().BeEmpty();
+        handler.Requests.Should().BeEmpty();
+    }
+
     private static string Offset(Uri uri) => HttpUtility.ParseQueryString(uri.Query)["offset"] ?? "";
 }

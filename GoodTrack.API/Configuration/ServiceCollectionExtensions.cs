@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -94,6 +95,19 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IEtsyConnectionRepository, PostgresEtsyConnectionRepository>();
         services.AddScoped<IEtsyOAuthStateRepository, PostgresEtsyOAuthStateRepository>();
 
+        // Etsy token/secret'larının at-rest şifrelenmesi için Data Protection.
+        // Anahtar halkası veritabanında (data_protection_keys) kalıcı tutulur:
+        // yeniden başlatma ve çok-instance dağıtım arasında aynı anahtarlar kullanılır,
+        // böylece şifreli token'lar her koşulda çözülebilir. SetApplicationName tüm
+        // instance'ların aynı halkayı paylaşması için sabittir.
+        //
+        // Not: Anahtarlar DB'de default olarak korumasız (XML) durur — DB'ye erişebilen
+        // zaten şifreli verilere de erişebileceğinden bu kabul edilebilir. Daha ileri
+        // koruma için ProtectKeysWithCertificate (sertifika altyapısı gerekir) eklenebilir.
+        services.AddDataProtection()
+            .PersistKeysToDbContext<AppDbContext>()
+            .SetApplicationName("GoodTrack");
+
         return services;
     }
 
@@ -116,11 +130,14 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INotificationService, SignalRNotificationService>();
         services.AddScoped<IEmailService, MailKitEmailService>();
 
-        // Etsy integration: typed HttpClient + OAuth + orchestration service
+        // Etsy integration: typed HttpClient + OAuth + orchestration service.
+        // Outbound throttle + 429/5xx retry katmanı (Etsy 10 QPS / 10k QPD limitine uyum).
+        services.AddTransient<EtsyRateLimitingHandler>();
         services.AddHttpClient<IEtsyApiClient, EtsyApiClient>(client =>
         {
             client.BaseAddress = new Uri("https://api.etsy.com/");
-        });
+        })
+        .AddHttpMessageHandler<EtsyRateLimitingHandler>();
         services.AddScoped<IEtsyOAuthService, EtsyOAuthService>();
         services.AddScoped<IEtsyService, EtsyService>();
 

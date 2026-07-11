@@ -375,6 +375,148 @@ public class EtsyServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task FetchAndImportListings_UsesSingleBatch_ForSkuAndImage_NoNPlusOne()
+    {
+        var connection = Connection(DateTime.UtcNow.AddHours(1));
+        _connectionRepositoryMock
+            .Setup(r => r.GetActiveForUserAsync("u1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EtsyConnection> { connection });
+        _connectionRepositoryMock
+            .Setup(r => r.GetAsync("u1", "shop-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(connection);
+
+        // active → yalnızca ID'ler (title dahil ama görsel/envanter YOK)
+        _apiClientMock
+            .Setup(c => c.GetActiveListingsAsync("shop-1", It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyListingsContainer
+            {
+                Results = new List<EtsyListingResult>
+                {
+                    new() { ListingId = 111, Title = "A" },
+                    new() { ListingId = 222, Title = "B" },
+                }
+            });
+
+        // batch → görsel + SKU gömülü
+        _apiClientMock
+            .Setup(c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyListingsContainer
+            {
+                Results = new List<EtsyListingResult>
+                {
+                    new()
+                    {
+                        ListingId = 111, Title = "A",
+                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/1.jpg" } },
+                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = "SKU-A" } } }
+                    },
+                    new()
+                    {
+                        ListingId = 222, Title = "B",
+                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/2.jpg" } },
+                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = "SKU-B" } } }
+                    },
+                }
+            });
+
+        _apiClientMock
+            .Setup(c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("data:image/jpeg;base64,AAAA");
+
+        var result = await _service.FetchAndImportEtsyListingsAsync("u1");
+
+        result.Should().HaveCount(2);
+
+        // Tüm listing'ler için TEK batch çağrısı (100'lük tek chunk) — N+1 yok
+        _apiClientMock.Verify(
+            c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        // SKU'lar batch envanterinden geldi, görseller indirildi
+        var products = _context.CatalogProducts.Where(p => p.SellerId == "u1").ToList();
+        products.Select(p => p.ProductCode).Should().BeEquivalentTo(new[] { "SKU-A", "SKU-B" });
+        products.Should().OnlyContain(p => p.Image == "data:image/jpeg;base64,AAAA");
+    }
+
+    private void SetupSingleListingSync(string sku, string imageUrl)
+    {
+        var connection = Connection(DateTime.UtcNow.AddHours(1));
+        _connectionRepositoryMock
+            .Setup(r => r.GetActiveForUserAsync("u1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<EtsyConnection> { connection });
+        _connectionRepositoryMock
+            .Setup(r => r.GetAsync("u1", "shop-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(connection);
+        _apiClientMock
+            .Setup(c => c.GetActiveListingsAsync("shop-1", It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyListingsContainer { Results = new List<EtsyListingResult> { new() { ListingId = 111, Title = "A" } } });
+        _apiClientMock
+            .Setup(c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyListingsContainer
+            {
+                Results = new List<EtsyListingResult>
+                {
+                    new()
+                    {
+                        ListingId = 111, Title = "A",
+                        Images = new() { new EtsyListingImageResult { Url570xN = imageUrl } },
+                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = sku } } }
+                    }
+                }
+            });
+        _apiClientMock
+            .Setup(c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync("data:image/jpeg;base64,NEW");
+    }
+
+    private void SeedCatalogWithImage(string image)
+    {
+        _context.CatalogProducts.Add(new CatalogProduct
+        {
+            Id = "cat-1",
+            SellerId = "u1",
+            ProductCode = "SKU-A",
+            Image = image,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+            Extras = new Dictionary<string, ExtraValue>
+            {
+                { "etsy_listing_id", new ExtraValue { Name = "Etsy Listing ID", Type = "text", Value = "111" } }
+            }
+        });
+        _context.SaveChanges();
+    }
+
+    [Fact]
+    public async Task FetchAndImportListings_ExistingValidImage_IsNotReDownloaded()
+    {
+        // Terms caching: DB'de geçerli görsel varsa CDN'den yeniden indirilmez.
+        SeedCatalogWithImage("data:image/jpeg;base64,OLD");
+        SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
+
+        await _service.FetchAndImportEtsyListingsAsync("u1");
+
+        _apiClientMock.Verify(
+            c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("data:image/jpeg;base64,OLD");
+    }
+
+    [Fact]
+    public async Task FetchAndImportListings_MissingImage_IsDownloaded()
+    {
+        // Görsel yoksa (veya bozuksa) indirilir.
+        SeedCatalogWithImage(string.Empty);
+        SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
+
+        await _service.FetchAndImportEtsyListingsAsync("u1");
+
+        _apiClientMock.Verify(
+            c => c.DownloadImageAsBase64Async("https://img/1.jpg", It.IsAny<CancellationToken>()),
+            Times.Once);
+        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("data:image/jpeg;base64,NEW");
+    }
+
+    [Fact]
     public async Task GetConnectionsAsync_DelegatesToRepository()
     {
         var expected = new List<EtsyConnection> { Connection(DateTime.UtcNow.AddHours(1)) };

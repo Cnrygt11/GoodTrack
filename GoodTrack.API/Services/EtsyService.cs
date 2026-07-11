@@ -163,16 +163,30 @@ public sealed class EtsyService : IEtsyService
                 var credentials = new EtsyCredentials(refreshed.ApiKeyKeystring, refreshed.ApiKeySharedSecret, refreshed.AccessToken);
                 var listingsContainer = await _apiClient.GetActiveListingsAsync(refreshed.EtsyShopId, credentials, cancellationToken);
 
-                if (listingsContainer?.Results != null && listingsContainer.Results.Any())
+                var activeIds = listingsContainer?.Results?.Select(r => r.ListingId).ToList();
+                if (activeIds != null && activeIds.Count > 0)
                 {
+                    // Görsel + SKU'yu listing başına ayrı ayrı çekmek yerine (N+1), 100'erlik
+                    // gruplar halinde tek batch çağrısıyla gömülü (Images + Inventory) getir.
+                    var detailedListings = new List<DTOs.Etsy.EtsyListingResult>();
+                    foreach (var chunk in activeIds.Chunk(100))
+                    {
+                        var batch = await _apiClient.GetListingsBatchAsync(chunk, credentials, cancellationToken);
+                        if (batch?.Results != null)
+                        {
+                            detailedListings.AddRange(batch.Results);
+                        }
+                    }
+
                     var existingProducts = await _context.CatalogProducts
                         .Where(p => p.SellerId == userId)
                         .ToListAsync(cancellationToken);
 
-                    foreach (var etsyListing in listingsContainer.Results)
+                    foreach (var etsyListing in detailedListings)
                     {
-                        var sku = await _apiClient.GetListingSkuAsync(etsyListing.ListingId, credentials, cancellationToken);
+                        var sku = etsyListing.Inventory?.Products?.FirstOrDefault()?.Sku;
                         var targetProductCode = !string.IsNullOrEmpty(sku) ? sku : $"etsy-{etsyListing.ListingId}";
+                        var imageUrl = etsyListing.Images?.FirstOrDefault()?.Url570xN;
 
                         var existingProduct = existingProducts.FirstOrDefault(p =>
                             (p.Extras != null && p.Extras.TryGetValue("etsy_listing_id", out var val) && val.Value == etsyListing.ListingId.ToString()) ||
@@ -184,10 +198,13 @@ public sealed class EtsyService : IEtsyService
                             existingProduct.ProductCode = targetProductCode;
                             existingProduct.Text = etsyListing.Title;
 
-                            // Görsel boşsa veya hatalı formatta (data:image içermiyorsa) yeniden çekip güncelle
-                            if (string.IsNullOrEmpty(existingProduct.Image) || !existingProduct.Image.StartsWith("data:image"))
+                            // Görsel deduplikasyonu (Etsy Terms — redundant çağrıları azalt):
+                            // veritabanında zaten geçerli bir base64 görsel varsa CDN'den YENİDEN İNDİRME.
+                            // Yalnızca görsel boş ya da hatalı formattaysa (data:image değilse) indirilir.
+                            if (!string.IsNullOrEmpty(imageUrl) &&
+                                (string.IsNullOrEmpty(existingProduct.Image) || !existingProduct.Image.StartsWith("data:image")))
                             {
-                                var updatedBase64Image = await _apiClient.GetListingImageAsBase64Async(etsyListing.ListingId.ToString(), credentials, cancellationToken);
+                                var updatedBase64Image = await _apiClient.DownloadImageAsBase64Async(imageUrl, cancellationToken);
                                 if (!string.IsNullOrEmpty(updatedBase64Image))
                                 {
                                     existingProduct.Image = updatedBase64Image;
@@ -207,7 +224,7 @@ public sealed class EtsyService : IEtsyService
                             continue;
                         }
 
-                        var base64Image = await _apiClient.GetListingImageAsBase64Async(etsyListing.ListingId.ToString(), credentials, cancellationToken);
+                        var base64Image = await _apiClient.DownloadImageAsBase64Async(imageUrl ?? string.Empty, cancellationToken);
 
                         var newProduct = new CatalogProduct
                         {
