@@ -24,7 +24,7 @@ public sealed class SignalRNotificationService : INotificationService
         _logger = logger;
     }
 
-    public async Task NotifyUsersAsync(IReadOnlyList<string> userIds, string method, CancellationToken cancellationToken = default)
+    public async Task NotifyUsersAsync(IReadOnlyList<string> userIds, string method, object? payload = null, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -33,7 +33,14 @@ public sealed class SignalRNotificationService : INotificationService
             {
                 if (!string.IsNullOrEmpty(userId))
                 {
-                    await _hubContext.Clients.User(userId).SendAsync(method, cancellationToken);
+                    if (payload != null)
+                    {
+                        await _hubContext.Clients.User(userId).SendAsync(method, payload, cancellationToken);
+                    }
+                    else
+                    {
+                        await _hubContext.Clients.User(userId).SendAsync(method, cancellationToken);
+                    }
                 }
             }
         }
