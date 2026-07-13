@@ -66,8 +66,8 @@ public sealed class ConnectionService : IConnectionService
 
     public async Task<List<UserDto>> GetAvailableManufacturersAsync()
     {
-        var mfrs = await _userRepository.GetManufacturersAsync();
-        return mfrs.Select(u => new UserDto { Id = u.Id, Username = u.Username, Role = u.Role }).ToList();
+        // Repository projeksiyonu zaten yalnız {Id, Username, Role} döner (base64 sütunları okumaz).
+        return await _userRepository.GetManufacturerSummariesAsync();
     }
 
     public async Task SendConnectionRequestAsync(string senderId, string senderUsername, string senderRole, string targetUsername)

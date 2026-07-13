@@ -51,7 +51,10 @@ public class AdminController : BaseApiController
             Address = u.Address,
             City = u.City,
             Bio = u.Bio,
-            ProductImages = u.ProductImages,
+            // Galeri (base64 dizisi) admin listesinde kullanılmıyor; ağır veriyi istemciye göndermemek
+            // için boş bırakılır. (Not: admin nadir ve düşük frekanslı bir uç nokta olduğundan DB
+            // okumasının projeksiyonu bu turda kapsam dışı; asıl yük olan istemci payload'u kesildi.)
+            ProductImages = new List<string>(),
             Keywords = u.Keywords,
             IsVisibleToSellers = u.IsVisibleToSellers,
             CreatedAt = u.CreatedAt,

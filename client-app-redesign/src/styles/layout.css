@@ -287,6 +287,165 @@
   color: var(--muted);
 }
 
+/* ===== ACCOUNT MENU (navbar dropdown) ===== */
+.account-menu {
+  position: relative;
+  display: inline-flex;
+}
+
+.account-menu-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px 6px 8px;
+  font-size: 13px;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  transition:
+    border-color 0.25s,
+    background-color 0.25s;
+}
+
+.account-menu-trigger:hover,
+.account-menu-trigger--open {
+  background: var(--surface-hover);
+}
+
+.seller-theme .account-menu-trigger:hover,
+.seller-theme .account-menu-trigger--open {
+  border-color: var(--accent-seller);
+}
+
+.mfr-theme .account-menu-trigger:hover,
+.mfr-theme .account-menu-trigger--open {
+  border-color: var(--accent-mfr);
+}
+
+.account-menu-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #fff;
+  flex: none;
+}
+
+.seller-theme .account-menu-avatar {
+  background: var(--accent-seller);
+}
+
+.mfr-theme .account-menu-avatar {
+  background: var(--accent-mfr);
+  color: #05262c;
+}
+
+.light-theme .mfr-theme .account-menu-avatar {
+  color: #fff;
+}
+
+.account-menu-username {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-menu-chevron {
+  color: var(--muted);
+  transition: transform 0.2s;
+}
+
+.account-menu-trigger--open .account-menu-chevron {
+  transform: rotate(180deg);
+}
+
+.account-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-premium);
+  z-index: 200;
+  animation: account-menu-in 0.14s ease-out;
+}
+
+@keyframes account-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.account-menu-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.account-menu-item:hover {
+  background: var(--surface2);
+}
+
+.account-menu-item > svg {
+  color: var(--muted);
+  flex: none;
+}
+
+.account-menu-item > span:first-of-type {
+  flex: 1;
+}
+
+.account-menu-credits-value {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.account-menu-item--credits:hover .account-menu-credits-value {
+  color: var(--accent-seller);
+}
+
+.account-menu-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  flex: none;
+}
+
 /* ===== RESPONSIVE STYLES ===== */
 @media (max-width: 1060px) {
   .list-header {
@@ -412,6 +571,23 @@
   .topbar-actions .badge-role {
     text-align: center;
     align-self: center;
+  }
+
+  /* Account menu spans the full width and its dropdown docks below it */
+  .account-menu {
+    display: flex;
+    width: 100%;
+  }
+
+  .account-menu-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .account-menu-dropdown {
+    left: 0;
+    right: 0;
+    min-width: 0;
   }
 }
 

@@ -15,40 +15,57 @@ import {
   LayoutGrid,
   Store,
   CreditCard,
+  Search,
+  Bell,
+  Zap,
+  ShieldCheck,
+  RefreshCw,
+  Coins,
+  Check,
 } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
-import ScrollGlowDot from './ScrollGlowDot';
 
 const FEATURES: Array<{
   icon: ReactNode;
   titleKey: TranslationKey;
   descKey: TranslationKey;
+  tone: 'seller' | 'mfr' | 'success';
 }> = [
   {
     icon: <PackageSearch size={20} />,
     titleKey: 'landingFeatOrdersTitle',
     descKey: 'landingFeatOrdersDesc',
+    tone: 'seller',
   },
   {
     icon: <BellRing size={20} />,
     titleKey: 'landingFeatRealtimeTitle',
     descKey: 'landingFeatRealtimeDesc',
+    tone: 'mfr',
   },
   {
     icon: <Camera size={20} />,
     titleKey: 'landingFeatDefectTitle',
     descKey: 'landingFeatDefectDesc',
+    tone: 'success',
   },
   {
     icon: <LayoutGrid size={20} />,
     titleKey: 'landingFeatCatalogTitle',
     descKey: 'landingFeatCatalogDesc',
+    tone: 'mfr',
   },
-  { icon: <Store size={20} />, titleKey: 'landingFeatEtsyTitle', descKey: 'landingFeatEtsyDesc' },
+  {
+    icon: <Store size={20} />,
+    titleKey: 'landingFeatEtsyTitle',
+    descKey: 'landingFeatEtsyDesc',
+    tone: 'seller',
+  },
   {
     icon: <CreditCard size={20} />,
     titleKey: 'landingFeatPlansTitle',
     descKey: 'landingFeatPlansDesc',
+    tone: 'success',
   },
 ];
 
@@ -58,6 +75,26 @@ const STEPS: Array<{ titleKey: TranslationKey; descKey: TranslationKey }> = [
   { titleKey: 'landingStep3Title', descKey: 'landingStep3Desc' },
 ];
 
+const TRUST_ITEMS: Array<{ icon: ReactNode; key: TranslationKey }> = [
+  { icon: <Zap size={16} />, key: 'landingTrust1' },
+  { icon: <ShieldCheck size={16} />, key: 'landingTrust2' },
+  { icon: <RefreshCw size={16} />, key: 'landingTrust3' },
+  { icon: <Coins size={16} />, key: 'landingTrust4' },
+];
+
+const HERO_POINTS: TranslationKey[] = [
+  'landingHeroPoint1',
+  'landingHeroPoint2',
+  'landingHeroPoint3',
+];
+
+const FAQ_ITEMS: Array<{ qKey: TranslationKey; aKey: TranslationKey }> = [
+  { qKey: 'landingFaq1Q', aKey: 'landingFaq1A' },
+  { qKey: 'landingFaq2Q', aKey: 'landingFaq2A' },
+  { qKey: 'landingFaq3Q', aKey: 'landingFaq3A' },
+  { qKey: 'landingFaq4Q', aKey: 'landingFaq4A' },
+];
+
 export default function LandingPage() {
   const { language, setLanguage, theme, toggleTheme, t } = useSettings();
   const { user } = useAuth();
@@ -65,7 +102,6 @@ export default function LandingPage() {
 
   return (
     <div className="landing-page">
-      <ScrollGlowDot />
       {/* ===== Navbar ===== */}
       <header className="landing-navbar">
         <div className="landing-navbar-inner">
@@ -80,6 +116,7 @@ export default function LandingPage() {
             <a href="#features">{t('landingNavFeatures')}</a>
             <a href="#how-it-works">{t('landingNavHow')}</a>
             <a href="#roles">{t('landingNavRoles')}</a>
+            <a href="#faq">{t('landingNavFaq')}</a>
           </nav>
 
           <div className="landing-nav-actions">
@@ -110,9 +147,14 @@ export default function LandingPage() {
                 <ArrowRight size={14} />
               </button>
             ) : (
-              <Link to="/login" className="landing-btn-ghost">
-                {t('landingLoginBtn')}
-              </Link>
+              <>
+                <Link to="/login" className="landing-btn-ghost">
+                  {t('landingLoginBtn')}
+                </Link>
+                <Link to="/register" className="landing-btn-solid seller landing-nav-register">
+                  {t('landingGetStartedFree')}
+                </Link>
+              </>
             )}
           </div>
         </div>
@@ -120,7 +162,11 @@ export default function LandingPage() {
 
       {/* ===== Hero ===== */}
       <section className="landing-hero">
-        <span className="landing-badge">{t('landingBadge')}</span>
+        <div className="landing-hero-backdrop" aria-hidden="true" />
+        <span className="landing-badge">
+          <span className="landing-badge-pulse" aria-hidden="true" />
+          {t('landingBadge')}
+        </span>
         <h1 className="landing-hero-title">
           {t('landingHeroTitleA')}
           <br />
@@ -140,6 +186,15 @@ export default function LandingPage() {
           </div>
         )}
 
+        <ul className="landing-hero-points">
+          {HERO_POINTS.map((key) => (
+            <li key={key}>
+              <Check size={14} />
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+
         {/* Stylized dashboard preview (decorative) */}
         <div className="landing-preview" aria-hidden="true">
           <div className="lp-window">
@@ -147,6 +202,14 @@ export default function LandingPage() {
               <span />
               <span />
               <span />
+              <div className="lp-search">
+                <Search size={11} />
+                <i className="lp-line w30" />
+              </div>
+              <div className="lp-bell">
+                <Bell size={12} />
+                <em />
+              </div>
             </div>
             <div className="lp-body">
               <div className="lp-sidebar">
@@ -196,43 +259,82 @@ export default function LandingPage() {
                   <div className="lp-row">
                     <span className="lp-dot" />
                     <span className="lp-line w30" />
-                    <span className="lp-line w20" />
+                    <span className="lp-progress">
+                      <i style={{ width: '55%' }} className="prod" />
+                    </span>
                     <span className="lp-pill prod">{t('landingPvInProd')}</span>
                   </div>
                   <div className="lp-row">
                     <span className="lp-dot" />
                     <span className="lp-line w35" />
-                    <span className="lp-line w15" />
+                    <span className="lp-progress">
+                      <i style={{ width: '80%' }} className="ship" />
+                    </span>
                     <span className="lp-pill ship">{t('landingPvShipped')}</span>
                   </div>
                   <div className="lp-row">
                     <span className="lp-dot" />
                     <span className="lp-line w25" />
-                    <span className="lp-line w20" />
+                    <span className="lp-progress">
+                      <i style={{ width: '100%' }} className="done" />
+                    </span>
                     <span className="lp-pill done">{t('landingPvDelivered')}</span>
                   </div>
                   <div className="lp-row">
                     <span className="lp-dot" />
                     <span className="lp-line w32" />
-                    <span className="lp-line w18" />
+                    <span className="lp-progress">
+                      <i style={{ width: '35%' }} className="prod" />
+                    </span>
                     <span className="lp-pill prod">{t('landingPvInProd')}</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Floating notification cards */}
+          <div className="lp-float lp-float-order">
+            <span className="lp-float-icon seller">
+              <Package size={14} />
+            </span>
+            <div>
+              <strong>{t('landingPvNewOrder')}</strong>
+              <i className="lp-line w40" />
+            </div>
+          </div>
+          <div className="lp-float lp-float-defect">
+            <span className="lp-float-icon mfr">
+              <Camera size={14} />
+            </span>
+            <div>
+              <strong>{t('landingPvDefectNote')}</strong>
+              <i className="lp-line w40" />
+            </div>
+          </div>
         </div>
+
+        {/* Trust strip */}
+        <ul className="landing-trust-strip">
+          {TRUST_ITEMS.map((item) => (
+            <li key={item.key}>
+              {item.icon}
+              {t(item.key)}
+            </li>
+          ))}
+        </ul>
       </section>
 
       {/* ===== Features ===== */}
       <section id="features" className="landing-section">
         <div className="landing-section-head">
+          <span className="landing-eyebrow">{t('landingNavFeatures')}</span>
           <h2>{t('landingFeaturesTitle')}</h2>
           <p>{t('landingFeaturesDesc')}</p>
         </div>
         <div className="landing-feature-grid">
           {FEATURES.map((feature) => (
-            <div className="landing-feature-item" key={feature.titleKey}>
+            <div className={`landing-feature-item ${feature.tone}`} key={feature.titleKey}>
               <span className="landing-feature-item-icon">{feature.icon}</span>
               <h3>{t(feature.titleKey)}</h3>
               <p>{t(feature.descKey)}</p>
@@ -244,13 +346,17 @@ export default function LandingPage() {
       {/* ===== How it works ===== */}
       <section id="how-it-works" className="landing-section">
         <div className="landing-section-head">
+          <span className="landing-eyebrow">{t('landingNavHow')}</span>
           <h2>{t('landingHowTitle')}</h2>
           <p>{t('landingHowDesc')}</p>
         </div>
         <div className="landing-steps">
           {STEPS.map((step, index) => (
             <div className="landing-step" key={step.titleKey}>
-              <span className="landing-step-num">{String(index + 1).padStart(2, '0')}</span>
+              <div className="landing-step-track" aria-hidden="true">
+                <span className="landing-step-marker">{index + 1}</span>
+                {index < STEPS.length - 1 && <span className="landing-step-connector" />}
+              </div>
               <h3>{t(step.titleKey)}</h3>
               <p>{t(step.descKey)}</p>
             </div>
@@ -261,6 +367,7 @@ export default function LandingPage() {
       {/* ===== Roles ===== */}
       <section id="roles" className="landing-section">
         <div className="landing-section-head">
+          <span className="landing-eyebrow">{t('landingNavRoles')}</span>
           <h2>{t('landingRolesTitle')}</h2>
           <p>{t('landingRolesDesc')}</p>
         </div>
@@ -311,6 +418,26 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ===== FAQ ===== */}
+      <section id="faq" className="landing-section">
+        <div className="landing-section-head">
+          <span className="landing-eyebrow">{t('landingNavFaq')}</span>
+          <h2>{t('landingFaqTitle')}</h2>
+          <p>{t('landingFaqDesc')}</p>
+        </div>
+        <div className="landing-faq-list">
+          {FAQ_ITEMS.map((item) => (
+            <details className="landing-faq-item" key={item.qKey}>
+              <summary>
+                {t(item.qKey)}
+                <ArrowRight size={15} className="landing-faq-chevron" />
+              </summary>
+              <p>{t(item.aKey)}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* ===== CTA Banner ===== */}
       {!user && (
         <section className="landing-section">
@@ -328,20 +455,29 @@ export default function LandingPage() {
       {/* ===== Footer ===== */}
       <footer className="landing-footer">
         <div className="landing-footer-inner">
-          <Link to="/" className="auth-wordmark">
-            <span className="auth-wordmark-mark" aria-hidden="true">
-              G
-            </span>
-            Good<span className="auth-wordmark-accent">Track</span>
-          </Link>
-          <div className="landing-footer-links">
-            <Link to="/privacy" className="landing-footer-link">
-              {t('footerPrivacy')}
+          <div className="landing-footer-brand">
+            <Link to="/" className="auth-wordmark">
+              <span className="auth-wordmark-mark" aria-hidden="true">
+                G
+              </span>
+              Good<span className="auth-wordmark-accent">Track</span>
             </Link>
-            <Link to="/terms" className="landing-footer-link">
-              {t('footerTerms')}
-            </Link>
+            <p>{t('landingFooterTagline')}</p>
           </div>
+          <div className="landing-footer-col">
+            <h4>{t('landingFooterProduct')}</h4>
+            <a href="#features">{t('landingNavFeatures')}</a>
+            <a href="#how-it-works">{t('landingNavHow')}</a>
+            <a href="#roles">{t('landingNavRoles')}</a>
+            <a href="#faq">{t('landingNavFaq')}</a>
+          </div>
+          <div className="landing-footer-col">
+            <h4>{t('landingFooterLegal')}</h4>
+            <Link to="/privacy">{t('footerPrivacy')}</Link>
+            <Link to="/terms">{t('footerTerms')}</Link>
+          </div>
+        </div>
+        <div className="landing-footer-bottom">
           <span className="landing-footer-copy">
             © {new Date().getFullYear()} GoodTrack. {t('landingAllRightsReserved')}
           </span>

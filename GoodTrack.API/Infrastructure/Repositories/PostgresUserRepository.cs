@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Auth;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -52,19 +53,24 @@ public sealed class PostgresUserRepository : IUserRepository
             .FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
     }
 
-    public async Task<List<User>> GetManufacturersAsync(CancellationToken cancellationToken = default)
+    public async Task<List<UserDto>> GetManufacturerSummariesAsync(CancellationToken cancellationToken = default)
     {
+        // Projeksiyon: yalnız Id/Username/Role seçilir; base64 ProfilePicture/ProductImages sütunları
+        // DB'den hiç okunmaz.
         return await _context.Users
             .AsNoTracking()
             .Where(u => u.Role == Roles.Mfr && u.IsVisibleToSellers && u.DeactivatedAt == null)
+            .Select(u => new UserDto { Id = u.Id, Username = u.Username, Role = u.Role })
             .ToListAsync(cancellationToken);
     }
 
-    public async Task<(List<User> Items, string? NextCursor)> SearchManufacturersAsync(
+    public async Task<(List<UserProfileDto> Items, int TotalCount)> SearchManufacturersAsync(
         string? city,
         string? keyword,
-        string? cursor,
-        int limit,
+        string? name,
+        string? sort,
+        int page,
+        int pageSize,
         bool mustHaveGallery = false,
         bool mustHaveAvatar = false,
         CancellationToken cancellationToken = default)
@@ -78,7 +84,9 @@ public sealed class PostgresUserRepository : IUserRepository
             var cities = city.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(c => c.Trim().ToLower()).ToList();
             if (cities.Any())
             {
-                query = query.Where(u => cities.Contains(u.City));
+                // Filtre şehirleri lowercase; karşılaştırmada u.City de lowercase'e çevrilir ki kayıt
+                // kasadan bağımsız eşleşsin ("İstanbul" ↔ "istanbul"). EF bunu SQL lower()'a çevirir.
+                query = query.Where(u => cities.Contains(u.City.ToLower()));
             }
         }
 
@@ -91,6 +99,16 @@ public sealed class PostgresUserRepository : IUserRepository
             }
         }
 
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            // İsim/kullanıcı-adı araması: kasa-duyarsız kısmi eşleşme. .ToLower().Contains her iki
+            // sağlayıcıda da çevrilir (Postgres lower()+position, SQLite lower()+instr).
+            var term = name.Trim().ToLower();
+            query = query.Where(u =>
+                (u.FirstName + " " + u.LastName).ToLower().Contains(term) ||
+                u.Username.ToLower().Contains(term));
+        }
+
         if (mustHaveGallery)
         {
             query = query.Where(u => u.ProductImages != null && u.ProductImages.Count > 0);
@@ -101,23 +119,46 @@ public sealed class PostgresUserRepository : IUserRepository
             query = query.Where(u => !string.IsNullOrEmpty(u.ProfilePicture));
         }
 
-        if (!string.IsNullOrWhiteSpace(cursor))
+        var totalCount = await query.CountAsync(cancellationToken);
+
+        // Sıralama: varsayılan "completeness" (galerisi + avatarı olanlar önce), "name" (A–Z), "city".
+        query = sort switch
         {
-            query = query.Where(u => u.Id.CompareTo(cursor) > 0);
-        }
+            "name" => query.OrderBy(u => u.FirstName).ThenBy(u => u.LastName).ThenBy(u => u.Id),
+            "city" => query.OrderBy(u => u.City).ThenBy(u => u.Id),
+            _ => query
+                .OrderByDescending(u => u.ProductImages.Count > 0)
+                .ThenByDescending(u => u.ProfilePicture != string.Empty || u.ProfileThumbnail != string.Empty)
+                .ThenBy(u => u.Id),
+        };
 
-        query = query.OrderBy(u => u.Id);
+        // Projeksiyon: ağır ProductImages galerisi SEÇİLMEZ (yalnız .Count = cardinality hesaplanır),
+        // böylece base64 dizi DB'den okunmaz. Avatar thumbnail'e düşer.
+        var items = await query
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .Select(u => new UserProfileDto
+            {
+                Id = u.Id,
+                Username = u.Username,
+                Email = u.Email,
+                PhoneNumber = u.PhoneNumber,
+                FirstName = u.FirstName,
+                LastName = u.LastName,
+                Role = u.Role,
+                // Dizin listesi tam avatarı ayrı taşımaz; thumbnail varsa onu, yoksa (eski kayıt) tam
+                // avatara düşerek taşır. Yeni kayıtlar küçük thumbnail gönderdiğinden yük progresif azalır.
+                ProfileThumbnail = u.ProfileThumbnail != string.Empty ? u.ProfileThumbnail : u.ProfilePicture,
+                Address = u.Address,
+                City = u.City,
+                Bio = u.Bio,
+                Keywords = u.Keywords,
+                IsVisibleToSellers = u.IsVisibleToSellers,
+                GalleryCount = u.ProductImages.Count,
+            })
+            .ToListAsync(cancellationToken);
 
-        var items = await query.Take(limit + 1).ToListAsync(cancellationToken);
-
-        string? nextCursor = null;
-        if (items.Count > limit)
-        {
-            items.RemoveAt(limit);
-            nextCursor = items[^1].Id;
-        }
-
-        return (items, nextCursor);
+        return (items, totalCount);
     }
 
     public async Task SaveAsync(User user, CancellationToken cancellationToken = default)

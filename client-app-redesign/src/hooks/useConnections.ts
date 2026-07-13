@@ -207,7 +207,10 @@ export default function useConnections() {
       e.preventDefault();
       try {
         setSearchLoading(true);
-        const data = await api.searchManufacturers(searchCity || undefined, searchKeyword || undefined);
+        const data = await api.searchManufacturers({
+          city: searchCity || undefined,
+          keyword: searchKeyword || undefined,
+        });
         setSearchResults(data.items);
       } catch (err: unknown) {
         showToast(extractErrorMessage(err));

@@ -4,9 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useIncomingRequestsQuery } from '../hooks/useConnectionsData';
 import { ROUTES } from '../constants/routes';
-import { Package, Users, LogOut, Sun, Moon, User, Search } from 'lucide-react';
+import { Package, Users, LogOut, Sun, Moon, Search } from 'lucide-react';
 import FeedbackModal from './ui/FeedbackModal';
-import CreditsWidget from './credits/CreditsWidget';
+import AccountMenu from './AccountMenu';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -92,16 +92,14 @@ export default function Layout({ children }: LayoutProps) {
             </button>
           </div>
 
-          <span className="topbar-user-label">
-            {t('userLabel')}:{' '}
-            <strong className="topbar-username">
-              {user.username}
-            </strong>
-          </span>
-          
-          <span className={`badge-role ${user.role}`}>
-            {user.role === 'seller' ? t('roleSeller') : (user.role === 'mfr' ? t('roleMfr') : t('roleAdmin'))}
-          </span>
+          {user.role === 'admin' && (
+            <span className="topbar-user-label">
+              {t('userLabel')}:{' '}
+              <strong className="topbar-username">
+                {user.username}
+              </strong>
+            </span>
+          )}
 
           {user.role === 'admin' && (
             <>
@@ -135,8 +133,7 @@ export default function Layout({ children }: LayoutProps) {
 
           {user.role === 'seller' && (
             <>
-              <CreditsWidget />
-              <button 
+              <button
                 className={`nav-btn ${currentPath === ROUTES.sellerOrders ? 'nav-btn--active nav-btn--seller' : ''}`}
                 onClick={() => navigate(ROUTES.sellerOrders)}
               >
@@ -144,7 +141,7 @@ export default function Layout({ children }: LayoutProps) {
                 {t('btnOrderScreen')}
               </button>
 
-              <button 
+              <button
                 className={`nav-btn ${currentPath === ROUTES.sellerSearch ? 'nav-btn--active nav-btn--seller' : ''}`}
                 onClick={() => navigate(currentPath === ROUTES.sellerSearch ? ROUTES.sellerOrders : ROUTES.sellerSearch)}
               >
@@ -153,40 +150,10 @@ export default function Layout({ children }: LayoutProps) {
               </button>
             </>
           )}
-          
-          {user.role !== 'admin' && (
-            <button 
-              className={`nav-btn ${
-                currentPath === ROUTES.sellerConnections || currentPath === ROUTES.mfrConnections 
-                  ? `nav-btn--active nav-btn--${user.role}` 
-                  : ''
-              }`}
-              onClick={() => navigate(user.role === 'seller' ? ROUTES.sellerConnections : ROUTES.mfrConnections)}
-              style={{ position: 'relative' }}
-            >
-              <Users size={14} />
-              {user.role === 'seller' ? t('btnMyManufacturers') : t('btnMySellers')}
-              {hasNewRequests && (
-                <span className="unseen-dot-nav" />
-              )}
-            </button>
-          )}
 
-          {user.role !== 'admin' && (
-            <button 
-              className={`nav-btn ${
-                currentPath === ROUTES.sellerProfile || currentPath === ROUTES.mfrProfile 
-                  ? `nav-btn--active nav-btn--${user.role}` 
-                  : ''
-              }`}
-              onClick={() => navigate(user.role === 'mfr' ? ROUTES.mfrProfile : ROUTES.sellerProfile)}
-            >
-              <User size={14} />
-              {t('btnMyAccount')}
-            </button>
-          )}
-          
-          <button 
+          {user.role !== 'admin' && <AccountMenu hasNewRequests={hasNewRequests} />}
+
+          <button
             className="btn-back" 
             onClick={logout}
           >

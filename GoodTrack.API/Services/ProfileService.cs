@@ -138,7 +138,7 @@ public sealed class ProfileService : IProfileService
             user.PhoneNumber = dto.PhoneNumber.Trim();
         }
 
-        // Profile Picture
+        // Profile Picture (+ dizin/listelerde kullanılan küçük thumbnail)
         if (!string.IsNullOrEmpty(dto.ProfilePicture))
         {
             if (dto.ProfilePicture != user.ProfilePicture)
@@ -149,6 +149,7 @@ public sealed class ProfileService : IProfileService
                     await _imageStorageService.DeleteImageAsync(user.ProfilePicture);
                 }
                 user.ProfilePicture = await _imageStorageService.StoreImageAsync(dto.ProfilePicture) ?? string.Empty;
+                user.ProfileThumbnail = dto.ProfileThumbnail ?? string.Empty;
             }
         }
         else
@@ -158,6 +159,7 @@ public sealed class ProfileService : IProfileService
                 await _imageStorageService.DeleteImageAsync(user.ProfilePicture);
             }
             user.ProfilePicture = string.Empty;
+            user.ProfileThumbnail = string.Empty;
         }
 
         // Manufacturer Specific fields
@@ -223,21 +225,41 @@ public sealed class ProfileService : IProfileService
         await _userRepository.SaveAsync(user);
     }
 
-    public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, bool mustHaveGallery = false, bool mustHaveAvatar = false)
+    public async Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? name, string? sort, int page, int pageSize, bool mustHaveGallery = false, bool mustHaveAvatar = false)
     {
-        var (users, nextCursor) = await _userRepository.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
-
-        var items = users.Select(MapToProfileDto).ToList();
+        // Repository, galeriyi hariç tutan (yalnız GalleryCount hesaplayan) projeksiyonu + toplam sayıyı döndürür.
+        var (items, totalCount) = await _userRepository.SearchManufacturersAsync(city, keyword, name, sort, page, pageSize, mustHaveGallery, mustHaveAvatar);
 
         return new PagedResultDto<UserProfileDto>
         {
             Items = items,
-            NextCursor = nextCursor
+            TotalCount = totalCount,
+            HasMore = (page + 1) * pageSize < totalCount,
         };
+    }
+
+    /// <summary>
+    /// Görünür bir üreticinin ürün galerisini (base64 görseller) talep üzerine döner. Dizin bu
+    /// üreticileri zaten listelediğinden herhangi bir kimlikli kullanıcı erişebilir; yalnız
+    /// görünür (IsVisibleToSellers) ve aktif (DeactivatedAt == null) üreticiler için çalışır.
+    /// </summary>
+    public async Task<List<string>> GetManufacturerGalleryAsync(string manufacturerId)
+    {
+        var user = await _userRepository.GetByIdAsync(manufacturerId);
+        if (user == null ||
+            !user.Role.Equals(Roles.Mfr, StringComparison.OrdinalIgnoreCase) ||
+            !user.IsVisibleToSellers ||
+            user.DeactivatedAt != null)
+        {
+            throw new KeyNotFoundException("Üretici bulunamadı veya galerisi görüntülenemiyor.");
+        }
+
+        return user.ProductImages ?? new List<string>();
     }
 
     private static UserProfileDto MapToProfileDto(User user) => new()
     {
+        Id = user.Id,
         Username = user.Username,
         Email = user.Email,
         PhoneNumber = user.PhoneNumber,
@@ -245,11 +267,13 @@ public sealed class ProfileService : IProfileService
         LastName = user.LastName,
         Role = user.Role,
         ProfilePicture = user.ProfilePicture,
+        ProfileThumbnail = user.ProfileThumbnail,
         Address = user.Address,
         City = user.City,
         Bio = user.Bio,
         ProductImages = user.ProductImages,
         Keywords = user.Keywords,
-        IsVisibleToSellers = user.IsVisibleToSellers
+        IsVisibleToSellers = user.IsVisibleToSellers,
+        GalleryCount = user.ProductImages?.Count ?? 0
     };
 }

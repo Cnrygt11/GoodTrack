@@ -23,6 +23,9 @@ public class User
 
     public string ProfilePicture { get; set; } = string.Empty;
 
+    /// <summary>Dizin/listelerde gösterilen küçük avatar thumbnail'i (~160px). Tam avatar profil detayında.</summary>
+    public string ProfileThumbnail { get; set; } = string.Empty;
+
     public string Address { get; set; } = string.Empty;
 
     public string City { get; set; } = string.Empty;

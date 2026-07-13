@@ -1,11 +1,79 @@
 import { useState } from 'react';
 import useSearchMfr from '../../hooks/useSearchMfr';
-import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle, Lock } from 'lucide-react';
+import { MapPin, Sparkles, Image as ImageIcon, Loader2, RefreshCw, XCircle, Lock, Search } from 'lucide-react';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
 import Lightbox from '../ui/Lightbox';
 import { TranslationKey } from '../../services/translations';
+import { api } from '../../services/apiClient';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../constants/routes';
+
+/**
+ * Üretici kartındaki ürün galerisi. Dizin liste yanıtı artık galeri görsellerini taşımaz (yalnız
+ * sayı gelir); tam galeri, "Galeriyi Gör" tıklanınca talep üzerine tek üretici için çekilir.
+ */
+function ManufacturerGalleryStrip({
+  manufacturerId,
+  galleryCount,
+  onZoom,
+  t,
+}: {
+  manufacturerId?: string;
+  galleryCount: number;
+  onZoom: (img: string) => void;
+  t: (key: TranslationKey) => string;
+}) {
+  const [status, setStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [images, setImages] = useState<string[]>([]);
+
+  if (galleryCount <= 0) return null;
+
+  const load = async () => {
+    if (!manufacturerId || status === 'loading' || status === 'loaded') return;
+    setStatus('loading');
+    try {
+      const imgs = await api.getManufacturerGallery(manufacturerId);
+      setImages(imgs);
+      setStatus('loaded');
+    } catch {
+      setStatus('error');
+    }
+  };
+
+  if (status === 'loaded' && images.length > 0) {
+    return (
+      <div className="mfr-gallery">
+        <span className="mfr-gallery-label">
+          <ImageIcon size={11} />
+          {t('productGalleryLabel')} ({images.length})
+        </span>
+        <div className="mfr-gallery-strip">
+          {images.map((img, idx) => (
+            <div key={idx} className="mfr-gallery-thumb" onClick={() => onZoom(img)}>
+              <img src={img} alt="Product showcase" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="mfr-gallery-load-btn"
+      onClick={load}
+      disabled={status === 'loading'}
+    >
+      {status === 'loading' ? (
+        <Loader2 size={13} className="animate-spin" />
+      ) : (
+        <ImageIcon size={13} />
+      )}
+      {t('viewGalleryBtn')} ({galleryCount})
+    </button>
+  );
+}
 
 export default function SearchMfrPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -16,6 +84,8 @@ export default function SearchMfrPage() {
     selectedCities, selectedCategories,
     mustHaveGallery, setMustHaveGallery,
     mustHaveAvatar, setMustHaveAvatar,
+    searchName, setSearchName,
+    sortOption, setSortOption,
     availableCities,
     filteredAndSortedManufacturers,
     hasMore,
@@ -26,7 +96,7 @@ export default function SearchMfrPage() {
     t,
   } = useSearchMfr();
 
-  const hasActiveFilters = selectedCities.length > 0 || selectedCategories.length > 0 || mustHaveGallery || mustHaveAvatar;
+  const hasActiveFilters = selectedCities.length > 0 || selectedCategories.length > 0 || mustHaveGallery || mustHaveAvatar || searchName.trim().length > 0 || sortOption !== 'completeness';
 
   const pageContent = (
     <div className={`smfr-page ${isLocked ? 'smfr-locked-blur' : ''}`}>
@@ -140,6 +210,31 @@ export default function SearchMfrPage() {
         {/* ── RIGHT: Results ── */}
         <div className="smfr-results">
 
+          {/* Search + sort toolbar */}
+          <div className="smfr-toolbar">
+            <div className="smfr-search-box">
+              <Search size={15} />
+              <input
+                type="text"
+                value={searchName}
+                onChange={(e) => setSearchName(e.target.value)}
+                placeholder={t('searchByNamePlaceholder')}
+                disabled={isLocked}
+              />
+            </div>
+            <select
+              className="smfr-sort-select"
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value as 'completeness' | 'name' | 'city')}
+              disabled={isLocked}
+              aria-label={t('sortLabel')}
+            >
+              <option value="completeness">{t('sortCompleteness')}</option>
+              <option value="name">{t('sortByName')}</option>
+              <option value="city">{t('sortByCity')}</option>
+            </select>
+          </div>
+
           <div className="smfr-results-bar">
             <span>
               {t('manufacturersFound')}{' '}
@@ -182,11 +277,11 @@ export default function SearchMfrPage() {
                         {/* Avatar & Name */}
                         <div className="mfr-card-header">
                           <div className="mfr-avatar">
-                            {mfr.profilePicture ? (
+                            {(mfr.profileThumbnail || mfr.profilePicture) ? (
                               <img
-                                src={mfr.profilePicture}
+                                src={mfr.profileThumbnail || mfr.profilePicture}
                                 alt={mfr.username}
-                                onClick={(e) => { e.stopPropagation(); setLightboxImage(mfr.profilePicture || null); }}
+                                onClick={(e) => { e.stopPropagation(); setLightboxImage(mfr.profileThumbnail || mfr.profilePicture || null); }}
                                 title={t('zoomImage')}
                               />
                             ) : (
@@ -230,22 +325,13 @@ export default function SearchMfrPage() {
                           </div>
                         )}
 
-                        {/* Gallery */}
-                        {mfr.productImages && mfr.productImages.length > 0 && (
-                          <div className="mfr-gallery">
-                            <span className="mfr-gallery-label">
-                              <ImageIcon size={11} />
-                              {t('productGalleryLabel')} ({mfr.productImages.length})
-                            </span>
-                            <div className="mfr-gallery-strip">
-                              {mfr.productImages.map((img, idx) => (
-                                <div key={idx} className="mfr-gallery-thumb" onClick={() => setLightboxImage(img)}>
-                                  <img src={img} alt="Product showcase" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* Gallery — talep üzerine yüklenir (liste yanıtı galeri görsellerini taşımaz) */}
+                        <ManufacturerGalleryStrip
+                          manufacturerId={mfr.id}
+                          galleryCount={mfr.galleryCount ?? 0}
+                          onZoom={setLightboxImage}
+                          t={t}
+                        />
                       </div>
 
                     </div>

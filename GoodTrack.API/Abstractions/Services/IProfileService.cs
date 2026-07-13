@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using GoodTrack.API.DTOs.Auth;
 
@@ -15,5 +16,8 @@ public interface IProfileService
     /// girişte otomatik reaktive olur.
     /// </summary>
     Task DeactivateAccountAsync(string userId, string password);
-    Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? cursor, int limit, bool mustHaveGallery = false, bool mustHaveAvatar = false);
+    Task<PagedResultDto<UserProfileDto>> SearchManufacturersAsync(string? city, string? keyword, string? name, string? sort, int page, int pageSize, bool mustHaveGallery = false, bool mustHaveAvatar = false);
+
+    /// <summary>Görünür bir üreticinin ürün galerisini (base64 görseller) talep üzerine döner.</summary>
+    Task<List<string>> GetManufacturerGalleryAsync(string manufacturerId);
 }

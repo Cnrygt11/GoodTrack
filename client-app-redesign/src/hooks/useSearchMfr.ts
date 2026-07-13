@@ -25,6 +25,8 @@ export const PRODUCTION_CITIES = [
   'Konya'
 ];
 
+const PAGE_SIZE = 9;
+
 export default function useSearchMfr() {
   const { products } = useProductsQuery();
   const { connections } = useConnectionsQuery();
@@ -37,8 +39,18 @@ export default function useSearchMfr() {
   const [manufacturers, setManufacturers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+
+  // İsim araması (debounce'lu) + sıralama
+  const [searchName, setSearchName] = useState('');
+  const [debouncedName, setDebouncedName] = useState('');
+  const [sortOption, setSortOption] = useState<'completeness' | 'name' | 'city'>('completeness');
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedName(searchName.trim()), 300);
+    return () => clearTimeout(id);
+  }, [searchName]);
 
   const completedCount = useMemo(() => 
     products.filter(p => p.status === 'delivered').length
@@ -69,56 +81,47 @@ export default function useSearchMfr() {
   const [mustHaveGallery, setMustHaveGallery] = useState(false);
   const [mustHaveAvatar, setMustHaveAvatar] = useState(false);
 
+  const buildQuery = useCallback((pageNum: number) => ({
+    city: selectedCities.length > 0 ? selectedCities.join(',') : undefined,
+    keyword: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
+    name: debouncedName || undefined,
+    sort: sortOption,
+    page: pageNum,
+    limit: PAGE_SIZE,
+    mustHaveGallery,
+    mustHaveAvatar,
+  }), [selectedCities, selectedCategories, debouncedName, sortOption, mustHaveGallery, mustHaveAvatar]);
+
   const fetchManufacturers = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      
-      const cityQuery = selectedCities.length > 0 ? selectedCities.join(',') : undefined;
-      const catQuery = selectedCategories.length > 0 ? selectedCategories.join(',') : undefined;
-
-      const data = await api.searchManufacturers(
-        cityQuery,
-        catQuery,
-        undefined,
-        6,
-        mustHaveGallery,
-        mustHaveAvatar
-      );
+      const data = await api.searchManufacturers(buildQuery(0));
       setManufacturers(data.items);
-      setNextCursor(data.nextCursor || null);
-      setHasMore(data.nextCursor !== null);
+      setPage(0);
+      setHasMore(data.hasMore);
     } catch (err: unknown) {
       setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
     } finally {
       setLoading(false);
     }
-  }, [selectedCities, selectedCategories, mustHaveGallery, mustHaveAvatar]);
+  }, [buildQuery]);
 
   const loadMore = useCallback(async () => {
-    if (!nextCursor || loading) return;
+    if (!hasMore || loading) return;
     try {
       setLoading(true);
-      const cityQuery = selectedCities.length > 0 ? selectedCities.join(',') : undefined;
-      const catQuery = selectedCategories.length > 0 ? selectedCategories.join(',') : undefined;
-
-      const data = await api.searchManufacturers(
-        cityQuery,
-        catQuery,
-        nextCursor,
-        6,
-        mustHaveGallery,
-        mustHaveAvatar
-      );
+      const nextPage = page + 1;
+      const data = await api.searchManufacturers(buildQuery(nextPage));
       setManufacturers(prev => [...prev, ...data.items]);
-      setNextCursor(data.nextCursor || null);
-      setHasMore(data.nextCursor !== null);
+      setPage(nextPage);
+      setHasMore(data.hasMore);
     } catch (err: unknown) {
       showToast(extractErrorMessage(err) || 'Daha fazla üretici yüklenemedi.');
     } finally {
       setLoading(false);
     }
-  }, [nextCursor, loading, showToast, selectedCities, selectedCategories, mustHaveGallery, mustHaveAvatar]);
+  }, [hasMore, loading, page, buildQuery, showToast]);
 
   // Initial fetch
   useEffect(() => {
@@ -142,6 +145,8 @@ export default function useSearchMfr() {
     setSelectedCategories([]);
     setMustHaveGallery(false);
     setMustHaveAvatar(false);
+    setSearchName('');
+    setSortOption('completeness');
   }, []);
 
   // Filtered list (delegated fully to server side pagination)
@@ -200,6 +205,10 @@ export default function useSearchMfr() {
     setMustHaveGallery,
     mustHaveAvatar,
     setMustHaveAvatar,
+    searchName,
+    setSearchName,
+    sortOption,
+    setSortOption,
     availableCities: PRODUCTION_CITIES,
     filteredAndSortedManufacturers,
     connections,

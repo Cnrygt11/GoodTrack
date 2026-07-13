@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { api, UserProfile } from '../services/apiClient';
-import { compressImage } from '../utils/imageHelper';
+import { compressImage, makeThumbnail } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function useProfile() {
@@ -19,6 +19,7 @@ export default function useProfile() {
 
   // Profile Edit States
   const [profilePicture, setProfilePicture] = useState('');
+  const [profileThumbnail, setProfileThumbnail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -50,6 +51,7 @@ export default function useProfile() {
   useEffect(() => {
     if (profile) {
       setProfilePicture(profile.profilePicture || '');
+      setProfileThumbnail(profile.profileThumbnail || '');
       setFirstName(profile.firstName || '');
       setLastName(profile.lastName || '');
       setEmail(profile.email || '');
@@ -71,8 +73,9 @@ export default function useProfile() {
     if (!file) return;
 
     try {
-      const compressed = await compressImage(file);
+      const [compressed, thumbnail] = await Promise.all([compressImage(file), makeThumbnail(file)]);
       setProfilePicture(compressed);
+      setProfileThumbnail(thumbnail);
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     }
@@ -80,6 +83,7 @@ export default function useProfile() {
 
   const handleRemoveProfilePicture = useCallback(() => {
     setProfilePicture('');
+    setProfileThumbnail('');
   }, []);
 
   // Product Presentation Images Upload Handlers
@@ -166,6 +170,7 @@ export default function useProfile() {
         email,
         phoneNumber,
         profilePicture,
+        profileThumbnail,
         ...(profile?.role === 'mfr' && {
           address,
           city,
@@ -190,6 +195,7 @@ export default function useProfile() {
     email,
     phoneNumber,
     profilePicture,
+    profileThumbnail,
     address,
     city,
     bio,

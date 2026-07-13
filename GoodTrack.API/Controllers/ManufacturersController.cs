@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Security.Claims;
 using System.Threading;
@@ -74,9 +75,11 @@ public class ManufacturersController : BaseApiController
     public async Task<IActionResult> Search(
         [FromQuery] string? city,
         [FromQuery] string? keyword,
+        [FromQuery] string? name,
+        [FromQuery] string? sort,
         [FromQuery] bool mustHaveGallery,
         [FromQuery] bool mustHaveAvatar,
-        [FromQuery] string? cursor,
+        [FromQuery] int page = 0,
         [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
@@ -94,7 +97,8 @@ public class ManufacturersController : BaseApiController
         }
 
         limit = Math.Clamp(limit, 1, 50);
-        var results = await _profileService.SearchManufacturersAsync(city, keyword, cursor, limit, mustHaveGallery, mustHaveAvatar);
+        if (page < 0) page = 0;
+        var results = await _profileService.SearchManufacturersAsync(city, keyword, name, sort, page, limit, mustHaveGallery, mustHaveAvatar);
 
         // Apply enterprise obfuscation if user is on Free plan
         if (isFreePlan && results.Items != null)
@@ -111,6 +115,31 @@ public class ManufacturersController : BaseApiController
         }
 
         return Ok(new ApiResponse<PagedResultDto<UserProfileDto>>(results));
+    }
+
+    /// <summary>
+    /// Bir üreticinin ürün galerisini talep üzerine döner (dizinde galeri artık liste yanıtında
+    /// taşınmıyor; kart açılınca buradan çekilir). Yalnız görünür/aktif üreticiler için çalışır.
+    /// </summary>
+    [HttpGet("{id}/gallery")]
+    [ProducesResponseType(typeof(ApiResponse<List<string>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetGallery(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(ApiResponse.Fail("Geçersiz üretici kimliği."));
+        }
+
+        try
+        {
+            var gallery = await _profileService.GetManufacturerGalleryAsync(id);
+            return Ok(new ApiResponse<List<string>>(gallery));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse.Fail(ex.Message));
+        }
     }
 
     private static string MaskFirstName(string? firstName)

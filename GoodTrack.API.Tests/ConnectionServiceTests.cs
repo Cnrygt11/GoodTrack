@@ -94,7 +94,7 @@ public class ConnectionServiceTests
 
         // Assert
         _userConnectionRepositoryMock.Verify(r => r.DeleteAsync(userId, targetId, It.IsAny<CancellationToken>()), Times.Once);
-        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.Is<IReadOnlyList<string>>(ids => ids.Contains(userId) && ids.Contains(targetId)), "ReceiveConnectionUpdate", It.IsAny<CancellationToken>()), Times.Once);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.Is<IReadOnlyList<string>>(ids => ids.Contains(userId) && ids.Contains(targetId)), "ReceiveConnectionUpdate", It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -133,7 +133,7 @@ public class ConnectionServiceTests
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(It.Is<ConnectionRequest>(
             req => req.SenderId == senderId && req.ReceiverId == receiverUser.Id && req.Status == "pending")), Times.Once);
 
-        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionRequest" || m == "ReceiveConnectionUpdate"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionRequest" || m == "ReceiveConnectionUpdate"), It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -210,27 +210,30 @@ public class ConnectionServiceTests
         request.Status.Should().Be("accepted");
         _connectionRequestRepositoryMock.Verify(r => r.SaveAsync(request), Times.Once);
 
-        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionUpdate" || m == "ReceiveConnectionRequest"), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        _notificationServiceMock.Verify(n => n.NotifyUsersAsync(It.IsAny<IReadOnlyList<string>>(), It.Is<string>(m => m == "ReceiveConnectionUpdate" || m == "ReceiveConnectionRequest"), It.IsAny<object>(), It.IsAny<CancellationToken>()), Times.AtLeastOnce);
     }
 
     [Fact]
     public async Task GetAvailableManufacturersAsync_ShouldOnlyReturnVisibleManufacturers()
     {
         // Arrange
-        var visibleMfr = new User { Id = "mfr-1", Username = "visible_mfr", Role = Roles.Mfr, IsVisibleToSellers = true };
-        var hiddenMfr = new User { Id = "mfr-2", Username = "hidden_mfr", Role = Roles.Mfr, IsVisibleToSellers = false };
-        var seller = new User { Id = "seller-1", Username = "seller", Role = Roles.Seller };
+        // Repository görünürlük filtresini + projeksiyonu kendisi uygular; servis yalnız sonucu geçirir.
+        var summaries = new List<GoodTrack.API.DTOs.Auth.UserDto>
+        {
+            new() { Id = "mfr-1", Username = "visible_mfr", Role = Roles.Mfr },
+            new() { Id = "mfr-2", Username = "visible_mfr_2", Role = Roles.Mfr },
+        };
 
         _userRepositoryMock
-            .Setup(r => r.GetManufacturersAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<User> { visibleMfr, hiddenMfr });
+            .Setup(r => r.GetManufacturerSummariesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(summaries);
 
         // Act
         var result = await _connectionService.GetAvailableManufacturersAsync();
 
         // Assert
-        result.Should().HaveCount(2); // Mock döndürüyor, repository filtrelemesi yok bu test'te
-        _userRepositoryMock.Verify(r => r.GetManufacturersAsync(It.IsAny<CancellationToken>()), Times.Once);
+        result.Should().HaveCount(2);
+        _userRepositoryMock.Verify(r => r.GetManufacturerSummariesAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
