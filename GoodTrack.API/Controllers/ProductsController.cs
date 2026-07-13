@@ -63,6 +63,27 @@ public class ProductsController : BaseApiController
         return Ok(new ApiResponse<List<ProductResponseDto>>(products));
     }
 
+    /// <summary>
+    /// Arşivlenmiş (kargolandı/iptal) siparişlerin sayfalı listesi. Ana liste (GET /) yalnız
+    /// aktif akışı döndürür; arşiv süresiz saklanır ve 30 gün sonra küçültülmüş (fotoğrafsız,
+    /// müşteri bilgisi temizlenmiş) halde döner.
+    /// </summary>
+    [HttpGet("archived")]
+    public async Task<IActionResult> GetArchived(
+        [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+        if (userId is null || string.IsNullOrEmpty(role))
+        {
+            return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
+        }
+
+        var result = await _productService.GetArchivedProductsAsync(userId, role, page, pageSize, cancellationToken);
+        return Ok(new ApiResponse<DTOs.Auth.PagedResultDto<ProductResponseDto>>(result));
+    }
+
     [HttpPost]
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Create([FromBody] CreateProductDto dto)

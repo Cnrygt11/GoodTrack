@@ -7,23 +7,29 @@ import { api, Product } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { ORDER_STATUS } from '../utils/constants';
 
-export type MfrTab = 'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective' | 'shipped';
+export type MfrTab =
+  'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective';
 
 export default function useMfrOrders() {
   const { products } = useProductsQuery();
-  const { loadProducts, optimisticUpdateProduct, rollbackProducts, markStatusAsReadLocally } = useProductActions();
+  const { loadProducts, optimisticUpdateProduct, rollbackProducts, markStatusAsReadLocally } =
+    useProductActions();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = (searchParams.get('tab') as MfrTab) || ORDER_STATUS.AWAITING;
-  const setActiveTab = useCallback((tab: MfrTab) => {
-    setSearchParams(prev => {
-      prev.set('tab', tab);
-      return prev;
-    });
-  }, [setSearchParams]);
+  const setActiveTab = useCallback(
+    (tab: MfrTab) => {
+      setSearchParams((prev) => {
+        prev.set('tab', tab);
+        return prev;
+      });
+    },
+    [setSearchParams],
+  );
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [orderSearch, setOrderSearch] = useState('');
   const [selectedDefectProduct, setSelectedDefectProduct] = useState<Product | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -40,9 +46,12 @@ export default function useMfrOrders() {
   // Timeline modal state
   const navigate = useNavigate();
 
-  const openTimeline = useCallback((p: Product) => {
-    navigate(`/mfr/orders/${p.id}`);
-  }, [navigate]);
+  const openTimeline = useCallback(
+    (p: Product) => {
+      navigate(`/mfr/orders/${p.id}`);
+    },
+    [navigate],
+  );
 
   // Unseen orders notification states for each list filter tab
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>({
@@ -52,7 +61,6 @@ export default function useMfrOrders() {
     completed: [],
     delivered: [],
     defective: [],
-    shipped: []
   });
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({
     awaiting: 0,
@@ -61,15 +69,24 @@ export default function useMfrOrders() {
     completed: 0,
     delivered: 0,
     defective: 0,
-    shipped: 0
   });
 
   useEffect(() => {
     const nextUnseen: Record<string, string[]> = {
-      awaiting: [], corrected: [], production: [], completed: [], delivered: [], defective: [], shipped: []
+      awaiting: [],
+      corrected: [],
+      production: [],
+      completed: [],
+      delivered: [],
+      defective: [],
     };
     const nextBadgeCounts: Record<string, number> = {
-      awaiting: 0, corrected: 0, production: 0, completed: 0, delivered: 0, defective: 0, shipped: 0
+      awaiting: 0,
+      corrected: 0,
+      production: 0,
+      completed: 0,
+      delivered: 0,
+      defective: 0,
     };
 
     products.forEach((p) => {
@@ -79,8 +96,8 @@ export default function useMfrOrders() {
       else if (p.status === ORDER_STATUS.PRODUCTION) tab = 'production';
       else if (p.status === ORDER_STATUS.COMPLETED) tab = 'completed';
       else if (p.status === ORDER_STATUS.DELIVERED) tab = 'delivered';
-      else if (p.status === ORDER_STATUS.DEFECTIVE || p.status === ORDER_STATUS.MISSING) tab = 'defective';
-      else if (p.status === ORDER_STATUS.SHIPPED || p.status === ORDER_STATUS.CANCELLED || p.status === ORDER_STATUS.TO_SHIP) tab = 'shipped';
+      else if (p.status === ORDER_STATUS.DEFECTIVE || p.status === ORDER_STATUS.MISSING)
+        tab = 'defective';
 
       if (tab && p.isReadByMfr === false) {
         nextUnseen[tab].push(p.id);
@@ -102,99 +119,116 @@ export default function useMfrOrders() {
   }, [products, activeTab, markStatusAsReadLocally]);
 
   const handleMarkSingleAsSeen = useCallback((productId: string, tab: MfrTab) => {
-    setUnseenIds(prev => ({
+    setUnseenIds((prev) => ({
       ...prev,
-      [tab]: prev[tab].filter(id => id !== productId)
+      [tab]: prev[tab].filter((id) => id !== productId),
     }));
-    setBadgeCounts(prev => ({
+    setBadgeCounts((prev) => ({
       ...prev,
-      [tab]: Math.max(0, prev[tab] - 1)
+      [tab]: Math.max(0, prev[tab] - 1),
     }));
   }, []);
 
-  const handleUpdateStatus = useCallback(async (productId: string, status: string, defectNote?: string) => {
-    if (status === 'broken' && !defectNote) {
-      setBrokenProductId(productId);
-      setIsBrokenModalOpen(true);
-      return;
-    }
+  const handleUpdateStatus = useCallback(
+    async (productId: string, status: string, defectNote?: string) => {
+      if (status === 'broken' && !defectNote) {
+        setBrokenProductId(productId);
+        setIsBrokenModalOpen(true);
+        return;
+      }
 
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === productId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: status,
-        defectNote: defectNote || target.defectNote
-      });
-    }
+      const prevProducts = [...products];
+      const target = products.find((p) => p.id === productId);
+      if (target) {
+        optimisticUpdateProduct({
+          ...target,
+          status: status,
+          defectNote: defectNote || target.defectNote,
+        });
+      }
 
-    try {
-      setActionLoading(true);
-      const data = await api.updateOrderStatus(productId, status, defectNote);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-    } finally {
-      setActionLoading(false);
-    }
-  }, [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+      try {
+        setActionLoading(true);
+        const data = await api.updateOrderStatus(productId, status, defectNote);
+        showToast(data.message || t('statusUpdatedSuccess'));
+        await loadProducts();
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        showToast(extractErrorMessage(err));
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t],
+  );
 
-  const handleBrokenSubmit = useCallback(async (note: string) => {
-    if (!brokenProductId) return;
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === brokenProductId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: 'broken',
-        defectNote: note
-      });
-    }
-    setIsBrokenModalOpen(false);
-    const savedProductId = brokenProductId;
-    setBrokenProductId(null);
+  const handleBrokenSubmit = useCallback(
+    async (note: string) => {
+      if (!brokenProductId) return;
+      const prevProducts = [...products];
+      const target = products.find((p) => p.id === brokenProductId);
+      if (target) {
+        optimisticUpdateProduct({
+          ...target,
+          status: 'broken',
+          defectNote: note,
+        });
+      }
+      setIsBrokenModalOpen(false);
+      const savedProductId = brokenProductId;
+      setBrokenProductId(null);
 
-    try {
-      setActionLoading(true);
-      const data = await api.updateOrderStatus(savedProductId, 'broken', note);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-      setIsBrokenModalOpen(true);
-      setBrokenProductId(savedProductId);
-    } finally {
-      setActionLoading(false);
-    }
-  }, [brokenProductId, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+      try {
+        setActionLoading(true);
+        const data = await api.updateOrderStatus(savedProductId, 'broken', note);
+        showToast(data.message || t('statusUpdatedSuccess'));
+        await loadProducts();
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        showToast(extractErrorMessage(err));
+        setIsBrokenModalOpen(true);
+        setBrokenProductId(savedProductId);
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [
+      brokenProductId,
+      products,
+      optimisticUpdateProduct,
+      rollbackProducts,
+      loadProducts,
+      showToast,
+      t,
+    ],
+  );
 
-  const handleRespondCancel = useCallback(async (productId: string, approve: boolean) => {
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === productId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: approve ? 'cancelled' : target.status,
-        cancelRequested: false
-      });
-    }
+  const handleRespondCancel = useCallback(
+    async (productId: string, approve: boolean) => {
+      const prevProducts = [...products];
+      const target = products.find((p) => p.id === productId);
+      if (target) {
+        optimisticUpdateProduct({
+          ...target,
+          status: approve ? 'cancelled' : target.status,
+          cancelRequested: false,
+        });
+      }
 
-    try {
-      setActionLoading(true);
-      const data = await api.respondToOrderCancellation(productId, approve);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-    } finally {
-      setActionLoading(false);
-    }
-  }, [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+      try {
+        setActionLoading(true);
+        const data = await api.respondToOrderCancellation(productId, approve);
+        showToast(data.message || t('statusUpdatedSuccess'));
+        await loadProducts();
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        showToast(extractErrorMessage(err));
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t],
+  );
 
   const openDefectDetails = useCallback((product: Product) => {
     setSelectedDefectProduct(product);
@@ -214,20 +248,40 @@ export default function useMfrOrders() {
     });
   }, [products, sortOrder]);
 
-  // Computed: filtered products based on active tab
+  // Computed: filtered products based on active tab (+ client-side arama)
   const filteredProducts = useMemo(() => {
-    return sortedProducts.filter(p => {
-      const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : (p.completed ? ORDER_STATUS.COMPLETED : (p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
-      if (activeTab === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING;
-      if (activeTab === ORDER_STATUS.CORRECTED) return status === ORDER_STATUS.CORRECTED;
-      if (activeTab === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
-      if (activeTab === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
-      if (activeTab === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
-      if (activeTab === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
-      if (activeTab === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED || status === ORDER_STATUS.TO_SHIP;
-      return true;
+    const q = orderSearch.trim().toLowerCase();
+    const matchesSearch = (p: Product) =>
+      !q ||
+      [p.code, p.text, p.mfrName, p.sellerName].some((f) => (f || '').toLowerCase().includes(q));
+
+    return sortedProducts.filter((p) => {
+      const status =
+        p.status ||
+        (p.isDefective
+          ? ORDER_STATUS.DEFECTIVE
+          : p.completed
+            ? ORDER_STATUS.COMPLETED
+            : p.isPendingApproval
+              ? ORDER_STATUS.AWAITING
+              : ORDER_STATUS.PRODUCTION);
+      let statusMatch: boolean;
+      if (activeTab === ORDER_STATUS.AWAITING) statusMatch = status === ORDER_STATUS.AWAITING;
+      else if (activeTab === ORDER_STATUS.CORRECTED)
+        statusMatch = status === ORDER_STATUS.CORRECTED;
+      else if (activeTab === ORDER_STATUS.PRODUCTION)
+        statusMatch = status === ORDER_STATUS.PRODUCTION;
+      else if (activeTab === ORDER_STATUS.COMPLETED)
+        statusMatch = status === ORDER_STATUS.COMPLETED;
+      else if (activeTab === ORDER_STATUS.DELIVERED)
+        statusMatch = status === ORDER_STATUS.DELIVERED;
+      else if (activeTab === ORDER_STATUS.DEFECTIVE)
+        statusMatch = status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+      else statusMatch = true;
+
+      return statusMatch && matchesSearch(p);
     });
-  }, [sortedProducts, activeTab]);
+  }, [sortedProducts, activeTab, orderSearch]);
 
   return {
     language,
@@ -236,6 +290,8 @@ export default function useMfrOrders() {
     setActiveTab,
     sortOrder,
     setSortOrder,
+    orderSearch,
+    setOrderSearch,
     selectedDefectProduct,
     isDetailsModalOpen,
     actionLoading,
@@ -250,7 +306,6 @@ export default function useMfrOrders() {
     closeBrokenModal,
     handleBrokenSubmit,
     handleRespondCancel,
-    filteredProducts
+    filteredProducts,
   };
 }
-

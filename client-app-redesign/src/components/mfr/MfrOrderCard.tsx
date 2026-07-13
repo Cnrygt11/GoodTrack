@@ -11,7 +11,7 @@ import {
   Layers,
   ShoppingBag,
 } from 'lucide-react';
-import { Product } from '../../services/apiClient';
+import { api, Product } from '../../services/apiClient';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
 import Lightbox from '../ui/Lightbox';
@@ -53,6 +53,22 @@ export default function MfrOrderCard({
 }: MfrOrderCardProps) {
   const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
+  const [fullImage, setFullImage] = React.useState<string | null>(p.image);
+
+  // Liste yanıtı yalnız thumbnail taşır; kart onu gösterir, "büyüt"te tam görsel talep üzerine çekilir.
+  const thumb = p.thumbnailImage ?? p.image;
+
+  const openLightbox = () => {
+    setIsLightboxOpen(true);
+    if (!fullImage && p.id) {
+      api
+        .getProductById(p.id)
+        .then((f) => setFullImage(f.image))
+        .catch(() => {
+          /* thumbnail yeterli */
+        });
+    }
+  };
 
   const dateStr = useMemo(() => {
     if (!p.createdAt) return '—';
@@ -111,12 +127,12 @@ export default function MfrOrderCard({
       <div className="moc-body">
         {/* Thumbnail */}
         <div
-          className={`moc-thumb${p.image ? ' moc-thumb--clickable' : ''}`}
-          onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
-          title={p.image ? t('clickToInspectDetails') : undefined}
+          className={`moc-thumb${thumb ? ' moc-thumb--clickable' : ''}`}
+          onClick={thumb ? openLightbox : undefined}
+          title={thumb ? t('clickToInspectDetails') : undefined}
         >
-          {p.image ? (
-            <img src={p.image} alt="ürün" />
+          {thumb ? (
+            <img src={thumb} alt="ürün" />
           ) : (
             <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
           )}
@@ -329,10 +345,10 @@ export default function MfrOrderCard({
         </div>
       )}
 
-      {p.image && (
+      {thumb && (
         <Lightbox
           isOpen={isLightboxOpen}
-          src={p.image}
+          src={fullImage ?? thumb}
           onClose={() => setIsLightboxOpen(false)}
           altText={p.code}
         />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Product } from '../../services/apiClient';
+import { api, Product } from '../../services/apiClient';
 import { ListFilter } from '../../types/orders';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
@@ -28,30 +28,78 @@ interface SellerOrderCardProps {
 }
 
 export default function SellerOrderCard({
-  product: p, listFilter,
-  isUnseen, isDropdownOpen,
-  onDropdownToggle, onEdit, onDelete, onCancel, onVerify, onShip, onViewTimeline, onMarkSeen,
+  product: p,
+  listFilter,
+  isUnseen,
+  isDropdownOpen,
+  onDropdownToggle,
+  onEdit,
+  onDelete,
+  onCancel,
+  onVerify,
+  onShip,
+  onViewTimeline,
+  onMarkSeen,
   onViewBrokenNote,
   onRequestCancel,
 }: SellerOrderCardProps) {
   const { t } = useSettings();
   const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
+  const [fullImage, setFullImage] = React.useState<string | null>(p.image);
+
+  // Liste yanıtı yalnız thumbnail taşır; kart onu gösterir, "büyüt"te tam görsel talep üzerine çekilir.
+  const thumb = p.thumbnailImage ?? p.image;
+
+  const openLightbox = () => {
+    setIsLightboxOpen(true);
+    if (!fullImage && p.id) {
+      api
+        .getProductById(p.id)
+        .then((f) => setFullImage(f.image))
+        .catch(() => {
+          /* thumbnail yeterli */
+        });
+    }
+  };
 
   const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' })
+    ? new Date(p.createdAt).toLocaleDateString(t('dateLocale'), {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
     : '—';
   const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' })
+    ? new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
     : '';
 
   const status =
     p.status ||
-    (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
-  const isEditable = status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED || status === ORDER_STATUS.BROKEN;
-  const sc = getStatusConfig(status, t, { iconSize: 11, role: 'seller', isReproduction: p.isReproduction });
+    (p.isDefective
+      ? ORDER_STATUS.DEFECTIVE
+      : p.completed
+        ? ORDER_STATUS.COMPLETED
+        : p.isPendingApproval
+          ? ORDER_STATUS.AWAITING
+          : ORDER_STATUS.PRODUCTION);
+  const isEditable =
+    status === ORDER_STATUS.AWAITING ||
+    status === ORDER_STATUS.CORRECTED ||
+    status === ORDER_STATUS.BROKEN;
+  const sc = getStatusConfig(status, t, {
+    iconSize: 11,
+    role: 'seller',
+    isReproduction: p.isReproduction,
+  });
 
   const hasActionBar =
-    status === ORDER_STATUS.DELIVERED || status === ORDER_STATUS.TO_SHIP || status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
+    status === ORDER_STATUS.DELIVERED ||
+    status === ORDER_STATUS.TO_SHIP ||
+    status === ORDER_STATUS.SHIPPED ||
+    status === ORDER_STATUS.CANCELLED;
 
   return (
     <div className={`seller-order-card status-${status} ${isDropdownOpen ? 'dropdown-open' : ''}`}>
@@ -63,23 +111,22 @@ export default function SellerOrderCard({
         <div
           className="seller-order-card-unseen-dot"
           title={t('unseenDotTitle')}
-          onClick={(e) => { e.stopPropagation(); onMarkSeen(p.id, listFilter); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onMarkSeen(p.id, listFilter);
+          }}
         />
       )}
 
       {/* Main content */}
       <div className="seller-order-card-content">
-
         {/* Thumbnail */}
         <div
-          onClick={p.image ? () => setIsLightboxOpen(true) : undefined}
-          className={`seller-order-card-thumb ${p.image ? 'clickable' : ''}`}
-          title={p.image ? t('clickToInspectDetails') : undefined}
+          onClick={thumb ? openLightbox : undefined}
+          className={`seller-order-card-thumb ${thumb ? 'clickable' : ''}`}
+          title={thumb ? t('clickToInspectDetails') : undefined}
         >
-          {p.image
-            ? <img src={p.image} alt="ürün" />
-            : <Package size={28} />
-          }
+          {thumb ? <img src={thumb} alt="ürün" /> : <Package size={28} />}
         </div>
 
         {/* Info block */}
@@ -97,7 +144,10 @@ export default function SellerOrderCard({
         <div className="seller-order-card-dropdown-wrapper" onClick={(e) => e.stopPropagation()}>
           <button
             type="button"
-            onClick={(e) => { e.stopPropagation(); onDropdownToggle(isDropdownOpen ? null : p.id); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDropdownToggle(isDropdownOpen ? null : p.id);
+            }}
             className="icon-btn"
           >
             <MoreVertical size={16} />
@@ -130,10 +180,10 @@ export default function SellerOrderCard({
         />
       )}
 
-      {p.image && (
+      {thumb && (
         <Lightbox
           isOpen={isLightboxOpen}
-          src={p.image}
+          src={fullImage ?? thumb}
           onClose={() => setIsLightboxOpen(false)}
           altText={p.code}
         />
@@ -141,4 +191,3 @@ export default function SellerOrderCard({
     </div>
   );
 }
-

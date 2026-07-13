@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Models;
+using GoodTrack.API.Constants;
 using GoodTrack.API.Infrastructure.Configurations;
 
 using Microsoft.AspNetCore.DataProtection;
@@ -107,6 +108,7 @@ public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public override int SaveChanges()
     {
+        StampArchivedAt();
         var auditEntries = OnBeforeSaveChanges();
         var result = base.SaveChanges();
         OnAfterSaveChanges(auditEntries);
@@ -115,10 +117,66 @@ public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        StampArchivedAt();
         var auditEntries = OnBeforeSaveChanges();
         var result = await base.SaveChangesAsync(cancellationToken);
         await OnAfterSaveChangesAsync(auditEntries);
         return result;
+    }
+
+    /// <summary>
+    /// Sipariş terminal ("arşiv") duruma (kargolandı/iptal) geçtiğinde <see cref="Product.ArchivedAt"/>
+    /// damgasını bir kez set eder. Merkezî yapılır ki tüm terminal geçiş yolları (workflow, iptal,
+    /// harici webhook iptali) tek noktadan kapsansın. Damga, ChangeTracker'daki değişiklik audit'e de
+    /// yansısın diye OnBeforeSaveChanges'ten önce uygulanır.
+    /// </summary>
+    private void StampArchivedAt()
+    {
+        foreach (var entry in ChangeTracker.Entries<Product>())
+        {
+            if (entry.State != EntityState.Added && entry.State != EntityState.Modified)
+                continue;
+
+            var product = entry.Entity;
+            if (product.ArchivedAt != null)
+                continue;
+
+            bool isTerminal =
+                string.Equals(product.Status, OrderStatus.Shipped, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(product.Status, OrderStatus.Cancelled, StringComparison.OrdinalIgnoreCase);
+
+            if (isTerminal)
+                product.ArchivedAt = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// Audit'e tam değeri yazılmayacak ağır (base64 görsel) alanlar. İçerik yerine "[omitted]" işaretçisi
+    /// yazılır: "alan değişti" bilgisi korunur ama MB'lık base64, audit_logs'a kopyalanmaz.
+    /// </summary>
+    private static readonly HashSet<string> HeavyAuditColumns = new()
+    {
+        nameof(Product.Image),
+        nameof(Product.DefectImage),
+        nameof(User.ProfilePicture),
+        nameof(User.ProductImages),
+    };
+
+    /// <summary>Ağır alan listesinde olmayan ama yine de büyük olan değerler için güvenlik eşiği.</summary>
+    private const int MaxAuditValueLength = 2048;
+
+    private const string OmittedAuditValue = "[omitted]";
+
+    /// <summary>
+    /// Audit'e yazılacak değeri sanitize eder: ağır sütunlar ve eşiği aşan uzun string'ler için
+    /// gerçek içerik yerine <see cref="OmittedAuditValue"/> döner.
+    /// </summary>
+    private static object SanitizeAuditValue(string propertyName, object? value)
+    {
+        if (value is null) return "NULL";
+        if (HeavyAuditColumns.Contains(propertyName)) return OmittedAuditValue;
+        if (value is string s && s.Length > MaxAuditValueLength) return OmittedAuditValue;
+        return value;
     }
 
     private List<AuditEntry> OnBeforeSaveChanges()
@@ -151,18 +209,18 @@ public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
                 switch (entry.State)
                 {
                     case EntityState.Added:
-                        auditEntry.NewValues[propertyName] = property.CurrentValue ?? "NULL";
+                        auditEntry.NewValues[propertyName] = SanitizeAuditValue(propertyName, property.CurrentValue);
                         break;
 
                     case EntityState.Deleted:
-                        auditEntry.OldValues[propertyName] = property.OriginalValue ?? "NULL";
+                        auditEntry.OldValues[propertyName] = SanitizeAuditValue(propertyName, property.OriginalValue);
                         break;
 
                     case EntityState.Modified:
                         if (property.IsModified)
                         {
-                            auditEntry.OldValues[propertyName] = property.OriginalValue ?? "NULL";
-                            auditEntry.NewValues[propertyName] = property.CurrentValue ?? "NULL";
+                            auditEntry.OldValues[propertyName] = SanitizeAuditValue(propertyName, property.OriginalValue);
+                            auditEntry.NewValues[propertyName] = SanitizeAuditValue(propertyName, property.CurrentValue);
                         }
                         break;
                 }

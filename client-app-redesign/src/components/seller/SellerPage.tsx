@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   XCircle,
   Send,
-  Archive,
 } from 'lucide-react';
 import useSellerOrders from '../../hooks/useSellerOrders';
 import usePagination from '../../hooks/usePagination';
@@ -42,8 +41,6 @@ function getTabIcon(tab: ListFilter) {
       return <XCircle size={size} />;
     case ORDER_STATUS.TO_SHIP:
       return <Send size={size} />;
-    case ORDER_STATUS.SHIPPED:
-      return <Archive size={size} />;
     default:
       return <Package size={size} />;
   }
@@ -60,6 +57,8 @@ export default function SellerPage() {
     setListFilter,
     sortOrder,
     setSortOrder,
+    orderSearch,
+    setOrderSearch,
     productCode,
     setProductCode,
     orderText,
@@ -118,7 +117,7 @@ export default function SellerPage() {
   const { pageItems, currentPage, totalPages, setCurrentPage } = usePagination(
     filteredProducts,
     PAGE_SIZE,
-    `${listFilter}|${sortOrder}`,
+    `${listFilter}|${sortOrder}|${orderSearch}`,
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -180,7 +179,7 @@ export default function SellerPage() {
     { key: ORDER_STATUS.DELIVERED, label: t('tabDeliveredSeller') },
     { key: ORDER_STATUS.DEFECTIVE, label: t('tabReportedIssues') },
     { key: ORDER_STATUS.TO_SHIP, label: t('tabToShip') },
-    { key: ORDER_STATUS.SHIPPED, label: t('tabShipped') },
+    // Arşiv (kargolandı/iptal) ana akıştan çıkarıldı: Hesabım menüsündeki Arşiv sayfasında.
   ];
 
   return (
@@ -289,6 +288,13 @@ export default function SellerPage() {
               </span>
             </h3>
             <div className={styles['seller-sort-row']}>
+              <input
+                type="text"
+                className="order-search-input"
+                value={orderSearch}
+                onChange={(e) => setOrderSearch(e.target.value)}
+                placeholder={t('orderSearchPlaceholder')}
+              />
               <span className={styles['seller-sort-label']}>{t('sortByDate')}:</span>
               <select
                 className={styles['seller-sort-select']}

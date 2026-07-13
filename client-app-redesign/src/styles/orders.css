@@ -5,6 +5,22 @@
   margin-bottom: 30px;
 }
 
+/* Sipariş listesi arama kutusu (satıcı + üretici ekranları) */
+.order-search-input {
+  height: 34px;
+  min-width: 180px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface2, rgba(255, 255, 255, 0.04));
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+}
+.order-search-input:focus {
+  border-color: var(--accent-seller);
+}
+
 .product-card {
   position: relative;
   animation: slideUp 0.3s ease-out;

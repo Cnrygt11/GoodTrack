@@ -10,6 +10,11 @@ public class ProductResponseDto
     public string Id { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string? Image { get; set; }
+    /// <summary>Küçük thumbnail; listelerde bunu taşır, tam <see cref="Image"/> yalnız detayda döner.</summary>
+    public string? ThumbnailImage { get; set; }
+
+    /// <summary>Görsel katalog referansıysa katalog ürününün id'si; siparişe özel görselde null.</summary>
+    public string? CatalogProductId { get; set; }
     public string? Text { get; set; }
     public string? Length { get; set; }
     public Dictionary<string, ExtraValue>? Extras { get; set; }
@@ -24,6 +29,12 @@ public class ProductResponseDto
     public List<OrderLog> Logs { get; set; } = new();
     public DateTime CreatedAt { get; set; }
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>Siparişin arşive (kargolandı/iptal) düştüğü an; aktif siparişte null.</summary>
+    public DateTime? ArchivedAt { get; set; }
+
+    /// <summary>Doluysa sipariş küçültülmüş: görseller ve müşteri bilgisi kalıcı temizlenmiş demektir.</summary>
+    public DateTime? SlimmedAt { get; set; }
     public string SellerId { get; set; } = string.Empty;
 
     [JsonPropertyName("mfrId")]

@@ -37,6 +37,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.DefectNote).HasMaxLength(1000);
         builder.Property(p => p.CustomerName).HasMaxLength(200);
         builder.Property(p => p.ShippingAddress).HasMaxLength(500);
+        builder.Property(p => p.CatalogProductId).HasMaxLength(50);
 
         if (!_isSqlite)
         {
@@ -58,6 +59,18 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(p => p.SellerId);
         builder.HasIndex(p => p.ManufacturerId);
+
+        // Retention (slim) job'ı arşivlenme zamanına göre tarama yapar.
+        builder.HasIndex(p => p.ArchivedAt);
+
+        // Arşiv sayfası: kullanıcı bazlı, ArchivedAt'e göre sıralı sayfalama.
+        builder.HasIndex(p => new { p.SellerId, p.ArchivedAt });
+        builder.HasIndex(p => new { p.ManufacturerId, p.ArchivedAt });
+
+        // İleriye dönük hazırlık: durum sekmesi + tarih sıralaması ile keyset sayfalama için bileşik
+        // indeksler (bugünkü tam-liste sorgusunu etkilemez; gelecekteki server-pagination'ı hızlandırır).
+        builder.HasIndex(p => new { p.SellerId, p.Status, p.CreatedAt });
+        builder.HasIndex(p => new { p.ManufacturerId, p.Status, p.CreatedAt });
 
         // Etsy senkronizasyonu: duplicate kontrolü (transaction) ve iptal eşleştirmesi (receipt).
         builder.HasIndex(p => new { p.SellerId, p.EtsyTransactionId });

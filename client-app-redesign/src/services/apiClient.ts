@@ -33,6 +33,8 @@ export interface User {
 }
 
 export interface UserProfile {
+  /** Kullanıcı kimliği. Dizin sonuçlarında galeriyi talep üzerine çekmek için kullanılır. */
+  id?: string;
   username: string;
   email: string;
   phoneNumber: string;
@@ -40,12 +42,17 @@ export interface UserProfile {
   lastName: string;
   role: string;
   profilePicture: string;
+  /** Dizin/listelerde gösterilen küçük avatar thumbnail'i; tam avatar profil detayında. */
+  profileThumbnail?: string;
   address: string;
   city: string;
   bio: string;
+  /** Dizin/arama sonuçlarında boş döner; galeri talep üzerine getManufacturerGallery ile çekilir. */
   productImages: string[];
   keywords: string[];
   isVisibleToSellers: boolean;
+  /** Galerideki görsel sayısı (dizin sonuçlarında dolu; "Galeriyi gör (N)" için). */
+  galleryCount?: number;
 }
 
 export interface ConnectionUser {
@@ -68,6 +75,7 @@ export interface CatalogProduct {
   id: string;
   productCode: string;
   image: string;
+  thumbnailImage?: string | null;
   mfrId: string;
   mfrName: string;
   text?: string;
@@ -100,6 +108,10 @@ export interface Product {
   id: string;
   code: string;
   image: string | null;
+  /** Liste/kartlarda gösterilen küçük thumbnail; tam görsel yalnız detayda (getProductById) gelir. */
+  thumbnailImage?: string | null;
+  /** Görsel katalog referansıysa katalog ürününün id'si; siparişe özel görselde null. */
+  catalogProductId?: string | null;
   text: string;
   length: string;
   extras: { [fieldId: string]: ExtraFieldValue };
@@ -125,8 +137,19 @@ export interface Product {
   sellerName: string;
   createdAt?: string;
   completedAt?: string;
+  /** Siparişin arşive (kargolandı/iptal) düştüğü an; aktif siparişte yok. */
+  archivedAt?: string | null;
+  /** Doluysa kayıt küçültülmüş: görseller ve müşteri bilgisi kalıcı temizlenmiştir. */
+  slimmedAt?: string | null;
   isReadBySeller?: boolean;
   isReadByMfr?: boolean;
+}
+
+/** Sunucu tarafı sayfalı liste yanıtı (ör. arşiv). */
+export interface PagedResult<T> {
+  items: T[];
+  totalCount?: number | null;
+  hasMore: boolean;
 }
 
 export interface UserCredit {
@@ -183,6 +206,9 @@ export interface Feedback {
 export interface CreateProductPayload {
   code: string;
   image: string | null;
+  thumbnailImage?: string | null;
+  /** Görsel katalogtan geliyorsa katalog ürününün id'si; base64 kopya yerine referans gönderilir. */
+  catalogProductId?: string | null;
   text?: string;
   length?: string;
   extras?: Record<string, ExtraFieldValue>;
@@ -194,6 +220,7 @@ export interface CreateProductPayload {
 export interface CreateCatalogProductPayload {
   productCode: string;
   image: string;
+  thumbnailImage?: string | null;
   mfrId: string;
   mfrName: string;
   text?: string;
@@ -204,6 +231,7 @@ export interface CreateCatalogProductPayload {
 export interface UpdateCatalogProductPayload {
   productCode: string;
   image: string;
+  thumbnailImage?: string | null;
   mfrId: string;
   mfrName: string;
   text?: string;
@@ -384,6 +412,11 @@ export const api = {
     return apiCall<Product[]>('/products');
   },
 
+  /** Arşivlenmiş (kargolandı/iptal) siparişlerin sunucu tarafı sayfalı listesi. */
+  getArchivedProducts(page: number, pageSize: number): Promise<PagedResult<Product>> {
+    return apiCall<PagedResult<Product>>(`/products/archived?page=${page}&pageSize=${pageSize}`);
+  },
+
   getProductById(productId: string): Promise<Product> {
     return apiCall<Product>(`/products/${productId}`);
   },
@@ -531,24 +564,33 @@ export const api = {
     });
   },
 
-  searchManufacturers(
-    city?: string,
-    keyword?: string,
-    cursor?: string,
-    limit?: number,
-    mustHaveGallery?: boolean,
-    mustHaveAvatar?: boolean,
-  ): Promise<{ items: UserProfile[]; nextCursor: string | null }> {
+  searchManufacturers(opts: {
+    city?: string;
+    keyword?: string;
+    name?: string;
+    sort?: string;
+    page?: number;
+    limit?: number;
+    mustHaveGallery?: boolean;
+    mustHaveAvatar?: boolean;
+  }): Promise<{ items: UserProfile[]; totalCount: number; hasMore: boolean }> {
     const params = new URLSearchParams();
-    if (city) params.append('city', city);
-    if (keyword) params.append('keyword', keyword);
-    if (cursor) params.append('cursor', cursor);
-    if (limit) params.append('limit', limit.toString());
-    if (mustHaveGallery) params.append('mustHaveGallery', 'true');
-    if (mustHaveAvatar) params.append('mustHaveAvatar', 'true');
-    return apiCall<{ items: UserProfile[]; nextCursor: string | null }>(
+    if (opts.city) params.append('city', opts.city);
+    if (opts.keyword) params.append('keyword', opts.keyword);
+    if (opts.name) params.append('name', opts.name);
+    if (opts.sort) params.append('sort', opts.sort);
+    if (opts.page) params.append('page', opts.page.toString());
+    if (opts.limit) params.append('limit', opts.limit.toString());
+    if (opts.mustHaveGallery) params.append('mustHaveGallery', 'true');
+    if (opts.mustHaveAvatar) params.append('mustHaveAvatar', 'true');
+    return apiCall<{ items: UserProfile[]; totalCount: number; hasMore: boolean }>(
       `/manufacturers/search?${params.toString()}`,
     );
+  },
+
+  /** Bir üreticinin ürün galerisini talep üzerine çeker (dizin listesinde galeri taşınmaz). */
+  getManufacturerGallery(manufacturerId: string): Promise<string[]> {
+    return apiCall<string[]>(`/manufacturers/${encodeURIComponent(manufacturerId)}/gallery`);
   },
 
   submitFeedback(payload: FeedbackInput): Promise<{ message: string }> {

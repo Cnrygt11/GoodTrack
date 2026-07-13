@@ -5,6 +5,7 @@ using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -13,9 +14,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GoodTrack.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260712164734_AddThumbnailsAndOrderIndexes")]
+    partial class AddThumbnailsAndOrderIndexes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -438,11 +441,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("cancel_requested");
 
-                    b.Property<string>("CatalogProductId")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("catalog_product_id");
-
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -560,10 +558,6 @@ namespace GoodTrack.API.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("shipping_address");
 
-                    b.Property<DateTime?>("SlimmedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("slimmed_at");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -591,12 +585,6 @@ namespace GoodTrack.API.Migrations
 
                     b.HasIndex("SellerId")
                         .HasDatabaseName("ix_products_seller_id");
-
-                    b.HasIndex("ManufacturerId", "ArchivedAt")
-                        .HasDatabaseName("ix_products_manufacturer_id_archived_at");
-
-                    b.HasIndex("SellerId", "ArchivedAt")
-                        .HasDatabaseName("ix_products_seller_id_archived_at");
 
                     b.HasIndex("SellerId", "EtsyReceiptId")
                         .HasDatabaseName("ix_products_seller_id_etsy_receipt_id");

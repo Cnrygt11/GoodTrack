@@ -38,11 +38,10 @@ export default function useSellerOrders() {
   const tabParam = searchParams.get('tab');
 
   const activeTab: SellerTabId =
-    tabParam === 'create' ? 'create' :
-    tabParam === 'catalog' ? 'catalog' : 'list';
+    tabParam === 'create' ? 'create' : tabParam === 'catalog' ? 'catalog' : 'list';
 
   const listFilter: ListFilter =
-    (tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter))
+    tabParam && LIST_FILTER_TABS.includes(tabParam as ListFilter)
       ? (tabParam as ListFilter)
       : ORDER_STATUS.AWAITING;
 
@@ -59,14 +58,21 @@ export default function useSellerOrders() {
         return prev;
       });
     },
-    [setSearchParams, listFilter]
+    [setSearchParams, listFilter],
   );
 
   const setListFilter = useCallback(
-    (tab: ListFilter) => setSearchParams((prev) => { prev.set('tab', tab); return prev; }),
+    (tab: ListFilter) =>
+      setSearchParams((prev) => {
+        prev.set('tab', tab);
+        return prev;
+      }),
     [setSearchParams],
   );
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+
+  // --- Search State (client-side; mevcut yüklü liste üzerinde) ---
+  const [orderSearch, setOrderSearch] = useState('');
 
   // --- Dropdown State ---
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
@@ -96,7 +102,12 @@ export default function useSellerOrders() {
   });
 
   // --- Navigation helper ---
-  const openTimeline = useCallback((p: Product) => { navigate(`/seller/orders/${p.id}`); }, [navigate]);
+  const openTimeline = useCallback(
+    (p: Product) => {
+      navigate(`/seller/orders/${p.id}`);
+    },
+    [navigate],
+  );
 
   // --- Derived filteredProducts ---
   const sortedProducts = useMemo(() => {
@@ -108,19 +119,43 @@ export default function useSellerOrders() {
   }, [products, sortOrder]);
 
   const filteredProducts = useMemo(() => {
+    const q = orderSearch.trim().toLowerCase();
+    const matchesSearch = (p: Product) =>
+      !q ||
+      [p.code, p.text, p.customerName, p.mfrName, p.sellerName].some((f) =>
+        (f || '').toLowerCase().includes(q),
+      );
+
     return sortedProducts.filter((p) => {
-      const status = p.status || (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
-      if (listFilter === ORDER_STATUS.AWAITING) return status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
-      if (listFilter === ORDER_STATUS.BROKEN) return status === ORDER_STATUS.BROKEN;
-      if (listFilter === ORDER_STATUS.PRODUCTION) return status === ORDER_STATUS.PRODUCTION;
-      if (listFilter === ORDER_STATUS.COMPLETED) return status === ORDER_STATUS.COMPLETED;
-      if (listFilter === ORDER_STATUS.DELIVERED) return status === ORDER_STATUS.DELIVERED;
-      if (listFilter === ORDER_STATUS.DEFECTIVE) return status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
-      if (listFilter === ORDER_STATUS.TO_SHIP) return status === ORDER_STATUS.TO_SHIP;
-      if (listFilter === ORDER_STATUS.SHIPPED) return status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
-      return true;
+      const status =
+        p.status ||
+        (p.isDefective
+          ? ORDER_STATUS.DEFECTIVE
+          : p.completed
+            ? ORDER_STATUS.COMPLETED
+            : p.isPendingApproval
+              ? ORDER_STATUS.AWAITING
+              : ORDER_STATUS.PRODUCTION);
+      let statusMatch: boolean;
+      if (listFilter === ORDER_STATUS.AWAITING)
+        statusMatch = status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
+      else if (listFilter === ORDER_STATUS.BROKEN) statusMatch = status === ORDER_STATUS.BROKEN;
+      else if (listFilter === ORDER_STATUS.PRODUCTION)
+        statusMatch = status === ORDER_STATUS.PRODUCTION;
+      else if (listFilter === ORDER_STATUS.COMPLETED)
+        statusMatch = status === ORDER_STATUS.COMPLETED;
+      else if (listFilter === ORDER_STATUS.DELIVERED)
+        statusMatch = status === ORDER_STATUS.DELIVERED;
+      else if (listFilter === ORDER_STATUS.DEFECTIVE)
+        statusMatch = status === ORDER_STATUS.DEFECTIVE || status === ORDER_STATUS.MISSING;
+      else if (listFilter === ORDER_STATUS.TO_SHIP) statusMatch = status === ORDER_STATUS.TO_SHIP;
+      else if (listFilter === ORDER_STATUS.SHIPPED)
+        statusMatch = status === ORDER_STATUS.SHIPPED || status === ORDER_STATUS.CANCELLED;
+      else statusMatch = true;
+
+      return statusMatch && matchesSearch(p);
     });
-  }, [sortedProducts, listFilter]);
+  }, [sortedProducts, listFilter, orderSearch]);
 
   // Wrap handleEditClick so it receives setActiveTab from this scope
   const handleEditClick = useCallback(
@@ -136,23 +171,43 @@ export default function useSellerOrders() {
 
   return {
     // Context pass-through
-    language, t, connections, extraFieldDefs, catalogProducts,
+    language,
+    t,
+    connections,
+    extraFieldDefs,
+    catalogProducts,
 
     // Tab & filter
-    activeTab, setActiveTab, listFilter, setListFilter, sortOrder, setSortOrder,
+    activeTab,
+    setActiveTab,
+    listFilter,
+    setListFilter,
+    sortOrder,
+    setSortOrder,
+    orderSearch,
+    setOrderSearch,
 
     // Form (from useSellerOrderForm)
-    productCode: form.productCode, setProductCode: form.setProductCode,
-    orderText: form.orderText, setOrderText: form.setOrderText,
-    mfrId: form.mfrId, setMfrId: form.setMfrId,
-    orderImage: form.orderImage, imageFileName: form.imageFileName,
-    autofillSuccess: form.autofillSuccess, extraValues: form.extraValues,
+    productCode: form.productCode,
+    setProductCode: form.setProductCode,
+    orderText: form.orderText,
+    setOrderText: form.setOrderText,
+    mfrId: form.mfrId,
+    setMfrId: form.setMfrId,
+    orderImage: form.orderImage,
+    imageFileName: form.imageFileName,
+    autofillSuccess: form.autofillSuccess,
+    extraValues: form.extraValues,
     editingProduct: form.editingProduct,
     actionLoading: form.actionLoading || actions.actionLoading,
-    isFieldModalOpen: form.isFieldModalOpen, setIsFieldModalOpen: form.setIsFieldModalOpen,
-    newFieldName: form.newFieldName, setNewFieldName: form.setNewFieldName,
-    newFieldType: form.newFieldType, setNewFieldType: form.setNewFieldType,
-    newFieldOptions: form.newFieldOptions, setNewFieldOptions: form.setNewFieldOptions,
+    isFieldModalOpen: form.isFieldModalOpen,
+    setIsFieldModalOpen: form.setIsFieldModalOpen,
+    newFieldName: form.newFieldName,
+    setNewFieldName: form.setNewFieldName,
+    newFieldType: form.newFieldType,
+    setNewFieldType: form.setNewFieldType,
+    newFieldOptions: form.newFieldOptions,
+    setNewFieldOptions: form.setNewFieldOptions,
     handleImageChange: form.handleImageChange,
     handleClearForm: form.handleClearForm,
     handleEditClick,
@@ -163,10 +218,14 @@ export default function useSellerOrders() {
     handleDeleteClick: form.handleDeleteClick,
 
     // Actions (from useSellerOrderActions)
-    isDefectModalOpen: actions.isDefectModalOpen, setIsDefectModalOpen: actions.setIsDefectModalOpen,
-    defectType: actions.defectType, setDefectType: actions.setDefectType,
-    defectNote: actions.defectNote, setDefectNote: actions.setDefectNote,
-    defectImage: actions.defectImage, defectImageFileName: actions.defectImageFileName,
+    isDefectModalOpen: actions.isDefectModalOpen,
+    setIsDefectModalOpen: actions.setIsDefectModalOpen,
+    defectType: actions.defectType,
+    setDefectType: actions.setDefectType,
+    defectNote: actions.defectNote,
+    setDefectNote: actions.setDefectNote,
+    defectImage: actions.defectImage,
+    defectImageFileName: actions.defectImageFileName,
     handleCancelOrder: actions.handleCancelOrder,
     handleRequestCancel: actions.handleRequestCancel,
     handleVerifyOrder: actions.handleVerifyOrder,
@@ -176,7 +235,8 @@ export default function useSellerOrders() {
     handleDefectReportSubmit: actions.handleDefectReportSubmit,
 
     // Badges (from useSellerOrderBadges)
-    unseenIds: badges.unseenIds, badgeCounts: badges.badgeCounts,
+    unseenIds: badges.unseenIds,
+    badgeCounts: badges.badgeCounts,
     handleMarkSingleAsSeen: badges.handleMarkSingleAsSeen,
 
     // Derived
@@ -186,10 +246,13 @@ export default function useSellerOrders() {
     openTimeline,
 
     // Dropdown
-    activeDropdownId, setActiveDropdownId,
+    activeDropdownId,
+    setActiveDropdownId,
 
     // Broken details modal
-    isBrokenModalOpen, selectedBrokenProduct, openBrokenDetails, closeBrokenDetails,
+    isBrokenModalOpen,
+    selectedBrokenProduct,
+    openBrokenDetails,
+    closeBrokenDetails,
   };
 }
-

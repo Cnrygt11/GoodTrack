@@ -125,6 +125,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IFieldService, FieldService>();
         services.AddScoped<IImageStorageService, Base64ImageStorageService>();
         services.AddScoped<IImageCleanupService, ImageCleanupService>();
+        services.AddScoped<IJobLock, PostgresAdvisoryJobLock>();
         services.AddScoped<ICreditsService, CreditsService>();
         services.AddScoped<IFeedbackService, FeedbackService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
@@ -140,6 +141,13 @@ public static class ServiceCollectionExtensions
         .AddHttpMessageHandler<EtsyRateLimitingHandler>();
         services.AddScoped<IEtsyOAuthService, EtsyOAuthService>();
         services.AddScoped<IEtsyService, EtsyService>();
+
+        // Arşivlenen siparişleri 30 gün sonra "başkalaştıran" (görseller + müşteri PII temizliği,
+        // minimum veriyle süresiz saklama) arka plan job'ı. Hata görsellerini de kapsar.
+        services.AddHostedService<ArchivedOrderRetentionService>();
+
+        // Eski audit log kayıtlarını retention süresi sonrası temizleyen arka plan job'ı.
+        services.AddHostedService<AuditLogRetentionService>();
 
         return services;
     }

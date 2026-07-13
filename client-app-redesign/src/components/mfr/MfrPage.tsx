@@ -1,4 +1,4 @@
-import { Factory, Package, Clock, CheckCircle2, XCircle, Archive, Play } from 'lucide-react';
+import { Factory, Package, Clock, CheckCircle2, XCircle, Play } from 'lucide-react';
 import useMfrOrders, { MfrTab } from '../../hooks/useMfrOrders';
 import usePagination from '../../hooks/usePagination';
 import Pagination from '../ui/Pagination';
@@ -27,8 +27,7 @@ function getTabIcon(tab: MfrTab, active: boolean) {
       return <CheckCircle2 size={size} style={{ color: active ? '#8bc34a' : 'var(--muted)' }} />;
     case ORDER_STATUS.DEFECTIVE:
       return <XCircle size={size} style={{ color: active ? 'var(--danger)' : 'var(--muted)' }} />;
-    case ORDER_STATUS.SHIPPED:
-      return <Archive size={size} style={{ color }} />;
+
     default:
       return <Package size={size} style={{ color }} />;
   }
@@ -41,6 +40,8 @@ export default function MfrPage() {
     setActiveTab,
     sortOrder,
     setSortOrder,
+    orderSearch,
+    setOrderSearch,
     selectedDefectProduct,
     isDetailsModalOpen,
     unseenIds,
@@ -63,7 +64,7 @@ export default function MfrPage() {
   const { pageItems, currentPage, totalPages, setCurrentPage } = usePagination(
     filteredProducts,
     PAGE_SIZE,
-    `${activeTab}|${sortOrder}`,
+    `${activeTab}|${sortOrder}|${orderSearch}`,
   );
 
   const tabs = [
@@ -73,7 +74,6 @@ export default function MfrPage() {
     { key: ORDER_STATUS.COMPLETED, label: t('tabCompleted') },
     { key: ORDER_STATUS.DELIVERED, label: t('tabDelivered') },
     { key: ORDER_STATUS.DEFECTIVE, label: t('tabIssuesMfr') },
-    { key: ORDER_STATUS.SHIPPED, label: t('tabArchiveMfr') },
   ];
 
   return (
@@ -114,6 +114,13 @@ export default function MfrPage() {
 
         {/* Sort Selector */}
         <div className="mfr-sort-row">
+          <input
+            type="text"
+            className="order-search-input"
+            value={orderSearch}
+            onChange={(e) => setOrderSearch(e.target.value)}
+            placeholder={t('orderSearchPlaceholder')}
+          />
           <span className="mfr-sort-label">{t('sortByDate')}:</span>
           <select
             value={sortOrder}

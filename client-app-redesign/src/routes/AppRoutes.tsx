@@ -8,6 +8,7 @@ import MfrPage from '../components/mfr/MfrPage';
 import MyAccountPage from '../components/profile/MyAccountPage';
 import SearchMfrPage from '../components/seller/SearchMfrPage';
 import OrderDetailPage from '../components/orders/OrderDetailPage';
+import ArchivePage from '../components/orders/ArchivePage';
 import ConnectionsPage from '../components/connections/ConnectionsPage';
 import UserProfileDetailPage from '../components/profile/UserProfileDetailPage';
 import AdminDashboardPage from '../components/admin/AdminDashboardPage';
@@ -138,6 +139,15 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/seller/archive"
+        element={
+          <ProtectedRoute allowedRoles={['seller']}>
+            <ArchivePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/seller/search-mfr"
         element={
           <ProtectedRoute allowedRoles={['seller']}>
@@ -199,6 +209,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute allowedRoles={['mfr']}>
             <OrderDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/mfr/archive"
+        element={
+          <ProtectedRoute allowedRoles={['mfr']}>
+            <ArchivePage />
           </ProtectedRoute>
         }
       />
