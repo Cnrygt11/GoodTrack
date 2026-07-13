@@ -56,6 +56,7 @@ public class ProductServiceTests : IDisposable
 
         _productService = new ProductService(
             _productRepository,
+            new PostgresCatalogRepository(_context),
             _userRepositoryMock.Object,
             _userConnectionRepositoryMock.Object,
             Mock.Of<INotificationService>(),

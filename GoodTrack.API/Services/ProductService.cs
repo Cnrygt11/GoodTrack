@@ -11,6 +11,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Models;
 using GoodTrack.API.Hubs;
 using GoodTrack.API.Constants;
+using GoodTrack.API.DTOs.Auth;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Infrastructure;
 
@@ -19,6 +20,7 @@ namespace GoodTrack.API.Services;
 public sealed class ProductService : IProductService
 {
     private readonly IProductRepository _productRepository;
+    private readonly ICatalogRepository _catalogRepository;
     private readonly IUserRepository _userRepository;
     private readonly IUserConnectionRepository _userConnectionRepository;
     private readonly INotificationService _notificationService;
@@ -30,6 +32,7 @@ public sealed class ProductService : IProductService
 
     public ProductService(
         IProductRepository productRepository,
+        ICatalogRepository catalogRepository,
         IUserRepository userRepository,
         IUserConnectionRepository userConnectionRepository,
         INotificationService notificationService,
@@ -40,6 +43,7 @@ public sealed class ProductService : IProductService
         ILogger<ProductService> logger)
     {
         _productRepository = productRepository;
+        _catalogRepository = catalogRepository;
         _userRepository = userRepository;
         _userConnectionRepository = userConnectionRepository;
         _notificationService = notificationService;
@@ -75,25 +79,93 @@ public sealed class ProductService : IProductService
         }
     }
 
+    /// <summary>
+    /// Katalog görsel referansını doğrular: katalog ürünü var olmalı ve satıcıya ait olmalı.
+    /// Döndürülen katalog ürünü thumbnail fallback'i için kullanılır.
+    /// </summary>
+    private async Task<CatalogProduct> ValidateCatalogReferenceAsync(string sellerId, string catalogProductId, CancellationToken cancellationToken = default)
+    {
+        var catalogProduct = await _catalogRepository.GetByIdAsync(catalogProductId, cancellationToken);
+        if (catalogProduct == null || catalogProduct.SellerId != sellerId)
+        {
+            throw new ArgumentException("Referans verilen katalog ürünü bulunamadı.");
+        }
+
+        return catalogProduct;
+    }
+
+    /// <summary>
+    /// Katalog referanslı sipariş için kart thumbnail'ini seçer: istemcinin gönderdiği thumbnail,
+    /// yoksa katalogtaki thumbnail, o da yoksa katalog görseli URL ise (Etsy CDN) URL'in kendisi.
+    /// Ağır base64 katalog görseli asla thumbnail olarak kopyalanmaz.
+    /// </summary>
+    private static string? ResolveCatalogThumbnail(string? dtoThumbnail, CatalogProduct catalogProduct)
+    {
+        if (!string.IsNullOrEmpty(dtoThumbnail)) return dtoThumbnail;
+        if (!string.IsNullOrEmpty(catalogProduct.ThumbnailImage)) return catalogProduct.ThumbnailImage;
+        if (!string.IsNullOrEmpty(catalogProduct.Image) && !catalogProduct.Image.StartsWith("data:")) return catalogProduct.Image;
+        return null;
+    }
+
     public async Task<List<ProductResponseDto>> GetUserProductsAsync(string userId, string role, CancellationToken cancellationToken = default)
     {
-        List<Product> products;
+        // Liste hafif projeksiyonla gelir: tam Image DB'den çekilmez, yalnız ThumbnailImage taşınır.
+        List<ProductResponseDto> products;
         if (role == Roles.Seller)
         {
-            products = await _productRepository.GetProductsBySellerAsync(userId, cancellationToken);
+            products = await _productRepository.GetProductSummariesBySellerAsync(userId, cancellationToken);
         }
         else if (role == Roles.Mfr)
         {
-            products = await _productRepository.GetProductsByManufacturerAsync(userId, cancellationToken);
+            products = await _productRepository.GetProductSummariesByManufacturerAsync(userId, cancellationToken);
         }
         else
         {
             throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
         }
 
-        // Üretici müşteri adı/adresi görmemeli.
-        var includeCustomerInfo = role != Roles.Mfr;
-        return products.Select(p => MapToResponseDto(p, includeCustomerInfo)).ToList();
+        // Üretici müşteri adı/adresi görmemeli — projeksiyon bu alanları taşır, burada maskelenir.
+        if (role == Roles.Mfr)
+        {
+            foreach (var p in products)
+            {
+                p.CustomerName = null;
+                p.ShippingAddress = null;
+            }
+        }
+
+        return products;
+    }
+
+    public async Task<PagedResultDto<ProductResponseDto>> GetArchivedProductsAsync(string userId, string role, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        if (role != Roles.Seller && role != Roles.Mfr)
+        {
+            throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
+        }
+
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var (items, totalCount) = await _productRepository.GetArchivedSummariesPageAsync(
+            userId, asSeller: role == Roles.Seller, page, pageSize, cancellationToken);
+
+        // Üretici müşteri adı/adresi görmemeli (küçültülmüş kayıtlarda zaten temizlenmiştir).
+        if (role == Roles.Mfr)
+        {
+            foreach (var p in items)
+            {
+                p.CustomerName = null;
+                p.ShippingAddress = null;
+            }
+        }
+
+        return new PagedResultDto<ProductResponseDto>
+        {
+            Items = items,
+            TotalCount = totalCount,
+            HasMore = page * pageSize < totalCount,
+        };
     }
 
     public async Task<ProductResponseDto> CreateOrderAsync(string sellerId, string sellerName, CreateProductDto dto, CancellationToken cancellationToken = default)
@@ -110,10 +182,23 @@ public sealed class ProductService : IProductService
 
         await ValidateManufacturerAsync(sellerId, dto.ManufacturerId, cancellationToken);
 
+        // Katalog referansı: tam görsel siparişe kopyalanmaz, yalnız küçük thumbnail taşınır.
+        // Tam görsel detay yanıtında katalogtan çözülür (bkz. GetProductByIdAsync).
+        string? image = dto.Image;
+        string? thumbnail = dto.ThumbnailImage;
+        if (!string.IsNullOrWhiteSpace(dto.CatalogProductId))
+        {
+            var catalogProduct = await ValidateCatalogReferenceAsync(sellerId, dto.CatalogProductId, cancellationToken);
+            image = null;
+            thumbnail = ResolveCatalogThumbnail(dto.ThumbnailImage, catalogProduct);
+        }
+
         var order = new Product
         {
             Code = dto.Code,
-            Image = dto.Image,
+            Image = image,
+            ThumbnailImage = thumbnail,
+            CatalogProductId = string.IsNullOrWhiteSpace(dto.CatalogProductId) ? null : dto.CatalogProductId,
             Text = dto.Text,
             Length = dto.Length,
             Extras = dto.Extras,
@@ -169,7 +254,7 @@ public sealed class ProductService : IProductService
             }
         });
 
-        await SafeNotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate");
+        await SafeNotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate", order.Id);
 
         return MapToResponseDto(order);
     }
@@ -205,26 +290,52 @@ public sealed class ProductService : IProductService
         string? oldImage = existing.Image;
         string? newImage = dto.Image;
 
-        if (newImage != oldImage)
+        if (!string.IsNullOrWhiteSpace(dto.CatalogProductId))
         {
-            if (!string.IsNullOrEmpty(newImage) && newImage.StartsWith("data:image"))
+            // Katalog referansı (korunuyor ya da yeni kuruluyor): tam görsel siparişte tutulmaz.
+            var catalogProduct = await ValidateCatalogReferenceAsync(sellerId, dto.CatalogProductId, cancellationToken);
+            existing.CatalogProductId = dto.CatalogProductId;
+            existing.Image = null;
+            existing.ThumbnailImage = ResolveCatalogThumbnail(dto.ThumbnailImage, catalogProduct);
+            if (!string.IsNullOrEmpty(oldImage))
             {
-                ValidateImageSize(newImage, "Sipariş görseli");
-                existing.Image = await _imageStorageService.StoreImageAsync(newImage);
                 await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
             }
-            else if (string.IsNullOrEmpty(newImage))
+        }
+        else
+        {
+            bool hadCatalogReference = existing.CatalogProductId != null;
+            existing.CatalogProductId = null;
+
+            if (newImage != oldImage)
             {
-                existing.Image = null;
-                await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
-            }
-            else
-            {
-                existing.Image = newImage;
-                if (oldImage != newImage)
+                if (!string.IsNullOrEmpty(newImage) && newImage.StartsWith("data:image"))
                 {
+                    ValidateImageSize(newImage, "Sipariş görseli");
+                    existing.Image = await _imageStorageService.StoreImageAsync(newImage);
                     await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
                 }
+                else if (string.IsNullOrEmpty(newImage))
+                {
+                    existing.Image = null;
+                    await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
+                }
+                else
+                {
+                    existing.Image = newImage;
+                    if (oldImage != newImage)
+                    {
+                        await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
+                    }
+                }
+
+                // Görsel değiştiğinde thumbnail'i de senkronize et: görsel silindiyse thumbnail de temizlenir.
+                existing.ThumbnailImage = string.IsNullOrEmpty(newImage) ? null : dto.ThumbnailImage;
+            }
+            else if (hadCatalogReference && string.IsNullOrEmpty(newImage))
+            {
+                // Katalog referansı kaldırıldı ve yerine görsel konmadı: thumbnail da temizlenir.
+                existing.ThumbnailImage = null;
             }
         }
 
@@ -268,7 +379,7 @@ public sealed class ProductService : IProductService
         {
             usersToNotify.Add(oldMfrId);
         }
-        await SafeNotifyUsersAsync(usersToNotify, "ReceiveOrderUpdate");
+        await SafeNotifyUsersAsync(usersToNotify, "ReceiveOrderUpdate", existing.Id);
 
         return MapToResponseDto(existing);
     }
@@ -315,7 +426,8 @@ public sealed class ProductService : IProductService
         await _imageCleanupService.DeleteOrderImageIfUnusedAsync(image, sellerId, orderId);
         await _imageCleanupService.DeleteDefectImageIfUnusedAsync(defectImage, sellerId, orderId);
 
-        await SafeNotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate");
+        // Silme: id gönderilir; istemci getProductById 404 alıp kaydı cache'ten çıkarır.
+        await SafeNotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate", orderId);
     }
 
     public async Task<ProductResponseDto?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
@@ -326,7 +438,17 @@ public sealed class ProductService : IProductService
         if (role == Roles.Seller && product.SellerId != userId) return null;
         if (role == Roles.Mfr && product.ManufacturerId != userId) return null;
 
-        return MapToResponseDto(product, includeCustomerInfo: role != Roles.Mfr);
+        var response = MapToResponseDto(product, includeCustomerInfo: role != Roles.Mfr);
+
+        // Katalog referanslı siparişte tam görsel satırda tutulmaz; detayda katalogtan çözülür.
+        // Katalog ürünü silinmişse thumbnail ile devam edilir (görsel yoksa kart görseli kalır).
+        if (response.Image == null && product.CatalogProductId != null)
+        {
+            var catalogProduct = await _catalogRepository.GetByIdAsync(product.CatalogProductId, cancellationToken);
+            response.Image = catalogProduct?.Image;
+        }
+
+        return response;
     }
 
     public async Task MarkStatusAsReadAsync(string userId, string role, string status)
@@ -348,6 +470,8 @@ public sealed class ProductService : IProductService
             Id = product.Id,
             Code = product.Code,
             Image = product.Image,
+            ThumbnailImage = product.ThumbnailImage,
+            CatalogProductId = product.CatalogProductId,
             Text = product.Text,
             Length = product.Length,
             Extras = product.Extras,
@@ -362,6 +486,8 @@ public sealed class ProductService : IProductService
             Logs = product.Logs,
             CreatedAt = product.CreatedAt,
             CompletedAt = product.CompletedAt,
+            ArchivedAt = product.ArchivedAt,
+            SlimmedAt = product.SlimmedAt,
             SellerId = product.SellerId,
             ManufacturerId = product.ManufacturerId,
             SellerName = product.SellerName,
@@ -372,9 +498,9 @@ public sealed class ProductService : IProductService
         };
     }
 
-    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
+    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method, object? payload = null)
     {
         // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
-        return _notificationService.NotifyUsersAsync(userIds, method);
+        return _notificationService.NotifyUsersAsync(userIds, method, payload);
     }
 }

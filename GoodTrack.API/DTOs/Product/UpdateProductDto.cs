@@ -14,6 +14,17 @@ public class UpdateProductDto
     [MaxLength(7_000_000)]
     public string? Image { get; set; }
 
+    /// <summary>Client'ta üretilen küçük thumbnail (~160px).</summary>
+    [MaxLength(500_000)]
+    public string? ThumbnailImage { get; set; }
+
+    /// <summary>
+    /// Görsel katalogtan geliyorsa katalog ürününün id'si. Doluysa <see cref="Image"/> yok sayılır;
+    /// sipariş görseli katalog referansı üzerinden çözülür (tam görsel kopyalanmaz).
+    /// </summary>
+    [MaxLength(50)]
+    public string? CatalogProductId { get; set; }
+
     [MaxLength(1000)]
     public string? Text { get; set; }
 

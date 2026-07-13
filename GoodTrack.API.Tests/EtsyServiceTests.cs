@@ -419,10 +419,6 @@ public class EtsyServiceTests : IDisposable
                 }
             });
 
-        _apiClientMock
-            .Setup(c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync("data:image/jpeg;base64,AAAA");
-
         var result = await _service.FetchAndImportEtsyListingsAsync("u1");
 
         result.Should().HaveCount(2);
@@ -432,10 +428,15 @@ public class EtsyServiceTests : IDisposable
             c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
-        // SKU'lar batch envanterinden geldi, görseller indirildi
+        // SKU'lar batch envanterinden geldi; görseller base64 indirilmek yerine CDN URL olarak saklandı
+        _apiClientMock.Verify(
+            c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
         var products = _context.CatalogProducts.Where(p => p.SellerId == "u1").ToList();
         products.Select(p => p.ProductCode).Should().BeEquivalentTo(new[] { "SKU-A", "SKU-B" });
-        products.Should().OnlyContain(p => p.Image == "data:image/jpeg;base64,AAAA");
+        products.Should().Contain(p => p.ProductCode == "SKU-A" && p.Image == "https://img/1.jpg");
+        products.Should().Contain(p => p.ProductCode == "SKU-B" && p.Image == "https://img/2.jpg");
     }
 
     private void SetupSingleListingSync(string sku, string imageUrl)
@@ -487,9 +488,9 @@ public class EtsyServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task FetchAndImportListings_ExistingValidImage_IsNotReDownloaded()
+    public async Task FetchAndImportListings_ExistingProduct_StoresCurrentUrl_NoDownload()
     {
-        // Terms caching: DB'de geçerli görsel varsa CDN'den yeniden indirilmez.
+        // Artık görsel indirilmez: mevcut ürünün görseli her senkronda güncel CDN URL'sine yenilenir.
         SeedCatalogWithImage("data:image/jpeg;base64,OLD");
         SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
 
@@ -498,22 +499,22 @@ public class EtsyServiceTests : IDisposable
         _apiClientMock.Verify(
             c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
-        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("data:image/jpeg;base64,OLD");
+        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("https://img/1.jpg");
     }
 
     [Fact]
-    public async Task FetchAndImportListings_MissingImage_IsDownloaded()
+    public async Task FetchAndImportListings_MissingImage_StoresUrl_NoDownload()
     {
-        // Görsel yoksa (veya bozuksa) indirilir.
+        // Görsel yoksa da indirmek yerine doğrudan CDN URL'si saklanır.
         SeedCatalogWithImage(string.Empty);
         SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
 
         await _service.FetchAndImportEtsyListingsAsync("u1");
 
         _apiClientMock.Verify(
-            c => c.DownloadImageAsBase64Async("https://img/1.jpg", It.IsAny<CancellationToken>()),
-            Times.Once);
-        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("data:image/jpeg;base64,NEW");
+            c => c.DownloadImageAsBase64Async(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+        _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("https://img/1.jpg");
     }
 
     [Fact]

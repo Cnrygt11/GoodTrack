@@ -198,17 +198,15 @@ public sealed class EtsyService : IEtsyService
                             existingProduct.ProductCode = targetProductCode;
                             existingProduct.Text = etsyListing.Title;
 
-                            // Görsel deduplikasyonu (Etsy Terms — redundant çağrıları azalt):
-                            // veritabanında zaten geçerli bir base64 görsel varsa CDN'den YENİDEN İNDİRME.
-                            // Yalnızca görsel boş ya da hatalı formattaysa (data:image değilse) indirilir.
-                            if (!string.IsNullOrEmpty(imageUrl) &&
-                                (string.IsNullOrEmpty(existingProduct.Image) || !existingProduct.Image.StartsWith("data:image")))
+                            // Görseli indirip base64 olarak saklamak yerine doğrudan Etsy CDN URL'sini
+                            // tutuyoruz: DB yükü ~0 ve kopya barındırmadığımız için Etsy Terms açısından
+                            // da daha uygun. Listing görseli değişmiş olabileceğinden her senkronda güncel
+                            // URL'yi yansıtırız (indirme maliyeti yok).
+                            if (!string.IsNullOrEmpty(imageUrl))
                             {
-                                var updatedBase64Image = await _apiClient.DownloadImageAsBase64Async(imageUrl, cancellationToken);
-                                if (!string.IsNullOrEmpty(updatedBase64Image))
-                                {
-                                    existingProduct.Image = updatedBase64Image;
-                                }
+                                existingProduct.Image = imageUrl;
+                                // Etsy görseli zaten CDN URL; thumbnail olarak da aynı URL kullanılır.
+                                existingProduct.ThumbnailImage = imageUrl;
                             }
 
                             existingProduct.Extras ??= new Dictionary<string, ExtraValue>();
@@ -224,14 +222,13 @@ public sealed class EtsyService : IEtsyService
                             continue;
                         }
 
-                        var base64Image = await _apiClient.DownloadImageAsBase64Async(imageUrl ?? string.Empty, cancellationToken);
-
                         var newProduct = new CatalogProduct
                         {
                             Id = Guid.NewGuid().ToString(),
                             SellerId = userId,
                             ProductCode = targetProductCode,
-                            Image = base64Image,
+                            Image = imageUrl ?? string.Empty,
+                            ThumbnailImage = imageUrl,
                             Text = etsyListing.Title,
                             CreatedAt = DateTime.UtcNow.ToString("o"),
                             Extras = new Dictionary<string, ExtraValue>
@@ -347,7 +344,11 @@ public sealed class EtsyService : IEtsyService
             var createProductDto = new CreateProductDto
             {
                 Code = orderCode,
-                Image = catalogProduct.Image,
+                // Görsel kopyalanmaz: sipariş katalog ürününe referans verir, tam görsel
+                // detayda katalogtan çözülür (thumbnail seçimi de CreateOrderAsync'te yapılır).
+                Image = null,
+                ThumbnailImage = null,
+                CatalogProductId = catalogProduct.Id,
                 Text = null, // Etsy listing başlığı sipariş kartında gereksiz gürültü yaratıyordu
                 Length = catalogProduct.Length,
                 Extras = extras,

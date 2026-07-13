@@ -15,6 +15,21 @@ public class Product
     [MaxLength(7_000_000)]
     public string? Image { get; set; }
 
+    /// <summary>
+    /// Liste/kartlarda gösterilen küçük thumbnail (~160px). Manuel yüklemelerde base64, Etsy'de CDN URL.
+    /// Liste projeksiyonları bunu taşır; tam <see cref="Image"/> yalnız detayda döner.
+    /// </summary>
+    [MaxLength(500_000)]
+    public string? ThumbnailImage { get; set; }
+
+    /// <summary>
+    /// Siparişin görselinin alındığı katalog ürünü. Doluysa tam görsel siparişe KOPYALANMAZ
+    /// (<see cref="Image"/> null kalır); detay yanıtında görsel katalogtan çözülür. Kullanıcı
+    /// siparişe özel görsel yüklerse referans temizlenir ve görsel siparişte tutulur.
+    /// </summary>
+    [MaxLength(50)]
+    public string? CatalogProductId { get; set; }
+
     [MaxLength(1000)]
     public string? Text { get; set; }
 
@@ -53,6 +68,20 @@ public class Product
     public DateTime CreatedAt { get; set; }
 
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Sipariş terminal ("arşiv") duruma (kargolandı/iptal) ilk geçtiği an. Yaşam döngüsü
+    /// burada sona erer. Hata/kusur görsellerinin grace period sonrası temizliği bu damgaya
+    /// dayanır (bkz. DefectImageRetentionService). SaveChanges sırasında merkezî olarak damgalanır.
+    /// </summary>
+    public DateTime? ArchivedAt { get; set; }
+
+    /// <summary>
+    /// Arşivdeki siparişin "başkalaşım" (küçültme) anı. Arşivlenmeden 30 gün sonra retention job'ı
+    /// ağır alanları (görseller, katalog referansı) ve müşteri PII'ını (ad, adres) kalıcı temizler;
+    /// sipariş minimum veriyle süresiz saklanır ve arşivde görünmeye devam eder. Null = henüz tam veri.
+    /// </summary>
+    public DateTime? SlimmedAt { get; set; }
 
     [MaxLength(50)]
     public string SellerId { get; set; } = string.Empty;

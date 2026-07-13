@@ -282,6 +282,7 @@ public class EtsySyncController : BaseApiController
                 {
                     Code = orderCode,
                     Image = catalogProduct.Image,
+                    ThumbnailImage = catalogProduct.ThumbnailImage ?? catalogProduct.Image,
                     Text = null,
                     Length = catalogProduct.Length,
                     Extras = extras,

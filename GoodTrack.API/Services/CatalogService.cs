@@ -64,6 +64,7 @@ public sealed class CatalogService : ICatalogService
         };
 
         product.Image = await _imageStorageService.StoreImageAsync(dto.Image) ?? string.Empty;
+        product.ThumbnailImage = dto.ThumbnailImage;
 
         await _catalogRepository.SaveAsync(product);
         return MapToResponseDto(product);
@@ -115,6 +116,7 @@ public sealed class CatalogService : ICatalogService
 
             // Store the new image
             existing.Image = await _imageStorageService.StoreImageAsync(dto.Image) ?? string.Empty;
+            existing.ThumbnailImage = dto.ThumbnailImage;
         }
 
         existing.ProductCode = cleanCode;
@@ -156,6 +158,7 @@ public sealed class CatalogService : ICatalogService
             Id = product.Id,
             ProductCode = product.ProductCode,
             Image = product.Image,
+            ThumbnailImage = product.ThumbnailImage,
             Text = product.Text,
             Length = product.Length,
             Extras = product.Extras,

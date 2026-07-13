@@ -14,6 +14,10 @@ public class CreateCatalogProductDto
     [MaxLength(7_000_000)]
     public string Image { get; set; } = string.Empty;
 
+    /// <summary>Client'ta üretilen küçük thumbnail (~160px). Sipariş autofill'inde de kopyalanır.</summary>
+    [MaxLength(500_000)]
+    public string? ThumbnailImage { get; set; }
+
     [Required(ErrorMessage = "Üretici ID zorunludur.")]
     [MaxLength(50)]
     [JsonPropertyName("mfrId")]

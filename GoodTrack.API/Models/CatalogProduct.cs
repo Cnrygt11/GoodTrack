@@ -17,6 +17,10 @@ public class CatalogProduct
     [MaxLength(7_000_000)]
     public string Image { get; set; } = string.Empty;
 
+    /// <summary>Liste/kartlarda gösterilen küçük thumbnail (~160px). Manuel'de base64, Etsy'de CDN URL.</summary>
+    [MaxLength(500_000)]
+    public string? ThumbnailImage { get; set; }
+
     [MaxLength(50)]
     [JsonPropertyName("mfrId")]
     public string ManufacturerId { get; set; } = string.Empty;

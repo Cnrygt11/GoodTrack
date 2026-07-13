@@ -10,6 +10,7 @@ public class CatalogProductResponseDto
     public string SellerId { get; set; } = string.Empty;
     public string ProductCode { get; set; } = string.Empty;
     public string Image { get; set; } = string.Empty;
+    public string? ThumbnailImage { get; set; }
 
     [JsonPropertyName("mfrId")]
     public string ManufacturerId { get; set; } = string.Empty;
