@@ -45,6 +45,38 @@ public class CatalogController : BaseApiController
     }
 
     /// <summary>
+    /// Tek katalog ürününü TAM görseliyle döner. Liste ucu (GET /) ağır base64 görseli
+    /// taşımaz; detay/düzenleme/lightbox akışları tam görseli buradan çeker.
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<CatalogProductResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetCatalogProduct(string id)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+        }
+
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
+        }
+
+        try
+        {
+            var response = await _catalogService.GetCatalogProductAsync(userId, id);
+            return Ok(new ApiResponse<CatalogProductResponseDto>(response));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ApiResponse.Fail(ex.Message));
+        }
+    }
+
+    /// <summary>
     /// Adds a new product to the catalog.
     /// </summary>
     [HttpPost]

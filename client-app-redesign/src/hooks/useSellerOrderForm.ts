@@ -119,9 +119,11 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     const match = catalogProducts.find((p) => p.productCode.trim().toLowerCase() === code);
     if (match) {
       setMfrId(match.mfrId);
-      if (match.image) {
-        // Önizleme için katalog görseli gösterilir; gönderimde base64 yerine referans gider.
-        setOrderImage(match.image);
+      const previewImage = match.thumbnailImage ?? match.image;
+      if (previewImage) {
+        // Önizleme için katalog thumbnail'i gösterilir (liste tam görseli taşımaz);
+        // gönderimde base64 yerine katalog referansı (catalogProductId) gider.
+        setOrderImage(previewImage);
         setOrderThumbnail(match.thumbnailImage ?? null);
         setCatalogProductId(match.id);
         setImageFileName('Katalog Görseli');

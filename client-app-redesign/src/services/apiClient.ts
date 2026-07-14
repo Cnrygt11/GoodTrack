@@ -74,7 +74,8 @@ export interface ConnectionRequest {
 export interface CatalogProduct {
   id: string;
   productCode: string;
-  image: string;
+  /** Liste yanıtında null; tam görsel yalnız detayda (getCatalogById) gelir. */
+  image: string | null;
   thumbnailImage?: string | null;
   mfrId: string;
   mfrName: string;
@@ -230,7 +231,8 @@ export interface CreateCatalogProductPayload {
 
 export interface UpdateCatalogProductPayload {
   productCode: string;
-  image: string;
+  /** null = "görsel değişmedi" (mevcut görsel korunur); yalnız dolu ve farklı değer değiştirir. */
+  image: string | null;
   thumbnailImage?: string | null;
   mfrId: string;
   mfrName: string;
@@ -479,6 +481,11 @@ export const api = {
   // Catalog
   getCatalog(): Promise<CatalogProduct[]> {
     return apiCall<CatalogProduct[]>('/catalog');
+  },
+
+  /** Tek katalog ürününü TAM görseliyle döner (liste yanıtı image taşımaz). */
+  getCatalogById(id: string): Promise<CatalogProduct> {
+    return apiCall<CatalogProduct>(`/catalog/${id}`);
   },
 
   addCatalogProduct(

@@ -2,13 +2,20 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using GoodTrack.API.Models;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Abstractions.Repositories;
 
 public interface ICatalogRepository
 {
     Task<CatalogProduct?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
-    Task<List<CatalogProduct>> GetCatalogBySellerAsync(string sellerId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Katalog listesi için hafif projeksiyon: tam <c>Image</c> DB'den çekilmez (yalnız
+    /// <c>ThumbnailImage</c> taşınır). Tam görsel için <see cref="GetByIdAsync"/> üzerinden
+    /// detay ucu kullanılır (bkz. sipariş listesindeki aynı desen: IProductRepository).
+    /// </summary>
+    Task<List<CatalogProductResponseDto>> GetCatalogSummariesBySellerAsync(string sellerId, CancellationToken cancellationToken = default);
     Task<bool> HasProductCodeAsync(string sellerId, string code);
 
     /// <summary>

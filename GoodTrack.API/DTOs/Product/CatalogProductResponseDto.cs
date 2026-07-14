@@ -9,7 +9,13 @@ public class CatalogProductResponseDto
     public string Id { get; set; } = string.Empty;
     public string SellerId { get; set; } = string.Empty;
     public string ProductCode { get; set; } = string.Empty;
-    public string Image { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Tam görsel. LİSTE yanıtlarında null döner (ağır base64 taşınmaz); tam görsel
+    /// GET /catalog/{id} detay ucundan alınır. Listede yalnız <see cref="ThumbnailImage"/> taşınır.
+    /// </summary>
+    public string? Image { get; set; }
+
     public string? ThumbnailImage { get; set; }
 
     [JsonPropertyName("mfrId")]

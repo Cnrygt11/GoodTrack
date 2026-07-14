@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Models;
+using GoodTrack.API.DTOs.Product;
 
 namespace GoodTrack.API.Infrastructure.Repositories;
 
@@ -23,22 +24,28 @@ public sealed class PostgresCatalogRepository : ICatalogRepository
         return await _context.CatalogProducts.FindAsync(new object?[] { id }, cancellationToken);
     }
 
-    public async Task<List<CatalogProduct>> GetCatalogBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
+    public async Task<List<CatalogProductResponseDto>> GetCatalogSummariesBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
     {
-        // Veritabanı Otomatik İyileştirme (Self-Healing): Geçersiz veya boş ID'li eski hatalı ürünleri temizle
-        var brokenProducts = await _context.CatalogProducts
-            .Where(c => c.SellerId == sellerId && (c.Id == "" || c.Id == null))
-            .ToListAsync(cancellationToken);
-
-        if (brokenProducts.Any())
-        {
-            _context.CatalogProducts.RemoveRange(brokenProducts);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-
+        // Liste projeksiyonu: tam Image null bırakılır (DB'den çekilmez), yalnız ThumbnailImage
+        // taşınır. Thumbnail'siz eski kayıtlarda tam görsele düşülür (kırık görsel olmaz);
+        // yeni yüklemeler gerçek küçük thumbnail gönderdiğinden liste yükü progresif azalır.
         return await _context.CatalogProducts
             .AsNoTracking()
             .Where(c => c.SellerId == sellerId)
+            .Select(c => new CatalogProductResponseDto
+            {
+                Id = c.Id,
+                SellerId = c.SellerId,
+                ProductCode = c.ProductCode,
+                Image = null,
+                ThumbnailImage = c.ThumbnailImage != null ? c.ThumbnailImage : c.Image,
+                ManufacturerId = c.ManufacturerId,
+                ManufacturerName = c.ManufacturerName,
+                Text = c.Text,
+                Length = c.Length,
+                Extras = c.Extras,
+                CreatedAt = c.CreatedAt
+            })
             .ToListAsync(cancellationToken);
     }
 

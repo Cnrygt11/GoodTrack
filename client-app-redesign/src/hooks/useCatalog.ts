@@ -72,9 +72,30 @@ export default function useCatalog() {
       setEditingProduct(product);
       setProductCode(product.productCode);
       setMfrId(product.mfrId);
+      // Liste yanıtı tam görseli taşımaz; form önizlemesi thumbnail ile başlar, tam görsel
+      // arka planda detay ucundan çekilir. Fetch başarısız olursa null kalır ve kaydetme
+      // "görsel değişmedi" (null) gönderir — mevcut görsel sunucuda korunur.
+      const hasImage = Boolean(product.thumbnailImage ?? product.image);
       setCatalogImage(product.image);
       setCatalogThumbnail(product.thumbnailImage ?? null);
-      setImageFileName(product.image ? 'Mevcut Görsel' : '');
+      setImageFileName(hasImage ? 'Mevcut Görsel' : '');
+
+      if (hasImage && !product.image) {
+        api
+          .getCatalogById(product.id)
+          .then((full) => {
+            // Kullanıcı bu arada başka ürünü düzenlemeye geçtiyse veya yeni görsel seçtiyse dokunma.
+            setEditingProduct((current) => {
+              if (current?.id === product.id) {
+                setCatalogImage((img) => img ?? full.image);
+              }
+              return current;
+            });
+          })
+          .catch(() => {
+            // Tam görsel alınamadı: önizleme thumbnail'de kalır, kayıt görseli değiştirmez.
+          });
+      }
 
       // Set dynamic extras values
       const initialExtras: Record<string, string> = {};
@@ -124,10 +145,10 @@ export default function useCatalog() {
         isActionLoading.current = true;
         setActionLoading(true);
         if (editingProduct) {
-          // Edit mode
+          // Edit mode — image null ise sunucu "görsel değişmedi" sayar ve mevcut görseli korur.
           const data = await api.updateCatalogProduct(editingProduct.id, {
             productCode: code,
-            image: catalogImage || '',
+            image: catalogImage,
             thumbnailImage: catalogThumbnail,
             mfrId,
             mfrName,
@@ -222,9 +243,10 @@ export default function useCatalog() {
       const selectedMfr = connections.find((c) => c.id === selectedMfrId);
       const mfrName = selectedMfr ? selectedMfr.username : '';
 
+      // Üretici atama görsele dokunmaz: image null = "görsel değişmedi" (sunucuda korunur).
       await api.updateCatalogProduct(productId, {
         productCode: product.productCode,
-        image: product.image || '',
+        image: null,
         mfrId: selectedMfrId,
         mfrName: mfrName,
         extras: product.extras || {},

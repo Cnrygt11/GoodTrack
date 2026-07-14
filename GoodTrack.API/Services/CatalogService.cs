@@ -27,8 +27,24 @@ public sealed class CatalogService : ICatalogService
 
     public async Task<List<CatalogProductResponseDto>> GetSellerCatalogAsync(string sellerId)
     {
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        return catalog.Select(MapToResponseDto).ToList();
+        // Liste hafif projeksiyonla gelir: tam Image DB'den çekilmez, yalnız ThumbnailImage taşınır.
+        return await _catalogRepository.GetCatalogSummariesBySellerAsync(sellerId);
+    }
+
+    public async Task<CatalogProductResponseDto> GetCatalogProductAsync(string sellerId, string id)
+    {
+        var product = await _catalogRepository.GetByIdAsync(id);
+        if (product == null)
+        {
+            throw new KeyNotFoundException("Katalog ürünü bulunamadı.");
+        }
+
+        if (product.SellerId != sellerId)
+        {
+            throw new UnauthorizedAccessException("Bu katalog ürününü görüntüleme yetkiniz yok.");
+        }
+
+        return MapToResponseDto(product);
     }
 
     public async Task<CatalogProductResponseDto> AddCatalogProductAsync(string sellerId, CreateCatalogProductDto dto)
@@ -105,8 +121,12 @@ public sealed class CatalogService : ICatalogService
             }
         }
 
-        // Handle image changes:
-        if (dto.Image != existing.Image)
+        // Görsel değişikliği: yalnız DOLU ve mevcut değerden FARKLI bir görsel geldiğinde
+        // değiştirilir. null/boş = "görsel değişmedi" (liste yanıtı tam görseli taşımadığından
+        // istemci, görsele dokunmayan güncellemelerde — ör. üretici atama — null gönderir).
+        // İstemcide "görseli kaldır" özelliği yoktur; bu kural eski cache'li SPA'nın görseli
+        // yanlışlıkla silmesini de engeller.
+        if (!string.IsNullOrEmpty(dto.Image) && dto.Image != existing.Image)
         {
             // If the old product had a local file, delete it safely
             if (!string.IsNullOrEmpty(existing.Image))

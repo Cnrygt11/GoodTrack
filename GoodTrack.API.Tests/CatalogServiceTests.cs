@@ -98,6 +98,109 @@ public class CatalogServiceTests
         result.ProductCode.Should().Be("SKU-1");
     }
 
+    // ─── GetCatalogProductAsync (detay ucu) ─────────────────────────────────────
+
+    [Fact]
+    public async Task GetCatalogProduct_Owner_ReturnsFullImage()
+    {
+        _catalogRepositoryMock
+            .Setup(r => r.GetByIdAsync("cat-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CatalogProduct
+            {
+                Id = "cat-1",
+                SellerId = "seller-1",
+                ProductCode = "SKU-1",
+                Image = "data:image/png;base64,FULL",
+                ThumbnailImage = "data:image/png;base64,THUMB"
+            });
+
+        var result = await _service.GetCatalogProductAsync("seller-1", "cat-1");
+
+        result.Image.Should().Be("data:image/png;base64,FULL");
+        result.ThumbnailImage.Should().Be("data:image/png;base64,THUMB");
+    }
+
+    [Fact]
+    public async Task GetCatalogProduct_NotFound_ThrowsKeyNotFound()
+    {
+        _catalogRepositoryMock
+            .Setup(r => r.GetByIdAsync("missing", It.IsAny<CancellationToken>()))
+            .ReturnsAsync((CatalogProduct?)null);
+
+        var act = () => _service.GetCatalogProductAsync("seller-1", "missing");
+        await act.Should().ThrowAsync<System.Collections.Generic.KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task GetCatalogProduct_NotOwner_ThrowsUnauthorized()
+    {
+        _catalogRepositoryMock
+            .Setup(r => r.GetByIdAsync("cat-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CatalogProduct { Id = "cat-1", SellerId = "someone-else" });
+
+        var act = () => _service.GetCatalogProductAsync("seller-1", "cat-1");
+        await act.Should().ThrowAsync<UnauthorizedAccessException>();
+    }
+
+    // ─── UpdateCatalogProductAsync görsel semantiği ─────────────────────────────
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task UpdateCatalogProduct_NullOrEmptyImage_PreservesExistingImage(string? dtoImage)
+    {
+        var existing = new CatalogProduct
+        {
+            Id = "cat-1",
+            SellerId = "seller-1",
+            ProductCode = "SKU-1",
+            Image = "data:image/png;base64,EXISTING",
+            ThumbnailImage = "data:image/png;base64,THUMB"
+        };
+        _catalogRepositoryMock
+            .Setup(r => r.GetByIdAsync("cat-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+
+        var dto = ValidDto();
+        dto.Image = dtoImage;
+
+        var result = await _service.UpdateCatalogProductAsync("seller-1", "cat-1", dto);
+
+        existing.Image.Should().Be("data:image/png;base64,EXISTING");
+        existing.ThumbnailImage.Should().Be("data:image/png;base64,THUMB");
+        result.Image.Should().Be("data:image/png;base64,EXISTING");
+        _imageCleanupServiceMock.Verify(
+            s => s.DeleteCatalogImageIfUnusedAsync(It.IsAny<string?>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task UpdateCatalogProduct_NewImage_ReplacesAndCleansOld()
+    {
+        var existing = new CatalogProduct
+        {
+            Id = "cat-1",
+            SellerId = "seller-1",
+            ProductCode = "SKU-1",
+            Image = "data:image/png;base64,OLD"
+        };
+        _catalogRepositoryMock
+            .Setup(r => r.GetByIdAsync("cat-1", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existing);
+
+        var dto = ValidDto();
+        dto.Image = "data:image/png;base64,NEW";
+        dto.ThumbnailImage = "data:image/png;base64,NEWTHUMB";
+
+        await _service.UpdateCatalogProductAsync("seller-1", "cat-1", dto);
+
+        existing.Image.Should().Be("data:image/png;base64,NEW");
+        existing.ThumbnailImage.Should().Be("data:image/png;base64,NEWTHUMB");
+        _imageCleanupServiceMock.Verify(
+            s => s.DeleteCatalogImageIfUnusedAsync("data:image/png;base64,OLD", "seller-1", "cat-1"),
+            Times.Once);
+    }
+
     [Fact]
     public async Task UpdateCatalogProduct_NotFound_ThrowsKeyNotFound()
     {

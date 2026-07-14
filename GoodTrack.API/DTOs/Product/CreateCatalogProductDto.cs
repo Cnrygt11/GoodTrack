@@ -11,8 +11,13 @@ public class CreateCatalogProductDto
     [MaxLength(100)]
     public string ProductCode { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Güncellemede (PUT) <c>null</c> = "görsel değişmedi": mevcut görsel ve thumbnail korunur.
+    /// Boş string <c>""</c> mevcut "görselsiz" anlamını korur. İstemci liste yanıtında tam
+    /// görseli almadığından, görsele dokunmayan güncellemeler null gönderir.
+    /// </summary>
     [MaxLength(7_000_000)]
-    public string Image { get; set; } = string.Empty;
+    public string? Image { get; set; }
 
     /// <summary>Client'ta üretilen küçük thumbnail (~160px). Sipariş autofill'inde de kopyalanır.</summary>
     [MaxLength(500_000)]
