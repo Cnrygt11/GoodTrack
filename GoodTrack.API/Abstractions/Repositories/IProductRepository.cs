@@ -10,8 +10,21 @@ namespace GoodTrack.API.Abstractions.Repositories;
 public interface IProductRepository
 {
     Task<Product?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
-    Task<List<Product>> GetProductsBySellerAsync(string sellerId, CancellationToken cancellationToken = default);
-    Task<List<Product>> GetProductsByManufacturerAsync(string mfrId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Görselin (URL) satıcının başka bir siparişinde ana görsel olarak kullanılıp
+    /// kullanılmadığını DB'de kontrol eder (satırlar belleğe yüklenmez). Arşivlenmiş siparişler
+    /// de kapsanır. <paramref name="excludeProductId"/> null ise hiçbir sipariş hariç tutulmaz.
+    /// Yalnız data-URI OLMAYAN (legacy/harici URL) görsellerde çağrılır; indeks gerektirmeyecek
+    /// kadar nadirdir.
+    /// </summary>
+    Task<bool> IsImageUsedBySellerAsync(string sellerId, string imageUrl, string? excludeProductId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Görselin (URL) satıcının başka bir siparişinde kusur görseli olarak kullanılıp
+    /// kullanılmadığını DB'de kontrol eder. <paramref name="excludeProductId"/> hariç tutulur.
+    /// </summary>
+    Task<bool> IsDefectImageUsedBySellerAsync(string sellerId, string imageUrl, string excludeProductId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// AKTİF sipariş listesi için hafif projeksiyon (arşivlenmişler hariç): tam <c>Image</c>

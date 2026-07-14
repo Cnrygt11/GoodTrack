@@ -42,6 +42,15 @@ public sealed class PostgresCatalogRepository : ICatalogRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<bool> IsImageUsedBySellerAsync(string sellerId, string imageUrl, string? excludeCatalogProductId, CancellationToken cancellationToken = default)
+    {
+        return await _context.CatalogProducts
+            .AsNoTracking()
+            .AnyAsync(c => c.SellerId == sellerId
+                && c.Image == imageUrl
+                && (excludeCatalogProductId == null || c.Id != excludeCatalogProductId), cancellationToken);
+    }
+
     public async Task<bool> HasProductCodeAsync(string sellerId, string code)
     {
         return await _context.CatalogProducts

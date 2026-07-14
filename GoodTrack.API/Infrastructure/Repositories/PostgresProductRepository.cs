@@ -26,20 +26,22 @@ public sealed class PostgresProductRepository : IProductRepository
         return await _context.Products.FindAsync(new object?[] { id }, cancellationToken);
     }
 
-    public async Task<List<Product>> GetProductsBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
+    public async Task<bool> IsImageUsedBySellerAsync(string sellerId, string imageUrl, string? excludeProductId, CancellationToken cancellationToken = default)
     {
         return await _context.Products
             .AsNoTracking()
-            .Where(p => p.SellerId == sellerId)
-            .ToListAsync(cancellationToken);
+            .AnyAsync(p => p.SellerId == sellerId
+                && p.Image == imageUrl
+                && (excludeProductId == null || p.Id != excludeProductId), cancellationToken);
     }
 
-    public async Task<List<Product>> GetProductsByManufacturerAsync(string mfrId, CancellationToken cancellationToken = default)
+    public async Task<bool> IsDefectImageUsedBySellerAsync(string sellerId, string imageUrl, string excludeProductId, CancellationToken cancellationToken = default)
     {
         return await _context.Products
             .AsNoTracking()
-            .Where(p => p.ManufacturerId == mfrId)
-            .ToListAsync(cancellationToken);
+            .AnyAsync(p => p.SellerId == sellerId
+                && p.Id != excludeProductId
+                && p.DefectImage == imageUrl, cancellationToken);
     }
 
     /// <summary>

@@ -5,8 +5,11 @@ using GoodTrack.API.Abstractions.Services;
 namespace GoodTrack.API.Services;
 
 /// <summary>
-/// <see cref="IImageCleanupService"/> uygulaması. Silme kuralları, önceki kopyalanmış
-/// private helper'ların davranışını birebir korur.
+/// <see cref="IImageCleanupService"/> uygulaması. Kullanım kontrolleri, satırları belleğe
+/// yüklemek yerine hedefli EXISTS sorgularıyla (AnyAsync) DB'de yapılır: eski uygulama her
+/// temizlikte satıcının TÜM siparişlerini/kataloğunu ağır base64 kolonlarıyla yüklüyordu.
+/// Silme kuralları önceki davranışı birebir korur (data-URI kısa devresi, hariç tutma
+/// kapsamları ve kontrol sırası aynı).
 /// </summary>
 public sealed class ImageCleanupService : IImageCleanupService
 {
@@ -34,13 +37,9 @@ public sealed class ImageCleanupService : IImageCleanupService
             return;
         }
 
-        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.Image == imageUrl);
-        if (isUsedInOthers) return;
+        if (await _productRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, currentProductId)) return;
 
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
-        if (isUsedInCatalog) return;
+        if (await _catalogRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, excludeCatalogProductId: null)) return;
 
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
@@ -55,16 +54,13 @@ public sealed class ImageCleanupService : IImageCleanupService
             return;
         }
 
-        var otherProducts = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOthers = otherProducts.Exists(p => p.Id != currentProductId && p.DefectImage == imageUrl);
-        if (isUsedInOthers) return;
+        if (await _productRepository.IsDefectImageUsedBySellerAsync(sellerId, imageUrl, currentProductId)) return;
 
-        bool isUsedAsMain = otherProducts.Exists(p => p.Image == imageUrl);
-        if (isUsedAsMain) return;
+        // Ana görsel kontrolünde mevcut sipariş de kapsanır (excludeProductId: null) —
+        // görsel aynı siparişin ana görseliyse de silinmemelidir.
+        if (await _productRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, excludeProductId: null)) return;
 
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Image == imageUrl);
-        if (isUsedInCatalog) return;
+        if (await _catalogRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, excludeCatalogProductId: null)) return;
 
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }
@@ -74,14 +70,10 @@ public sealed class ImageCleanupService : IImageCleanupService
         if (string.IsNullOrWhiteSpace(imageUrl)) return;
 
         // Aynı görseli kullanan başka katalog ürünü var mı?
-        var catalog = await _catalogRepository.GetCatalogBySellerAsync(sellerId);
-        bool isUsedInCatalog = catalog.Exists(c => c.Id != currentCatalogProductId && c.Image == imageUrl);
-        if (isUsedInCatalog) return;
+        if (await _catalogRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, currentCatalogProductId)) return;
 
-        // Görseli kullanan aktif sipariş var mı?
-        var orders = await _productRepository.GetProductsBySellerAsync(sellerId);
-        bool isUsedInOrders = orders.Exists(p => p.Image == imageUrl);
-        if (isUsedInOrders) return;
+        // Görseli kullanan sipariş var mı (arşiv dahil)?
+        if (await _productRepository.IsImageUsedBySellerAsync(sellerId, imageUrl, excludeProductId: null)) return;
 
         await _imageStorageService.DeleteImageAsync(imageUrl);
     }

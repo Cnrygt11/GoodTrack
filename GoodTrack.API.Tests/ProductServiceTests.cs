@@ -218,7 +218,7 @@ public class ProductServiceTests : IDisposable
         updatedCredit!.Credits.Should().Be(5);
 
         // Verify no product was saved
-        var products = await _productRepository.GetProductsBySellerAsync(sellerId);
+        var products = await _context.Products.Where(p => p.SellerId == sellerId).ToListAsync();
         products.Should().BeEmpty();
     }
 
