@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -20,6 +21,7 @@ using GoodTrack.API.DTOs.Etsy;
 namespace GoodTrack.API.Controllers;
 
 [Authorize(Roles = Roles.Seller)]
+[EnableRateLimiting("api-general")]
 public class EtsySyncController : BaseApiController
 {
     private readonly AppDbContext _context;
@@ -132,6 +134,7 @@ public class EtsySyncController : BaseApiController
     }
 
     [HttpPost("sync-listings")]
+    [EnableRateLimiting("etsy-sync")]
     public async Task<IActionResult> SyncListings(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
@@ -159,6 +162,7 @@ public class EtsySyncController : BaseApiController
     }
 
     [HttpPost("sync-orders")]
+    [EnableRateLimiting("etsy-sync")]
     public async Task<IActionResult> SyncOrders(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();

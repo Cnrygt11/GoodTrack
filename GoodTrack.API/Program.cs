@@ -58,15 +58,29 @@ try
     builder.Services.AddCorsPolicies(builder.Configuration, builder.Environment);
 
     builder.Services.AddSignalR();
-    builder.Services.AddHealthChecks();
+
+    // /health veritabanı erişilebilirliğini de doğrular: DB düşükken instance "Unhealthy"
+    // raporlar ve platform (Render) 500'ler servis etmek yerine sağlıksız işaretler.
+    builder.Services.AddHealthChecks()
+        .AddDbContextCheck<GoodTrack.API.Infrastructure.AppDbContext>("database");
 
     var app = builder.Build();
 
     // ── HTTP request pipeline ───────────────────────────────────────────────
-    app.UseForwardedHeaders(new ForwardedHeadersOptions
+    // Render'ın reverse proxy'si arkasında X-Forwarded-For ancak proxy güvenilir listedeyken
+    // işlenir; varsayılan liste yalnız loopback'i içerdiğinden ve Render proxy IP'leri sabit
+    // olmadığından güven listeleri temizlenir. ForwardLimit=1 ile yalnız en yakın proxy hop'una
+    // güvenilir: istemcinin sahte X-Forwarded-For zinciri ekleyerek gerçek IP'sini gizlemesi
+    // engellenir (rate limiting gerçek istemci IP'sine dayanır). ASPNETCORE_FORWARDEDHEADERS_ENABLED
+    // env var'ı bilinçli olarak kullanılmıyor: örtük davranış yerine repo'da görünür yapılandırma.
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
     {
-        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-    });
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+        ForwardLimit = 1
+    };
+    forwardedHeadersOptions.KnownIPNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwardedHeadersOptions);
 
     app.UseMiddleware<GoodTrack.API.Middlewares.SecurityHeadersMiddleware>();
     app.UseMiddleware<GoodTrack.API.Middlewares.ExceptionHandlingMiddleware>();

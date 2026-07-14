@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.DTOs.Common;
 using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Models;
@@ -216,12 +218,28 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    /// <summary>IP başına fixed-window rate limiting politikaları.</summary>
+    /// <summary>
+    /// Rate limiting politikaları. "auth-strict" IP bazlıdır (login'de kullanıcı kimliği yoktur);
+    /// "api-general" ve "etsy-sync" kimliği doğrulanmış kullanıcıya göre bölümlenir, anonim
+    /// isteklerde IP'ye düşer. Böylece paylaşılan NAT/proxy arkasındaki kullanıcılar birbirinin
+    /// kotasını tüketmez. Gerçek istemci IP'si için forwarded headers yapılandırması şarttır
+    /// (bkz. Program.cs).
+    /// </summary>
     public static IServiceCollection AddRateLimitingPolicies(this IServiceCollection services)
     {
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = 429;
+
+            // 429 gövdesi API'nin ApiResponse zarfıyla döner ki frontend'in envelope işleyicisi
+            // kullanıcıya anlamlı bir mesaj gösterebilsin (varsayılan gövde boştur).
+            options.OnRejected = async (context, cancellationToken) =>
+            {
+                context.HttpContext.Response.ContentType = "application/json; charset=utf-8";
+                await context.HttpContext.Response.WriteAsJsonAsync(
+                    ApiResponse.Fail("Çok fazla istek gönderdiniz. Lütfen kısa bir süre bekleyip tekrar deneyin."),
+                    cancellationToken);
+            };
 
             options.AddPolicy("auth-strict", httpContext =>
             {
@@ -235,12 +253,30 @@ public static class ServiceCollectionExtensions
                 });
             });
 
+            // Sliding window: Etsy senkronu 20-30 siparişi tek seferde oluşturabilir ve her biri
+            // SignalR üzerinden istemciye tekil sipariş fetch'i tetikler; fixed window bu meşru
+            // burst'leri pencere kenarlarında 429'layabilir. 120/dk + 6 segment burst'ü emer.
             options.AddPolicy("api-general", httpContext =>
             {
-                var ip = httpContext.Connection.RemoteIpAddress?.ToString() ?? httpContext.Request.Headers.Host.ToString();
-                return RateLimitPartition.GetFixedWindowLimiter(ip, _ => new FixedWindowRateLimiterOptions
+                var partitionKey = RateLimitPartitioners.ResolveUserOrIpPartitionKey(httpContext);
+                return RateLimitPartition.GetSlidingWindowLimiter(partitionKey, _ => new SlidingWindowRateLimiterOptions
                 {
-                    PermitLimit = 60,
+                    PermitLimit = 120,
+                    Window = TimeSpan.FromMinutes(1),
+                    SegmentsPerWindow = 6,
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                });
+            });
+
+            // Manuel Etsy senkron butonları için cooldown: her tıklama Etsy API kotasını
+            // (10 QPS / 10k gün) tüketir; kullanıcı başına dakikada 2 tetikleme yeterlidir.
+            options.AddPolicy("etsy-sync", httpContext =>
+            {
+                var partitionKey = RateLimitPartitioners.ResolveUserOrIpPartitionKey(httpContext);
+                return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 2,
                     Window = TimeSpan.FromMinutes(1),
                     QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
                     QueueLimit = 0
