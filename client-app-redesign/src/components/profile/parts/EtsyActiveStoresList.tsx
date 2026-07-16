@@ -118,9 +118,11 @@ export function EtsyActiveStoresList({
                 <div className={styles.secretForm}>
                   <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
                     <label className={styles.label}>Webhook Signing Secret</label>
+                    {/* Secret sunucudan geri okunamaz; kayıtlıysa maskeli placeholder gösterilir,
+                        yeni değer girilirse üzerine yazılır. */}
                     <input
                       type="password"
-                      placeholder="whsec_..."
+                      placeholder={conn.hasWebhookSecret ? '•••••••• (kayıtlı)' : 'whsec_...'}
                       value={webhookSecrets[conn.shopId] || ''}
                       onChange={(e) =>
                         setWebhookSecrets((prev) => ({ ...prev, [conn.shopId]: e.target.value }))

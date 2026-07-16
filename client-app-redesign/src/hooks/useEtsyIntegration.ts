@@ -8,7 +8,8 @@ export interface EtsyConnectionInfo {
   shopName: string;
   isActive: boolean;
   tokenExpiresAt: string;
-  webhookSigningSecret: string | null;
+  /** Secret istemciye asla dönmez; yalnız kayıtlı olup olmadığı bildirilir. */
+  hasWebhookSecret: boolean;
 }
 
 export function useEtsyIntegration() {
@@ -45,11 +46,9 @@ export function useEtsyIntegration() {
       setConnections(data || []);
       setPlatformWebhookConfigured(config?.platformConfigured ?? false);
 
-      const secrets: Record<string, string> = {};
-      (data || []).forEach((conn) => {
-        secrets[conn.shopId] = conn.webhookSigningSecret || '';
-      });
-      setWebhookSecrets(secrets);
+      // Secret sunucudan geri okunamaz; input alanları boş başlar, kayıtlı olduğu
+      // hasWebhookSecret bayrağıyla (maskeli placeholder) gösterilir.
+      setWebhookSecrets({});
       setError(null);
     } catch (err: unknown) {
       console.error(err);
@@ -113,19 +112,25 @@ export function useEtsyIntegration() {
 
   const updateWebhookSecret = useCallback(
     async (shopId: string) => {
+      // Input boş başlar (secret geri okunamaz); kayıtlı secret varken boş kaydetmek
+      // yanlışlıkla silmeye yol açar — yeni değer girilmesini iste.
+      const secret = webhookSecrets[shopId] || '';
+      const existing = connections.find((c) => c.shopId === shopId);
+      if (!secret && existing?.hasWebhookSecret) {
+        setError('Kayıtlı secret korunuyor. Değiştirmek için yeni bir değer girin.');
+        return;
+      }
+
       setWebhookLoadings((prev) => ({ ...prev, [shopId]: true }));
       setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
       setActionSuccessMessage(null);
 
       try {
-        const secret = webhookSecrets[shopId] || '';
         await etsyApi.updateWebhookSecret(shopId, secret || null);
 
         setWebhookSuccesses((prev) => ({ ...prev, [shopId]: true }));
         setConnections((prev) =>
-          prev.map((c) =>
-            c.shopId === shopId ? { ...c, webhookSigningSecret: secret || null } : c,
-          ),
+          prev.map((c) => (c.shopId === shopId ? { ...c, hasWebhookSecret: !!secret } : c)),
         );
 
         setActionSuccessMessage('Webhook imza doğrulama anahtarı başarıyla güncellendi.');
@@ -139,7 +144,7 @@ export function useEtsyIntegration() {
         setWebhookLoadings((prev) => ({ ...prev, [shopId]: false }));
       }
     },
-    [webhookSecrets],
+    [webhookSecrets, connections],
   );
 
   const disconnectShop = useCallback(async (shopId: string) => {

@@ -69,13 +69,15 @@ public class EtsySyncController : BaseApiController
         }
 
         var connections = await _etsyService.GetConnectionsAsync(userId, cancellationToken);
+        // Secret istemciye asla geri dönmez (yazılabilir, okunamaz — standart secret semantiği);
+        // UI yalnız kayıtlı olup olmadığını bilir.
         var result = connections.Select(c => new
         {
             shopId = c.EtsyShopId,
             shopName = c.EtsyShopName,
             isActive = c.IsActive,
             tokenExpiresAt = c.TokenExpiresAt,
-            webhookSigningSecret = c.WebhookSigningSecret
+            hasWebhookSecret = !string.IsNullOrEmpty(c.WebhookSigningSecret)
         }).ToList();
 
         return Ok(new ApiResponse<object>(result));

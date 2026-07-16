@@ -658,7 +658,8 @@ export const api = {
       shopName: string;
       isActive: boolean;
       tokenExpiresAt: string;
-      webhookSigningSecret: string | null;
+      /** Secret istemciye dönmez; yalnız kayıtlı olup olmadığı bildirilir. */
+      hasWebhookSecret: boolean;
     }[]
   > {
     return apiCall<
@@ -667,7 +668,7 @@ export const api = {
         shopName: string;
         isActive: boolean;
         tokenExpiresAt: string;
-        webhookSigningSecret: string | null;
+        hasWebhookSecret: boolean;
       }[]
     >('/etsysync/connections');
   },
