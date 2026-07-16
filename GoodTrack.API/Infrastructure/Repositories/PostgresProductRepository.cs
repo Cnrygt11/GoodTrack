@@ -66,7 +66,10 @@ public sealed class PostgresProductRepository : IProductRepository
         IsPendingApproval = p.IsPendingApproval,
         IsReproduction = p.IsReproduction,
         DefectNote = p.DefectNote,
-        DefectImage = p.DefectImage,
+        // Kusur görseli 7MB'a varan base64 olabilir; liste yalnız varlık bayrağını taşır,
+        // tam görsel detay yanıtından (GetByIdAsync yolu) gelir.
+        DefectImage = null,
+        HasDefectImage = p.DefectImage != null,
         Status = p.Status,
         Logs = p.Logs,
         CreatedAt = p.CreatedAt,

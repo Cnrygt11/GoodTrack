@@ -482,6 +482,7 @@ public sealed class ProductService : IProductService
             IsReproduction = product.IsReproduction,
             DefectNote = product.DefectNote,
             DefectImage = product.DefectImage,
+            HasDefectImage = product.DefectImage != null,
             Status = product.Status,
             Logs = product.Logs,
             CreatedAt = product.CreatedAt,

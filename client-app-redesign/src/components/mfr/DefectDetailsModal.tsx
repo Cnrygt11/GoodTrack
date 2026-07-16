@@ -1,4 +1,4 @@
-import { X, Info, Package } from 'lucide-react';
+import { X, Info, Package, Loader2 } from 'lucide-react';
 import { Product } from '../../services/apiClient';
 import Modal from '../ui/Modal';
 import { useSettings } from '../../context/SettingsContext';
@@ -14,23 +14,26 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="modal-header">
-        <h3 style={{ margin: 0, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3
+          style={{
+            margin: 0,
+            color: 'var(--danger)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
+        >
           <Info size={20} />
           {t('defectDetailsTitle')}
         </h3>
-        <button
-          onClick={onClose}
-          className="modal-close-btn"
-        >
+        <button onClick={onClose} className="modal-close-btn">
           <X size={18} />
         </button>
       </div>
       {product && (
         <div className="modal-body-stack">
           <div className="field-group">
-            <span className="modal-label">
-              {t('defectNoteLabel')}
-            </span>
+            <span className="modal-label">{t('defectNoteLabel')}</span>
             <div className="modal-display-box">
               {product.defectNote || t('noDescriptionProvided')}
             </div>
@@ -38,15 +41,16 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
 
           {product.defectImage ? (
             <div className="field-group">
-              <span className="modal-label">
-                {t('defectPhoto')}
-              </span>
+              <span className="modal-label">{t('defectPhoto')}</span>
               <div className="modal-image-frame">
-                <img
-                  src={product.defectImage}
-                  alt="Hata Görseli"
-                />
+                <img src={product.defectImage} alt="Hata Görseli" />
               </div>
+            </div>
+          ) : product.hasDefectImage ? (
+            // Liste yanıtı görseli taşımaz; tam görsel detay ucundan yükleniyor.
+            <div className="modal-info-row">
+              <Loader2 size={16} className="animate-spin" />
+              <span>{t('defectPhoto')}</span>
             </div>
           ) : (
             <div className="modal-info-row">
@@ -56,11 +60,7 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
           )}
 
           <div className="modal-actions" style={{ marginTop: '8px' }}>
-            <button
-              type="button"
-              className="btn-primary mfr"
-              onClick={onClose}
-            >
+            <button type="button" className="btn-primary mfr" onClick={onClose}>
               {t('closeBtn')}
             </button>
           </div>
@@ -69,4 +69,3 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
     </Modal>
   );
 }
-

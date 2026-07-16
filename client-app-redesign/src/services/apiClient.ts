@@ -126,7 +126,10 @@ export interface Product {
   completed: boolean;
   isDefective?: boolean;
   defectNote?: string;
+  /** Liste yanıtında null (ağır base64 taşınmaz); tam görsel getProductById detayından gelir. */
   defectImage?: string | null;
+  /** Kusur görseli var mı? Liste görseli taşımadığından varlık bu bayrakla bildirilir. */
+  hasDefectImage?: boolean;
   isPendingApproval?: boolean;
   isReproduction?: boolean;
   cancelRequested?: boolean;

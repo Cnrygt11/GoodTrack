@@ -231,8 +231,26 @@ export default function useMfrOrders() {
   );
 
   const openDefectDetails = useCallback((product: Product) => {
+    // Modal liste verisiyle hemen açılır (not + bayrak mevcut); liste yanıtı ağır kusur
+    // görselini taşımadığından tam görsel arka planda detay ucundan çekilip yerleştirilir.
     setSelectedDefectProduct(product);
     setIsDetailsModalOpen(true);
+
+    if (product.hasDefectImage && !product.defectImage) {
+      api
+        .getProductById(product.id)
+        .then((full) => {
+          setSelectedDefectProduct((current) =>
+            current?.id === product.id ? { ...current, defectImage: full.defectImage } : current,
+          );
+        })
+        .catch(() => {
+          // Görsel alınamadı: spinner yerine "görsel yok" satırına düş.
+          setSelectedDefectProduct((current) =>
+            current?.id === product.id ? { ...current, hasDefectImage: false } : current,
+          );
+        });
+    }
   }, []);
 
   const closeDefectDetails = useCallback(() => {

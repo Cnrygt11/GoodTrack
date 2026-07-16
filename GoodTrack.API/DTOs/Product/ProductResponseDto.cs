@@ -24,7 +24,15 @@ public class ProductResponseDto
     public bool IsPendingApproval { get; set; }
     public bool IsReproduction { get; set; }
     public string? DefectNote { get; set; }
+
+    /// <summary>
+    /// Kusur görseli. LİSTE yanıtlarında null döner (ağır base64 taşınmaz); tam görsel
+    /// GET /products/{id} detay ucundan gelir. Varlığı <see cref="HasDefectImage"/> bildirir.
+    /// </summary>
     public string? DefectImage { get; set; }
+
+    /// <summary>Siparişte kusur görseli olup olmadığı; liste yanıtı görseli taşımadığından bu bayrakla bildirilir.</summary>
+    public bool HasDefectImage { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<OrderLog> Logs { get; set; } = new();
     public DateTime CreatedAt { get; set; }
