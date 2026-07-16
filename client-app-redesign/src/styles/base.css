@@ -4,6 +4,13 @@
   padding: 0;
 }
 
+html {
+  /* Scrollbar oluğu her zaman ayrılır: dikey scrollbar belirip kaybolduğunda
+     (ör. devtools açılınca viewport küçülüp içerik taşınca) ortalanmış içeriğin
+     yatay kaymasını önler. */
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: var(--bg);
   background-image: var(--bg-grid);
