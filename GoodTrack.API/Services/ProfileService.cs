@@ -38,13 +38,13 @@ public sealed class ProfileService : IProfileService
     public async Task DeactivateAccountAsync(string userId, string password)
     {
         var user = await _userRepository.GetByIdAsync(userId)
-            ?? throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            ?? throw new KeyNotFoundException(Messages.Auth.UserNotFound);
 
         // Güvenlik: hassas işlem, şifre onayı iste.
         if (string.IsNullOrEmpty(password) ||
             _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password) == PasswordVerificationResult.Failed)
         {
-            throw new UnauthorizedAccessException("Şifre hatalı.");
+            throw new UnauthorizedAccessException(Messages.Auth.WrongPassword);
         }
 
         if (user.DeactivatedAt != null)
@@ -73,7 +73,7 @@ public sealed class ProfileService : IProfileService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         return MapToProfileDto(user);
@@ -83,13 +83,13 @@ public sealed class ProfileService : IProfileService
     {
         if (string.IsNullOrEmpty(username))
         {
-            throw new ArgumentException("Kullanıcı adı boş olamaz.");
+            throw new ArgumentException(Messages.Auth.UsernameRequired);
         }
 
         var user = await _userRepository.GetByUsernameAsync(username.Trim().ToLower());
         if (user == null || user.DeactivatedAt != null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         return MapToProfileDto(user);
@@ -100,7 +100,7 @@ public sealed class ProfileService : IProfileService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         // Basic fields
@@ -116,12 +116,12 @@ public sealed class ProfileService : IProfileService
                 var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
                 if (!emailRegex.IsMatch(emailClean))
                 {
-                    throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+                    throw new ArgumentException(Messages.Auth.InvalidEmailFormat);
                 }
                 var existingUser = await _userRepository.GetByEmailAsync(emailClean);
                 if (existingUser != null)
                 {
-                    throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
+                    throw new ArgumentException(Messages.Auth.EmailInUse);
                 }
                 user.Email = emailClean;
             }

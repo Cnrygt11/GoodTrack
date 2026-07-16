@@ -32,7 +32,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} is retrieving active connections list", userId);
@@ -45,16 +45,16 @@ public class ConnectionsController : BaseApiController
     {
         var senderId = GetCurrentUserId();
         var senderUsername = User.FindFirst(ClaimTypes.Name)?.Value;
-        var senderRole = User.FindFirst(ClaimTypes.Role)?.Value;
+        var senderRole = GetCurrentUserRole();
 
         if (senderId is null || string.IsNullOrEmpty(senderUsername) || string.IsNullOrEmpty(senderRole))
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(username))
         {
-            return BadRequest(ApiResponse.Fail("Kullanıcı adı boş olamaz."));
+            return BadRequest(ApiResponse.Fail(Messages.Auth.UsernameRequired));
         }
 
         _logger.LogInformation("User {SenderId} ({Username}) is sending a connection request to user: {Target}", senderId, senderUsername, username);
@@ -69,7 +69,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} is fetching pending incoming connection requests", userId);
@@ -83,7 +83,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} is fetching sent connection requests history", userId);
@@ -97,12 +97,12 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (dto == null)
         {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
         }
 
         _logger.LogInformation("User {UserId} is updating connection request {RequestId} to status: {Status}", userId, requestId, dto.Status);
@@ -127,7 +127,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} is clearing connection request log: {RequestId}", userId, requestId);
@@ -141,7 +141,7 @@ public class ConnectionsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} is removing active connection with user: {TargetId}", userId, targetId);

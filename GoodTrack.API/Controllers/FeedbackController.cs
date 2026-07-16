@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -33,7 +34,7 @@ public class FeedbackController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var message = await _feedbackService.SubmitFeedbackAsync(userId, input.Title, input.Message, input.BrowserInfo, cancellationToken);

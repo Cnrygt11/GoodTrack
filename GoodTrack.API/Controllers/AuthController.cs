@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -72,7 +73,7 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.Password))
@@ -103,12 +104,12 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (request == null)
         {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
         }
 
         await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword, request.ConfirmNewPassword);
@@ -161,7 +162,7 @@ public class AuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         await _authService.LogoutAsync(userId);

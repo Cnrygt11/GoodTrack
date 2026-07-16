@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +37,7 @@ public sealed class CatalogService : ICatalogService
         var product = await _catalogRepository.GetByIdAsync(id);
         if (product == null)
         {
-            throw new KeyNotFoundException("Katalog ürünü bulunamadı.");
+            throw new KeyNotFoundException(Messages.Catalog.NotFound);
         }
 
         if (product.SellerId != sellerId)
@@ -51,12 +52,12 @@ public sealed class CatalogService : ICatalogService
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.ProductCode))
         {
-            throw new ArgumentException("Ürün kodu zorunludur!");
+            throw new ArgumentException(Messages.Catalog.CodeRequired);
         }
 
         if (string.IsNullOrWhiteSpace(dto.ManufacturerId) || string.IsNullOrWhiteSpace(dto.ManufacturerName))
         {
-            throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
+            throw new ArgumentException(Messages.Catalog.ManufacturerRequired);
         }
 
         var cleanCode = dto.ProductCode.Trim();
@@ -64,7 +65,7 @@ public sealed class CatalogService : ICatalogService
         var exists = await _catalogRepository.HasProductCodeAsync(sellerId, cleanCode);
         if (exists)
         {
-            throw new ArgumentException("Bu ürün kodu kataloğunuzda zaten kayıtlı!");
+            throw new ArgumentException(Messages.Catalog.DuplicateCode);
         }
 
         var product = new CatalogProduct
@@ -90,18 +91,18 @@ public sealed class CatalogService : ICatalogService
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.ProductCode))
         {
-            throw new ArgumentException("Ürün kodu zorunludur!");
+            throw new ArgumentException(Messages.Catalog.CodeRequired);
         }
 
         if (string.IsNullOrWhiteSpace(dto.ManufacturerId) || string.IsNullOrWhiteSpace(dto.ManufacturerName))
         {
-            throw new ArgumentException("Ürüne atanacak üretici zorunludur!");
+            throw new ArgumentException(Messages.Catalog.ManufacturerRequired);
         }
 
         var existing = await _catalogRepository.GetByIdAsync(id);
         if (existing == null)
         {
-            throw new KeyNotFoundException("Katalog ürünü bulunamadı.");
+            throw new KeyNotFoundException(Messages.Catalog.NotFound);
         }
 
         if (existing.SellerId != sellerId)
@@ -117,7 +118,7 @@ public sealed class CatalogService : ICatalogService
             var exists = await _catalogRepository.HasProductCodeAsync(sellerId, cleanCode);
             if (exists)
             {
-                throw new ArgumentException("Bu ürün kodu kataloğunuzda zaten kayıtlı!");
+                throw new ArgumentException(Messages.Catalog.DuplicateCode);
             }
         }
 
@@ -155,7 +156,7 @@ public sealed class CatalogService : ICatalogService
         var product = await _catalogRepository.GetByIdAsync(id);
         if (product == null)
         {
-            throw new KeyNotFoundException("Katalog ürünü bulunamadı.");
+            throw new KeyNotFoundException(Messages.Catalog.NotFound);
         }
 
         if (product.SellerId != sellerId)

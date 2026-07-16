@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -34,8 +35,8 @@ public sealed class Base64ImageStorageService : IImageStorageService
                 throw new ArgumentException("Desteklenmeyen görsel türü! Lütfen yalnızca JPEG, PNG, GIF veya WEBP formatında bir görsel yükleyin.");
             }
 
-            // Enforce size limit: limit base64 string length to 7,000,000 characters (~5 MB binary size)
-            if (base64OrUrl.Length > 7000000)
+            // Enforce size limit (~5 MB binary size)
+            if (base64OrUrl.Length > ImageLimits.MaxBase64Length)
             {
                 throw new ArgumentException("Görsel boyutu çok büyük! Lütfen en fazla 5 MB boyutunda bir görsel yükleyin.");
             }

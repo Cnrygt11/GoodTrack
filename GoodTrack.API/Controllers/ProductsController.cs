@@ -52,11 +52,11 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         if (userId is null || string.IsNullOrEmpty(role))
         {
-            return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var products = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
@@ -73,11 +73,11 @@ public class ProductsController : BaseApiController
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         if (userId is null || string.IsNullOrEmpty(role))
         {
-            return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var result = await _productService.GetArchivedProductsAsync(userId, role, page, pageSize, cancellationToken);
@@ -93,12 +93,12 @@ public class ProductsController : BaseApiController
 
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (dto == null)
         {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
         }
 
         _logger.LogInformation("Creating order code {Code} for Seller: {SellerId}", dto.Code, userId);
@@ -114,11 +114,11 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         if (userId is null || string.IsNullOrEmpty(role))
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.Status))
@@ -143,17 +143,17 @@ public class ProductsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (dto == null)
         {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Order.InvalidId));
         }
 
         _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
@@ -166,16 +166,16 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         if (userId is null || string.IsNullOrEmpty(role))
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Order.InvalidId));
         }
 
         _logger.LogInformation("User {UserId} is retrieving single production order details: {Id}", userId, id);
@@ -198,12 +198,12 @@ public class ProductsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Order.InvalidId));
         }
 
         _logger.LogInformation("Seller {UserId} deleting order {Id}", userId, id);
@@ -215,11 +215,11 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> MarkStatusAsRead([FromBody] MarkStatusReadRequest request)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         if (userId is null || string.IsNullOrEmpty(role))
         {
-            return Unauthorized(ApiResponse.Fail("Kullanıcı kimliği bulunamadı."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (request == null || string.IsNullOrWhiteSpace(request.Status))
@@ -237,11 +237,11 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> RequestCancellation(string id)
     {
         var userId = GetCurrentUserId();
-        if (userId is null) return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+        if (userId is null) return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Order.InvalidId));
         }
 
         _logger.LogInformation("Seller {UserId} requesting cancellation for order {Id}", userId, id);
@@ -254,16 +254,16 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> RespondToCancellation(string id, [FromBody] RespondToCancellationRequest request)
     {
         var userId = GetCurrentUserId();
-        if (userId is null) return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+        if (userId is null) return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz sipariş ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Order.InvalidId));
         }
 
         if (request == null)
         {
-            return BadRequest(ApiResponse.Fail("İstek verisi eksik."));
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
         }
 
         _logger.LogInformation("Manufacturer {UserId} responding to cancellation for order {Id} with: {Approve}", userId, id, request.Approve);

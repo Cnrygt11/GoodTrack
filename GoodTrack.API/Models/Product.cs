@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -12,14 +13,14 @@ public class Product
     public string Code { get; set; } = string.Empty;
 
     // Base64 image — max ~5MB binary
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string? Image { get; set; }
 
     /// <summary>
     /// Liste/kartlarda gösterilen küçük thumbnail (~160px). Manuel yüklemelerde base64, Etsy'de CDN URL.
     /// Liste projeksiyonları bunu taşır; tam <see cref="Image"/> yalnız detayda döner.
     /// </summary>
-    [MaxLength(500_000)]
+    [MaxLength(ImageLimits.MaxThumbnailBase64Length)]
     public string? ThumbnailImage { get; set; }
 
     /// <summary>
@@ -57,7 +58,7 @@ public class Product
     public string? DefectNote { get; set; }
 
     // Base64 image — max ~5MB binary
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string? DefectImage { get; set; }
 
     [MaxLength(50)]

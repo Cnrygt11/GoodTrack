@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System.ComponentModel.DataAnnotations;
 
 namespace GoodTrack.API.DTOs.Product;
@@ -12,6 +13,6 @@ public class UpdateStatusRequest
     public string? DefectNote { get; set; }
 
     // Base64 image — max ~5MB binary
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string? DefectImage { get; set; }
 }

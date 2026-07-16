@@ -51,7 +51,7 @@ public sealed class AuthService : IAuthService
         var user = await _userRepository.GetByUsernameAsync(usernameClean);
         if (user == null)
         {
-            throw new UnauthorizedAccessException("Geçersiz kullanıcı adı veya şifre!");
+            throw new UnauthorizedAccessException(Messages.Auth.InvalidCredentials);
         }
 
         // Email Verification Check
@@ -63,7 +63,7 @@ public sealed class AuthService : IAuthService
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            throw new UnauthorizedAccessException("Geçersiz kullanıcı adı veya şifre!");
+            throw new UnauthorizedAccessException(Messages.Auth.InvalidCredentials);
         }
 
         // Deaktive (soft-delete) hesap, doğru şifreyle girişte otomatik reaktive olur.
@@ -124,7 +124,7 @@ public sealed class AuthService : IAuthService
         var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
         if (!emailRegex.IsMatch(emailClean))
         {
-            throw new ArgumentException("Geçersiz veya şüpheli e-posta formatı!");
+            throw new ArgumentException(Messages.Auth.InvalidEmailFormat);
         }
 
         // 2.5 Phone Number Validation
@@ -173,7 +173,7 @@ public sealed class AuthService : IAuthService
         var existingUserByEmail = await _userRepository.GetByEmailAsync(emailClean);
         if (existingUserByEmail != null)
         {
-            throw new ArgumentException("Bu e-posta adresi zaten kullanımda!");
+            throw new ArgumentException(Messages.Auth.EmailInUse);
         }
 
         var user = new User
@@ -198,7 +198,7 @@ public sealed class AuthService : IAuthService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
@@ -222,7 +222,7 @@ public sealed class AuthService : IAuthService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, oldPassword);
@@ -297,7 +297,7 @@ public sealed class AuthService : IAuthService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            throw new KeyNotFoundException("Kullanıcı bulunamadı.");
+            throw new KeyNotFoundException(Messages.Auth.UserNotFound);
         }
 
         user.RefreshToken = string.Empty;

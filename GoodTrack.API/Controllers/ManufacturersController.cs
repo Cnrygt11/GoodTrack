@@ -42,7 +42,7 @@ public class ManufacturersController : BaseApiController
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         bool isFreePlan = false;
         if (Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
@@ -84,7 +84,7 @@ public class ManufacturersController : BaseApiController
         CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
-        var role = User.FindFirst(ClaimTypes.Role)?.Value;
+        var role = GetCurrentUserRole();
 
         bool isFreePlan = false;
         if (Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))

@@ -210,13 +210,11 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         };
     }
 
-    private const int MaxImageBase64Length = 7_000_000;
-
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
     {
-        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > MaxImageBase64Length)
+        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > ImageLimits.MaxBase64Length)
         {
-            throw new ArgumentException($"{fieldName} boyutu çok büyük! Maksimum 5MB desteklenmektedir.");
+            throw new ArgumentException(Messages.Image.TooLarge(fieldName));
         }
     }
 
@@ -224,7 +222,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
 
         ValidateOwnership(product, userId, role);
 
@@ -258,10 +256,10 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
 
         if (product.SellerId != sellerId)
-            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+            throw new UnauthorizedAccessException(Messages.Order.NoPermission);
 
         string currentStatus = ResolveCurrentStatus(product);
         if (currentStatus != OrderStatus.Production)
@@ -282,10 +280,10 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
 
         if (product.ManufacturerId != mfrId)
-            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+            throw new UnauthorizedAccessException(Messages.Order.NoPermission);
 
         if (!product.CancelRequested)
             throw new InvalidOperationException("Bu sipariş için aktif bir iptal talebi bulunmuyor.");
@@ -318,10 +316,10 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         var product = await _productRepository.GetByIdAsync(orderId);
         if (product == null)
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
 
         if (product.SellerId != sellerId)
-            throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+            throw new UnauthorizedAccessException(Messages.Order.NoPermission);
 
         string currentStatus = ResolveCurrentStatus(product);
         var cancelReason = string.IsNullOrWhiteSpace(reason) ? "Sipariş dış platformda iptal edildi." : reason;
@@ -382,12 +380,12 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         if (role == Roles.Seller)
         {
             if (product.SellerId != userId)
-                throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+                throw new UnauthorizedAccessException(Messages.Order.NoPermission);
         }
         else if (role == Roles.Mfr)
         {
             if (product.ManufacturerId != userId)
-                throw new UnauthorizedAccessException("Bu sipariş üzerinde işlem yapma yetkiniz yok.");
+                throw new UnauthorizedAccessException(Messages.Order.NoPermission);
         }
         else
         {

@@ -152,7 +152,7 @@ public sealed class ConnectionService : IConnectionService
         var request = await _connectionRequestRepository.GetByIdAsync(requestId);
         if (request == null)
         {
-            throw new KeyNotFoundException("Bağlantı isteği bulunamadı.");
+            throw new KeyNotFoundException(Messages.Connection.RequestNotFound);
         }
 
         if (request.ReceiverId != receiverId)
@@ -162,7 +162,7 @@ public sealed class ConnectionService : IConnectionService
 
         if (request.Status != ConnectionRequestStatus.Pending)
         {
-            throw new ArgumentException("İstek zaten işlenmiş.");
+            throw new ArgumentException(Messages.Connection.AlreadyProcessed);
         }
 
         var user = await _userRepository.GetByIdAsync(receiverId);
@@ -215,7 +215,7 @@ public sealed class ConnectionService : IConnectionService
         var request = await _connectionRequestRepository.GetByIdAsync(requestId);
         if (request == null)
         {
-            throw new KeyNotFoundException("Bağlantı isteği bulunamadı.");
+            throw new KeyNotFoundException(Messages.Connection.RequestNotFound);
         }
 
         if (request.ReceiverId != receiverId)
@@ -225,7 +225,7 @@ public sealed class ConnectionService : IConnectionService
 
         if (request.Status != ConnectionRequestStatus.Pending)
         {
-            throw new ArgumentException("İstek zaten işlenmiş.");
+            throw new ArgumentException(Messages.Connection.AlreadyProcessed);
         }
 
         request.Status = ConnectionRequestStatus.Rejected;
@@ -240,7 +240,7 @@ public sealed class ConnectionService : IConnectionService
         var request = await _connectionRequestRepository.GetByIdAsync(requestId);
         if (request == null)
         {
-            throw new KeyNotFoundException("Bağlantı isteği bulunamadı.");
+            throw new KeyNotFoundException(Messages.Connection.RequestNotFound);
         }
 
         if (request.SenderId != userId && request.ReceiverId != userId)

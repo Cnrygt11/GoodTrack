@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
@@ -14,11 +15,11 @@ public class CatalogProduct
     public string ProductCode { get; set; } = string.Empty;
 
     // Base64 image — max ~5MB binary
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string Image { get; set; } = string.Empty;
 
     /// <summary>Liste/kartlarda gösterilen küçük thumbnail (~160px). Manuel'de base64, Etsy'de CDN URL.</summary>
-    [MaxLength(500_000)]
+    [MaxLength(ImageLimits.MaxThumbnailBase64Length)]
     public string? ThumbnailImage { get; set; }
 
     [MaxLength(50)]

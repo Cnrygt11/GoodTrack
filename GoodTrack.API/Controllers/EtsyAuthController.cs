@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -52,7 +53,7 @@ public class EtsyAuthController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var (keystring, sharedSecret) = GetPlatformCredentials();

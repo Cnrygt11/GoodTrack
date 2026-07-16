@@ -65,7 +65,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var connections = await _etsyService.GetConnectionsAsync(userId, cancellationToken);
@@ -89,7 +89,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
@@ -115,7 +115,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
@@ -142,7 +142,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} requested Etsy listings synchronization.", userId);
@@ -170,7 +170,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("User {UserId} requested Etsy orders synchronization.", userId);
@@ -193,7 +193,7 @@ public class EtsySyncController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId == null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (request == null || request.MockReceipt == null || request.MockReceipt.Transactions == null)

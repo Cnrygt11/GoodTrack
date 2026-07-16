@@ -36,7 +36,7 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("Fetching catalog products for Seller user: {UserId}", userId);
@@ -57,12 +57,12 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Catalog.InvalidId));
         }
 
         try
@@ -88,7 +88,7 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
@@ -109,12 +109,12 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Catalog.InvalidId));
         }
 
         _logger.LogInformation("Seller user {UserId} is updating catalog product: {Id}", userId, id);
@@ -135,12 +135,12 @@ public class CatalogController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest(ApiResponse.Fail("Geçersiz ürün ID'si."));
+            return BadRequest(ApiResponse.Fail(Messages.Catalog.InvalidId));
         }
 
         _logger.LogInformation("Seller user {UserId} is deleting catalog product: {Id}", userId, id);

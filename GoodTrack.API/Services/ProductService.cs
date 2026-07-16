@@ -54,8 +54,6 @@ public sealed class ProductService : IProductService
         _logger = logger;
     }
 
-    private const int MaxImageBase64Length = 7_000_000;
-
     private async Task ValidateManufacturerAsync(string sellerId, string manufacturerId, CancellationToken cancellationToken = default)
     {
         var manufacturer = await _userRepository.GetByIdAsync(manufacturerId, cancellationToken);
@@ -73,9 +71,9 @@ public sealed class ProductService : IProductService
 
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
     {
-        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > MaxImageBase64Length)
+        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > ImageLimits.MaxBase64Length)
         {
-            throw new ArgumentException($"{fieldName} boyutu çok büyük! Maksimum 5MB desteklenmektedir.");
+            throw new ArgumentException(Messages.Image.TooLarge(fieldName));
         }
     }
 
@@ -121,7 +119,7 @@ public sealed class ProductService : IProductService
         }
         else
         {
-            throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
+            throw new UnauthorizedAccessException(Messages.Auth.Forbidden);
         }
 
         // Üretici müşteri adı/adresi görmemeli — projeksiyon bu alanları taşır, burada maskelenir.
@@ -141,7 +139,7 @@ public sealed class ProductService : IProductService
     {
         if (role != Roles.Seller && role != Roles.Mfr)
         {
-            throw new UnauthorizedAccessException("Bu işlem için yetkiniz yok.");
+            throw new UnauthorizedAccessException(Messages.Auth.Forbidden);
         }
 
         page = Math.Max(1, page);
@@ -172,12 +170,12 @@ public sealed class ProductService : IProductService
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
-            throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
+            throw new ArgumentException(Messages.Order.InvalidProductData);
         }
 
         if (string.IsNullOrWhiteSpace(dto.ManufacturerId))
         {
-            throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
+            throw new ArgumentException(Messages.Order.ManufacturerRequired);
         }
 
         await ValidateManufacturerAsync(sellerId, dto.ManufacturerId, cancellationToken);
@@ -263,12 +261,12 @@ public sealed class ProductService : IProductService
     {
         if (dto == null || string.IsNullOrWhiteSpace(dto.Code))
         {
-            throw new ArgumentException("Geçersiz ürün verisi veya eksik ürün kodu!");
+            throw new ArgumentException(Messages.Order.InvalidProductData);
         }
 
         if (string.IsNullOrWhiteSpace(dto.ManufacturerId))
         {
-            throw new ArgumentException("Lütfen siparişin gönderileceği üreticiyi (Manufacturer) seçin!");
+            throw new ArgumentException(Messages.Order.ManufacturerRequired);
         }
 
         await ValidateManufacturerAsync(sellerId, dto.ManufacturerId, cancellationToken);
@@ -276,7 +274,7 @@ public sealed class ProductService : IProductService
         var existing = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (existing == null)
         {
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
         }
 
         if (existing.SellerId != sellerId)
@@ -389,7 +387,7 @@ public sealed class ProductService : IProductService
         var existing = await _productRepository.GetByIdAsync(orderId, cancellationToken);
         if (existing == null)
         {
-            throw new KeyNotFoundException("Sipariş bulunamadı!");
+            throw new KeyNotFoundException(Messages.Order.NotFound);
         }
 
         if (existing.SellerId != sellerId)

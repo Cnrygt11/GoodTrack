@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -11,11 +12,11 @@ public class CreateProductDto
     [MaxLength(100)]
     public string Code { get; set; } = string.Empty;
 
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string? Image { get; set; }
 
     /// <summary>Client'ta üretilen küçük thumbnail (~160px). Yoksa Image'den türetilmez; null kalır.</summary>
-    [MaxLength(500_000)]
+    [MaxLength(ImageLimits.MaxThumbnailBase64Length)]
     public string? ThumbnailImage { get; set; }
 
     /// <summary>

@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
@@ -16,11 +17,11 @@ public class CreateCatalogProductDto
     /// Boş string <c>""</c> mevcut "görselsiz" anlamını korur. İstemci liste yanıtında tam
     /// görseli almadığından, görsele dokunmayan güncellemeler null gönderir.
     /// </summary>
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string? Image { get; set; }
 
     /// <summary>Client'ta üretilen küçük thumbnail (~160px). Sipariş autofill'inde de kopyalanır.</summary>
-    [MaxLength(500_000)]
+    [MaxLength(ImageLimits.MaxThumbnailBase64Length)]
     public string? ThumbnailImage { get; set; }
 
     [Required(ErrorMessage = "Üretici ID zorunludur.")]

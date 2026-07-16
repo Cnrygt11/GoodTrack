@@ -36,7 +36,7 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("Seller user {UserId} is retrieving extra dynamic fields templates", userId);
@@ -56,7 +56,7 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         _logger.LogInformation("Seller user {UserId} is creating a new dynamic feature template: {Name}", userId, dto.Name);
@@ -76,7 +76,7 @@ public class FieldsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         if (string.IsNullOrWhiteSpace(id))

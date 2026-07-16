@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.RateLimiting;
@@ -41,7 +42,7 @@ public class ProfileController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var profile = await _profileService.GetProfileAsync(userId);
@@ -61,7 +62,7 @@ public class ProfileController : BaseApiController
         var currentUserUsername = User.FindFirst(ClaimTypes.Name)?.Value;
         if (currentUserId == null || string.IsNullOrEmpty(currentUserUsername))
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         bool isSelf = currentUserUsername.Equals(username, StringComparison.OrdinalIgnoreCase);
@@ -94,7 +95,7 @@ public class ProfileController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         await _profileService.UpdateProfileAsync(userId, dto);
@@ -113,7 +114,7 @@ public class ProfileController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         try
@@ -123,7 +124,7 @@ public class ProfileController : BaseApiController
         }
         catch (UnauthorizedAccessException)
         {
-            return Unauthorized(ApiResponse.Fail("Şifre hatalı."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.WrongPassword));
         }
     }
 }

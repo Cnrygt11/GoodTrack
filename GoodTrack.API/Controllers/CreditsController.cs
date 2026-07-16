@@ -34,7 +34,7 @@ public class CreditsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
@@ -53,7 +53,7 @@ public class CreditsController : BaseApiController
         var userId = GetCurrentUserId();
         if (userId is null)
         {
-            return Unauthorized(ApiResponse.Fail("Yetkisiz erişim. / Unauthorized."));
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
         }
 
         var updatedCredits = await _creditsService.UpgradePlanAsync(userId, request.Plan, cancellationToken);

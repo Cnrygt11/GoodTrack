@@ -1,3 +1,4 @@
+using GoodTrack.API.Constants;
 using System.ComponentModel.DataAnnotations;
 
 namespace GoodTrack.API.DTOs.Auth;
@@ -27,7 +28,7 @@ public class UserProfileDto
     public string Role { get; set; } = string.Empty;
 
     // Base64 image — max ~5MB binary (≈ 6.8MB base64)
-    [MaxLength(7_000_000)]
+    [MaxLength(ImageLimits.MaxBase64Length)]
     public string ProfilePicture { get; set; } = string.Empty;
 
     /// <summary>Küçük avatar thumbnail'i; dizin/listeler bunu taşır, tam avatar profil detayında döner.</summary>
