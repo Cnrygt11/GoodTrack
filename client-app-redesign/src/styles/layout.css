@@ -506,6 +506,20 @@
     height: 140px !important;
   }
 
+  /* Katalog kartı mobilde kompakt satır düzeninde kalır: 140px banner kuralı
+     sipariş kartları içindir; katalog kartının içeriği az olduğundan tam genişlik
+     fotoğraf kartı kaplayıp yazıları taşırıyordu. */
+  .catalog-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .catalog-card .product-thumb {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
   .product-status-dates {
     align-items: flex-start !important;
     text-align: left !important;

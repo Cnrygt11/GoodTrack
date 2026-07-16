@@ -42,7 +42,7 @@ export default function CatalogItemCard({
   const isUnassigned = !product.mfrId || product.mfrId === '00000000-0000-0000-0000-000000000000';
 
   return (
-    <div className="product-card">
+    <div className="product-card catalog-card">
       {cardImage ? (
         <div
           className="product-thumb"
