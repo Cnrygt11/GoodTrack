@@ -251,6 +251,10 @@ export const translations = {
     termsTitle: 'Kullanım Koşulları',
     etsyTrademarkNote:
       'Etsy®, Etsy, Inc.’in tescilli ticari markasıdır. GoodTrack bağımsız bir uygulamadır; Etsy tarafından geliştirilmemiş, desteklenmez veya onaylanmaz. Entegrasyon Etsy Open API üzerinden sağlanır.',
+    // Etsy'nin API kullanım koşullarının istediği BİREBİR atıf kalıbı — her dilde İngilizce
+    // olarak aynen gösterilir, çevrilmez.
+    etsyOfficialAttribution:
+      "The term 'Etsy' is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc.",
     deactivateTitle: 'Hesabı Deaktive Et',
     deactivateDesc:
       'Hesabınızı geçici olarak kapatır. Verileriniz silinmez; doğru şifrenizle tekrar giriş yaparak hesabınızı yeniden aktifleştirebilirsiniz. Deaktive olduğunuzda Etsy senkronizasyonu durur ve profiliniz aramada görünmez.',
@@ -899,6 +903,8 @@ export const translations = {
     termsTitle: 'Terms of Service',
     etsyTrademarkNote:
       'Etsy® is a registered trademark of Etsy, Inc. GoodTrack is an independent application, not developed, endorsed, or certified by Etsy. The integration is provided through the Etsy Open API.',
+    etsyOfficialAttribution:
+      "The term 'Etsy' is a trademark of Etsy, Inc. This application uses the Etsy API but is not endorsed or certified by Etsy, Inc.",
     deactivateTitle: 'Deactivate Account',
     deactivateDesc:
       'Temporarily closes your account. Your data is not deleted; you can reactivate by logging in again with your correct password. While deactivated, Etsy sync stops and your profile is hidden from search.',

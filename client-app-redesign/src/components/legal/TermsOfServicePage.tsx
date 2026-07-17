@@ -40,6 +40,13 @@ function TurkishContent() {
         Etsy®, Etsy, Inc.'in tescilli ticari markasıdır. GoodTrack'in Etsy ile tek bağlantısı, sizin
         açık izninizle (OAuth) Etsy Open API üzerinden kurduğunuz entegrasyondur.
       </p>
+      <p>
+        {/* Etsy API kullanım koşullarının istediği birebir (İngilizce) atıf kalıbı */}
+        <em>
+          The term 'Etsy' is a trademark of Etsy, Inc. This application uses the Etsy API but is not
+          endorsed or certified by Etsy, Inc.
+        </em>
+      </p>
 
       <h2>3. Etsy API Kullanımı</h2>
       <p>
@@ -122,6 +129,13 @@ function EnglishContent() {
         API. Etsy® is a registered trademark of Etsy, Inc. GoodTrack's only connection to Etsy is
         the integration you establish, with your explicit consent (OAuth), through the Etsy Open
         API.
+      </p>
+      <p>
+        {/* Verbatim attribution required by the Etsy API Terms of Use */}
+        <em>
+          The term 'Etsy' is a trademark of Etsy, Inc. This application uses the Etsy API but is not
+          endorsed or certified by Etsy, Inc.
+        </em>
       </p>
 
       <h2>3. Use of the Etsy API</h2>

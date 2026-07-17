@@ -1,22 +1,19 @@
-import React from 'react';
-import { Store, CheckCircle2, Settings, Copy, Loader2, Sparkles, RefreshCw } from 'lucide-react';
+import { Store, CheckCircle2, Loader2, Sparkles, RefreshCw } from 'lucide-react';
 import { EtsyConnectionInfo } from '../../../hooks/useEtsyIntegration';
 import styles from '../EtsyIntegration.module.css';
 
+/**
+ * Bağlı Etsy mağazaları ve eşitleme işlemleri. Sipariş aktarımı Etsy Open API üzerinden
+ * PERİYODİK EŞİTLEME (polling) ile yapılır — Etsy'nin genel kullanıma açık webhook'u yoktur;
+ * bu yüzden arayüzde webhook/anahtar yapılandırması sunulmaz. (Platform düzeyinde bir
+ * bildirim altyapısı yapılandırıldıysa yalnız bilgi notu gösterilir.)
+ */
 interface EtsyActiveStoresListProps {
   connections: EtsyConnectionInfo[];
   platformWebhookConfigured: boolean;
-  webhookSecrets: Record<string, string>;
-  setWebhookSecrets: React.Dispatch<React.SetStateAction<Record<string, string>>>;
-  webhookLoadings: Record<string, boolean>;
-  webhookSuccesses: Record<string, boolean>;
   syncListingsLoading: boolean;
   syncOrdersLoading: boolean;
-  copied: boolean;
-  getWebhookUrl: () => string;
-  copyToClipboard: (text: string) => void;
   handleDisconnect: (shopId: string) => Promise<void>;
-  handleUpdateWebhookSecret: (shopId: string) => Promise<void>;
   handleSyncListings: () => Promise<void>;
   handleSyncOrders: () => Promise<void>;
 }
@@ -24,17 +21,9 @@ interface EtsyActiveStoresListProps {
 export function EtsyActiveStoresList({
   connections,
   platformWebhookConfigured,
-  webhookSecrets,
-  setWebhookSecrets,
-  webhookLoadings,
-  webhookSuccesses,
   syncListingsLoading,
   syncOrdersLoading,
-  copied,
-  getWebhookUrl,
-  copyToClipboard,
   handleDisconnect,
-  handleUpdateWebhookSecret,
   handleSyncListings,
   handleSyncOrders,
 }: EtsyActiveStoresListProps) {
@@ -69,12 +58,8 @@ export function EtsyActiveStoresList({
             </button>
           </div>
 
-          <div className={styles.webhookSection}>
-            <h6 className={styles.webhookTitle}>
-              <Settings size={12} />
-              Sipariş Bildirim Ayarları ({conn.shopName})
-            </h6>
-            {platformWebhookConfigured ? (
+          {platformWebhookConfigured && (
+            <div className={styles.webhookSection}>
               <div className={styles.webhookInfoNote}>
                 <CheckCircle2 size={14} style={{ color: 'var(--success)', flexShrink: 0 }} />
                 <span>
@@ -82,74 +67,8 @@ export function EtsyActiveStoresList({
                   yok.
                 </span>
               </div>
-            ) : (
-              <div className={styles.webhookRow}>
-                <div>
-                  <label className={styles.label}>Bildirim Adresi (Etsy paneline eklenecek)</label>
-                  <div className={styles.inputGroup}>
-                    <input
-                      readOnly
-                      type="text"
-                      value={getWebhookUrl()}
-                      className={styles.webhookUrlInput}
-                    />
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      onClick={() => copyToClipboard(getWebhookUrl())}
-                      style={{
-                        padding: '6px 12px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      {copied ? (
-                        <CheckCircle2 size={12} style={{ color: 'var(--success)' }} />
-                      ) : (
-                        <Copy size={12} />
-                      )}
-                      {copied ? 'Kopyalandı' : 'Kopyala'}
-                    </button>
-                  </div>
-                </div>
-
-                <div className={styles.secretForm}>
-                  <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className={styles.label}>Bildirim İmza Anahtarı</label>
-                    {/* Secret sunucudan geri okunamaz; kayıtlıysa maskeli placeholder gösterilir,
-                        yeni değer girilirse üzerine yazılır. */}
-                    <input
-                      type="password"
-                      placeholder={conn.hasWebhookSecret ? '•••••••• (kayıtlı)' : 'whsec_...'}
-                      value={webhookSecrets[conn.shopId] || ''}
-                      onChange={(e) =>
-                        setWebhookSecrets((prev) => ({ ...prev, [conn.shopId]: e.target.value }))
-                      }
-                      className={styles.secretInput}
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    disabled={webhookLoadings[conn.shopId]}
-                    onClick={() => handleUpdateWebhookSecret(conn.shopId)}
-                    style={{
-                      fontSize: '12px',
-                      padding: '8px 16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    {webhookLoadings[conn.shopId] && <Loader2 className="animate-spin" size={12} />}
-                    {webhookSuccesses[conn.shopId] ? 'Kaydedildi!' : 'Kaydet'}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       ))}
 

@@ -4,7 +4,6 @@ import { useSettings } from '../../context/SettingsContext';
 import { useEtsyIntegration } from '../../hooks/useEtsyIntegration';
 import { EtsyStoreConnector } from './parts/EtsyStoreConnector';
 import { EtsyActiveStoresList } from './parts/EtsyActiveStoresList';
-import { EtsyMockWebhookPanel } from './parts/EtsyMockWebhookPanel';
 import styles from './EtsyIntegration.module.css';
 
 export default function EtsyIntegration() {
@@ -15,32 +14,14 @@ export default function EtsyIntegration() {
     error,
     connectLoading,
     platformWebhookConfigured,
-    webhookSecrets,
-    setWebhookSecrets,
-    webhookLoadings,
-    webhookSuccesses,
     syncListingsLoading,
     syncOrdersLoading,
     actionSuccessMessage,
-    mockLoading,
-    mockSuccess,
-    setMockSuccess,
-    getWebhookUrl,
     connectEtsy,
-    updateWebhookSecret,
     disconnectShop,
     syncListings,
     syncOrders,
-    sendMockWebhook,
   } = useEtsyIntegration();
-
-  const [copied, setCopied] = React.useState(false);
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleConnect = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -93,22 +74,14 @@ export default function EtsyIntegration() {
       {/* 1. Yeni Mağaza Bağlama (Form) */}
       <EtsyStoreConnector connectLoading={connectLoading} handleConnect={handleConnect} />
 
-      {/* 2. Bağlı Mağazalar Listesi ve İşlemler */}
+      {/* 2. Bağlı Mağazalar Listesi ve İşlemler (sipariş aktarımı polling ile) */}
       {connections.length > 0 ? (
         <EtsyActiveStoresList
           connections={connections}
           platformWebhookConfigured={platformWebhookConfigured}
-          webhookSecrets={webhookSecrets}
-          setWebhookSecrets={setWebhookSecrets}
-          webhookLoadings={webhookLoadings}
-          webhookSuccesses={webhookSuccesses}
           syncListingsLoading={syncListingsLoading}
           syncOrdersLoading={syncOrdersLoading}
-          copied={copied}
-          getWebhookUrl={getWebhookUrl}
-          copyToClipboard={copyToClipboard}
           handleDisconnect={disconnectShop}
-          handleUpdateWebhookSecret={updateWebhookSecret}
           handleSyncListings={syncListings}
           handleSyncOrders={syncOrders}
         />
@@ -116,17 +89,10 @@ export default function EtsyIntegration() {
         <div className={styles.emptyState}>Henüz bağlanmış bir Etsy mağazası bulunmuyor.</div>
       )}
 
-      {/* 3. Simülasyon Test Aracı */}
-      <EtsyMockWebhookPanel
-        mockLoading={mockLoading}
-        mockSuccess={mockSuccess}
-        setMockSuccess={setMockSuccess}
-        connections={connections}
-        sendMockWebhook={sendMockWebhook}
-      />
-
-      {/* Marka ayrımı — GoodTrack, Etsy'nin resmi uygulaması değildir. */}
+      {/* Marka ayrımı — GoodTrack, Etsy'nin resmi uygulaması değildir.
+          İkinci paragraf Etsy'nin ticari API başvurusunda istediği BİREBİR atıf kalıbıdır. */}
       <p className={styles.trademarkNote}>{t('etsyTrademarkNote')}</p>
+      <p className={styles.trademarkNote}>{t('etsyOfficialAttribution')}</p>
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { etsyApi } from '../services/etsyApi';
-import { EtsyWebhookMockPayload } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export interface EtsyConnectionInfo {
@@ -12,29 +11,21 @@ export interface EtsyConnectionInfo {
   hasWebhookSecret: boolean;
 }
 
+/**
+ * Etsy entegrasyon durumunu yöneten hook. Sipariş aktarımı Etsy Open API üzerinden
+ * PERİYODİK EŞİTLEME (polling) ile yapılır; Etsy'nin genel kullanıma açık webhook'u
+ * bulunmadığından arayüzde webhook/imza-anahtarı yapılandırması sunulmaz.
+ */
 export function useEtsyIntegration() {
   const [loading, setLoading] = useState(true);
   const [connections, setConnections] = useState<EtsyConnectionInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Connection and actions loading states
   const [connectLoading, setConnectLoading] = useState(false);
   const [platformWebhookConfigured, setPlatformWebhookConfigured] = useState(false);
-  const [webhookSecrets, setWebhookSecrets] = useState<Record<string, string>>({});
-  const [webhookLoadings, setWebhookLoadings] = useState<Record<string, boolean>>({});
-  const [webhookSuccesses, setWebhookSuccesses] = useState<Record<string, boolean>>({});
   const [syncListingsLoading, setSyncListingsLoading] = useState(false);
   const [syncOrdersLoading, setSyncOrdersLoading] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
-
-  // Mock test states
-  const [mockLoading, setMockLoading] = useState(false);
-  const [mockSuccess, setMockSuccess] = useState<string | null>(null);
-
-  const getWebhookUrl = () => {
-    const origin = window.location.origin;
-    return `${origin}/api/etsysync/webhook/events`;
-  };
 
   const fetchConnectionInfo = useCallback(async () => {
     setLoading(true);
@@ -45,10 +36,6 @@ export function useEtsyIntegration() {
       ]);
       setConnections(data || []);
       setPlatformWebhookConfigured(config?.platformConfigured ?? false);
-
-      // Secret sunucudan geri okunamaz; input alanları boş başlar, kayıtlı olduğu
-      // hasWebhookSecret bayrağıyla (maskeli placeholder) gösterilir.
-      setWebhookSecrets({});
       setError(null);
     } catch (err: unknown) {
       console.error(err);
@@ -94,10 +81,7 @@ export function useEtsyIntegration() {
       const callbackUrl = `${window.location.origin}/seller/profile?tab=integrations`; // matching frontendUrl's callback redirection
       const frontendUrl = `${window.location.origin}/seller/profile?tab=integrations`;
 
-      const result = await etsyApi.connect({
-        callbackUrl,
-        frontendUrl,
-      });
+      const result = await etsyApi.connect({ callbackUrl, frontendUrl });
 
       if (result && result.oauthUrl) {
         window.location.href = result.oauthUrl;
@@ -109,43 +93,6 @@ export function useEtsyIntegration() {
       setConnectLoading(false);
     }
   }, []);
-
-  const updateWebhookSecret = useCallback(
-    async (shopId: string) => {
-      // Input boş başlar (secret geri okunamaz); kayıtlı secret varken boş kaydetmek
-      // yanlışlıkla silmeye yol açar — yeni değer girilmesini iste.
-      const secret = webhookSecrets[shopId] || '';
-      const existing = connections.find((c) => c.shopId === shopId);
-      if (!secret && existing?.hasWebhookSecret) {
-        setError('Kayıtlı imza anahtarı korunuyor. Değiştirmek için yeni bir değer girin.');
-        return;
-      }
-
-      setWebhookLoadings((prev) => ({ ...prev, [shopId]: true }));
-      setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
-      setActionSuccessMessage(null);
-
-      try {
-        await etsyApi.updateWebhookSecret(shopId, secret || null);
-
-        setWebhookSuccesses((prev) => ({ ...prev, [shopId]: true }));
-        setConnections((prev) =>
-          prev.map((c) => (c.shopId === shopId ? { ...c, hasWebhookSecret: !!secret } : c)),
-        );
-
-        setActionSuccessMessage('Bildirim imza anahtarı başarıyla güncellendi.');
-        setTimeout(() => {
-          setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
-          setActionSuccessMessage(null);
-        }, 3000);
-      } catch (err: unknown) {
-        setError('Bildirim imza anahtarı güncellenemedi: ' + extractErrorMessage(err));
-      } finally {
-        setWebhookLoadings((prev) => ({ ...prev, [shopId]: false }));
-      }
-    },
-    [webhookSecrets, connections],
-  );
 
   const disconnectShop = useCallback(async (shopId: string) => {
     if (window.confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
@@ -191,23 +138,6 @@ export function useEtsyIntegration() {
     }
   }, []);
 
-  const sendMockWebhook = useCallback(async (payload: EtsyWebhookMockPayload) => {
-    setMockLoading(true);
-    setMockSuccess(null);
-    setError(null);
-
-    try {
-      const res = await etsyApi.testMockWebhook(payload);
-      setMockSuccess(res.message);
-      return res.message;
-    } catch (err: unknown) {
-      setError('Mock webhook testi başarısız: ' + extractErrorMessage(err));
-      throw err;
-    } finally {
-      setMockLoading(false);
-    }
-  }, []);
-
   return {
     loading,
     connections,
@@ -215,23 +145,13 @@ export function useEtsyIntegration() {
     setError,
     connectLoading,
     platformWebhookConfigured,
-    webhookSecrets,
-    setWebhookSecrets,
-    webhookLoadings,
-    webhookSuccesses,
     syncListingsLoading,
     syncOrdersLoading,
     actionSuccessMessage,
     setActionSuccessMessage,
-    mockLoading,
-    mockSuccess,
-    setMockSuccess,
-    getWebhookUrl,
     connectEtsy,
-    updateWebhookSecret,
     disconnectShop,
     syncListings,
     syncOrders,
-    sendMockWebhook,
   };
 }

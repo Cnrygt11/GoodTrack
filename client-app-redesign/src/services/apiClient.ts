@@ -265,28 +265,6 @@ export interface FeedbackInput {
   browserInfo?: string;
 }
 
-export interface EtsyWebhookMockTransaction {
-  listing_id: number;
-  quantity: number;
-  title: string;
-  variations: { formatted_name: string; formatted_value: string }[];
-  personalization: string;
-}
-
-export interface EtsyWebhookMockPayload {
-  event_type: string;
-  shop_id: string;
-  mock_receipt: {
-    receipt_id: number;
-    name: string;
-    first_line: string;
-    second_line: string;
-    city: string;
-    country_iso: string;
-    transactions: EtsyWebhookMockTransaction[];
-  };
-}
-
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -707,16 +685,6 @@ export const api = {
     >('/etsysync/connections');
   },
 
-  updateEtsyWebhookSecret(
-    shopId: string,
-    webhookSigningSecret: string | null,
-  ): Promise<{ message: string }> {
-    return apiCall<{ message: string }>('/etsysync/connection/webhook-secret', {
-      method: 'POST',
-      body: JSON.stringify({ etsyShopId: shopId, webhookSigningSecret }),
-    });
-  },
-
   disconnectEtsyShop(shopId: string): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/connection/disconnect', {
       method: 'POST',
@@ -733,13 +701,6 @@ export const api = {
   syncEtsyOrders(): Promise<{ message: string }> {
     return apiCall<{ message: string }>('/etsysync/sync-orders', {
       method: 'POST',
-    });
-  },
-
-  testMockEtsyWebhook(payload: EtsyWebhookMockPayload): Promise<{ message: string }> {
-    return apiCall<{ message: string }>('/etsysync/webhook/test-mock', {
-      method: 'POST',
-      body: JSON.stringify(payload),
     });
   },
 };

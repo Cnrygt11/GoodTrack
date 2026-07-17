@@ -481,6 +481,8 @@ export default function LandingPage() {
           <span className="landing-footer-copy">
             © {new Date().getFullYear()} GoodTrack. {t('landingAllRightsReserved')}
           </span>
+          {/* Etsy API kullanım koşullarının istediği birebir atıf kalıbı */}
+          <span className="landing-footer-attribution">{t('etsyOfficialAttribution')}</span>
         </div>
       </footer>
     </div>
