@@ -134,7 +134,7 @@ public class AuthController : BaseApiController
         try
         {
             var response = await _authService.RefreshTokenAsync(request);
-            return Ok(new ApiResponse<LoginResponse>(response, "Token başarıyla yenilendi."));
+            return Ok(new ApiResponse<LoginResponse>(response, "Oturum başarıyla yenilendi."));
         }
         catch (Microsoft.IdentityModel.Tokens.SecurityTokenException ex)
         {

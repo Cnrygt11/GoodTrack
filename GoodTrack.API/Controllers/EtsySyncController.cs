@@ -94,7 +94,7 @@ public class EtsySyncController : BaseApiController
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
         {
-            return BadRequest(ApiResponse.Fail("EtsyShopId zorunludur."));
+            return BadRequest(ApiResponse.Fail("Mağaza bilgisi eksik."));
         }
 
         var connection = await _etsyService.GetConnectionAsync(userId, dto.EtsyShopId, cancellationToken);
@@ -106,7 +106,7 @@ public class EtsySyncController : BaseApiController
         connection.WebhookSigningSecret = dto.WebhookSigningSecret;
         await _context.SaveChangesAsync(cancellationToken);
 
-        return Ok(ApiResponse.Ok("Webhook imza anahtarı başarıyla güncellendi."));
+        return Ok(ApiResponse.Ok("Bildirim imza anahtarı başarıyla güncellendi."));
     }
 
     [HttpPost("connection/disconnect")]
@@ -120,7 +120,7 @@ public class EtsySyncController : BaseApiController
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
         {
-            return BadRequest(ApiResponse.Fail("EtsyShopId zorunludur."));
+            return BadRequest(ApiResponse.Fail("Mağaza bilgisi eksik."));
         }
 
         var connection = await _context.EtsyConnections

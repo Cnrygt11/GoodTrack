@@ -117,7 +117,7 @@ export function useEtsyIntegration() {
       const secret = webhookSecrets[shopId] || '';
       const existing = connections.find((c) => c.shopId === shopId);
       if (!secret && existing?.hasWebhookSecret) {
-        setError('Kayıtlı secret korunuyor. Değiştirmek için yeni bir değer girin.');
+        setError('Kayıtlı imza anahtarı korunuyor. Değiştirmek için yeni bir değer girin.');
         return;
       }
 
@@ -133,13 +133,13 @@ export function useEtsyIntegration() {
           prev.map((c) => (c.shopId === shopId ? { ...c, hasWebhookSecret: !!secret } : c)),
         );
 
-        setActionSuccessMessage('Webhook imza doğrulama anahtarı başarıyla güncellendi.');
+        setActionSuccessMessage('Bildirim imza anahtarı başarıyla güncellendi.');
         setTimeout(() => {
           setWebhookSuccesses((prev) => ({ ...prev, [shopId]: false }));
           setActionSuccessMessage(null);
         }, 3000);
       } catch (err: unknown) {
-        setError('Webhook Signing Secret güncellenemedi: ' + extractErrorMessage(err));
+        setError('Bildirim imza anahtarı güncellenemedi: ' + extractErrorMessage(err));
       } finally {
         setWebhookLoadings((prev) => ({ ...prev, [shopId]: false }));
       }

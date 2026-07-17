@@ -59,7 +59,7 @@ public class EtsyAuthController : BaseApiController
         var (keystring, sharedSecret) = GetPlatformCredentials();
         if (string.IsNullOrEmpty(keystring) || string.IsNullOrEmpty(sharedSecret))
         {
-            return BadRequest(ApiResponse.Fail("Sistem Etsy API anahtarları yapılandırılmamış. Lütfen sistem yöneticinizle iletişime geçin."));
+            return BadRequest(ApiResponse.Fail("Etsy bağlantısı henüz yapılandırılmamış. Lütfen sistem yöneticinizle iletişime geçin."));
         }
 
         if (string.IsNullOrWhiteSpace(dto.CallbackUrl) || string.IsNullOrWhiteSpace(dto.FrontendUrl))

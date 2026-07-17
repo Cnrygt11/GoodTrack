@@ -72,20 +72,20 @@ export function EtsyActiveStoresList({
           <div className={styles.webhookSection}>
             <h6 className={styles.webhookTitle}>
               <Settings size={12} />
-              Webhook Yapılandırması ({conn.shopName})
+              Sipariş Bildirim Ayarları ({conn.shopName})
             </h6>
             {platformWebhookConfigured ? (
               <div className={styles.webhookInfoNote}>
                 <CheckCircle2 size={14} style={{ color: 'var(--success)', flexShrink: 0 }} />
                 <span>
-                  Sipariş webhook'ları platform düzeyinde otomatik yapılandırıldı; ek bir işlem
-                  yapmanıza gerek yok.
+                  Sipariş bildirimleri otomatik olarak yapılandırıldı; ek bir işlem yapmanıza gerek
+                  yok.
                 </span>
               </div>
             ) : (
               <div className={styles.webhookRow}>
                 <div>
-                  <label className={styles.label}>Etsy Webhook Gönderim URL'i</label>
+                  <label className={styles.label}>Bildirim Adresi (Etsy paneline eklenecek)</label>
                   <div className={styles.inputGroup}>
                     <input
                       readOnly
@@ -117,7 +117,7 @@ export function EtsyActiveStoresList({
 
                 <div className={styles.secretForm}>
                   <div className="form-group" style={{ flex: 1, marginBottom: 0 }}>
-                    <label className={styles.label}>Webhook Signing Secret</label>
+                    <label className={styles.label}>Bildirim İmza Anahtarı</label>
                     {/* Secret sunucudan geri okunamaz; kayıtlıysa maskeli placeholder gösterilir,
                         yeni değer girilirse üzerine yazılır. */}
                     <input
