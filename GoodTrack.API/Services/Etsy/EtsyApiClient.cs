@@ -133,7 +133,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
 
         for (var page = 0; page < maxPages; page++)
         {
-            var url = $"v3/application/shops/{shopId}/listings/active?limit={pageSize}&offset={offset}";
+            var url = $"v3/application/shops/{shopId}/listings?state=active&limit={pageSize}&offset={offset}";
             var request = BuildAuthorizedRequest(HttpMethod.Get, url, credentials);
 
             var response = await _httpClient.SendAsync(request, cancellationToken);
