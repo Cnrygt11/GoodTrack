@@ -1,6 +1,7 @@
-import { Building2, MapPin } from 'lucide-react';
+import { Building2 } from 'lucide-react';
 import { TranslationKey } from '../../services/translations';
 import { MANUFACTURER_CATEGORIES } from '../../utils/constants';
+import CitySelect from '../ui/CitySelect';
 
 interface MfrBusinessFieldsProps {
   t: (key: TranslationKey) => string;
@@ -38,20 +39,18 @@ export default function MfrBusinessFields({
       <div className="form-row-responsive">
         <div className="form-group">
           <label>{t('cityLabel')}</label>
-          <div className="form-group-with-icon">
-            <MapPin size={14} />
-            <input 
-              type="text" 
-              placeholder={t('cityPlaceholder')}
-              value={city}
-              onChange={(e) => setCity(e.target.value)}
-            />
-          </div>
+          <CitySelect
+            value={city}
+            onSelect={setCity}
+            onClear={() => setCity('')}
+            placeholder={t('citySelectPlaceholder')}
+            noMatchText={t('noCityMatch')}
+          />
         </div>
         <div className="form-group flex-2">
           <label>{t('addressLabel')}</label>
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder={t('addressLabel')}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
@@ -63,11 +62,13 @@ export default function MfrBusinessFields({
       <div className="form-group">
         <div className="bio-header">
           <label>{t('bioLabel')}</label>
-          <span style={{ fontSize: '11px', color: bio.length > 500 ? 'var(--danger)' : 'var(--muted)' }}>
+          <span
+            style={{ fontSize: '11px', color: bio.length > 500 ? 'var(--danger)' : 'var(--muted)' }}
+          >
             {bio.length} / 500
           </span>
         </div>
-        <textarea 
+        <textarea
           placeholder={t('bioPlaceholder')}
           value={bio}
           onChange={(e) => setBio(e.target.value.slice(0, 500))}

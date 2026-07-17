@@ -369,3 +369,128 @@ h2 span.mfr-accent {
   background: var(--accent-seller) !important;
   padding: 8px 16px !important;
 }
+
+/* ── CitySelect: 81 il aramalı dropdown (profil şehir alanı + üretici bul filtresi) ── */
+.city-select {
+  position: relative;
+}
+
+.city-select-input-wrap input {
+  padding-right: 34px;
+}
+
+.city-select .city-select-chevron {
+  left: auto;
+  right: 12px;
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.city-select .city-select-chevron.open {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.city-select-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.city-select-clear:hover {
+  color: var(--text);
+  background: var(--surface2);
+}
+
+/* Wrapper'ın "svg'yi sola sabitle" kuralını buton içindeki ikon için geri al */
+.city-select .city-select-clear svg {
+  position: static;
+  transform: none;
+}
+
+.city-select-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 50;
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+}
+
+.city-select-option {
+  padding: 8px 12px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.city-select-option.highlighted {
+  background: var(--surface2);
+}
+
+.city-select-option.selected {
+  color: var(--accent-seller);
+  font-weight: 600;
+}
+
+.mfr-theme .city-select-option.selected {
+  color: var(--accent-mfr);
+}
+
+.city-select-empty {
+  padding: 10px 12px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Filtrede seçilen şehirler çip olarak listelenir */
+.city-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.city-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 8px 3px 10px;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.city-chip button {
+  display: flex;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 50%;
+}
+
+.city-chip button:hover {
+  color: var(--danger);
+}

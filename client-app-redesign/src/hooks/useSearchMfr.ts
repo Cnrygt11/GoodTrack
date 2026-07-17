@@ -8,22 +8,8 @@ import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
 
-// Static list of popular manufacturing/production cities in Turkey
-export const PRODUCTION_CITIES = [
-  'Adana',
-  'Ankara',
-  'Antalya',
-  'Bolu',
-  'Bursa',
-  'Denizli',
-  'Gaziantep',
-  'İstanbul',
-  'İzmir',
-  'Kahramanmaraş',
-  'Kayseri',
-  'Kocaeli',
-  'Konya'
-];
+// Şehir filtresi artık sabit "popüler şehir" listesi yerine 81 ili kapsayan
+// aramalı dropdown ile seçilir (bkz. TURKISH_PROVINCES + CitySelect).
 
 const PAGE_SIZE = 9;
 
@@ -52,9 +38,10 @@ export default function useSearchMfr() {
     return () => clearTimeout(id);
   }, [searchName]);
 
-  const completedCount = useMemo(() => 
-    products.filter(p => p.status === 'delivered').length
-  , [products]);
+  const completedCount = useMemo(
+    () => products.filter((p) => p.status === 'delivered').length,
+    [products],
+  );
 
   const isLocked = useMemo(() => {
     const planName = (plan || 'Free').toLowerCase();
@@ -81,16 +68,26 @@ export default function useSearchMfr() {
   const [mustHaveGallery, setMustHaveGallery] = useState(false);
   const [mustHaveAvatar, setMustHaveAvatar] = useState(false);
 
-  const buildQuery = useCallback((pageNum: number) => ({
-    city: selectedCities.length > 0 ? selectedCities.join(',') : undefined,
-    keyword: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
-    name: debouncedName || undefined,
-    sort: sortOption,
-    page: pageNum,
-    limit: PAGE_SIZE,
-    mustHaveGallery,
-    mustHaveAvatar,
-  }), [selectedCities, selectedCategories, debouncedName, sortOption, mustHaveGallery, mustHaveAvatar]);
+  const buildQuery = useCallback(
+    (pageNum: number) => ({
+      city: selectedCities.length > 0 ? selectedCities.join(',') : undefined,
+      keyword: selectedCategories.length > 0 ? selectedCategories.join(',') : undefined,
+      name: debouncedName || undefined,
+      sort: sortOption,
+      page: pageNum,
+      limit: PAGE_SIZE,
+      mustHaveGallery,
+      mustHaveAvatar,
+    }),
+    [
+      selectedCities,
+      selectedCategories,
+      debouncedName,
+      sortOption,
+      mustHaveGallery,
+      mustHaveAvatar,
+    ],
+  );
 
   const fetchManufacturers = useCallback(async () => {
     try {
@@ -113,7 +110,7 @@ export default function useSearchMfr() {
       setLoading(true);
       const nextPage = page + 1;
       const data = await api.searchManufacturers(buildQuery(nextPage));
-      setManufacturers(prev => [...prev, ...data.items]);
+      setManufacturers((prev) => [...prev, ...data.items]);
       setPage(nextPage);
       setHasMore(data.hasMore);
     } catch (err: unknown) {
@@ -129,14 +126,14 @@ export default function useSearchMfr() {
   }, [fetchManufacturers]);
 
   const handleToggleCity = useCallback((city: string) => {
-    setSelectedCities(prev =>
-      prev.includes(city) ? prev.filter(c => c !== city) : [...prev, city]
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city],
     );
   }, []);
 
   const handleToggleCategory = useCallback((cat: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat]
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
     );
   }, []);
 
@@ -154,47 +151,58 @@ export default function useSearchMfr() {
     return manufacturers;
   }, [manufacturers]);
 
-  const handleSendConnection = useCallback(async (username: string) => {
-    const tempId = `temp-send-${Date.now()}`;
-    const tempRequest: ConnectionRequest = {
-      id: tempId,
-      senderId: '', // temp
-      senderUsername: '', // temp
-      receiverId: '', // temp
-      receiverUsername: username,
-      status: 'pending',
-      createdAt: new Date().toISOString()
-    };
-    const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
+  const handleSendConnection = useCallback(
+    async (username: string) => {
+      const tempId = `temp-send-${Date.now()}`;
+      const tempRequest: ConnectionRequest = {
+        id: tempId,
+        senderId: '', // temp
+        senderUsername: '', // temp
+        receiverId: '', // temp
+        receiverUsername: username,
+        status: 'pending',
+        createdAt: new Date().toISOString(),
+      };
+      const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
 
-    // Optimistic Update
-    queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) => [...(old ?? []), tempRequest]);
+      // Optimistic Update
+      queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) => [
+        ...(old ?? []),
+        tempRequest,
+      ]);
 
-    try {
-      await api.sendConnectionRequest(username);
-      await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
-    } catch (err: unknown) {
-      // Rollback on failure
-      queryClient.setQueryData(connectionKeys.sent, prevSent);
-      showToast(extractErrorMessage(err));
-    }
-  }, [showToast, queryClient]);
+      try {
+        await api.sendConnectionRequest(username);
+        await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
+      } catch (err: unknown) {
+        // Rollback on failure
+        queryClient.setQueryData(connectionKeys.sent, prevSent);
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [showToast, queryClient],
+  );
 
-  const handleCancelConnection = useCallback(async (requestId: string) => {
-    const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
+  const handleCancelConnection = useCallback(
+    async (requestId: string) => {
+      const prevSent = queryClient.getQueryData<ConnectionRequest[]>(connectionKeys.sent);
 
-    // Optimistic Update
-    queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) => (old ?? []).filter(r => r.id !== requestId));
+      // Optimistic Update
+      queryClient.setQueryData<ConnectionRequest[]>(connectionKeys.sent, (old) =>
+        (old ?? []).filter((r) => r.id !== requestId),
+      );
 
-    try {
-      await api.deleteSentRequest(requestId);
-      await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
-    } catch (err: unknown) {
-      // Rollback on failure
-      queryClient.setQueryData(connectionKeys.sent, prevSent);
-      showToast(extractErrorMessage(err));
-    }
-  }, [showToast, queryClient]);
+      try {
+        await api.deleteSentRequest(requestId);
+        await queryClient.invalidateQueries({ queryKey: connectionKeys.sent });
+      } catch (err: unknown) {
+        // Rollback on failure
+        queryClient.setQueryData(connectionKeys.sent, prevSent);
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [showToast, queryClient],
+  );
 
   return {
     loading,
@@ -209,7 +217,6 @@ export default function useSearchMfr() {
     setSearchName,
     sortOption,
     setSortOption,
-    availableCities: PRODUCTION_CITIES,
     filteredAndSortedManufacturers,
     connections,
     sentRequests,
@@ -225,7 +232,6 @@ export default function useSearchMfr() {
     t,
     isLocked,
     lockReason,
-    completedCount
+    completedCount,
   };
 }
-
