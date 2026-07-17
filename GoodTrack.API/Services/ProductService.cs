@@ -122,17 +122,23 @@ public sealed class ProductService : IProductService
             throw new UnauthorizedAccessException(Messages.Auth.Forbidden);
         }
 
-        // Üretici müşteri adı/adresi görmemeli — projeksiyon bu alanları taşır, burada maskelenir.
-        if (role == Roles.Mfr)
-        {
-            foreach (var p in products)
-            {
-                p.CustomerName = null;
-                p.ShippingAddress = null;
-            }
-        }
-
+        MaskCustomerInfoForManufacturer(role, products);
         return products;
+    }
+
+    /// <summary>
+    /// Üretici müşteri adı/adresi görmemeli — projeksiyonlar bu alanları taşır,
+    /// üretici rolüne dönen tüm liste yanıtlarında burada maskelenir.
+    /// </summary>
+    private static void MaskCustomerInfoForManufacturer(string role, IEnumerable<ProductResponseDto> products)
+    {
+        if (role != Roles.Mfr) return;
+
+        foreach (var p in products)
+        {
+            p.CustomerName = null;
+            p.ShippingAddress = null;
+        }
     }
 
     public async Task<PagedResultDto<ProductResponseDto>> GetArchivedProductsAsync(string userId, string role, int page, int pageSize, CancellationToken cancellationToken = default)
@@ -148,15 +154,7 @@ public sealed class ProductService : IProductService
         var (items, totalCount) = await _productRepository.GetArchivedSummariesPageAsync(
             userId, asSeller: role == Roles.Seller, page, pageSize, cancellationToken);
 
-        // Üretici müşteri adı/adresi görmemeli (küçültülmüş kayıtlarda zaten temizlenmiştir).
-        if (role == Roles.Mfr)
-        {
-            foreach (var p in items)
-            {
-                p.CustomerName = null;
-                p.ShippingAddress = null;
-            }
-        }
+        MaskCustomerInfoForManufacturer(role, items);
 
         return new PagedResultDto<ProductResponseDto>
         {
@@ -455,8 +453,10 @@ public sealed class ProductService : IProductService
     }
 
     /// <summary>
-    /// Product → DTO eşlemesi. <paramref name="includeCustomerInfo"/> false ise müşteri adı ve
-    /// teslimat adresi yanıttan çıkarılır (üretici bu bilgileri görmemelidir).
+    /// Product → DTO eşlemesi (DETAY yolu — tam görseller dahil). <paramref name="includeCustomerInfo"/>
+    /// false ise müşteri adı ve teslimat adresi yanıttan çıkarılır (üretici bu bilgileri görmemelidir).
+    /// DİKKAT: Liste yanıtları için ikiz tanım PostgresProductRepository.SummaryProjection'dadır;
+    /// DTO'ya alan eklerken İKİ eşlemeyi birden güncelleyin.
     /// </summary>
     private static ProductResponseDto MapToResponseDto(Product product, bool includeCustomerInfo = true)
     {

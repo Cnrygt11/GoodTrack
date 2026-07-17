@@ -32,32 +32,32 @@ export function useProductActions() {
   const setProducts = useCallback(
     (updater: (old: Product[]) => Product[]) =>
       queryClient.setQueryData<Product[]>(productKeys.products, (old) => updater(old ?? [])),
-    [queryClient]
+    [queryClient],
   );
 
   const loadProducts = useCallback(
     () => queryClient.invalidateQueries({ queryKey: productKeys.products }).then(() => {}),
-    [queryClient]
+    [queryClient],
   );
 
   const optimisticAddProduct = useCallback(
     (prod: Product) => setProducts((old) => [...old, prod]),
-    [setProducts]
+    [setProducts],
   );
 
   const optimisticUpdateProduct = useCallback(
     (prod: Product) => setProducts((old) => old.map((p) => (p.id === prod.id ? prod : p))),
-    [setProducts]
+    [setProducts],
   );
 
   const optimisticRemoveProduct = useCallback(
     (productId: string) => setProducts((old) => old.filter((p) => p.id !== productId)),
-    [setProducts]
+    [setProducts],
   );
 
   const rollbackProducts = useCallback(
     (prev: Product[]) => queryClient.setQueryData<Product[]>(productKeys.products, prev),
-    [queryClient]
+    [queryClient],
   );
 
   const markStatusAsReadLocally = useCallback(
@@ -66,16 +66,25 @@ export function useProductActions() {
         old.map((p) => {
           const currentStatus =
             p.status ||
-            (p.isDefective ? 'defective' : p.completed ? 'completed' : p.isPendingApproval ? 'awaiting' : 'production');
+            (p.isDefective
+              ? 'defective'
+              : p.completed
+                ? 'completed'
+                : p.isPendingApproval
+                  ? 'awaiting'
+                  : 'production');
 
-          let match = false;
+          let match: boolean;
           const lowerStatus = status.toLowerCase();
           const lowerCurrent = currentStatus.toLowerCase();
 
           if (lowerStatus === 'defective') {
             match = lowerCurrent === 'defective' || lowerCurrent === 'missing';
           } else if (lowerStatus === 'shipped') {
-            match = lowerCurrent === 'shipped' || lowerCurrent === 'cancelled' || (role === 'mfr' && lowerCurrent === 'to_ship');
+            match =
+              lowerCurrent === 'shipped' ||
+              lowerCurrent === 'cancelled' ||
+              (role === 'mfr' && lowerCurrent === 'to_ship');
           } else if (lowerStatus === 'awaiting') {
             match = lowerCurrent === 'awaiting' || lowerCurrent === 'corrected';
           } else {
@@ -86,9 +95,9 @@ export function useProductActions() {
             return role === 'seller' ? { ...p, isReadBySeller: true } : { ...p, isReadByMfr: true };
           }
           return p;
-        })
+        }),
       ),
-    [setProducts]
+    [setProducts],
   );
 
   return {

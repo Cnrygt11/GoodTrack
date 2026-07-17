@@ -335,7 +335,20 @@ export async function apiCall<T>(endpoint: string, options: RequestInit = {}): P
   if (parsed && typeof parsed === 'object' && 'success' in parsed) {
     const envelope = parsed as ApiResponseEnvelope<T>;
     if (envelope.success) {
-      return envelope.data !== undefined ? envelope.data : (parsed as T);
+      if (envelope.data === undefined) {
+        return parsed as T;
+      }
+      // Zarfın başarı mesajını data nesnesine iliştir: çağıranlar `data.message` ile
+      // sunucu mesajına tekdüze erişir (data'nın kendi message alanı varsa dokunulmaz).
+      if (
+        envelope.message &&
+        typeof envelope.data === 'object' &&
+        !Array.isArray(envelope.data) &&
+        !('message' in (envelope.data as object))
+      ) {
+        return { ...(envelope.data as object), message: envelope.message } as T;
+      }
+      return envelope.data;
     } else {
       throw new ApiError(envelope.message || 'İşlem başarısız oldu.', response.status);
     }
@@ -426,8 +439,9 @@ export const api = {
     return apiCall<Product>(`/products/${productId}`);
   },
 
-  createProduct(productData: CreateProductPayload): Promise<{ product: Product; message: string }> {
-    return apiCall<{ product: Product; message: string }>('/products', {
+  /** Yanıt: oluşturulan sipariş (+ zarf mesajı apiCall tarafından iliştirilir). */
+  createProduct(productData: CreateProductPayload): Promise<Product & { message?: string }> {
+    return apiCall<Product & { message?: string }>('/products', {
       method: 'POST',
       body: JSON.stringify(productData),
     });
@@ -452,11 +466,9 @@ export const api = {
     });
   },
 
-  updateProduct(
-    productId: string,
-    productData: Product,
-  ): Promise<{ product: Product; message: string }> {
-    return apiCall<{ product: Product; message: string }>(`/products/${productId}`, {
+  /** Yanıt: güncellenen sipariş (+ zarf mesajı apiCall tarafından iliştirilir). */
+  updateProduct(productId: string, productData: Product): Promise<Product & { message?: string }> {
+    return apiCall<Product & { message?: string }>(`/products/${productId}`, {
       method: 'PUT',
       body: JSON.stringify(productData),
     });

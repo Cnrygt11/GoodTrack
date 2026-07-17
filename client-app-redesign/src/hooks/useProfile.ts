@@ -65,21 +65,25 @@ export default function useProfile() {
     }
   }, [profile]);
 
-
-
   // Profile Picture File Upload Handler
-  const handleProfilePictureChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleProfilePictureChange = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    try {
-      const [compressed, thumbnail] = await Promise.all([compressImage(file), makeThumbnail(file)]);
-      setProfilePicture(compressed);
-      setProfileThumbnail(thumbnail);
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    }
-  }, [showToast]);
+      try {
+        const [compressed, thumbnail] = await Promise.all([
+          compressImage(file),
+          makeThumbnail(file),
+        ]);
+        setProfilePicture(compressed);
+        setProfileThumbnail(thumbnail);
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [showToast],
+  );
 
   const handleRemoveProfilePicture = useCallback(() => {
     setProfilePicture('');
@@ -87,127 +91,146 @@ export default function useProfile() {
   }, []);
 
   // Product Presentation Images Upload Handlers
-  const handleAddProductImage = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const handleAddProductImage = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
-    const remainingSlots = 10 - productImages.length;
-    const filesToUpload = Array.from(files).slice(0, remainingSlots);
+      const remainingSlots = 10 - productImages.length;
+      const filesToUpload = Array.from(files).slice(0, remainingSlots);
 
-    try {
-      const compressedImages = await Promise.all(
-        filesToUpload.map((file) => compressImage(file))
-      );
-      setProductImages((prev) => [...prev, ...compressedImages]);
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    }
-  }, [productImages, showToast]);
+      try {
+        const compressedImages = await Promise.all(
+          filesToUpload.map((file) => compressImage(file)),
+        );
+        setProductImages((prev) => [...prev, ...compressedImages]);
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [productImages, showToast],
+  );
 
   const handleRemoveProductImage = useCallback((index: number) => {
     setProductImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const handleReplaceProductImage = useCallback(async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleReplaceProductImage = useCallback(
+    async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
 
-    try {
-      const compressed = await compressImage(file);
-      setProductImages((prev) => {
-        const next = [...prev];
-        next[index] = compressed;
-        return next;
-      });
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    }
-  }, [showToast]);
+      try {
+        const compressed = await compressImage(file);
+        setProductImages((prev) => {
+          const next = [...prev];
+          next[index] = compressed;
+          return next;
+        });
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [showToast],
+  );
 
   // B2B Keywords selection toggle
-  const handleToggleKeyword = useCallback((kw: string) => {
-    setKeywords((prev) => {
-      if (prev.includes(kw)) {
-        return prev.filter((k) => k !== kw);
-      } else {
-        if (prev.length >= 3) {
-          showToast(t('keywordLimitError'));
-          return prev;
+  const handleToggleKeyword = useCallback(
+    (kw: string) => {
+      setKeywords((prev) => {
+        if (prev.includes(kw)) {
+          return prev.filter((k) => k !== kw);
+        } else {
+          if (prev.length >= 3) {
+            showToast(t('keywordLimitError'));
+            return prev;
+          }
+          return [...prev, kw];
         }
-        return [...prev, kw];
-      }
-    });
-  }, [t, showToast]);
+      });
+    },
+    [t, showToast],
+  );
 
   // Save profile changes
-  const handleSaveProfile = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) {
-      showToast(language === 'tr' ? 'Ad ve soyadı boş bırakılamaz!' : 'First name and last name cannot be empty!');
-      return;
-    }
-
-    if (profile?.role === 'mfr') {
-      if (bio.length > 500) {
-        showToast(t('bioLimitError'));
+  // Not: bağımlılık dizisinde üye erişimi (profile?.role) React Compiler'ın memoization'ı
+  // korumasını engelliyordu; değer önce yerel değişkene alınır.
+  const profileRole = profile?.role;
+  const handleSaveProfile = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!firstName.trim() || !lastName.trim()) {
+        showToast(
+          language === 'tr'
+            ? 'Ad ve soyadı boş bırakılamaz!'
+            : 'First name and last name cannot be empty!',
+        );
         return;
       }
-      if (productImages.length > 0 && (productImages.length < 3 || productImages.length > 10)) {
-        showToast(t('imageLimitError'));
-        return;
-      }
-      if (isVisibleToSellers && productImages.length < 3) {
-        showToast(t('imageLimitError'));
-        return;
-      }
-    }
 
-    try {
-      setActionLoading(true);
-      const payload: Partial<UserProfile> = {
-        firstName,
-        lastName,
-        email,
-        phoneNumber,
-        profilePicture,
-        profileThumbnail,
-        ...(profile?.role === 'mfr' && {
-          address,
-          city,
-          bio,
-          productImages,
-          keywords,
-          isVisibleToSellers
-        })
-      };
+      if (profileRole === 'mfr') {
+        if (bio.length > 500) {
+          showToast(t('bioLimitError'));
+          return;
+        }
+        if (productImages.length > 0 && (productImages.length < 3 || productImages.length > 10)) {
+          showToast(t('imageLimitError'));
+          return;
+        }
+        if (isVisibleToSellers && productImages.length < 3) {
+          showToast(t('imageLimitError'));
+          return;
+        }
+      }
 
-      await api.updateProfile(payload);
-      showToast(t('saveProfileSuccess'));
-      await fetchProfile();
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    } finally {
-      setActionLoading(false);
-    }
-  }, [
-    firstName,
-    lastName,
-    email,
-    phoneNumber,
-    profilePicture,
-    profileThumbnail,
-    address,
-    city,
-    bio,
-    productImages,
-    keywords,
-    isVisibleToSellers,
-    profile?.role,
-    language,
-    t,
-    showToast,
-    fetchProfile
-  ]);
+      try {
+        setActionLoading(true);
+        const payload: Partial<UserProfile> = {
+          firstName,
+          lastName,
+          email,
+          phoneNumber,
+          profilePicture,
+          profileThumbnail,
+          ...(profileRole === 'mfr' && {
+            address,
+            city,
+            bio,
+            productImages,
+            keywords,
+            isVisibleToSellers,
+          }),
+        };
+
+        await api.updateProfile(payload);
+        showToast(t('saveProfileSuccess'));
+        await fetchProfile();
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+      } finally {
+        setActionLoading(false);
+      }
+    },
+    [
+      firstName,
+      lastName,
+      email,
+      phoneNumber,
+      profilePicture,
+      profileThumbnail,
+      address,
+      city,
+      bio,
+      productImages,
+      keywords,
+      isVisibleToSellers,
+      profileRole,
+      language,
+      t,
+      showToast,
+      fetchProfile,
+    ],
+  );
 
   return {
     user,
@@ -245,7 +268,6 @@ export default function useProfile() {
     handleRemoveProductImage,
     handleReplaceProductImage,
     handleToggleKeyword,
-    handleSaveProfile
+    handleSaveProfile,
   };
 }
-

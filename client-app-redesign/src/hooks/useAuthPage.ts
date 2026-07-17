@@ -13,14 +13,6 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'login' | 'register'>(initialMode || 'login');
 
-  useEffect(() => {
-    if (initialMode) {
-      setActiveTab(initialMode);
-      setFormErrors({});
-      setShowErrors(false);
-    }
-  }, [initialMode]);
-
   // Login inputs
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -48,6 +40,16 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
   const [submitting, setSubmitting] = useState(false);
   const isSubmitting = useRef(false);
 
+  // Sekme URL'den değişince formu sıfırla. (State tanımlarından SONRA durmalı;
+  // setFormErrors/setShowErrors tanım öncesi kullanılamaz.)
+  useEffect(() => {
+    if (initialMode) {
+      setActiveTab(initialMode);
+      setFormErrors({});
+      setShowErrors(false);
+    }
+  }, [initialMode]);
+
   // Real-time validations (derived with useMemo)
   const phoneValid = useMemo(() => {
     if (!regPhone) return { valid: true, dirty: false };
@@ -63,7 +65,8 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
 
   const emailValid = useMemo(() => {
     if (!regEmail) return { valid: true, dirty: false };
-    const regex = /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
+    const regex =
+      /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
     return { valid: regex.test(regEmail), dirty: true };
   }, [regEmail]);
 
@@ -98,148 +101,168 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
     }
   }, [showToast, t]);
 
-  const handleLoginSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowErrors(true);
+  const handleLoginSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setShowErrors(true);
 
-    const errors: Record<string, string> = {};
-    if (!loginUsername.trim()) {
-      errors.loginUsername = t('fieldRequired');
-    }
-    if (!loginPassword) {
-      errors.loginPassword = t('fieldRequired');
-    }
-
-    setFormErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      showToast(t('fillAllFields'));
-      return;
-    }
-
-    if (isSubmitting.current) return;
-    try {
-      isSubmitting.current = true;
-      setSubmitting(true);
-      const data = await api.login(loginUsername.trim(), loginPassword);
-      showToast(t('loginSuccess'));
-      login(data.token, data.refreshToken, data.username, data.role, data.userId);
-    } catch (err: unknown) {
-      const errorMessage = extractErrorMessage(err);
-      if (errorMessage.includes('doğrulayın') || errorMessage.includes('verify your email')) {
-        setVerificationUsername(loginUsername.trim());
-        setVerificationPending(true);
+      const errors: Record<string, string> = {};
+      if (!loginUsername.trim()) {
+        errors.loginUsername = t('fieldRequired');
       }
-      showToast(errorMessage);
-    } finally {
-      isSubmitting.current = false;
-      setSubmitting(false);
-    }
-  }, [loginUsername, loginPassword, t, login, showToast]);
+      if (!loginPassword) {
+        errors.loginPassword = t('fieldRequired');
+      }
 
-  const handleRegisterSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setShowErrors(true);
+      setFormErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        showToast(t('fillAllFields'));
+        return;
+      }
 
-    const errors: Record<string, string> = {};
-    if (!firstName.trim()) {
-      errors.firstName = t('fieldRequired');
-    }
-    if (!lastName.trim()) {
-      errors.lastName = t('fieldRequired');
-    }
-    if (!regUsername.trim()) {
-      errors.regUsername = t('fieldRequired');
-    }
-    if (!regEmail.trim()) {
-      errors.regEmail = t('fieldRequired');
-    }
-    if (!phoneBody.trim()) {
-      errors.phoneBody = t('fieldRequired');
-    }
-    if (!regPassword) {
-      errors.regPassword = t('fieldRequired');
-    }
-    if (!regConfirm) {
-      errors.regConfirm = t('fieldRequired');
-    }
+      if (isSubmitting.current) return;
+      try {
+        isSubmitting.current = true;
+        setSubmitting(true);
+        const data = await api.login(loginUsername.trim(), loginPassword);
+        showToast(t('loginSuccess'));
+        login(data.token, data.refreshToken, data.username, data.role, data.userId);
+      } catch (err: unknown) {
+        const errorMessage = extractErrorMessage(err);
+        if (errorMessage.includes('doğrulayın') || errorMessage.includes('verify your email')) {
+          setVerificationUsername(loginUsername.trim());
+          setVerificationPending(true);
+        }
+        showToast(errorMessage);
+      } finally {
+        isSubmitting.current = false;
+        setSubmitting(false);
+      }
+    },
+    [loginUsername, loginPassword, t, login, showToast],
+  );
 
-    if (regRole === 'admin' && !adminSecret.trim()) {
-      errors.adminSecret = t('adminSecretRequired');
-    }
+  const handleRegisterSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setShowErrors(true);
 
-    // Regex / length / match checks
-    const usernameRegex = /^[a-z0-9_]{3,15}$/;
-    if (regUsername.trim() && !usernameRegex.test(regUsername.trim())) {
-      errors.regUsername = t('usernameInvalid');
-    }
+      const errors: Record<string, string> = {};
+      if (!firstName.trim()) {
+        errors.firstName = t('fieldRequired');
+      }
+      if (!lastName.trim()) {
+        errors.lastName = t('fieldRequired');
+      }
+      if (!regUsername.trim()) {
+        errors.regUsername = t('fieldRequired');
+      }
+      if (!regEmail.trim()) {
+        errors.regEmail = t('fieldRequired');
+      }
+      if (!phoneBody.trim()) {
+        errors.phoneBody = t('fieldRequired');
+      }
+      if (!regPassword) {
+        errors.regPassword = t('fieldRequired');
+      }
+      if (!regConfirm) {
+        errors.regConfirm = t('fieldRequired');
+      }
 
-    const emailRegex = /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
-    if (regEmail.trim() && !emailRegex.test(regEmail.trim())) {
-      errors.regEmail = t('emailInvalid');
-    }
+      if (regRole === 'admin' && !adminSecret.trim()) {
+        errors.adminSecret = t('adminSecretRequired');
+      }
 
-    const phoneRegex = /^\+?[0-9\s\-()]{10,20}$/;
-    if (regPhone && !phoneRegex.test(regPhone)) {
-      errors.phoneBody = t('phoneInvalid');
-    }
+      // Regex / length / match checks
+      const usernameRegex = /^[a-z0-9_]{3,15}$/;
+      if (regUsername.trim() && !usernameRegex.test(regUsername.trim())) {
+        errors.regUsername = t('usernameInvalid');
+      }
 
-    if (regPassword && (regPassword.length < 6 || regPassword.length > 20)) {
-      errors.regPassword = t('passwordLengthError');
-    }
+      const emailRegex =
+        /^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$/;
+      if (regEmail.trim() && !emailRegex.test(regEmail.trim())) {
+        errors.regEmail = t('emailInvalid');
+      }
 
-    if (regConfirm && regPassword !== regConfirm) {
-      errors.regConfirm = t('passwordMismatch');
-    }
+      const phoneRegex = /^\+?[0-9\s\-()]{10,20}$/;
+      if (regPhone && !phoneRegex.test(regPhone)) {
+        errors.phoneBody = t('phoneInvalid');
+      }
 
-    setFormErrors(errors);
-    if (Object.keys(errors).length > 0) {
-      showToast(t('fillFormCorrectly'));
-      return;
-    }
+      if (regPassword && (regPassword.length < 6 || regPassword.length > 20)) {
+        errors.regPassword = t('passwordLengthError');
+      }
 
-    try {
-      isSubmitting.current = true;
-      setSubmitting(true);
-      const data = await api.register({
-        firstname: firstName.trim(),
-        lastname: lastName.trim(),
-        username: regUsername.trim(),
-        email: regEmail.trim(),
-        phoneNumber: regPhone.trim(),
-        password: regPassword,
-        confirmPassword: regConfirm,
-        role: regRole,
-        adminSecret: regRole === 'admin' ? adminSecret.trim() : undefined,
-      });
+      if (regConfirm && regPassword !== regConfirm) {
+        errors.regConfirm = t('passwordMismatch');
+      }
 
-      showToast(data.message || t('registerSuccess'));
-      navigate('/login');
-      setLoginUsername(regUsername.trim());
-      
-      // Clear inputs
-      setFirstName('');
-      setLastName('');
-      setRegUsername('');
-      setRegEmail('');
-      setCountryCode('+90');
-      setPhoneBody('');
-      setRegPhone('');
-      setRegPassword('');
-      setRegConfirm('');
-      setRegRole('seller');
-      setAdminSecret('');
-      setFormErrors({});
-      setShowErrors(false);
-    } catch (err: unknown) {
-      showToast(extractErrorMessage(err));
-    } finally {
-      isSubmitting.current = false;
-      setSubmitting(false);
-    }
-  }, [
-    regUsername, regEmail, regPhone, regPassword, regConfirm, firstName, lastName, regRole, adminSecret, phoneBody, countryCode,
-    language, t, showToast, navigate
-  ]);
+      setFormErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        showToast(t('fillFormCorrectly'));
+        return;
+      }
+
+      try {
+        isSubmitting.current = true;
+        setSubmitting(true);
+        const data = await api.register({
+          firstname: firstName.trim(),
+          lastname: lastName.trim(),
+          username: regUsername.trim(),
+          email: regEmail.trim(),
+          phoneNumber: regPhone.trim(),
+          password: regPassword,
+          confirmPassword: regConfirm,
+          role: regRole,
+          adminSecret: regRole === 'admin' ? adminSecret.trim() : undefined,
+        });
+
+        showToast(data.message || t('registerSuccess'));
+        navigate('/login');
+        setLoginUsername(regUsername.trim());
+
+        // Clear inputs
+        setFirstName('');
+        setLastName('');
+        setRegUsername('');
+        setRegEmail('');
+        setCountryCode('+90');
+        setPhoneBody('');
+        setRegPhone('');
+        setRegPassword('');
+        setRegConfirm('');
+        setRegRole('seller');
+        setAdminSecret('');
+        setFormErrors({});
+        setShowErrors(false);
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+      } finally {
+        isSubmitting.current = false;
+        setSubmitting(false);
+      }
+    },
+    [
+      regUsername,
+      regEmail,
+      regPhone,
+      regPassword,
+      regConfirm,
+      firstName,
+      lastName,
+      regRole,
+      adminSecret,
+      phoneBody,
+      countryCode,
+      language,
+      t,
+      showToast,
+      navigate,
+    ],
+  );
 
   const getInputStyle = useCallback((validationState: { valid: boolean; dirty: boolean }) => {
     if (!validationState.dirty) return {};
@@ -293,7 +316,6 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
     handleRegisterSubmit,
     getInputStyle,
     formErrors,
-    showErrors
+    showErrors,
   };
 }
-

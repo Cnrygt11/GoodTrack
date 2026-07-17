@@ -270,9 +270,9 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         try {
           isActionLoadingRef.current = true;
           setActionLoading(true);
-          const data = await api.updateProduct(editingProduct.id, payload);
-          showToast(data.message || t('orderUpdatedSuccess'));
-          optimisticUpdateProduct(data.product);
+          const { message, ...updated } = await api.updateProduct(editingProduct.id, payload);
+          showToast(message || t('orderUpdatedSuccess'));
+          optimisticUpdateProduct(updated as Product);
           await loadProducts();
         } catch (err: unknown) {
           rollbackProducts(prevProducts);
@@ -347,10 +347,10 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
             mfrId,
             mfrName,
           };
-          const data = await api.createProduct(payload);
-          showToast(data.message || t('orderSentSuccess'));
+          const { message, ...created } = await api.createProduct(payload);
+          showToast(message || t('orderSentSuccess'));
           optimisticRemoveProduct(tempId);
-          optimisticAddProduct(data.product);
+          optimisticAddProduct(created as Product);
           await loadProducts();
           await fetchCredits();
         } catch (err: unknown) {

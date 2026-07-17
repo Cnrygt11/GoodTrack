@@ -284,10 +284,13 @@
   text-underline-offset: 3px;
 }
 
-/* ===== MfrOrderCard ===== */
+/* ===== ORTAK SİPARİŞ KARTI (üretici .moc-*, satıcı .seller-order-card-*) =====
+   İki kart ailesi aynı iskeleti paylaşır; ortak gövdeler burada GRUPLU seçicilerle
+   tanımlanır. Farklar (vurgu rengi, satıcıya özgü durum varyantları) her ailenin
+   kendi bölümünde kalır. Yeni ortak kural eklerken iki seçiciyi birden yazın. */
 
-/* Outer card shell */
-.moc-card {
+.moc-card,
+.seller-order-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -302,7 +305,8 @@
   -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
-.moc-card::before {
+.moc-card::before,
+.seller-order-card::before {
   content: '';
   position: absolute;
   inset: -1px;
@@ -318,78 +322,111 @@
   transition: background 0.3s;
 }
 
-.moc-card:hover {
+.moc-card:hover,
+.seller-order-card:hover {
   transform: translateY(-4px);
   background: var(--surface-hover);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Hover status glowing borders for manufacturer card */
-.moc-card.status-awaiting:hover::before {
+/* Hover status glowing borders — iki ailede ortak durumlar.
+   (production her ailenin kendi vurgu rengindedir; to_ship yalnız satıcıda vardır.) */
+.moc-card.status-awaiting:hover::before,
+.seller-order-card.status-awaiting:hover::before {
   background: linear-gradient(135deg, rgba(245, 158, 11, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-corrected:hover::before {
+.moc-card.status-corrected:hover::before,
+.seller-order-card.status-corrected:hover::before {
   background: linear-gradient(135deg, rgba(0, 188, 212, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-broken:hover::before {
+.moc-card.status-broken:hover::before,
+.seller-order-card.status-broken:hover::before {
   background: linear-gradient(135deg, rgba(239, 69, 68, 0.4) 0%, var(--glass-overlay) 100%);
 }
 .moc-card.status-production:hover::before {
   background: linear-gradient(135deg, rgba(0, 242, 254, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-completed:hover::before {
+.seller-order-card.status-production:hover::before {
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.4) 0%, var(--glass-overlay) 100%);
+}
+.moc-card.status-completed:hover::before,
+.seller-order-card.status-completed:hover::before {
   background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-delivered:hover::before {
+.moc-card.status-delivered:hover::before,
+.seller-order-card.status-delivered:hover::before {
   background: linear-gradient(135deg, rgba(139, 195, 74, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-defective:hover::before {
+.moc-card.status-defective:hover::before,
+.seller-order-card.status-defective:hover::before {
   background: linear-gradient(135deg, rgba(239, 69, 68, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-missing:hover::before {
+.moc-card.status-missing:hover::before,
+.seller-order-card.status-missing:hover::before {
   background: linear-gradient(135deg, rgba(255, 87, 34, 0.4) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-shipped:hover::before {
+.seller-order-card.status-to_ship:hover::before {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.4) 0%, var(--glass-overlay) 100%);
+}
+.moc-card.status-shipped:hover::before,
+.seller-order-card.status-shipped:hover::before {
   background: linear-gradient(135deg, rgba(148, 163, 184, 0.3) 0%, var(--glass-overlay) 100%);
 }
-.moc-card.status-cancelled:hover::before {
+.moc-card.status-cancelled:hover::before,
+.seller-order-card.status-cancelled:hover::before {
   background: linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, var(--glass-overlay) 100%);
 }
 
 /* Hover status shadow glow */
-.moc-card.status-awaiting:hover {
+.moc-card.status-awaiting:hover,
+.seller-order-card.status-awaiting:hover {
   box-shadow: 0 12px 30px rgba(245, 158, 11, 0.12);
 }
-.moc-card.status-corrected:hover {
+.moc-card.status-corrected:hover,
+.seller-order-card.status-corrected:hover {
   box-shadow: 0 12px 30px rgba(0, 188, 212, 0.12);
 }
-.moc-card.status-broken:hover {
+.moc-card.status-broken:hover,
+.seller-order-card.status-broken:hover {
   box-shadow: 0 12px 30px rgba(239, 69, 68, 0.12);
 }
 .moc-card.status-production:hover {
   box-shadow: 0 12px 30px rgba(0, 242, 254, 0.12);
 }
-.moc-card.status-completed:hover {
+.seller-order-card.status-production:hover {
+  box-shadow: 0 12px 30px rgba(255, 140, 0, 0.12);
+}
+.moc-card.status-completed:hover,
+.seller-order-card.status-completed:hover {
   box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
 }
-.moc-card.status-delivered:hover {
+.moc-card.status-delivered:hover,
+.seller-order-card.status-delivered:hover {
   box-shadow: 0 12px 30px rgba(139, 195, 74, 0.12);
 }
-.moc-card.status-defective:hover {
+.moc-card.status-defective:hover,
+.seller-order-card.status-defective:hover {
   box-shadow: 0 12px 30px rgba(239, 69, 68, 0.12);
 }
-.moc-card.status-missing:hover {
+.moc-card.status-missing:hover,
+.seller-order-card.status-missing:hover {
   box-shadow: 0 12px 30px rgba(255, 87, 34, 0.12);
 }
-.moc-card.status-shipped:hover {
+.seller-order-card.status-to_ship:hover {
+  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.12);
+}
+.moc-card.status-shipped:hover,
+.seller-order-card.status-shipped:hover {
   box-shadow: 0 12px 30px rgba(148, 163, 184, 0.08);
 }
-.moc-card.status-cancelled:hover {
+.moc-card.status-cancelled:hover,
+.seller-order-card.status-cancelled:hover {
   box-shadow: 0 12px 30px rgba(107, 114, 128, 0.08);
 }
 
-/* Left accent bar (color set via inline style — dynamic per status) */
-.moc-accent-bar {
+/* Left accent bar (moc: renk inline style ile dinamik; seller: durum sınıfıyla) */
+.moc-accent-bar,
+.seller-order-card-accent-bar {
   position: absolute;
   left: 0;
   top: 0;
@@ -398,8 +435,9 @@
   border-radius: var(--radius) 0 0 var(--radius);
 }
 
-/* Unseen indicator dot */
-.moc-unseen-dot {
+/* Unseen indicator dot (arka plan rengi: moc'ta inline, seller'da durum sınıfıyla) */
+.moc-unseen-dot,
+.seller-order-card-unseen-dot {
   position: absolute;
   top: 14px;
   left: 14px;
@@ -412,7 +450,8 @@
 }
 
 /* Main body */
-.moc-body {
+.moc-body,
+.seller-order-card-content {
   display: flex;
   gap: 16px;
   padding: 16px 16px 16px 20px;
@@ -420,7 +459,8 @@
 }
 
 /* Thumbnail */
-.moc-thumb {
+.moc-thumb,
+.seller-order-card-thumb {
   width: 84px;
   height: 84px;
   border-radius: 12px;
@@ -435,34 +475,40 @@
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.moc-thumb--clickable {
+.moc-thumb--clickable,
+.seller-order-card-thumb.clickable {
   cursor: pointer;
 }
 
-.moc-thumb img {
+.moc-thumb img,
+.seller-order-card-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform 0.5s ease;
 }
 
-.moc-thumb--clickable:hover img {
+.moc-thumb--clickable:hover img,
+.seller-order-card-thumb.clickable:hover img {
   transform: scale(1.1);
 }
 
-.moc-thumb svg {
+.moc-thumb svg,
+.seller-order-card-thumb svg {
   color: var(--muted);
   opacity: 0.6;
   transition: transform 0.3s;
 }
 
-.moc-thumb--clickable:hover svg {
+.moc-thumb--clickable:hover svg,
+.seller-order-card-thumb.clickable:hover svg {
   transform: scale(1.1);
   opacity: 0.9;
 }
 
 /* Info column */
-.moc-info {
+.moc-info,
+.seller-order-card-info {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -471,24 +517,31 @@
 }
 
 /* Code + badge row */
-.moc-title-row {
+.moc-title-row,
+.seller-order-card-header {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.moc-code {
+/* Kod: iskelet ortak, vurgu rengi ailede */
+.moc-code,
+.seller-order-card-code {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 22px;
   letter-spacing: 2px;
-  color: var(--accent-mfr);
-  text-shadow: 0 0 12px var(--accent-mfr-glow);
   line-height: 1;
 }
 
+.moc-code {
+  color: var(--accent-mfr);
+  text-shadow: 0 0 12px var(--accent-mfr-glow);
+}
+
 /* Status badge (bg/border/color set inline — dynamic) */
-.moc-status-badge {
+.moc-status-badge,
+.seller-order-card-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -500,6 +553,78 @@
   text-transform: uppercase;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   white-space: nowrap;
+}
+
+/* Dates row */
+.moc-date-span,
+.moc-completed-span,
+.seller-order-card-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.moc-completed-span,
+.seller-order-card-date.completed {
+  color: var(--success);
+}
+
+/* Action button (üretici .mfr-btn, satıcı .action-btn) */
+.mfr-btn,
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.mfr-btn:hover,
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  filter: brightness(1.15);
+}
+
+.mfr-btn--full,
+.action-btn--full {
+  width: 100%;
+}
+
+.mfr-btn--bordered,
+.action-btn--bordered {
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  box-shadow: none !important;
+}
+
+.mfr-btn--bordered:hover,
+.action-btn--bordered:hover {
+  background: var(--surface2) !important;
+  border-color: var(--border-hover) !important;
+  box-shadow: none !important;
+}
+
+/* ===== MfrOrderCard (aileye özgü kurallar) ===== */
+
+.mfr-btn--dark {
+  color: var(--color-on-accent) !important;
+}
+.mfr-btn--light {
+  color: #fff !important;
 }
 
 /* Chip row */
@@ -522,75 +647,13 @@
   color: var(--accent-seller);
 }
 
-/* Dates row */
+/* Dates row container */
 .moc-meta-row {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
   margin-top: 2px;
-}
-
-.moc-date-span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.moc-completed-span {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: var(--success);
-}
-
-/* MfrBtn action button */
-.mfr-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-  font-family: var(--font-heading);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.mfr-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  filter: brightness(1.15);
-}
-
-.mfr-btn--full {
-  width: 100%;
-}
-.mfr-btn--bordered {
-  background: transparent !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text) !important;
-  box-shadow: none !important;
-}
-.mfr-btn--bordered:hover {
-  background: var(--surface2) !important;
-  border-color: var(--border-hover) !important;
-  box-shadow: none !important;
-}
-.mfr-btn--dark {
-  color: var(--color-on-accent) !important;
-}
-.mfr-btn--light {
-  color: #fff !important;
 }
 
 /* ===== ORDER DETAIL PAGE STYLES ===== */
@@ -1063,38 +1126,10 @@
   animation: fadeIn 0.2s ease-out;
 }
 
-/* ===== LANDING PAGE STYLES ===== */
-/* ===== SELLER ORDER CARD STYLES ===== */
-.seller-order-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  z-index: 1;
-  animation: slideUp 0.3s ease-out;
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-}
+/* ===== SELLER ORDER CARD (aileye özgü kurallar; ortak iskelet yukarıda) ===== */
 
-.seller-order-card::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: var(--radius);
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.01) 100%);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  transition: background 0.3s;
+.seller-order-card {
+  z-index: 1;
 }
 
 .seller-order-card.dropdown-open {
@@ -1102,89 +1137,9 @@
   z-index: 100;
 }
 
-.seller-order-card:hover {
-  transform: translateY(-4px);
-  background: var(--surface-hover);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
-}
-
-/* Hover status glowing borders for seller card */
-.seller-order-card.status-awaiting:hover::before {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-corrected:hover::before {
-  background: linear-gradient(135deg, rgba(0, 188, 212, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-broken:hover::before {
-  background: linear-gradient(135deg, rgba(239, 69, 68, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-production:hover::before {
-  background: linear-gradient(135deg, rgba(255, 140, 0, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-completed:hover::before {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-delivered:hover::before {
-  background: linear-gradient(135deg, rgba(139, 195, 74, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-defective:hover::before {
-  background: linear-gradient(135deg, rgba(239, 69, 68, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-missing:hover::before {
-  background: linear-gradient(135deg, rgba(255, 87, 34, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-to_ship:hover::before {
-  background: linear-gradient(135deg, rgba(168, 85, 247, 0.4) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-shipped:hover::before {
-  background: linear-gradient(135deg, rgba(148, 163, 184, 0.3) 0%, var(--glass-overlay) 100%);
-}
-.seller-order-card.status-cancelled:hover::before {
-  background: linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, var(--glass-overlay) 100%);
-}
-
-/* Hover status shadow glow */
-.seller-order-card.status-awaiting:hover {
-  box-shadow: 0 12px 30px rgba(245, 158, 11, 0.12);
-}
-.seller-order-card.status-corrected:hover {
-  box-shadow: 0 12px 30px rgba(0, 188, 212, 0.12);
-}
-.seller-order-card.status-broken:hover {
-  box-shadow: 0 12px 30px rgba(239, 69, 68, 0.12);
-}
-.seller-order-card.status-production:hover {
-  box-shadow: 0 12px 30px rgba(255, 140, 0, 0.12);
-}
-.seller-order-card.status-completed:hover {
-  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.12);
-}
-.seller-order-card.status-delivered:hover {
-  box-shadow: 0 12px 30px rgba(139, 195, 74, 0.12);
-}
-.seller-order-card.status-defective:hover {
-  box-shadow: 0 12px 30px rgba(239, 69, 68, 0.12);
-}
-.seller-order-card.status-missing:hover {
-  box-shadow: 0 12px 30px rgba(255, 87, 34, 0.12);
-}
-.seller-order-card.status-to_ship:hover {
-  box-shadow: 0 12px 30px rgba(168, 85, 247, 0.12);
-}
-.seller-order-card.status-shipped:hover {
-  box-shadow: 0 12px 30px rgba(148, 163, 184, 0.08);
-}
-.seller-order-card.status-cancelled:hover {
-  box-shadow: 0 12px 30px rgba(107, 114, 128, 0.08);
-}
-
-.seller-order-card-accent-bar {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  border-radius: var(--radius) 0 0 var(--radius);
+.seller-order-card-code {
+  color: var(--accent-seller);
+  text-shadow: 0 0 12px var(--accent-seller-glow);
 }
 
 .seller-order-card.status-awaiting .seller-order-card-accent-bar {
@@ -1219,18 +1174,6 @@
 }
 .seller-order-card.status-cancelled .seller-order-card-accent-bar {
   background: #4b5563;
-}
-
-.seller-order-card-unseen-dot {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 5;
-  animation: pulse 2s infinite;
 }
 
 .seller-order-card.status-awaiting .seller-order-card-unseen-dot {
@@ -1278,92 +1221,6 @@
   box-shadow: 0 0 8px #6b7280;
 }
 
-.seller-order-card-content {
-  display: flex;
-  gap: 16px;
-  padding: 16px 16px 16px 20px;
-  flex: 1;
-}
-
-.seller-order-card-thumb {
-  width: 84px;
-  height: 84px;
-  border-radius: 12px;
-  flex-shrink: 0;
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-}
-
-.seller-order-card-thumb.clickable {
-  cursor: pointer;
-}
-
-.seller-order-card-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.seller-order-card-thumb.clickable:hover img {
-  transform: scale(1.1);
-}
-
-.seller-order-card-thumb svg {
-  color: var(--muted);
-  opacity: 0.6;
-  transition: transform 0.3s;
-}
-
-.seller-order-card-thumb.clickable:hover svg {
-  transform: scale(1.1);
-  opacity: 0.9;
-}
-
-.seller-order-card-info {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.seller-order-card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.seller-order-card-code {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 2px;
-  color: var(--accent-seller);
-  text-shadow: 0 0 12px var(--accent-seller-glow);
-  line-height: 1;
-}
-
-.seller-order-card-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 30px;
-  padding: 4px 12px;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  white-space: nowrap;
-}
-
 .seller-order-card-cancel-requested {
   display: inline-flex;
   align-items: center;
@@ -1403,18 +1260,6 @@
 
 .order-chip--mfr svg {
   color: var(--accent-mfr);
-}
-
-.seller-order-card-date {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11.5px;
-  color: var(--muted);
-}
-
-.seller-order-card-date.completed {
-  color: var(--success);
 }
 
 .seller-order-card-date svg {
@@ -1461,49 +1306,8 @@
   color: var(--text);
 }
 
-.action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 18px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
-  font-family: var(--font-heading);
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border: none;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  filter: brightness(1.15);
-}
-
 .action-btn:active {
   transform: translateY(0);
-}
-
-.action-btn--full {
-  width: 100%;
-}
-
-.action-btn--bordered {
-  background: transparent !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: none !important;
-}
-
-.action-btn--bordered:hover {
-  background: var(--surface2) !important;
-  border-color: var(--border-hover) !important;
-  box-shadow: none !important;
 }
 
 .action-btn--correct {

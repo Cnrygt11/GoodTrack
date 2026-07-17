@@ -150,11 +150,9 @@ public class EtsySyncController : BaseApiController
         try
         {
             var imported = await _etsyService.FetchAndImportEtsyListingsAsync(userId, cancellationToken);
-            return Ok(new ApiResponse<object>(new
-            {
-                count = imported.Count,
-                message = "Etsy mağazanızdaki ürünler başarıyla GoodTrack kataloğuna çekildi. Lütfen katalog sayfasından üretici atamalarını tamamlayınız."
-            }));
+            return Ok(new ApiResponse<object>(
+                new { count = imported.Count },
+                "Etsy mağazanızdaki ürünler başarıyla GoodTrack kataloğuna çekildi. Lütfen katalog sayfasından üretici atamalarını tamamlayınız."));
         }
         catch (Exception ex)
         {

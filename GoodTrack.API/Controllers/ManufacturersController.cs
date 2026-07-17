@@ -38,21 +38,28 @@ public class ManufacturersController : BaseApiController
         _logger = logger;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    /// <summary>
+    /// Free plandaki satıcılar için üretici bilgileri maskelenir; bu, isteği yapan
+    /// kullanıcının satıcı + free-plan olup olmadığını tek noktadan belirler.
+    /// </summary>
+    private async Task<bool> IsCallerFreePlanSellerAsync(CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
         var role = GetCurrentUserRole();
 
-        bool isFreePlan = false;
-        if (Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
+        if (!Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(userId))
         {
-            var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
-            if (credits.Plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase))
-            {
-                isFreePlan = true;
-            }
+            return false;
         }
+
+        var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
+        return credits.Plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
+    {
+        bool isFreePlan = await IsCallerFreePlanSellerAsync(cancellationToken);
 
         _logger.LogInformation("Fetching list of all registered manufacturer accounts");
         var manufacturers = await _connectionService.GetAvailableManufacturersAsync();
@@ -83,18 +90,7 @@ public class ManufacturersController : BaseApiController
         [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        bool isFreePlan = false;
-        if (Roles.Seller.Equals(role, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(userId))
-        {
-            var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
-            if (credits.Plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase))
-            {
-                isFreePlan = true;
-            }
-        }
+        bool isFreePlan = await IsCallerFreePlanSellerAsync(cancellationToken);
 
         limit = Math.Clamp(limit, 1, 50);
         if (page < 0) page = 0;
@@ -131,15 +127,9 @@ public class ManufacturersController : BaseApiController
             return BadRequest(ApiResponse.Fail("Geçersiz üretici kimliği."));
         }
 
-        try
-        {
-            var gallery = await _profileService.GetManufacturerGalleryAsync(id);
-            return Ok(new ApiResponse<List<string>>(gallery));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse.Fail(ex.Message));
-        }
+        // KeyNotFoundException → 404 eşlemesini ExceptionHandlingMiddleware yapar.
+        var gallery = await _profileService.GetManufacturerGalleryAsync(id);
+        return Ok(new ApiResponse<List<string>>(gallery));
     }
 
     private static string MaskFirstName(string? firstName)

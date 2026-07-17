@@ -20,7 +20,6 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     private readonly IImageCleanupService _imageCleanupService;
     private readonly ICreditsService _creditsService;
     private readonly ILogger<OrderWorkflowService> _logger;
-    private readonly Dictionary<string, StatusTransitionRule> _transitionRules;
 
     public OrderWorkflowService(
         IProductRepository productRepository,
@@ -36,8 +35,14 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         _imageCleanupService = imageCleanupService;
         _creditsService = creditsService;
         _logger = logger;
+    }
 
-        _transitionRules = new Dictionary<string, StatusTransitionRule>(StringComparer.OrdinalIgnoreCase)
+    /// <summary>
+    /// Durum geçiş kuralları. Statiktir: servis scoped olduğundan istek başına yeniden
+    /// kurulmasın diye aksiyonlar closure yerine servis instance'ını (svc) parametre alır.
+    /// </summary>
+    private static readonly Dictionary<string, StatusTransitionRule> TransitionRules =
+        new(StringComparer.OrdinalIgnoreCase)
         {
             {
                 OrderStatus.Cancelled,
@@ -46,13 +51,13 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Seller,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected, OrderStatus.Broken },
                     ErrorMessage = "Üretime başlanmış olan siparişler iptal edilemez.",
-                    TransitionAction = async (p, oldStatus, note, img) =>
+                    TransitionAction = static async (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Cancelled;
                         p.IsPendingApproval = false;
                         p.IsDefective = false;
                         p.Completed = false;
-                        await _creditsService.RefundCreditAsync(p.SellerId);
+                        await svc._creditsService.RefundCreditAsync(p.SellerId);
                         return "Sipariş satıcı tarafından iptal edildi.";
                     }
                 }
@@ -64,7 +69,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Mfr,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected, OrderStatus.Defective, OrderStatus.Missing },
                     ErrorMessage = "Bu sipariş üretime alınamaz.",
-                    TransitionAction = async (p, oldStatus, note, img) =>
+                    TransitionAction = static async (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Production;
                         p.Completed = false;
@@ -75,7 +80,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                         string? oldDefectImage = p.DefectImage;
                         p.DefectNote = null;
                         p.DefectImage = null;
-                        await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
+                        await svc._imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
 
                         return (oldStatus == OrderStatus.Awaiting || oldStatus == OrderStatus.Corrected)
                             ? "Sipariş üretici tarafından onaylandı ve üretime alındı."
@@ -90,7 +95,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Mfr,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Awaiting, OrderStatus.Corrected },
                     ErrorMessage = "Sipariş bozuk olarak işaretlenemez.",
-                    TransitionAction = (p, oldStatus, note, img) =>
+                    TransitionAction = static (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Broken;
                         p.IsPendingApproval = false;
@@ -110,7 +115,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Mfr,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Production },
                     ErrorMessage = "Üretimi tamamlanacak sipariş önce üretimde olmalıdır.",
-                    TransitionAction = (p, oldStatus, note, img) =>
+                    TransitionAction = static (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Completed;
                         p.Completed = true;
@@ -126,7 +131,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Mfr,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Completed, OrderStatus.Defective, OrderStatus.Missing },
                     ErrorMessage = "Bu sipariş teslim edilemez.",
-                    TransitionAction = (p, oldStatus, note, img) =>
+                    TransitionAction = static (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Delivered;
                         p.Completed = true;
@@ -146,7 +151,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Seller,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
                     ErrorMessage = "Sipariş teslim edilmeden onaylanamaz.",
-                    TransitionAction = (p, oldStatus, note, img) =>
+                    TransitionAction = static (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.ToShip;
                         p.Completed = true;
@@ -162,13 +167,13 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Seller,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
                     ErrorMessage = "Sipariş teslim edilmeden hata bildirilemez.",
-                    TransitionAction = async (p, oldStatus, note, img) =>
+                    TransitionAction = static async (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Defective;
                         p.IsDefective = true;
                         p.Completed = false;
                         p.DefectNote = note;
-                        await UpdateDefectImageAsync(p, img);
+                        await svc.UpdateDefectImageAsync(p, img);
                         return $"Sipariş satıcı tarafından HATALI olarak işaretlendi. Açıklama: {note}";
                     }
                 }
@@ -180,13 +185,13 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Seller,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.Delivered },
                     ErrorMessage = "Sipariş teslim edilmeden eksik bildirilemez.",
-                    TransitionAction = async (p, oldStatus, note, img) =>
+                    TransitionAction = static async (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Missing;
                         p.IsDefective = true;
                         p.Completed = false;
                         p.DefectNote = note;
-                        await UpdateDefectImageAsync(p, img);
+                        await svc.UpdateDefectImageAsync(p, img);
                         return $"Sipariş satıcı tarafından EKSİK olarak işaretlendi. Açıklama: {note}";
                     }
                 }
@@ -198,7 +203,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                     RequiredRole = Roles.Seller,
                     AllowedSourceStatuses = new(StringComparer.OrdinalIgnoreCase) { OrderStatus.ToShip },
                     ErrorMessage = "Sipariş DOĞRU olarak onaylanmadan kargolanamaz.",
-                    TransitionAction = (p, oldStatus, note, img) =>
+                    TransitionAction = static (svc, p, oldStatus, note, img) =>
                     {
                         p.Status = OrderStatus.Shipped;
                         p.Completed = true;
@@ -208,7 +213,6 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
                 }
             }
         };
-    }
 
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
     {
@@ -406,7 +410,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         Product product, string newStatus, string oldStatus,
         string role, string? defectNote, string? defectImage)
     {
-        if (!_transitionRules.TryGetValue(newStatus, out var rule))
+        if (!TransitionRules.TryGetValue(newStatus, out var rule))
         {
             throw new ArgumentException("Geçersiz hedef durum!");
         }
@@ -422,7 +426,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             throw new InvalidOperationException(rule.ErrorMessage);
         }
 
-        return await rule.TransitionAction(product, oldStatus, defectNote, defectImage);
+        return await rule.TransitionAction(this, product, oldStatus, defectNote, defectImage);
     }
 
     private async Task UpdateDefectImageAsync(Product p, string? newDefectImage)

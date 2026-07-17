@@ -6,6 +6,8 @@ interface ProductShowcaseGalleryProps {
   productImages: string[];
   galleryInputRef: React.RefObject<HTMLInputElement | null>;
   replaceInputRefs: React.MutableRefObject<(HTMLInputElement | null)[]>;
+  /** Ref kaydı üst bileşende yapılır: prop olarak gelen ref nesnesi burada mutasyona uğratılamaz. */
+  registerReplaceInput: (index: number, el: HTMLInputElement | null) => void;
   handleAddProductImage: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleRemoveProductImage: (index: number) => void;
   handleReplaceProductImage: (index: number, e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -16,6 +18,7 @@ export default function ProductShowcaseGallery({
   productImages,
   galleryInputRef,
   replaceInputRefs,
+  registerReplaceInput,
   handleAddProductImage,
   handleRemoveProductImage,
   handleReplaceProductImage,
@@ -24,19 +27,24 @@ export default function ProductShowcaseGallery({
     <div className="form-group">
       <div className="showcase-header">
         <label>{t('productImagesLabel')}</label>
-        <span style={{ fontSize: '11px', color: (productImages.length < 3 || productImages.length > 10) ? 'var(--danger)' : 'var(--success)' }}>
+        <span
+          style={{
+            fontSize: '11px',
+            color:
+              productImages.length < 3 || productImages.length > 10
+                ? 'var(--danger)'
+                : 'var(--success)',
+          }}
+        >
           {productImages.length} / 10
         </span>
       </div>
 
       <div className="profile-img-grid">
         {productImages.map((img, index) => (
-          <div 
-            key={img.substring(0, 50)} 
-            className="profile-img-item"
-          >
+          <div key={img.substring(0, 50)} className="profile-img-item">
             <img src={img} alt={`Showcase ${index + 1}`} />
-            
+
             {/* Hover Overlay Actions */}
             <div className="profile-img-overlay">
               <button
@@ -57,9 +65,9 @@ export default function ProductShowcaseGallery({
             </div>
 
             {/* Hidden input for replacing */}
-            <input 
+            <input
               type="file"
-              ref={(el) => { replaceInputRefs.current[index] = el; }}
+              ref={(el) => registerReplaceInput(index, el)}
               onChange={(e) => handleReplaceProductImage(index, e)}
               accept="image/*"
               style={{ display: 'none' }}
@@ -79,8 +87,8 @@ export default function ProductShowcaseGallery({
           </button>
         )}
       </div>
-      
-      <input 
+
+      <input
         type="file"
         ref={galleryInputRef}
         onChange={handleAddProductImage}

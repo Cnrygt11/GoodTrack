@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import useProfile from '../../hooks/useProfile';
 import usePasswordChange from '../../hooks/usePasswordChange';
@@ -54,6 +54,12 @@ export default function MyAccountPage() {
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const galleryInputRef = useRef<HTMLInputElement>(null);
   const replaceInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Ref kaydı prop üzerinden yapılır: çocuk bileşenin prop olarak aldığı ref nesnesini
+  // doğrudan mutasyona uğratması React Compiler tarafından yasaklanır.
+  const registerReplaceInput = useCallback((index: number, el: HTMLInputElement | null) => {
+    replaceInputRefs.current[index] = el;
+  }, []);
 
   if (loading) {
     return (
@@ -187,6 +193,7 @@ export default function MyAccountPage() {
                     productImages={productImages}
                     galleryInputRef={galleryInputRef}
                     replaceInputRefs={replaceInputRefs}
+                    registerReplaceInput={registerReplaceInput}
                     handleAddProductImage={handleAddProductImage}
                     handleRemoveProductImage={handleRemoveProductImage}
                     handleReplaceProductImage={handleReplaceProductImage}

@@ -45,8 +45,10 @@ public sealed class PostgresProductRepository : IProductRepository
     }
 
     /// <summary>
-    /// Liste projeksiyonu: tam <c>Image</c> null bırakılır (DB'den çekilmez), yalnız <c>ThumbnailImage</c>
-    /// taşınır. Diğer tüm alanlar (müşteri bilgisi dahil; maskeleme serviste) döner.
+    /// Liste projeksiyonu: tam <c>Image</c> ve <c>DefectImage</c> null bırakılır (DB'den çekilmez),
+    /// yalnız <c>ThumbnailImage</c> taşınır. Diğer tüm alanlar (müşteri bilgisi dahil; maskeleme
+    /// serviste) döner. DİKKAT: Detay yanıtları için ikiz tanım ProductService.MapToResponseDto'dadır;
+    /// DTO'ya alan eklerken İKİ eşlemeyi birden güncelleyin.
     /// </summary>
     private static readonly Expression<Func<Product, ProductResponseDto>> SummaryProjection = p => new ProductResponseDto
     {

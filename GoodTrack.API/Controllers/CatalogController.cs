@@ -65,15 +65,9 @@ public class CatalogController : BaseApiController
             return BadRequest(ApiResponse.Fail(Messages.Catalog.InvalidId));
         }
 
-        try
-        {
-            var response = await _catalogService.GetCatalogProductAsync(userId, id);
-            return Ok(new ApiResponse<CatalogProductResponseDto>(response));
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ApiResponse.Fail(ex.Message));
-        }
+        // KeyNotFoundException → 404 eşlemesini ExceptionHandlingMiddleware yapar.
+        var response = await _catalogService.GetCatalogProductAsync(userId, id);
+        return Ok(new ApiResponse<CatalogProductResponseDto>(response));
     }
 
     /// <summary>

@@ -104,7 +104,8 @@ public class ProductsController : BaseApiController
         _logger.LogInformation("Creating order code {Code} for Seller: {SellerId}", dto.Code, userId);
         var product = await _productService.CreateOrderAsync(userId, userName, dto);
 
-        return CreatedAtAction(nameof(GetById), new { id = product.Id }, new ApiResponse<object>(new { product, message = "Sipariş başarıyla üretime gönderildi." }));
+        return CreatedAtAction(nameof(GetById), new { id = product.Id },
+            new ApiResponse<ProductResponseDto>(product, "Sipariş başarıyla üretime gönderildi."));
     }
 
     [HttpPut("{id}/status")]
@@ -159,7 +160,7 @@ public class ProductsController : BaseApiController
         _logger.LogInformation("Seller user {UserId} is updating production order: {Id}", userId, id);
         var response = await _productService.UpdateProductAsync(userId, id, dto, cancellationToken);
 
-        return Ok(new ApiResponse<object>(new { product = response, message = "Sipariş başarıyla güncellendi." }));
+        return Ok(new ApiResponse<ProductResponseDto>(response, "Sipariş başarıyla güncellendi."));
     }
 
     [HttpGet("{id}")]
