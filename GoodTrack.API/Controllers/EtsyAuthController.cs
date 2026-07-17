@@ -2,6 +2,8 @@ using GoodTrack.API.Constants;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -39,6 +41,26 @@ public class EtsyAuthController : BaseApiController
     }
 
     /// <summary>
+    /// <paramref name="url"/>'in origin'i izin verilen listede mi? Beyaz liste, CORS ile aynı
+    /// kaynaktan okunur (<c>Cors:AllowedOrigins</c> config + <c>CORS_ALLOWED_ORIGINS</c> env).
+    /// Liste boşsa (geliştirme) yalnız localhost'a izin verilir.
+    /// </summary>
+    private bool IsAllowedRedirectTarget(string url)
+    {
+        var allowed = new List<string>();
+        var configOrigins = _configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
+        if (configOrigins != null) allowed.AddRange(configOrigins);
+
+        var envOrigins = Environment.GetEnvironmentVariable("CORS_ALLOWED_ORIGINS");
+        if (!string.IsNullOrEmpty(envOrigins))
+        {
+            allowed.AddRange(envOrigins.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        }
+
+        return Services.RedirectValidation.IsOriginAllowed(url, allowed);
+    }
+
+    /// <summary>
     /// Initiates the Etsy OAuth connection flow by generating the authorization URL.
     /// </summary>
     /// <param name="dto">The callback and frontend URL payload.</param>
@@ -65,6 +87,16 @@ public class EtsyAuthController : BaseApiController
         if (string.IsNullOrWhiteSpace(dto.CallbackUrl) || string.IsNullOrWhiteSpace(dto.FrontendUrl))
         {
             return BadRequest(ApiResponse.Fail("Eksik parametre. CallbackUrl ve FrontendUrl zorunludur."));
+        }
+
+        // Açık-yönlendirme (open redirect) koruması: FrontendUrl OAuth dönüşünde tarayıcının
+        // yönlendirileceği adrestir. Yalnız izin verilen origin'lere (CORS beyaz listesi + yerel
+        // geliştirme) izin verilir; başka bir host reddedilir. CallbackUrl'ü Etsy zaten kayıtlı
+        // redirect_uri'lere karşı doğrular.
+        if (!IsAllowedRedirectTarget(dto.FrontendUrl))
+        {
+            _logger.LogWarning("Rejected Etsy connect with disallowed FrontendUrl: {Url}", dto.FrontendUrl);
+            return BadRequest(ApiResponse.Fail("Geçersiz yönlendirme adresi."));
         }
 
         // State (code_verifier + frontend url dahil) kalıcı depoya yazılır; tek kaynak-of-truth.

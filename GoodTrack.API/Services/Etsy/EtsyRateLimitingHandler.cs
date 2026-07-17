@@ -10,13 +10,18 @@ using Microsoft.Extensions.Logging;
 namespace GoodTrack.API.Services.Etsy;
 
 /// <summary>
-/// Etsy Open API çağrıları için outbound throttle + retry katmanı (DelegatingHandler).
+/// Etsy Open API çağrıları için outbound throttle + günlük kota + retry katmanı (DelegatingHandler).
 ///
-/// - <b>Throttle:</b> Etsy limiti 10 QPS'tir. Süreç genelinde paylaşılan bir token bucket
-///   ile ~8 QPS'e sınırlanır (güvenlik payı). Fazla istek reddedilmez, kuyruğa alınır —
-///   çağıranlar (listing içe aktarımı gibi N+1 iş akışları) doğal olarak yavaşlatılır.
-/// - <b>Retry:</b> 429 (Too Many Requests) ve geçici 5xx yanıtlarında, varsa <c>Retry-After</c>
-///   başlığına; yoksa jitter'lı exponential backoff'a göre yeniden denenir.
+/// - <b>Saniyelik throttle:</b> Etsy limiti 10 QPS'tir. Süreç genelinde paylaşılan bir token
+///   bucket ile ~8 QPS'e sınırlanır (güvenlik payı). Fazla istek reddedilmez, kuyruğa alınır.
+/// - <b>Günlük kota:</b> Etsy uygulama-başına ~10.000 istek/gün limiti uygular. Süreç genelinde
+///   UTC-günü bazlı bir sayaç tutulur; kota dolunca gerçek çağrı YAPILMADAN 429 döndürülür
+///   (Etsy'ye gereksiz yük bindirilmez, "kötü davranan uygulama" işareti önlenir). Sayaç her
+///   UTC gün dönümünde sıfırlanır. Not: çok-instance dağıtımda her instance kendi sayacını
+///   tutar; tek-instance kurulumda tam doğrudur, çok-instance'ta limitin biraz altında güvenli
+///   kalınması için eşik gerçek limitin altına ayarlanmıştır.
+/// - <b>Retry:</b> 429 ve geçici 5xx yanıtlarında, varsa <c>Retry-After</c> başlığına; yoksa
+///   jitter'lı exponential backoff'a göre yeniden denenir.
 /// </summary>
 public sealed class EtsyRateLimitingHandler : DelegatingHandler
 {
@@ -33,6 +38,17 @@ public sealed class EtsyRateLimitingHandler : DelegatingHandler
 
     private const int MaxRetries = 3;
 
+    /// <summary>Günlük sert kota (Etsy'nin ~10.000 limitinin altında güvenlik payı).</summary>
+    private const int DailyRequestCap = 9500;
+
+    /// <summary>Bu eşiği aşınca uyarı loglanır (kota dolmadan haberdar olunur).</summary>
+    private const int DailyWarnThreshold = 8000;
+
+    // Süreç genelinde paylaşılan günlük sayaç + geçerli olduğu UTC gün.
+    private static readonly object DailyLock = new();
+    private static DateOnly _dailyWindow = DateOnly.FromDateTime(DateTime.UtcNow);
+    private static int _dailyCount;
+
     private readonly ILogger<EtsyRateLimitingHandler> _logger;
     private readonly TimeSpan _baseBackoff;
 
@@ -44,6 +60,21 @@ public sealed class EtsyRateLimitingHandler : DelegatingHandler
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        // Günlük kota kontrolü: dolmuşsa gerçek çağrı yapmadan 429 döndür.
+        if (!TryConsumeDailyBudget(out var untilReset))
+        {
+            _logger.LogWarning("Etsy günlük istek kotası ({Cap}) doldu; çağrı reddedildi. Sıfırlanma: {Reset}", DailyRequestCap, untilReset);
+            var throttled = new HttpResponseMessage(HttpStatusCode.TooManyRequests)
+            {
+                Content = new StringContent("Etsy günlük API kotası doldu. Lütfen daha sonra tekrar deneyin."),
+                RequestMessage = request
+            };
+            throttled.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(untilReset);
+            return throttled;
+        }
+
+        WarnIfNearDailyCap();
+
         for (var attempt = 0; ; attempt++)
         {
             // 1) QPS bütçesinden bir jeton al (yoksa kuyruğa girip bekler).
@@ -71,6 +102,48 @@ public sealed class EtsyRateLimitingHandler : DelegatingHandler
                 response.Dispose();
                 await Task.Delay(delay, cancellationToken);
             }
+        }
+    }
+
+    /// <summary>
+    /// Günlük bütçeden bir istek düşer. Gün döndüyse sayaç sıfırlanır. Kota dolmuşsa false
+    /// döner ve <paramref name="untilReset"/> gün dönümüne kalan süreyi verir.
+    /// </summary>
+    private static bool TryConsumeDailyBudget(out TimeSpan untilReset)
+    {
+        lock (DailyLock)
+        {
+            var now = DateTime.UtcNow;
+            var today = DateOnly.FromDateTime(now);
+            if (today != _dailyWindow)
+            {
+                _dailyWindow = today;
+                _dailyCount = 0;
+            }
+
+            untilReset = today.AddDays(1).ToDateTime(TimeOnly.MinValue) - now;
+
+            if (_dailyCount >= DailyRequestCap)
+            {
+                return false;
+            }
+
+            _dailyCount++;
+            return true;
+        }
+    }
+
+    /// <summary>Eşiği aşınca (kota dolmadan) uyarı loglar; kilit dışında çağrılır.</summary>
+    private void WarnIfNearDailyCap()
+    {
+        int count;
+        lock (DailyLock)
+        {
+            count = _dailyCount;
+        }
+        if (count == DailyWarnThreshold)
+        {
+            _logger.LogWarning("Etsy günlük istek sayısı {Count}/{Cap} eşiğini aştı.", count, DailyRequestCap);
         }
     }
 

@@ -1,7 +1,7 @@
 import { useSettings } from '../../context/SettingsContext';
 import LegalLayout from './LegalLayout';
 
-const CONTACT_EMAIL = 'destek@goodtrack.example';
+const CONTACT_EMAIL = 'cnrygtis@gmail.com';
 const LAST_UPDATED = '2026-07-11';
 
 export default function TermsOfServicePage() {
