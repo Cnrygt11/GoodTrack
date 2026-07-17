@@ -5,6 +5,17 @@ import { useSettings } from '../context/SettingsContext';
 import { api, UserProfile } from '../services/apiClient';
 import { compressImage, makeThumbnail } from '../utils/imageHelper';
 import { extractErrorMessage } from '../utils/errorUtils';
+import { MANUFACTURER_CATEGORIES } from '../utils/constants';
+
+/**
+ * Sunucu keywords'ü küçük harfle saklar ("deri", "lazer kesim"); kategori listesi ise
+ * kanonik adlarla çalışır ("Deri", "Lazer Kesim"). Karşılaştırma birebir yapıldığından
+ * kayıtlı seçimler profilde işaretli görünmüyordu — yüklerken kanonik ada geri eşlenir.
+ */
+function toCanonicalKeywords(stored: string[]): string[] {
+  const trLower = (s: string) => s.toLocaleLowerCase('tr-TR');
+  return stored.map((k) => MANUFACTURER_CATEGORIES.find((c) => trLower(c) === trLower(k)) ?? k);
+}
 
 export default function useProfile() {
   const { user } = useAuth();
@@ -60,7 +71,7 @@ export default function useProfile() {
       setCity(profile.city || '');
       setBio(profile.bio || '');
       setProductImages(profile.productImages || []);
-      setKeywords(profile.keywords || []);
+      setKeywords(toCanonicalKeywords(profile.keywords || []));
       setIsVisibleToSellers(!!profile.isVisibleToSellers);
     }
   }, [profile]);
