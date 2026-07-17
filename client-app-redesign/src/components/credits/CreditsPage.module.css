@@ -298,6 +298,87 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Ek Kredi Paketleri (tek seferlik dolum) ── */
+.packages-subtitle {
+  margin: -8px 0 16px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 30px;
+}
+
+.package-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.package-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-seller);
+}
+
+.package-card--popular {
+  border-color: var(--accent-seller);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.package-popular-badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-seller);
+  color: var(--color-on-accent);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  padding: 3px 12px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.package-credits {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1;
+}
+
+.package-credits span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.package-price {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  color: var(--accent-seller);
 }

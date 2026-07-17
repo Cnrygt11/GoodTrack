@@ -11,34 +11,56 @@ import styles from './CreditsPage.module.css';
  * Features plan details comparison, active tier highlighting, and tier upgrading.
  */
 export default function CreditsPage() {
-  const { 
-    balance, 
-    plan, 
-    renewsAt, 
-    planDetails, 
-    isLoading, 
-    isUpgrading, 
-    upgradePlan 
+  const {
+    balance,
+    plan,
+    renewsAt,
+    planDetails,
+    packages,
+    isLoading,
+    isUpgrading,
+    isToppingUp,
+    upgradePlan,
+    topUp,
   } = useCredits();
-  
+
   const { language, t } = useSettings();
 
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-  const [selectedPlanDetail, setSelectedPlanDetail] = useState<{ plan: string; price: number } | null>(null);
+  // Ödeme modali hem plan yükseltme hem kredi paketi satın alma için kullanılır.
+  const [purchase, setPurchase] = useState<{
+    label: string;
+    price: number;
+    confirm: () => Promise<boolean>;
+  } | null>(null);
+
+  // Alt plana geçiş kapalı: planDetails sunucudan artan sırada gelir (Free→Pro→Enterprise),
+  // dizin sırası plan kademesi olarak kullanılır.
+  const currentPlanRank = planDetails.findIndex((p) => p.plan.toLowerCase() === plan.toLowerCase());
 
   const handleUpgrade = (planName: string) => {
     if (isUpgrading) return;
-    
-    const detail = planDetails.find(p => p.plan.toLowerCase() === planName.toLowerCase());
+
+    const detail = planDetails.find((p) => p.plan.toLowerCase() === planName.toLowerCase());
     const price = detail ? detail.price : 0;
-    
-    setSelectedPlanDetail({ plan: planName, price });
+
+    setPurchase({ label: planName, price, confirm: () => upgradePlan(planName) });
     setIsPaymentOpen(true);
   };
 
-  const handleConfirmUpgrade = async () => {
-    if (!selectedPlanDetail) return;
-    const success = await upgradePlan(selectedPlanDetail.plan);
+  const handleBuyPackage = (pkg: { id: string; credits: number; price: number }) => {
+    if (isToppingUp) return;
+    setPurchase({
+      label: `${pkg.credits} ${t('navCredits')}`,
+      price: pkg.price,
+      confirm: () => topUp(pkg.id),
+    });
+    setIsPaymentOpen(true);
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!purchase) return;
+    const success = await purchase.confirm();
     if (!success) {
       throw new Error(t('creditWarnToast'));
     }
@@ -51,7 +73,7 @@ export default function CreditsPage() {
       return date.toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
       });
     } catch {
       return isoString;
@@ -90,8 +112,9 @@ export default function CreditsPage() {
       {/* Plan Grid */}
       <h3 className={styles['section-title-pricing']}>{t('subscriptionPlans')}</h3>
       <div className={styles['plans-grid']}>
-        {planDetails.map((tier) => {
+        {planDetails.map((tier, tierRank) => {
           const isActive = tier.plan.toLowerCase() === plan.toLowerCase();
+          const isLowerPlan = currentPlanRank >= 0 && tierRank < currentPlanRank;
           const cardClass = `${styles['plan-card']} ${isActive ? styles['plan-card--active'] : ''} ${styles['plan-card--' + tier.plan.toLowerCase()] || ''}`;
 
           return (
@@ -102,7 +125,7 @@ export default function CreditsPage() {
                   {t('currentPlanBadge')}
                 </div>
               )}
-              
+
               <div className={styles['plan-header']}>
                 <h4 className={styles['plan-name']}>{tier.plan}</h4>
                 <div className={styles['plan-price']}>
@@ -130,7 +153,12 @@ export default function CreditsPage() {
               <div className={styles['plan-footer']}>
                 {isActive ? (
                   <button type="button" className={styles['btn-plan-active']} disabled>
-                    {t('currentPlanBadge')}
+                    {`${tier.plan} ${t('ownedPlanSuffix')}`}
+                  </button>
+                ) : isLowerPlan ? (
+                  // Alt plana geçiş kapalı (bakiye/özellik kaybı olmasın).
+                  <button type="button" className={styles['btn-plan-active']} disabled>
+                    {t('lowerPlanLocked')}
                   </button>
                 ) : (
                   <button
@@ -149,14 +177,51 @@ export default function CreditsPage() {
         })}
       </div>
 
-      {/* Mock Payment Dialog for Sandbox Upgrades */}
-      {selectedPlanDetail && (
+      {/* Ek Kredi Paketleri — tek seferlik dolum; kredisi biten kullanıcı plana
+          dokunmadan bakiye yükleyebilir. Paket kredileri aylık yenilemede silinmez. */}
+      {packages.length > 0 && (
+        <>
+          <h3 className={styles['section-title-pricing']}>{t('creditPackagesTitle')}</h3>
+          <p className={styles['packages-subtitle']}>{t('creditPackagesSubtitle')}</p>
+          <div className={styles['packages-grid']}>
+            {packages.map((pkg) => (
+              <div
+                key={pkg.id}
+                className={`${styles['package-card']} ${pkg.popular ? styles['package-card--popular'] : ''}`}
+              >
+                {pkg.popular && (
+                  <div className={styles['package-popular-badge']}>{t('popularBadge')}</div>
+                )}
+                <div className={styles['package-credits']}>
+                  {pkg.credits} <span>{t('navCredits')}</span>
+                </div>
+                <div className={styles['package-price']}>
+                  <span className={styles['price-currency']}>$</span>
+                  <span className={styles['price-amount']}>{pkg.price}</span>
+                </div>
+                <button
+                  type="button"
+                  className={styles['btn-plan-upgrade']}
+                  disabled={isToppingUp}
+                  onClick={() => handleBuyPackage(pkg)}
+                >
+                  <Zap size={14} className={styles['btn-upgrade-icon']} />
+                  {isToppingUp ? '...' : t('buyCreditsBtn')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Mock Payment Dialog (plan yükseltme + kredi paketi satın alma) */}
+      {purchase && (
         <MockPaymentModal
           isOpen={isPaymentOpen}
           onClose={() => setIsPaymentOpen(false)}
-          planName={selectedPlanDetail.plan}
-          planPrice={selectedPlanDetail.price}
-          onSuccess={handleConfirmUpgrade}
+          planName={purchase.label}
+          planPrice={purchase.price}
+          onSuccess={handleConfirmPurchase}
         />
       )}
     </div>

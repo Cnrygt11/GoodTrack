@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { extractErrorMessage } from '../utils/errorUtils';
-import { api, SubscriptionPlanDetail } from '../services/apiClient';
+import { api, CreditPackage, SubscriptionPlanDetail } from '../services/apiClient';
 
 /**
  * React Query anahtarları — kredi/plan verisini geçersiz kılmak (invalidate) için paylaşılır.
@@ -12,6 +12,7 @@ import { api, SubscriptionPlanDetail } from '../services/apiClient';
 export const creditsKeys = {
   credits: ['credits'] as const,
   plans: ['credits', 'plans'] as const,
+  packages: ['credits', 'packages'] as const,
 };
 
 /**
@@ -26,12 +27,18 @@ export interface UseCreditsReturn {
   renewsAt: string;
   /** List of all available subscription plans and details */
   planDetails: SubscriptionPlanDetail[];
+  /** Satın alınabilir tek seferlik kredi paketleri */
+  packages: CreditPackage[];
   /** Loading state flag */
   isLoading: boolean;
   /** Action state flag for upgrading process */
   isUpgrading: boolean;
+  /** Kredi paketi satın alma işlemi sürüyor mu */
+  isToppingUp: boolean;
   /** Upgrades the user's plan to the target plan */
   upgradePlan: (planName: string) => Promise<boolean>;
+  /** Kredi paketi satın alır; başarıda bakiye cache'i güncellenir */
+  topUp: (packageId: string) => Promise<boolean>;
   /** Refetches the user's credit status from backend */
   fetchCredits: () => Promise<void>;
 }
@@ -60,11 +67,24 @@ export default function useCredits(): UseCreditsReturn {
     enabled: isSeller,
   });
 
+  const packagesQuery = useQuery({
+    queryKey: creditsKeys.packages,
+    queryFn: () => api.getCreditPackages(),
+    enabled: isSeller,
+  });
+
   const upgradeMutation = useMutation({
     mutationFn: (planName: string) => api.upgradePlan(planName),
     onSuccess: (res) => {
-      // Yükseltme sonucu güncel krediyi döndürür; cache'i doğrudan tazele.
-      queryClient.setQueryData(creditsKeys.credits, res.credits);
+      // Yanıt güncel UserCredit kaydının kendisidir; cache'i doğrudan tazele.
+      queryClient.setQueryData(creditsKeys.credits, res);
+    },
+  });
+
+  const topUpMutation = useMutation({
+    mutationFn: (packageId: string) => api.topUpCredits(packageId),
+    onSuccess: (res) => {
+      queryClient.setQueryData(creditsKeys.credits, res);
     },
   });
 
@@ -79,7 +99,21 @@ export default function useCredits(): UseCreditsReturn {
         return false;
       }
     },
-    [upgradeMutation, showToast, t]
+    [upgradeMutation, showToast, t],
+  );
+
+  const topUp = useCallback(
+    async (packageId: string): Promise<boolean> => {
+      try {
+        const res = await topUpMutation.mutateAsync(packageId);
+        showToast(res.message || t('topUpSuccess'));
+        return true;
+      } catch (err: unknown) {
+        showToast(extractErrorMessage(err));
+        return false;
+      }
+    },
+    [topUpMutation, showToast, t],
   );
 
   const fetchCredits = useCallback(async () => {
@@ -91,9 +125,12 @@ export default function useCredits(): UseCreditsReturn {
     plan: creditsQuery.data?.plan ?? 'Free',
     renewsAt: creditsQuery.data?.renewsAt ?? '',
     planDetails: plansQuery.data ?? [],
+    packages: packagesQuery.data ?? [],
     isLoading: creditsQuery.isLoading,
     isUpgrading: upgradeMutation.isPending,
+    isToppingUp: topUpMutation.isPending,
     upgradePlan,
+    topUp,
     fetchCredits,
   };
 }

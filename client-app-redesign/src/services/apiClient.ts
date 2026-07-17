@@ -172,6 +172,15 @@ export interface SubscriptionPlanDetail {
   features: string[];
 }
 
+/** Tek seferlik kredi paketi (dolum). */
+export interface CreditPackage {
+  id: string;
+  credits: number;
+  price: number;
+  /** "En Popüler" rozeti gösterilecek paket. */
+  popular: boolean;
+}
+
 export interface RegisterPayload {
   firstname: string;
   lastname: string;
@@ -644,10 +653,23 @@ export const api = {
     return apiCall<SubscriptionPlanDetail[]>('/credits/plans');
   },
 
-  upgradePlan(plan: string): Promise<{ message: string; credits: UserCredit }> {
-    return apiCall<{ message: string; credits: UserCredit }>('/credits/upgrade', {
+  /** Yanıt: güncel UserCredit kaydı (önceki {credits: UserCredit} tipi yanlıştı — cache'i bozuyordu). */
+  upgradePlan(plan: string): Promise<UserCredit & { message?: string }> {
+    return apiCall<UserCredit & { message?: string }>('/credits/upgrade', {
       method: 'POST',
       body: JSON.stringify({ plan }),
+    });
+  },
+
+  getCreditPackages(): Promise<CreditPackage[]> {
+    return apiCall<CreditPackage[]>('/credits/packages');
+  },
+
+  /** Kredi paketi satın alımı; güncel UserCredit kaydını döner. */
+  topUpCredits(packageId: string): Promise<UserCredit & { message?: string }> {
+    return apiCall<UserCredit & { message?: string }>('/credits/topup', {
+      method: 'POST',
+      body: JSON.stringify({ packageId }),
     });
   },
 
