@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using GoodTrack.API.Constants;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Abstractions.Services;
@@ -48,4 +49,15 @@ public interface ICreditsService
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     /// <returns>A list of SubscriptionPlanDetail.</returns>
     Task<List<SubscriptionPlanDetail>> GetPlansAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tek seferlik kredi paketi satın alımını uygular: paket kredisi bakiyeye eklenir.
+    /// </summary>
+    /// <param name="userId">Kullanıcı ID.</param>
+    /// <param name="packageId">Paket kimliği (bkz. SubscriptionPlanCatalog.Packages).</param>
+    /// <returns>Güncel UserCredit kaydı.</returns>
+    Task<UserCredit> TopUpAsync(string userId, string packageId, CancellationToken cancellationToken = default);
+
+    /// <summary>Satın alınabilir kredi paketlerini döner.</summary>
+    Task<List<CreditPackage>> GetPackagesAsync(CancellationToken cancellationToken = default);
 }

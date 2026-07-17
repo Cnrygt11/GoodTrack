@@ -254,8 +254,9 @@ public sealed class EtsyService : IEtsyService
         return importedProducts;
     }
 
-    public async Task ProcessEtsyOrderSyncAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default)
+    public async Task<EtsyOrderSyncResult> ProcessEtsyOrderSyncAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default)
     {
+        var result = new EtsyOrderSyncResult();
         var connection = await RefreshAccessTokenAsync(userId, shopId, cancellationToken);
 
         _logger.LogInformation("Processing Etsy order sync. ReceiptId: {ReceiptId}", receiptId);
@@ -266,7 +267,7 @@ public sealed class EtsyService : IEtsyService
         if (receipt == null || receipt.Transactions == null || !receipt.Transactions.Any())
         {
             _logger.LogWarning("Etsy receipt has no transactions to sync. ReceiptId: {ReceiptId}", receiptId);
-            return;
+            return result;
         }
 
         var sellerUser = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
@@ -361,11 +362,27 @@ public sealed class EtsyService : IEtsyService
                 ManufacturerName = catalogProduct.ManufacturerName
             };
 
-            await _productService.CreateOrderAsync(userId, sellerUsername, createProductDto);
-            _logger.LogInformation(
-                "Created GoodTrack order {OrderCode} (Etsy receipt {ReceiptId}, transaction {TransactionId}) automatically from Etsy purchase.",
-                orderCode, receipt.ReceiptId, transactionKey);
+            // Kredi yetersizliği siparişi SESSİZCE kaybettirmez: sayaca yazılır ve kullanıcıya
+            // bildirilir. Duplicate kontrolü idempotent olduğundan kredi yüklendikten sonraki
+            // senkron aynı transaction'ları yeniden dener.
+            try
+            {
+                await _productService.CreateOrderAsync(userId, sellerUsername, createProductDto);
+                result.Created++;
+                _logger.LogInformation(
+                    "Created GoodTrack order {OrderCode} (Etsy receipt {ReceiptId}, transaction {TransactionId}) automatically from Etsy purchase.",
+                    orderCode, receipt.ReceiptId, transactionKey);
+            }
+            catch (InsufficientCreditsException)
+            {
+                result.SkippedInsufficientCredits++;
+                _logger.LogWarning(
+                    "Etsy order skipped due to insufficient credits. Seller: {UserId}, Receipt: {ReceiptId}, Transaction: {TransactionId}",
+                    userId, receipt.ReceiptId, transactionKey);
+            }
         }
+
+        return result;
     }
 
     /// <summary>
@@ -429,8 +446,9 @@ public sealed class EtsyService : IEtsyService
         }
     }
 
-    public async Task SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default)
+    public async Task<EtsyOrderSyncResult> SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default)
     {
+        var total = new EtsyOrderSyncResult();
         var connections = await _connectionRepository.GetActiveForUserAsync(userId, cancellationToken);
 
         foreach (var connection in connections)
@@ -449,7 +467,8 @@ public sealed class EtsyService : IEtsyService
                     {
                         try
                         {
-                            await ProcessEtsyOrderSyncAsync(userId, refreshed.EtsyShopId, receipt.ReceiptId.ToString(), cancellationToken);
+                            var result = await ProcessEtsyOrderSyncAsync(userId, refreshed.EtsyShopId, receipt.ReceiptId.ToString(), cancellationToken);
+                            total.Add(result);
                         }
                         catch (Exception ex)
                         {
@@ -463,5 +482,7 @@ public sealed class EtsyService : IEtsyService
                 _logger.LogError(ex, "Failed to sync orders for shop {ShopId}", connection.EtsyShopId);
             }
         }
+
+        return total;
     }
 }

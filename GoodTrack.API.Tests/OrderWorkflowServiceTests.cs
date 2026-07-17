@@ -91,7 +91,7 @@ public class OrderWorkflowServiceTests
     [InlineData(OrderStatus.Awaiting)]
     [InlineData(OrderStatus.Corrected)]
     [InlineData(OrderStatus.Broken)]
-    public async Task ApplyExternalCancellation_PreProduction_CancelsWithoutRefund(string status)
+    public async Task ApplyExternalCancellation_PreProduction_CancelsAndRefunds(string status)
     {
         var product = SetupOrder("o1", status);
 
@@ -101,8 +101,9 @@ public class OrderWorkflowServiceTests
         product.Status.Should().Be(OrderStatus.Cancelled);
         product.IsReadByMfr.Should().BeFalse();
         product.Logs.Should().ContainSingle(l => l.Message == "Etsy iptali");
-        // Dış kaynaklı iptalde kredi iade EDİLMEZ.
-        _creditsServiceMock.Verify(c => c.RefundCreditAsync(It.IsAny<string>()), Times.Never);
+        // İptalin kaynağı fark etmez: üretime girmemiş siparişin iptali kredi iadesi yapar
+        // (manuel iptal ve üretici onaylı iptalle tutarlı).
+        _creditsServiceMock.Verify(c => c.RefundCreditAsync("seller-123"), Times.Once);
         _productRepositoryMock.Verify(r => r.SaveAsync(product, It.IsAny<CancellationToken>()), Times.Once);
     }
 

@@ -158,7 +158,18 @@ public class EtsyWebhookController : BaseApiController
             if (isPaid)
             {
                 _logger.LogInformation("Webhook triggered order paid processing. ReceiptId: {ReceiptId} for Seller: {UserId}", receiptId, etsyConnection.UserId);
-                await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
+                var result = await _etsyService.ProcessEtsyOrderSyncAsync(etsyConnection.UserId, etsyConnection.EtsyShopId, receiptId, cancellationToken);
+
+                // Kredi yetersizliğinden sipariş oluşturulamadıysa bilinçli olarak 500 dönülür:
+                // Etsy başarısız teslimatları yeniden dener; satıcı kredi yükleyince sipariş
+                // sonraki denemede (veya manuel eşitlemede) oluşur.
+                if (result.SkippedInsufficientCredits > 0)
+                {
+                    _logger.LogWarning(
+                        "Webhook order skipped due to insufficient credits; returning 500 so Etsy retries. Seller: {UserId}, Receipt: {ReceiptId}",
+                        etsyConnection.UserId, receiptId);
+                    return StatusCode(500, "Sipariş, satıcının kredisi yetersiz olduğu için oluşturulamadı.");
+                }
             }
             else
             {

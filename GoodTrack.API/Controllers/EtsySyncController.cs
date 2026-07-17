@@ -175,8 +175,17 @@ public class EtsySyncController : BaseApiController
 
         try
         {
-            await _etsyService.SyncRecentOrdersAsync(userId, cancellationToken);
-            return Ok(ApiResponse.Ok("Etsy üzerindeki son ödenmiş siparişleriniz başarıyla tarandı ve panele aktarıldı."));
+            var result = await _etsyService.SyncRecentOrdersAsync(userId, cancellationToken);
+
+            // Kredi yetersizliğinden atlanan siparişler kullanıcıya açıkça bildirilir;
+            // atlananlar kaybolmaz, kredi yüklendikten sonra yeniden eşitleme onları oluşturur.
+            string message = result.SkippedInsufficientCredits > 0
+                ? $"{result.Created} sipariş aktarıldı; {result.SkippedInsufficientCredits} sipariş krediniz yetersiz olduğu için aktarılamadı. Kredi yükleyip tekrar eşitleyebilirsiniz."
+                : "Etsy üzerindeki son ödenmiş siparişleriniz başarıyla tarandı ve panele aktarıldı.";
+
+            return Ok(new ApiResponse<object>(
+                new { created = result.Created, skippedInsufficientCredits = result.SkippedInsufficientCredits },
+                message));
         }
         catch (Exception ex)
         {

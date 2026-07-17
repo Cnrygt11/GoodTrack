@@ -151,6 +151,9 @@ public static class ServiceCollectionExtensions
         // Eski audit log kayıtlarını retention süresi sonrası temizleyen arka plan job'ı.
         services.AddHostedService<AuditLogRetentionService>();
 
+        // Aylık kredi yenileme: vadesi gelen bakiyeleri plan kredisine tamamlar.
+        services.AddHostedService<CreditRenewalService>();
+
         return services;
     }
 

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -44,5 +46,13 @@ public sealed class PostgresCreditsRepository : ICreditsRepository
         }
 
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public async Task<List<UserCredit>> GetDueForRenewalAsync(DateTime nowUtc, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserCredits
+            .Where(c => c.RenewsAt <= nowUtc)
+            .ToListAsync(cancellationToken);
     }
 }

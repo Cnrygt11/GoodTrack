@@ -71,4 +71,37 @@ public class CreditsController : BaseApiController
         var plans = await _creditsService.GetPlansAsync(cancellationToken);
         return Ok(ApiResponse<System.Collections.Generic.List<SubscriptionPlanDetail>>.Ok(plans));
     }
+
+    /// <summary>Satın alınabilir tek seferlik kredi paketlerini döner.</summary>
+    [HttpGet("packages")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ApiResponse<System.Collections.Generic.List<CreditPackage>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetPackages(CancellationToken cancellationToken)
+    {
+        var packages = await _creditsService.GetPackagesAsync(cancellationToken);
+        return Ok(ApiResponse<System.Collections.Generic.List<CreditPackage>>.Ok(packages));
+    }
+
+    /// <summary>Kredi paketi satın alımı: paket kredisi bakiyeye eklenir.</summary>
+    [HttpPost("topup")]
+    [ProducesResponseType(typeof(ApiResponse<UserCredit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> TopUp([FromBody] TopUpRequest request, CancellationToken cancellationToken)
+    {
+        var userId = GetCurrentUserId();
+        if (userId is null)
+        {
+            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
+        }
+
+        if (request == null || string.IsNullOrWhiteSpace(request.PackageId))
+        {
+            return BadRequest(ApiResponse.Fail(Messages.Common.MissingRequestData));
+        }
+
+        var updated = await _creditsService.TopUpAsync(userId, request.PackageId, cancellationToken);
+        var package = SubscriptionPlanCatalog.FindPackage(request.PackageId);
+        return Ok(new ApiResponse<UserCredit>(updated, $"{package!.Credits} kredi hesabınıza eklendi!"));
+    }
 }

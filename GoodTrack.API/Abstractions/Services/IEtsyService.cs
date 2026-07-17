@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using GoodTrack.API.DTOs.Etsy;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Abstractions.Services;
@@ -16,7 +17,10 @@ public interface IEtsyService
     Task<List<EtsyConnection>> GetConnectionsAsync(string userId, CancellationToken cancellationToken = default);
     Task<EtsyConnection?> GetConnectionAsync(string userId, string shopId, CancellationToken cancellationToken = default);
     Task<List<CatalogProduct>> FetchAndImportEtsyListingsAsync(string userId, CancellationToken cancellationToken = default);
-    Task ProcessEtsyOrderSyncAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default);
+    /// <summary>Tek receipt'i işler; oluşturulan/kredi yetersizliğinden atlanan sipariş sayılarını döner.</summary>
+    Task<EtsyOrderSyncResult> ProcessEtsyOrderSyncAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default);
     Task ProcessEtsyOrderCancellationAsync(string userId, string shopId, string receiptId, CancellationToken cancellationToken = default);
-    Task SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Tüm aktif mağazaların son siparişlerini tarar; toplam sonuç sayaçlarını döner.</summary>
+    Task<EtsyOrderSyncResult> SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default);
 }

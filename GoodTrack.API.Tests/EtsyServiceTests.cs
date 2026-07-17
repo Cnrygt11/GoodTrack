@@ -246,6 +246,39 @@ public class EtsyServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task ProcessEtsyOrderSync_InsufficientCredits_CountsSkippedAndContinues()
+    {
+        // Kredi yetersizliği senkronu durdurmaz ve sipariş SESSİZCE kaybolmaz:
+        // atlanan sayacı döner, kalan transaction'lar denenmeye devam eder.
+        SeedCatalogProduct();
+        SetupReceipt(new EtsyReceipt
+        {
+            ReceiptId = 9000,
+            ShopId = 1,
+            Name = "Müşteri",
+            Transactions = new List<EtsyTransaction>
+            {
+                new() { TransactionId = 601, ListingId = 111, Quantity = 1, Title = "Ürün A" },
+                new() { TransactionId = 602, ListingId = 111, Quantity = 1, Title = "Ürün A" },
+            }
+        });
+
+        _productServiceMock
+            .Setup(s => s.CreateOrderAsync("u1", It.IsAny<string>(),
+                It.Is<CreateProductDto>(d => d.EtsyTransactionId == 601), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InsufficientCreditsException("Krediniz yetersiz!"));
+
+        var result = await _service.ProcessEtsyOrderSyncAsync("u1", "shop-1", "9000");
+
+        result.SkippedInsufficientCredits.Should().Be(1);
+        result.Created.Should().Be(1);
+        _productServiceMock.Verify(s => s.CreateOrderAsync(
+            "u1", It.IsAny<string>(),
+            It.Is<CreateProductDto>(d => d.EtsyTransactionId == 602),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task ProcessEtsyOrderSync_UsesSkuAsOrderCode_AndOmitsListingTitle()
     {
         SeedCatalogProduct();

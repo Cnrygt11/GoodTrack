@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -93,40 +94,68 @@ public sealed class CreditsService : ICreditsService
             throw new ArgumentException("Plan seçimi boş olamaz!");
         }
 
+        var targetPlan = SubscriptionPlanCatalog.FindPlan(plan)
+            ?? throw new ArgumentException("Geçersiz abonelik planı seçimi!");
+
         var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
 
-        if (record.Plan.Equals(plan, StringComparison.OrdinalIgnoreCase))
+        if (record.Plan.Equals(targetPlan.Plan, StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException($"Zaten '{plan}' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
         }
 
-        int newCredits;
-        if (plan.Equals(SubscriptionPlan.Free, StringComparison.OrdinalIgnoreCase))
+        // Alt plana geçiş yok: bakiye/özellik kaybına yol açar ve iade akışı bulunmuyor.
+        var currentPlan = SubscriptionPlanCatalog.ResolveOrFree(record.Plan);
+        if (targetPlan.Rank < currentPlan.Rank)
         {
-            newCredits = 5;
-            record.Plan = SubscriptionPlan.Free;
-        }
-        else if (plan.Equals(SubscriptionPlan.Pro, StringComparison.OrdinalIgnoreCase))
-        {
-            newCredits = 100;
-            record.Plan = SubscriptionPlan.Pro;
-        }
-        else if (plan.Equals(SubscriptionPlan.Enterprise, StringComparison.OrdinalIgnoreCase))
-        {
-            newCredits = 1000;
-            record.Plan = SubscriptionPlan.Enterprise;
-        }
-        else
-        {
-            throw new ArgumentException("Geçersiz abonelik planı seçimi!");
+            throw new InvalidOperationException("Alt plana geçiş yapılamaz.");
         }
 
-        record.Credits = newCredits;
+        // Yükseltmede bakiye asla azalmaz: satın alınmış paket kredileri korunur,
+        // yeni planın aylık kredisi tabandır (yenileme semantiğiyle aynı — bkz. CreditRenewalService).
+        record.Plan = targetPlan.Plan;
+        record.Credits = Math.Max(record.Credits, targetPlan.MonthlyCredits);
         record.PlanStartedAt = DateTime.UtcNow;
         record.RenewsAt = DateTime.UtcNow.AddMonths(1);
 
         await _creditsRepository.SaveAsync(record, cancellationToken);
         return record;
+    }
+
+    /// <inheritdoc />
+    public async Task<UserCredit> TopUpAsync(string userId, string packageId, CancellationToken cancellationToken = default)
+    {
+        var package = SubscriptionPlanCatalog.FindPackage(packageId)
+            ?? throw new ArgumentException("Geçersiz kredi paketi seçimi!");
+
+        // Bakiye xmin ile optimistic-lock'lu; eşzamanlı sipariş düşümüyle çakışırsa
+        // güncel değeri yükleyip sınırlı sayıda tekrar dene (DeductForOrderAsync ile aynı desen).
+        const int maxAttempts = 3;
+        var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
+
+        for (int attempt = 1; ; attempt++)
+        {
+            record.Credits += package.Credits;
+
+            try
+            {
+                await _creditsRepository.SaveAsync(record, cancellationToken);
+                return record;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt < maxAttempts)
+            {
+                foreach (var entry in ex.Entries)
+                {
+                    await entry.ReloadAsync(cancellationToken);
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public Task<List<CreditPackage>> GetPackagesAsync(CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(SubscriptionPlanCatalog.Packages.ToList());
     }
 
     /// <inheritdoc />
@@ -140,30 +169,16 @@ public sealed class CreditsService : ICreditsService
     /// <inheritdoc />
     public Task<List<SubscriptionPlanDetail>> GetPlansAsync(CancellationToken cancellationToken = default)
     {
-        var plans = new List<SubscriptionPlanDetail>
-        {
-            new()
+        // Tek kaynak SubscriptionPlanCatalog; fiyat/kredi/özellik değişikliği orada yapılır.
+        var plans = SubscriptionPlanCatalog.Plans
+            .Select(p => new SubscriptionPlanDetail
             {
-                Plan = SubscriptionPlan.Free,
-                Credits = 5,
-                Price = 0.00m,
-                Features = new List<string> { "feature_free_orders", "feature_free_mfrs", "feature_free_support" }
-            },
-            new()
-            {
-                Plan = SubscriptionPlan.Pro,
-                Credits = 100,
-                Price = 49.00m,
-                Features = new List<string> { "feature_prof_orders", "feature_prof_mfrs", "feature_prof_analytics", "feature_prof_support" }
-            },
-            new()
-            {
-                Plan = SubscriptionPlan.Enterprise,
-                Credits = 1000,
-                Price = 199.00m,
-                Features = new List<string> { "feature_ent_orders", "feature_ent_mfrs", "feature_ent_analytics", "feature_ent_support", "feature_ent_custom" }
-            }
-        };
+                Plan = p.Plan,
+                Credits = p.MonthlyCredits,
+                Price = p.Price,
+                Features = p.FeatureKeys.ToList()
+            })
+            .ToList();
 
         return Task.FromResult(plans);
     }

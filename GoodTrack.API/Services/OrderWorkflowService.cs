@@ -334,7 +334,9 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             return ExternalCancellationOutcome.AlreadyCancelled;
         }
 
-        // Üretim öncesi (bekliyor/düzeltildi/bozuk) → doğrudan iptal. Kredi iadesi YAPILMAZ.
+        // Üretim öncesi (bekliyor/düzeltildi/bozuk) → doğrudan iptal. Kredi iadesi YAPILIR:
+        // iptalin kaynağı (manuel/Etsy) fark etmeksizin tüm iptal yolları iade eder
+        // (manuel iptal ve üretici onaylı iptalle tutarlı).
         if (currentStatus is OrderStatus.Awaiting or OrderStatus.Corrected or OrderStatus.Broken)
         {
             product.Status = OrderStatus.Cancelled;
@@ -342,6 +344,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsPendingApproval = false;
             product.IsDefective = false;
             product.Completed = false;
+            await _creditsService.RefundCreditAsync(product.SellerId);
             AppendLog(product, sellerId, product.SellerName, cancelReason);
             product.IsReadBySeller = false;
             product.IsReadByMfr = false;

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GoodTrack.API.Models;
@@ -23,4 +25,10 @@ public interface ICreditsRepository
     /// <param name="userCredit">The user credit record to save.</param>
     /// <param name="cancellationToken">Token to cancel the operation.</param>
     Task SaveAsync(UserCredit userCredit, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Yenileme vadesi gelmiş (RenewsAt &lt;= <paramref name="nowUtc"/>) kredi kayıtlarını döner.
+    /// Aylık yenileme job'ı (CreditRenewalService) kullanır.
+    /// </summary>
+    Task<List<UserCredit>> GetDueForRenewalAsync(DateTime nowUtc, CancellationToken cancellationToken = default);
 }

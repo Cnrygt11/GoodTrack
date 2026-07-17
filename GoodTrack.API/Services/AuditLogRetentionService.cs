@@ -29,7 +29,7 @@ public sealed class AuditLogRetentionService : BackgroundService
     private const int RetentionMonths = 3;
 
     /// <summary>Çok-instance'ta yalnız tek çalıştırıcı için advisory-lock anahtarı.</summary>
-    private const long JobLockKey = 481002;
+    private const long JobLockKey = 481001;
 
     /// <summary>Tarama sıklığı. İş idempotent olduğundan günde bir tur yeterli.</summary>
     private static readonly TimeSpan Interval = TimeSpan.FromHours(24);

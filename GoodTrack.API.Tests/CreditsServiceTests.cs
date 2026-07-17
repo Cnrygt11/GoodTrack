@@ -118,17 +118,16 @@ public class CreditsServiceTests
     }
 
     [Theory]
-    [InlineData(SubscriptionPlan.Free, 5)]
-    [InlineData(SubscriptionPlan.Pro, 100)]
-    [InlineData(SubscriptionPlan.Enterprise, 1000)]
+    [InlineData(SubscriptionPlan.Pro, 150)]
+    [InlineData(SubscriptionPlan.Enterprise, 500)]
     public async Task UpgradePlanAsync_ValidPlan_ShouldUpgradeCredits(string plan, int expectedCredits)
     {
-        // Arrange
+        // Arrange: Free plandan yükseltme; düşük bakiye planın aylık kredisine tamamlanır.
         var userId = "user-upgrade";
         var existingRecord = new UserCredit
         {
             UserId = userId,
-            Plan = plan == SubscriptionPlan.Free ? SubscriptionPlan.Pro : SubscriptionPlan.Free,
+            Plan = SubscriptionPlan.Free,
             Credits = 2
         };
 
@@ -143,6 +142,106 @@ public class CreditsServiceTests
         result.Plan.Should().Be(plan);
         result.Credits.Should().Be(expectedCredits);
         _creditsRepositoryMock.Verify(r => r.SaveAsync(existingRecord, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpgradePlanAsync_HigherExistingBalance_IsPreserved()
+    {
+        // Paket kredisiyle şişmiş bakiye yükseltmede ASLA azalmaz (max semantiği).
+        var userId = "user-upgrade-max";
+        var existingRecord = new UserCredit { UserId = userId, Plan = SubscriptionPlan.Free, Credits = 300 };
+        _creditsRepositoryMock
+            .Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRecord);
+
+        var result = await _creditsService.UpgradePlanAsync(userId, SubscriptionPlan.Pro);
+
+        result.Credits.Should().Be(300);
+        result.Plan.Should().Be(SubscriptionPlan.Pro);
+    }
+
+    [Fact]
+    public async Task UpgradePlanAsync_Downgrade_ShouldThrow()
+    {
+        var userId = "user-downgrade";
+        var existingRecord = new UserCredit { UserId = userId, Plan = SubscriptionPlan.Enterprise, Credits = 400 };
+        _creditsRepositoryMock
+            .Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRecord);
+
+        var act = () => _creditsService.UpgradePlanAsync(userId, SubscriptionPlan.Pro);
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Alt plana geçiş yapılamaz.");
+
+        _creditsRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<UserCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task TopUpAsync_ValidPackage_AddsCredits()
+    {
+        var userId = "user-topup";
+        var existingRecord = new UserCredit { UserId = userId, Plan = SubscriptionPlan.Free, Credits = 3 };
+        _creditsRepositoryMock
+            .Setup(r => r.GetByUserIdAsync(userId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingRecord);
+
+        var result = await _creditsService.TopUpAsync(userId, "small"); // 25 kredi
+
+        result.Credits.Should().Be(28);
+        _creditsRepositoryMock.Verify(r => r.SaveAsync(existingRecord, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task TopUpAsync_InvalidPackage_ShouldThrow()
+    {
+        var act = () => _creditsService.TopUpAsync("user-x", "mega");
+        await act.Should().ThrowAsync<ArgumentException>();
+
+        _creditsRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<UserCredit>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ─── Aylık yenileme semantiği (CreditRenewalService.ApplyRenewal) ───────────
+
+    [Fact]
+    public void ApplyRenewal_TopsUpToPlanMonthlyCredits_AndAdvancesRenewsAt()
+    {
+        var now = new DateTime(2026, 7, 17, 12, 0, 0, DateTimeKind.Utc);
+        var record = new UserCredit
+        {
+            Plan = SubscriptionPlan.Pro,
+            Credits = 12,
+            RenewsAt = now.AddDays(-3)
+        };
+
+        CreditRenewalService.ApplyRenewal(record, now);
+
+        record.Credits.Should().Be(150);
+        record.RenewsAt.Should().BeAfter(now);
+        record.RenewsAt.Should().BeOnOrBefore(now.AddMonths(1));
+    }
+
+    [Fact]
+    public void ApplyRenewal_HigherBalance_IsNotReduced()
+    {
+        // Satın alınmış paket kredileri yenilemede silinmez.
+        var now = DateTime.UtcNow;
+        var record = new UserCredit { Plan = SubscriptionPlan.Free, Credits = 210, RenewsAt = now.AddMinutes(-1) };
+
+        CreditRenewalService.ApplyRenewal(record, now);
+
+        record.Credits.Should().Be(210);
+    }
+
+    [Fact]
+    public void ApplyRenewal_LongOutage_CatchesUpToFutureRenewalDate()
+    {
+        // Aylarca vade kaçmışsa RenewsAt tek turda güncel vadeye taşınır (takvim çıpası korunur).
+        var now = new DateTime(2026, 7, 17, 0, 0, 0, DateTimeKind.Utc);
+        var record = new UserCredit { Plan = SubscriptionPlan.Pro, Credits = 0, RenewsAt = now.AddMonths(-3) };
+
+        CreditRenewalService.ApplyRenewal(record, now);
+
+        record.RenewsAt.Should().BeAfter(now);
+        record.Credits.Should().Be(150);
     }
 
     [Fact]
