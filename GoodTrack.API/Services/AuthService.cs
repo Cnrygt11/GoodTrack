@@ -57,7 +57,7 @@ public sealed class AuthService : IAuthService
         // Email Verification Check
         if (!user.IsActive)
         {
-            throw new UnauthorizedAccessException("Lütfen e-posta adresinizi doğrulayın! / Please verify your email!");
+            throw new UnauthorizedAccessException("Lütfen e-posta adresinizi doğrulayın!");
         }
 
         var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
@@ -140,7 +140,7 @@ public sealed class AuthService : IAuthService
 
         if (request.Password != request.ConfirmPassword)
         {
-            throw new ArgumentException("Şifreler uyuşmuyor!");
+            throw new ArgumentException("Şifreler eşleşmiyor!");
         }
 
         if (request.Role != Roles.Seller && request.Role != Roles.Mfr && request.Role != Roles.Admin)
@@ -216,7 +216,7 @@ public sealed class AuthService : IAuthService
 
         if (newPassword != confirmNewPassword)
         {
-            throw new ArgumentException("Yeni şifreler uyuşmuyor!");
+            throw new ArgumentException("Yeni şifreler eşleşmiyor!");
         }
 
         var user = await _userRepository.GetByIdAsync(userId);

@@ -54,8 +54,18 @@ public class ValidatorsTests
     public void Register_InvalidRole_HasError()
     {
         var dto = ValidRegister();
-        dto.Role = "admin";
+        dto.Role = "superuser";
         new RegisterRequestValidator().TestValidate(dto).ShouldHaveValidationErrorFor(x => x.Role);
+    }
+
+    [Fact]
+    public void Register_AdminRole_IsValid()
+    {
+        // Admin kaydı geçerli bir roldür; güvenlik anahtarı kontrolü AuthService'tedir.
+        // (Önceki kural admin'i validator'da reddedip admin kaydını fiilen imkânsız kılıyordu.)
+        var dto = ValidRegister();
+        dto.Role = "admin";
+        new RegisterRequestValidator().TestValidate(dto).ShouldNotHaveValidationErrorFor(x => x.Role);
     }
 
     // ─── LoginRequestValidator ───────────────────────────────────────────────────

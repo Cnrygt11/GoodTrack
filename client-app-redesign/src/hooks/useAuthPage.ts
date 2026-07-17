@@ -70,9 +70,13 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
     return { valid: regex.test(regEmail), dirty: true };
   }, [regEmail]);
 
+  // Backend şifre politikasıyla birebir aynı (AuthService.ValidatePasswordStrength):
+  // 8-20 karakter + en az bir küçük harf, büyük harf, rakam ve özel karakter.
   const passwordValid = useMemo(() => {
     if (!regPassword) return { valid: true, dirty: false };
-    return { valid: regPassword.length >= 6 && regPassword.length <= 20, dirty: true };
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#\-_])[A-Za-z\d@$!%*?&.#\-_]{8,20}$/;
+    return { valid: regex.test(regPassword), dirty: true };
   }, [regPassword]);
 
   const confirmValid = useMemo(() => {
@@ -191,7 +195,10 @@ export default function useAuthPage(initialMode?: 'login' | 'register') {
         errors.phoneBody = t('phoneInvalid');
       }
 
-      if (regPassword && (regPassword.length < 6 || regPassword.length > 20)) {
+      // Backend politikasıyla aynı kural: 8-20 + küçük/büyük harf + rakam + özel karakter.
+      const passwordRegex =
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#\-_])[A-Za-z\d@$!%*?&.#\-_]{8,20}$/;
+      if (regPassword && !passwordRegex.test(regPassword)) {
         errors.regPassword = t('passwordLengthError');
       }
 

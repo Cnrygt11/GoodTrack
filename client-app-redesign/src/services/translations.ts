@@ -549,7 +549,10 @@ export const translations = {
     usernameInvalid: 'Kullanıcı adı sadece küçük harf, rakam ve _ içerebilir (3-15 kar.)',
     emailInvalid: 'Geçersiz e-posta formatı!',
     phoneInvalid: 'Geçersiz telefon numarası!',
-    passwordLengthError: 'Şifre 6-20 karakter olmalıdır!',
+    passwordLengthError:
+      'Şifre 8-20 karakter olmalı; büyük harf, küçük harf, rakam ve özel karakter içermelidir!',
+    passwordHint:
+      'En az 8 karakter; büyük/küçük harf, rakam ve özel karakter (@$!%*?&.#-_) içermeli.',
     imageCompressionError: 'Resim sıkıştırılırken hata oluştu!',
     cancelOrderTitle: 'Siparişi İptal Et',
     cancelOrderConfirm: 'Siparişi iptal etmek istediğinize emin misiniz?',
@@ -1188,7 +1191,10 @@ export const translations = {
     usernameInvalid: 'Lowercase, digits, and _ only (3-15 chars).',
     emailInvalid: 'Invalid email format!',
     phoneInvalid: 'Invalid phone number!',
-    passwordLengthError: 'Password must be 6-20 characters!',
+    passwordLengthError:
+      'Password must be 8-20 characters with uppercase, lowercase, a digit and a special character!',
+    passwordHint:
+      'At least 8 characters with upper/lowercase, a digit and a special character (@$!%*?&.#-_).',
     imageCompressionError: 'Error compressing image!',
     cancelOrderTitle: 'Cancel Order',
     cancelOrderConfirm: 'Are you sure you want to cancel this order?',

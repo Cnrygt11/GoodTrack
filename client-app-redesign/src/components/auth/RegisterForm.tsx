@@ -116,7 +116,7 @@ export default function RegisterForm({
           autoComplete="username"
           placeholder={t('username')}
           value={regUsername}
-          onChange={(e) => setRegUsername(e.target.value)}
+          onChange={(e) => setRegUsername(e.target.value.toLowerCase())}
           className={getFieldClassName('regUsername')}
         />
         {showErrors && formErrors.regUsername && (
@@ -198,8 +198,10 @@ export default function RegisterForm({
               {showRegPassword ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
           </div>
-          {showErrors && formErrors.regPassword && (
+          {showErrors && formErrors.regPassword ? (
             <span className="auth-field-error">{formErrors.regPassword}</span>
+          ) : (
+            <span className="auth-field-hint">{t('passwordHint')}</span>
           )}
         </div>
         <div className="auth-field">
