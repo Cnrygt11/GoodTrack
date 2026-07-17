@@ -55,7 +55,7 @@ export function EtsyActiveStoresList({
                   {conn.shopName} Bağlandı
                 </h4>
                 <span className={styles.storeMeta}>
-                  Mağaza ID: {conn.shopId} • Token Bitiş:{' '}
+                  Mağaza No: {conn.shopId} • Bağlantı yenilenme tarihi:{' '}
                   {new Date(conn.tokenExpiresAt).toLocaleDateString('tr-TR')}
                 </span>
               </div>
