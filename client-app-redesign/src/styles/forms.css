@@ -375,8 +375,31 @@ h2 span.mfr-accent {
   position: relative;
 }
 
+/* Bileşen kendi input stilini taşır: .form-group dışındaki bağlamlarda da
+   (ör. üretici bul filtre paneli) varsayılan HTML görünümünde kalmaz. */
 .city-select-input-wrap input {
-  padding-right: 34px;
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  padding: 10px 34px 10px 36px; /* sol: pin ikonu, sağ: chevron/temizle payı */
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.city-select-input-wrap input:focus {
+  border-color: var(--accent-seller);
+  box-shadow: 0 0 10px var(--accent-seller-glow);
+}
+
+.mfr-theme .city-select-input-wrap input:focus {
+  border-color: var(--accent-mfr);
+  box-shadow: 0 0 10px var(--accent-mfr-glow);
 }
 
 .city-select .city-select-chevron {

@@ -64,10 +64,6 @@ export default function useSearchMfr() {
   const [selectedCities, setSelectedCities] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
-  // Toggle Filters (applied client-side)
-  const [mustHaveGallery, setMustHaveGallery] = useState(false);
-  const [mustHaveAvatar, setMustHaveAvatar] = useState(false);
-
   const buildQuery = useCallback(
     (pageNum: number) => ({
       city: selectedCities.length > 0 ? selectedCities.join(',') : undefined,
@@ -76,17 +72,8 @@ export default function useSearchMfr() {
       sort: sortOption,
       page: pageNum,
       limit: PAGE_SIZE,
-      mustHaveGallery,
-      mustHaveAvatar,
     }),
-    [
-      selectedCities,
-      selectedCategories,
-      debouncedName,
-      sortOption,
-      mustHaveGallery,
-      mustHaveAvatar,
-    ],
+    [selectedCities, selectedCategories, debouncedName, sortOption],
   );
 
   const fetchManufacturers = useCallback(async () => {
@@ -140,8 +127,6 @@ export default function useSearchMfr() {
   const handleResetFilters = useCallback(() => {
     setSelectedCities([]);
     setSelectedCategories([]);
-    setMustHaveGallery(false);
-    setMustHaveAvatar(false);
     setSearchName('');
     setSortOption('completeness');
   }, []);
@@ -209,10 +194,6 @@ export default function useSearchMfr() {
     error,
     selectedCities,
     selectedCategories,
-    mustHaveGallery,
-    setMustHaveGallery,
-    mustHaveAvatar,
-    setMustHaveAvatar,
     searchName,
     setSearchName,
     sortOption,

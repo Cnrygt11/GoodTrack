@@ -95,10 +95,6 @@ export default function SearchMfrPage() {
     error,
     selectedCities,
     selectedCategories,
-    mustHaveGallery,
-    setMustHaveGallery,
-    mustHaveAvatar,
-    setMustHaveAvatar,
     searchName,
     setSearchName,
     sortOption,
@@ -119,8 +115,6 @@ export default function SearchMfrPage() {
   const hasActiveFilters =
     selectedCities.length > 0 ||
     selectedCategories.length > 0 ||
-    mustHaveGallery ||
-    mustHaveAvatar ||
     searchName.trim().length > 0 ||
     sortOption !== 'completeness';
 
@@ -205,32 +199,6 @@ export default function SearchMfrPage() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Toggle Filters */}
-            <div className="filter-toggles">
-              <label
-                className={`filter-toggle-item ${isLocked ? 'filter-toggle-item--disabled' : ''}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={mustHaveGallery}
-                  onChange={(e) => !isLocked && setMustHaveGallery(e.target.checked)}
-                  disabled={isLocked}
-                />
-                <span>{t('hasShowcaseFilter')}</span>
-              </label>
-              <label
-                className={`filter-toggle-item ${isLocked ? 'filter-toggle-item--disabled' : ''}`}
-              >
-                <input
-                  type="checkbox"
-                  checked={mustHaveAvatar}
-                  onChange={(e) => !isLocked && setMustHaveAvatar(e.target.checked)}
-                  disabled={isLocked}
-                />
-                <span>{t('hasAvatarFilter')}</span>
-              </label>
             </div>
           </div>
         </div>
