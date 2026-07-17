@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { etsyApi } from '../services/etsyApi';
+import { BASE_URL } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export interface EtsyConnectionInfo {
@@ -78,7 +79,7 @@ export function useEtsyIntegration() {
     setConnectLoading(true);
     setError(null);
     try {
-      const callbackUrl = `${window.location.origin}/seller/profile?tab=integrations`; // matching frontendUrl's callback redirection
+      const callbackUrl = `${BASE_URL}/etsyauth/callback`; // must match Etsy developer dashboard's registered redirect_uri
       const frontendUrl = `${window.location.origin}/seller/profile?tab=integrations`;
 
       const result = await etsyApi.connect({ callbackUrl, frontendUrl });
