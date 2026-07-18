@@ -6,7 +6,7 @@ import { extractErrorMessage } from '../utils/errorUtils';
 
 export default function usePasswordChange() {
   const { showToast } = useToast();
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   // Flow State: 'profile' | 'verify-password' | 'new-password'
   const [flowStep, setFlowStep] = useState<'profile' | 'verify-password' | 'new-password'>('profile');
@@ -26,7 +26,7 @@ export default function usePasswordChange() {
   const handleVerifyPassword = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!oldPassword.trim()) {
-      showToast(language === 'tr' ? 'Lütfen mevcut şifrenizi girin!' : 'Please enter your current password!');
+      showToast(t('enterCurrentPasswordError'));
       return;
     }
 
@@ -34,23 +34,23 @@ export default function usePasswordChange() {
       setActionLoading(true);
       await api.verifyPassword(oldPassword);
       setFlowStep('new-password');
-      showToast(language === 'tr' ? 'Şifre doğrulandı, yeni şifre belirleyebilirsiniz.' : 'Password verified, you can now set your new password.');
+      showToast(t('passwordVerifiedMsg'));
     } catch (err: unknown) {
       showToast(extractErrorMessage(err));
     } finally {
       setActionLoading(false);
     }
-  }, [oldPassword, language, showToast]);
+  }, [oldPassword, t, showToast]);
 
   const handleChangePassword = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPassword || !confirmNewPassword) {
-      showToast(language === 'tr' ? 'Lütfen tüm alanları doldurun!' : 'Please fill in all fields!');
+      showToast(t('fillAllFieldsError'));
       return;
     }
 
     if (newPassword.length < 6 || newPassword.length > 20) {
-      showToast(language === 'tr' ? 'Yeni şifre en az 6, en fazla 20 karakter uzunluğunda olmalıdır!' : 'New password must be between 6 and 20 characters long!');
+      showToast(t('newPasswordLengthError'));
       return;
     }
 
@@ -73,7 +73,7 @@ export default function usePasswordChange() {
     } finally {
       setActionLoading(false);
     }
-  }, [newPassword, confirmNewPassword, oldPassword, language, t, showToast]);
+  }, [newPassword, confirmNewPassword, oldPassword, t, showToast]);
 
   const handleCancelFlow = useCallback(() => {
     setOldPassword('');

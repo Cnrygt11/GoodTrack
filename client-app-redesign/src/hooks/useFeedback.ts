@@ -8,7 +8,7 @@ export type FeedbackCategory = 'bug' | 'suggestion' | 'other';
 
 export default function useFeedback() {
   const { showToast } = useToast();
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState<FeedbackCategory>('bug');
@@ -63,9 +63,7 @@ export default function useFeedback() {
       }
 
       if (!subject.trim() || !message.trim()) {
-        const errMsg =
-          language === 'tr' ? 'Lütfen tüm alanları doldurun.' : 'Please fill in all fields.';
-        setError(errMsg);
+        setError(t('fillAllFieldsError'));
         return;
       }
 
@@ -102,7 +100,7 @@ export default function useFeedback() {
         setLoading(false);
       }
     },
-    [category, subject, message, language, showToast, t, loading],
+    [category, subject, message, showToast, t, loading],
   );
 
   return {

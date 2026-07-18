@@ -83,7 +83,7 @@ export default function CatalogItemCard({
 
       {/* Bottom Dropdown & Action Area */}
       <div className="catalog-card-actions">
-        <span className="catalog-assign-label">{t('assignedManufacturerLabel') || 'Üretici'}:</span>
+        <span className="catalog-assign-label">{t('assignedManufacturerLabel')}:</span>
         <select
           value={product.mfrId || ''}
           onChange={async (e) => {

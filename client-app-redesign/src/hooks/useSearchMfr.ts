@@ -85,11 +85,11 @@ export default function useSearchMfr() {
       setPage(0);
       setHasMore(data.hasMore);
     } catch (err: unknown) {
-      setError(extractErrorMessage(err) || 'Üreticiler yüklenemedi.');
+      setError(extractErrorMessage(err) || t('mfrLoadError'));
     } finally {
       setLoading(false);
     }
-  }, [buildQuery]);
+  }, [buildQuery, t]);
 
   const loadMore = useCallback(async () => {
     if (!hasMore || loading) return;
@@ -101,11 +101,11 @@ export default function useSearchMfr() {
       setPage(nextPage);
       setHasMore(data.hasMore);
     } catch (err: unknown) {
-      showToast(extractErrorMessage(err) || 'Daha fazla üretici yüklenemedi.');
+      showToast(extractErrorMessage(err) || t('mfrLoadMoreError'));
     } finally {
       setLoading(false);
     }
-  }, [hasMore, loading, page, buildQuery, showToast]);
+  }, [hasMore, loading, page, buildQuery, showToast, t]);
 
   // Initial fetch
   useEffect(() => {

@@ -79,7 +79,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   const { extraFieldDefs, loadExtraFields } = useExtraFieldDefs();
   const { fetchCredits } = useCredits();
   const { showToast } = useToast();
-  const { language, t } = useSettings();
+  const { t } = useSettings();
 
   const confirm = useConfirm();
   const navigate = useNavigate();
@@ -126,7 +126,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         setOrderImage(previewImage);
         setOrderThumbnail(match.thumbnailImage ?? null);
         setCatalogProductId(match.id);
-        setImageFileName('Katalog Görseli');
+        setImageFileName(t('catalogImageLabel'));
       }
       setOrderText(match.text || '');
 
@@ -140,7 +140,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     } else {
       setAutofillSuccess(false);
     }
-  }, [productCode, catalogProducts, editingProduct, extraFieldDefs]);
+  }, [productCode, catalogProducts, editingProduct, extraFieldDefs, t]);
 
   // --- Handlers ---
 
@@ -171,7 +171,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       setOrderImage(placeholder);
       setOrderThumbnail(product.thumbnailImage ?? null);
       setCatalogProductId(product.catalogProductId ?? null);
-      setImageFileName(placeholder ? 'Mevcut Görsel' : '');
+      setImageFileName(placeholder ? t('currentImageLabel') : '');
       const initialExtras: Record<string, string> = {};
       extraFieldDefs.forEach((def) => {
         initialExtras[def.id] = product.extras?.[def.id]?.value || '';
@@ -191,7 +191,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           });
       }
     },
-    [extraFieldDefs],
+    [extraFieldDefs, t],
   );
 
   const handleImageChange = useCallback(
@@ -210,12 +210,10 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         setCatalogProductId(null);
       } catch (err: unknown) {
         console.error(err);
-        showToast(
-          language === 'tr' ? 'Resim sıkıştırılırken hata oluştu!' : 'Error compressing image!',
-        );
+        showToast(t('imageCompressionError'));
       }
     },
-    [language, showToast],
+    [t, showToast],
   );
 
   const handleExtraValueChange = useCallback((fieldId: string, val: string) => {
@@ -237,7 +235,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       }
 
       const selectedMfr = connections.find((c) => c.id === mfrId);
-      const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
+      const mfrName = selectedMfr ? selectedMfr.username : t('mfr');
 
       const formattedExtras: Record<string, ExtraFieldValue> = {};
       extraFieldDefs.forEach((def) => {
@@ -295,7 +293,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           setOrderImage(orderImage);
           setOrderThumbnail(orderThumbnail);
           setCatalogProductId(catalogProductId);
-          setImageFileName(orderImage ? 'Mevcut Görsel' : '');
+          setImageFileName(orderImage ? t('currentImageLabel') : '');
           const initialExtras: Record<string, string> = {};
           extraFieldDefs.forEach((def) => {
             initialExtras[def.id] = formattedExtras[def.id]?.value || '';
@@ -373,7 +371,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           setOrderImage(orderImage);
           setOrderThumbnail(orderThumbnail);
           setCatalogProductId(catalogProductId);
-          setImageFileName(orderImage ? 'Katalog Görseli' : '');
+          setImageFileName(orderImage ? t('catalogImageLabel') : '');
           const initialExtras: Record<string, string> = {};
           extraFieldDefs.forEach((def) => {
             initialExtras[def.id] = formattedExtras[def.id]?.value || '';
@@ -456,12 +454,9 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
   const handleRemoveField = useCallback(
     async (id: string) => {
       const accepted = await confirm({
-        title: language === 'tr' ? 'Özelliği Kaldır' : 'Remove Feature',
-        message:
-          language === 'tr'
-            ? 'Bu özelliği silmek istediğinize emin misiniz?'
-            : 'Are you sure you want to delete this feature template?',
-        confirmText: language === 'tr' ? 'Kaldır' : 'Remove',
+        title: t('removeFeatureTitle'),
+        message: t('removeFeatureConfirm'),
+        confirmText: t('removeTitle'),
         isDestructive: true,
       });
       if (!accepted) return;
@@ -478,7 +473,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         showToast(extractErrorMessage(err));
       }
     },
-    [confirm, language, loadExtraFields, showToast, t],
+    [confirm, loadExtraFields, showToast, t],
   );
 
   const handleDeleteClick = useCallback(
@@ -502,7 +497,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           setOrderImage(product.image);
           setOrderThumbnail(product.thumbnailImage ?? null);
           setCatalogProductId(product.catalogProductId ?? null);
-          setImageFileName(product.image ? 'Mevcut Görsel' : '');
+          setImageFileName(product.image ? t('currentImageLabel') : '');
           const initialExtras: Record<string, string> = {};
           extraFieldDefs.forEach((def) => {
             initialExtras[def.id] = product.extras?.[def.id]?.value || '';

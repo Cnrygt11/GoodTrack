@@ -46,7 +46,7 @@ export default function useSellerOrderActions(
   const { products } = useProductsQuery();
   const { loadProducts, optimisticUpdateProduct, rollbackProducts } = useProductActions();
   const { showToast } = useToast();
-  const { language, t } = useSettings();
+  const { t } = useSettings();
   const confirm = useConfirm();
 
   // --- Defect Modal State ---
@@ -66,7 +66,7 @@ export default function useSellerOrderActions(
     const accepted = await confirm({
       title: t('cancelOrderTitle'),
       message: t('cancelOrderConfirm'),
-      confirmText: language === 'tr' ? 'İptal Et' : 'Cancel',
+      confirmText: t('cancelBtn'),
       isDestructive: true,
     });
     if (!accepted) return;
@@ -93,14 +93,14 @@ export default function useSellerOrderActions(
       isLoading.current = false;
       setActionLoading(false);
     }
-  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleRequestCancel = useCallback(async (productId: string) => {
     if (isLoading.current) return;
     const accepted = await confirm({
       title: t('requestCancelTitle'),
       message: t('requestCancelConfirm'),
-      confirmText: language === 'tr' ? 'Talep Gönder' : 'Send Request',
+      confirmText: t('sendRequestBtn'),
       isDestructive: true,
     });
     if (!accepted) return;
@@ -127,7 +127,7 @@ export default function useSellerOrderActions(
       isLoading.current = false;
       setActionLoading(false);
     }
-  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleVerifyOrder = useCallback(async (
     productId: string,
@@ -140,7 +140,7 @@ export default function useSellerOrderActions(
       const accepted = await confirm({
         title: t('verifyOrderTitle'),
         message: t('verifyOrderConfirm'),
-        confirmText: language === 'tr' ? 'Onayla' : 'Approve',
+        confirmText: t('approveBtn'),
         isDestructive: false,
       });
       if (!accepted) return;
@@ -173,17 +173,17 @@ export default function useSellerOrderActions(
       setDefectProductId(productId);
       setDefectNote(note || '');
       setDefectImage(image || null);
-      setDefectImageFileName(image ? 'Mevcut Görsel' : '');
+      setDefectImageFileName(image ? t('currentImageLabel') : '');
       setIsDefectModalOpen(true);
     }
-  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
     if (isLoading.current) return;
     const accepted = await confirm({
       title: t('shipOrderTitle'),
       message: t('shipOrderConfirm'),
-      confirmText: language === 'tr' ? 'Kargolandı İşaretle' : 'Mark as Shipped',
+      confirmText: t('btnMarkShipped'),
       isDestructive: false,
     });
     if (!accepted) return;
@@ -210,7 +210,7 @@ export default function useSellerOrderActions(
       isLoading.current = false;
       setActionLoading(false);
     }
-  }, [confirm, language, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
 
   const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
     setDefectType(type);
@@ -230,9 +230,9 @@ export default function useSellerOrderActions(
       setDefectImage(compressed);
     } catch (err: unknown) {
       console.error(err);
-      showToast(language === 'tr' ? 'Resim sıkıştırılırken hata oluştu!' : 'Error compressing image!');
+      showToast(t('imageCompressionError'));
     }
-  }, [language, showToast]);
+  }, [t, showToast]);
 
   const handleDefectReportSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();

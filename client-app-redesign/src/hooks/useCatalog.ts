@@ -78,7 +78,7 @@ export default function useCatalog() {
       const hasImage = Boolean(product.thumbnailImage ?? product.image);
       setCatalogImage(product.image);
       setCatalogThumbnail(product.thumbnailImage ?? null);
-      setImageFileName(hasImage ? 'Mevcut Görsel' : '');
+      setImageFileName(hasImage ? t('currentImageLabel') : '');
 
       if (hasImage && !product.image) {
         api
@@ -110,7 +110,7 @@ export default function useCatalog() {
         formCard.scrollIntoView({ behavior: 'smooth' });
       }
     },
-    [extraFieldDefs],
+    [extraFieldDefs, t],
   );
 
   const handleSubmit = useCallback(
@@ -129,7 +129,7 @@ export default function useCatalog() {
       }
 
       const selectedMfr = connections.find((c) => c.id === mfrId);
-      const mfrName = selectedMfr ? selectedMfr.username : 'Üretici';
+      const mfrName = selectedMfr ? selectedMfr.username : t('mfr');
 
       // Format extra fields
       const formattedExtras: Record<string, ExtraFieldValue> = {};
