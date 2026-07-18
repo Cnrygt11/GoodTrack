@@ -44,51 +44,8 @@ public sealed class PostgresProductRepository : IProductRepository
                 && p.DefectImage == imageUrl, cancellationToken);
     }
 
-    /// <summary>
-    /// Liste projeksiyonu: tam <c>Image</c> ve <c>DefectImage</c> null bırakılır (DB'den çekilmez),
-    /// yalnız <c>ThumbnailImage</c> taşınır. Diğer tüm alanlar (müşteri bilgisi dahil; maskeleme
-    /// serviste) döner. DİKKAT: Detay yanıtları için ikiz tanım ProductService.MapToResponseDto'dadır;
-    /// DTO'ya alan eklerken İKİ eşlemeyi birden güncelleyin.
-    /// </summary>
-    private static readonly Expression<Func<Product, ProductResponseDto>> SummaryProjection = p => new ProductResponseDto
-    {
-        Id = p.Id,
-        Code = p.Code,
-        Image = null,
-        // Thumbnail varsa onu, yoksa tam görsele düşerek taşı (eski kayıtlar/kırık görsel olmaz).
-        // Yeni yüklemeler gerçek küçük thumbnail gönderdiğinden liste yükü progresif azalır.
-        ThumbnailImage = p.ThumbnailImage != null ? p.ThumbnailImage : p.Image,
-        CatalogProductId = p.CatalogProductId,
-        Text = p.Text,
-        Length = p.Length,
-        Extras = p.Extras,
-        Quantity = p.Quantity,
-        Completed = p.Completed,
-        IsDefective = p.IsDefective,
-        IsPendingApproval = p.IsPendingApproval,
-        IsReproduction = p.IsReproduction,
-        DefectNote = p.DefectNote,
-        // Kusur görseli 7MB'a varan base64 olabilir; liste yalnız varlık bayrağını taşır,
-        // tam görsel detay yanıtından (GetByIdAsync yolu) gelir.
-        DefectImage = null,
-        HasDefectImage = p.DefectImage != null,
-        Status = p.Status,
-        Logs = p.Logs,
-        CreatedAt = p.CreatedAt,
-        CompletedAt = p.CompletedAt,
-        ArchivedAt = p.ArchivedAt,
-        SlimmedAt = p.SlimmedAt,
-        SellerId = p.SellerId,
-        ManufacturerId = p.ManufacturerId,
-        SellerName = p.SellerName,
-        ManufacturerName = p.ManufacturerName,
-        CancelRequested = p.CancelRequested,
-        EtsyReceiptId = p.EtsyReceiptId,
-        CustomerName = p.CustomerName,
-        ShippingAddress = p.ShippingAddress,
-        IsReadBySeller = p.IsReadBySeller,
-        IsReadByMfr = p.IsReadByMfr,
-    };
+    /// <summary>Liste projeksiyonunun tek kaynağı <see cref="ProductMappings.SummaryProjection"/>'dır.</summary>
+    private static readonly Expression<Func<Product, ProductResponseDto>> SummaryProjection = ProductMappings.SummaryProjection;
 
     public async Task<List<ProductResponseDto>> GetProductSummariesBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
     {

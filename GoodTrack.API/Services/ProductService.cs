@@ -452,50 +452,9 @@ public sealed class ProductService : IProductService
         await _productRepository.MarkProductsAsReadAsync(userId, role, status);
     }
 
-    /// <summary>
-    /// Product → DTO eşlemesi (DETAY yolu — tam görseller dahil). <paramref name="includeCustomerInfo"/>
-    /// false ise müşteri adı ve teslimat adresi yanıttan çıkarılır (üretici bu bilgileri görmemelidir).
-    /// DİKKAT: Liste yanıtları için ikiz tanım PostgresProductRepository.SummaryProjection'dadır;
-    /// DTO'ya alan eklerken İKİ eşlemeyi birden güncelleyin.
-    /// </summary>
+    /// <summary>Detay eşlemesinin tek kaynağı <see cref="ProductMappings.ToDetailDto"/>'dur.</summary>
     private static ProductResponseDto MapToResponseDto(Product product, bool includeCustomerInfo = true)
-    {
-        return new ProductResponseDto
-        {
-            EtsyReceiptId = product.EtsyReceiptId,
-            CustomerName = includeCustomerInfo ? product.CustomerName : null,
-            ShippingAddress = includeCustomerInfo ? product.ShippingAddress : null,
-            Id = product.Id,
-            Code = product.Code,
-            Image = product.Image,
-            ThumbnailImage = product.ThumbnailImage,
-            CatalogProductId = product.CatalogProductId,
-            Text = product.Text,
-            Length = product.Length,
-            Extras = product.Extras,
-            Quantity = product.Quantity,
-            Completed = product.Completed,
-            IsDefective = product.IsDefective,
-            IsPendingApproval = product.IsPendingApproval,
-            IsReproduction = product.IsReproduction,
-            DefectNote = product.DefectNote,
-            DefectImage = product.DefectImage,
-            HasDefectImage = product.DefectImage != null,
-            Status = product.Status,
-            Logs = product.Logs,
-            CreatedAt = product.CreatedAt,
-            CompletedAt = product.CompletedAt,
-            ArchivedAt = product.ArchivedAt,
-            SlimmedAt = product.SlimmedAt,
-            SellerId = product.SellerId,
-            ManufacturerId = product.ManufacturerId,
-            SellerName = product.SellerName,
-            ManufacturerName = product.ManufacturerName,
-            CancelRequested = product.CancelRequested,
-            IsReadBySeller = product.IsReadBySeller,
-            IsReadByMfr = product.IsReadByMfr
-        };
-    }
+        => ProductMappings.ToDetailDto(product, includeCustomerInfo);
 
     private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method, object? payload = null)
     {
