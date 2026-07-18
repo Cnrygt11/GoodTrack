@@ -160,7 +160,7 @@ public sealed class EtsyService : IEtsyService
                 var refreshed = await RefreshAccessTokenAsync(userId, connection.EtsyShopId, cancellationToken);
                 _logger.LogInformation("Fetching Etsy active listings for Shop: {ShopName}", refreshed.EtsyShopName);
 
-                var credentials = new EtsyCredentials(refreshed.ApiKeyKeystring, refreshed.ApiKeySharedSecret, refreshed.AccessToken);
+                var credentials = EtsyCredentials.FromConnection(refreshed);
                 var listingsContainer = await _apiClient.GetActiveListingsAsync(refreshed.EtsyShopId, credentials, cancellationToken);
 
                 var activeIds = listingsContainer?.Results?.Select(r => r.ListingId).ToList();
@@ -261,7 +261,7 @@ public sealed class EtsyService : IEtsyService
 
         _logger.LogInformation("Processing Etsy order sync. ReceiptId: {ReceiptId}", receiptId);
 
-        var credentials = new EtsyCredentials(connection.ApiKeyKeystring, connection.ApiKeySharedSecret, connection.AccessToken);
+        var credentials = EtsyCredentials.FromConnection(connection);
         var receipt = await _apiClient.GetReceiptAsync(shopId, receiptId, credentials, cancellationToken);
 
         if (receipt == null || receipt.Transactions == null || !receipt.Transactions.Any())
@@ -458,7 +458,7 @@ public sealed class EtsyService : IEtsyService
                 var refreshed = await RefreshAccessTokenAsync(userId, connection.EtsyShopId, cancellationToken);
                 _logger.LogInformation("Syncing recent Etsy orders for Shop: {ShopName}", refreshed.EtsyShopName);
 
-                var credentials = new EtsyCredentials(refreshed.ApiKeyKeystring, refreshed.ApiKeySharedSecret, refreshed.AccessToken);
+                var credentials = EtsyCredentials.FromConnection(refreshed);
                 var receiptsContainer = await _apiClient.GetPaidReceiptsAsync(refreshed.EtsyShopId, credentials, 20, cancellationToken);
 
                 if (receiptsContainer?.Results != null && receiptsContainer.Results.Any())

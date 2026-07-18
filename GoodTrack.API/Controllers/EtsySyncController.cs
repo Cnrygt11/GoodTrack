@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Configuration;
 using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 using GoodTrack.API.DTOs.Product;
@@ -52,9 +53,7 @@ public class EtsySyncController : BaseApiController
     [HttpGet("webhook-config")]
     public IActionResult GetWebhookConfig()
     {
-        var platformSecret = _configuration["Etsy:WebhookSigningSecret"]
-            ?? Environment.GetEnvironmentVariable("ETSY_WEBHOOK_SIGNING_SECRET");
-        var platformConfigured = !string.IsNullOrWhiteSpace(platformSecret);
+        var platformConfigured = EtsySettings.ResolvePlatformSigningSecret(_configuration) != null;
 
         return Ok(new ApiResponse<object>(new { platformConfigured }));
     }

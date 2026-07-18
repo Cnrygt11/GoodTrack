@@ -113,8 +113,7 @@ public sealed class ProfileService : IProfileService
             var emailClean = dto.Email.Trim().ToLower();
             if (emailClean != user.Email)
             {
-                var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
-                if (!emailRegex.IsMatch(emailClean))
+                if (!ValidationPatterns.Email().IsMatch(emailClean))
                 {
                     throw new ArgumentException(Messages.Auth.InvalidEmailFormat);
                 }
@@ -130,8 +129,7 @@ public sealed class ProfileService : IProfileService
         // Phone format validation on update
         if (!string.IsNullOrWhiteSpace(dto.PhoneNumber))
         {
-            var phoneRegex = new Regex(@"^\+?[0-9\s\-()]{10,20}$");
-            if (!phoneRegex.IsMatch(dto.PhoneNumber.Trim()))
+            if (!ValidationPatterns.Phone().IsMatch(dto.PhoneNumber.Trim()))
             {
                 throw new ArgumentException("Geçersiz telefon numarası formatı!");
             }

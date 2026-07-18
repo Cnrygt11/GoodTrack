@@ -70,12 +70,7 @@ public sealed class ProductService : IProductService
     }
 
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
-    {
-        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > ImageLimits.MaxBase64Length)
-        {
-            throw new ArgumentException(Messages.Image.TooLarge(fieldName));
-        }
-    }
+        => ImageLimits.ValidateImageSize(base64Image, fieldName);
 
     /// <summary>
     /// Katalog görsel referansını doğrular: katalog ürünü var olmalı ve satıcıya ait olmalı.
@@ -250,7 +245,7 @@ public sealed class ProductService : IProductService
             }
         });
 
-        await SafeNotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate", order.Id);
+        await _notificationService.NotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate", order.Id);
 
         return MapToResponseDto(order);
     }
@@ -375,7 +370,7 @@ public sealed class ProductService : IProductService
         {
             usersToNotify.Add(oldMfrId);
         }
-        await SafeNotifyUsersAsync(usersToNotify, "ReceiveOrderUpdate", existing.Id);
+        await _notificationService.NotifyUsersAsync(usersToNotify, "ReceiveOrderUpdate", existing.Id);
 
         return MapToResponseDto(existing);
     }
@@ -423,7 +418,7 @@ public sealed class ProductService : IProductService
         await _imageCleanupService.DeleteDefectImageIfUnusedAsync(defectImage, sellerId, orderId);
 
         // Silme: id gönderilir; istemci getProductById 404 alıp kaydı cache'ten çıkarır.
-        await SafeNotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate", orderId);
+        await _notificationService.NotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate", orderId);
     }
 
     public async Task<ProductResponseDto?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
@@ -456,9 +451,4 @@ public sealed class ProductService : IProductService
     private static ProductResponseDto MapToResponseDto(Product product, bool includeCustomerInfo = true)
         => ProductMappings.ToDetailDto(product, includeCustomerInfo);
 
-    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method, object? payload = null)
-    {
-        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
-        return _notificationService.NotifyUsersAsync(userIds, method, payload);
-    }
 }

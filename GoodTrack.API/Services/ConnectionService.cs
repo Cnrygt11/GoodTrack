@@ -61,7 +61,7 @@ public sealed class ConnectionService : IConnectionService
         await _userConnectionRepository.DeleteAsync(userId, targetId);
 
         // Real-time notification: connection removed
-        await SafeNotifyUsersAsync(new[] { userId, targetId }, "ReceiveConnectionUpdate");
+        await _notificationService.NotifyUsersAsync(new[] { userId, targetId }, "ReceiveConnectionUpdate");
     }
 
     public async Task<List<UserDto>> GetAvailableManufacturersAsync()
@@ -131,8 +131,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(connectionRequest);
 
         // Real-time notification: connection request sent
-        await SafeNotifyUserAsync(receiver.Id, "ReceiveConnectionRequest");
-        await SafeNotifyUserAsync(senderId, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiver.Id, senderId }, "ReceiveConnectionRequest");
     }
 
     public async Task<List<ConnectionRequestDto>> GetIncomingRequestsAsync(string receiverId)
@@ -206,8 +205,8 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request accepted (update both connections list and requests list)
-        await SafeNotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionUpdate");
-        await SafeNotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionUpdate");
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
     }
 
     public async Task RejectConnectionRequestAsync(string receiverId, string requestId)
@@ -232,7 +231,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request rejected
-        await SafeNotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
     }
 
     public async Task DeleteConnectionRequestAsync(string userId, string requestId)
@@ -251,7 +250,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.DeleteAsync(requestId);
 
         // Real-time notification: connection request log deleted
-        await SafeNotifyUserAsync(userId, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { userId }, "ReceiveConnectionRequest");
     }
 
     private static ConnectionRequestDto MapToConnectionRequestDto(ConnectionRequest r) => new()
@@ -265,14 +264,4 @@ public sealed class ConnectionService : IConnectionService
         CreatedAt = r.CreatedAt
     };
 
-    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method)
-    {
-        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
-        return _notificationService.NotifyUsersAsync(userIds, method);
-    }
-
-    private Task SafeNotifyUserAsync(string userId, string method)
-    {
-        return _notificationService.NotifyUsersAsync(new[] { userId }, method);
-    }
 }

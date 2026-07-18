@@ -160,10 +160,7 @@ public static class ServiceCollectionExtensions
     /// <summary>JWT Bearer authentication. Anahtar env/user-secrets'tan okunur ve doğrulanır.</summary>
     public static IServiceCollection AddJwtAuthentication(this IServiceCollection services, IConfiguration configuration, IHostEnvironment environment)
     {
-        var jwtSection = configuration.GetSection("Jwt");
-        // Prefer JWT_KEY env var for production security (Render.com env vars override appsettings).
-        // In Development the key is read from user-secrets / appsettings; no secret is hardcoded in source.
-        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? jwtSection["Key"];
+        var jwtKey = JwtSettings.TryResolveKey(configuration);
         if (string.IsNullOrWhiteSpace(jwtKey) || jwtKey == "YOUR_JWT_SECRET_KEY")
         {
             throw new InvalidOperationException(
@@ -178,8 +175,8 @@ public static class ServiceCollectionExtensions
                 "FATAL: JWT signing key is too weak for production. Provide a key of at least 32 characters via the 'JWT_KEY' environment variable.");
         }
 
-        var jwtIssuer = jwtSection["Issuer"] ?? "GoodTrack.API";
-        var jwtAudience = jwtSection["Audience"] ?? "GoodTrack.Client";
+        var jwtIssuer = JwtSettings.ResolveIssuer(configuration);
+        var jwtAudience = JwtSettings.ResolveAudience(configuration);
 
         services.AddAuthentication(options =>
         {

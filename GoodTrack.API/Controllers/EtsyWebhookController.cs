@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Configuration;
 using GoodTrack.API.Infrastructure;
 using GoodTrack.API.DTOs.Common;
 
@@ -48,11 +49,7 @@ public class EtsyWebhookController : BaseApiController
     /// Etsy:WebhookSigningSecret (veya ETSY_WEBHOOK_SIGNING_SECRET) değerini set etmek.
     /// </summary>
     private string? ResolvePlatformSigningSecret()
-    {
-        var secret = _configuration["Etsy:WebhookSigningSecret"]
-            ?? Environment.GetEnvironmentVariable("ETSY_WEBHOOK_SIGNING_SECRET");
-        return string.IsNullOrWhiteSpace(secret) ? null : secret;
-    }
+        => EtsySettings.ResolvePlatformSigningSecret(_configuration);
 
     [HttpPost("webhook")]
     public async Task<IActionResult> HandleWebhook(CancellationToken cancellationToken)

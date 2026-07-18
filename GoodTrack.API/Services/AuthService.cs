@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
+using GoodTrack.API.Configuration;
 using GoodTrack.API.DTOs.Auth;
 using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
@@ -114,23 +115,20 @@ public sealed class AuthService : IAuthService
         var emailClean = request.Email.Trim().ToLower();
 
         // 1. Username Regex (a-z, 0-9, underscore; 3-15 chars)
-        var usernameRegex = new Regex("^[a-z0-9_]{3,15}$");
-        if (!usernameRegex.IsMatch(usernameClean))
+        if (!ValidationPatterns.Username().IsMatch(usernameClean))
         {
             throw new ArgumentException("Kullanıcı adı sadece İngilizce küçük harfler, rakamlar ve alt çizgi (_) içerebilir, 3-15 karakter uzunluğunda olmalıdır!");
         }
 
-        // 2. Email Validation (Strict check, requiring a dot and 2-6 chars TLD, no consecutive/starting/ending dots)
-        var emailRegex = new Regex(@"^[a-zA-Z0-9]+(?:[._%+-][a-zA-Z0-9]+)*@[a-zA-Z0-9]+(?:[.-][a-zA-Z0-9]+)*\.[a-zA-Z]{2,6}$");
-        if (!emailRegex.IsMatch(emailClean))
+        // 2. Email Validation
+        if (!ValidationPatterns.Email().IsMatch(emailClean))
         {
             throw new ArgumentException(Messages.Auth.InvalidEmailFormat);
         }
 
         // 2.5 Phone Number Validation
         var phoneClean = request.PhoneNumber.Trim();
-        var phoneRegex = new Regex(@"^\+?[0-9\s\-()]{10,20}$");
-        if (!phoneRegex.IsMatch(phoneClean))
+        if (!ValidationPatterns.Phone().IsMatch(phoneClean))
         {
             throw new ArgumentException("Geçersiz telefon numarası formatı! (En az 10 karakter olmalı ve sadece rakam, boşluk, +, -, () içerebilir)");
         }
@@ -307,13 +305,9 @@ public sealed class AuthService : IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? _configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException(
-                "JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
-
-        var issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API";
-        var audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client";
+        var jwtKey = JwtSettings.ResolveKey(_configuration);
+        var issuer = JwtSettings.ResolveIssuer(_configuration);
+        var audience = JwtSettings.ResolveAudience(_configuration);
 
         var tokenHandler = new JwtSecurityTokenHandler();
         var key = Encoding.UTF8.GetBytes(jwtKey);
@@ -360,8 +354,7 @@ public sealed class AuthService : IAuthService
         {
             throw new ArgumentException($"{paramName} boş olamaz!");
         }
-        var passwordRegex = new Regex(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&.#\-_])[A-Za-z\d@$!%*?&.#\-_]{8,20}$");
-        if (!passwordRegex.IsMatch(password))
+        if (!ValidationPatterns.Password().IsMatch(password))
         {
             throw new ArgumentException($"{paramName} en az 8, en fazla 20 karakter uzunluğunda olmalı ve en az bir büyük harf, bir küçük harf, bir rakam ve bir özel karakter (@$!%*?&.#-_) içermelidir!");
         }
@@ -369,13 +362,9 @@ public sealed class AuthService : IAuthService
 
     private ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
     {
-        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? _configuration["Jwt:Key"]
-            ?? throw new InvalidOperationException(
-                "JWT signing key is not configured. Set 'JWT_KEY' environment variable or 'Jwt:Key' in appsettings.json.");
-
-        var issuer = _configuration["Jwt:Issuer"] ?? "GoodTrack.API";
-        var audience = _configuration["Jwt:Audience"] ?? "GoodTrack.Client";
+        var jwtKey = JwtSettings.ResolveKey(_configuration);
+        var issuer = JwtSettings.ResolveIssuer(_configuration);
+        var audience = JwtSettings.ResolveAudience(_configuration);
 
         var tokenValidationParameters = new TokenValidationParameters
         {

@@ -215,12 +215,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         };
 
     private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
-    {
-        if (!string.IsNullOrEmpty(base64Image) && base64Image.Length > ImageLimits.MaxBase64Length)
-        {
-            throw new ArgumentException(Messages.Image.TooLarge(fieldName));
-        }
-    }
+        => ImageLimits.ValidateImageSize(base64Image, fieldName);
 
     public async Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null)
     {
@@ -253,7 +248,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
         }
         await _productRepository.SaveAsync(product);
-        await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
     }
 
     public async Task RequestOrderCancellationAsync(string sellerId, string orderId)
@@ -277,7 +272,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadByMfr = false;
         AppendLog(product, sellerId, product.SellerName, "Sipariş için satıcı tarafından iptal talebi gönderildi.");
         await _productRepository.SaveAsync(product);
-        await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
     }
 
     public async Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve)
@@ -313,7 +308,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadByMfr = true;
         product.IsReadBySeller = false;
         await _productRepository.SaveAsync(product);
-        await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
     }
 
     public async Task<ExternalCancellationOutcome> ApplyExternalCancellationAsync(string sellerId, string orderId, string reason)
@@ -349,7 +344,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
             product.IsReadByMfr = false;
             await _productRepository.SaveAsync(product);
-            await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
             return ExternalCancellationOutcome.Cancelled;
         }
 
@@ -367,7 +362,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
             product.IsReadByMfr = false;
             await _productRepository.SaveAsync(product);
-            await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
             return ExternalCancellationOutcome.CancellationRequested;
         }
 
@@ -378,7 +373,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadBySeller = false;
         product.IsReadByMfr = false;
         await _productRepository.SaveAsync(product);
-        await SafeNotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
         return ExternalCancellationOutcome.RequiresManualReview;
     }
 
@@ -469,9 +464,4 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         });
     }
 
-    private Task SafeNotifyUsersAsync(IReadOnlyList<string> userIds, string method, object? payload = null)
-    {
-        // NotifyUsersAsync bildirim hatalarını kendi içinde yutar; ana akışı bozmaz.
-        return _notificationService.NotifyUsersAsync(userIds, method, payload);
-    }
 }
