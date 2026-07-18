@@ -1,43 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { api, Product } from '../services/apiClient';
+import { api } from '../services/apiClient';
+
+/** React Query anahtarı — tek sipariş detayı (SignalR güncellemeleri bu anahtarı da tazeleyebilir). */
+export const orderDetailKey = (id: string) => ['orderDetail', id] as const;
 
 export default function useOrderDetail(id: string | undefined) {
   const { user } = useAuth();
   const { t } = useSettings();
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!id) return;
-
-    const fetchOrder = async () => {
-      try {
-        setLoading(true);
-        setError('');
-        const data = await api.getProductById(id);
-        setProduct(data);
-      } catch (err: unknown) {
-        console.error(err);
-        setError(t('failedToLoadOrderDetails'));
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrder();
-  }, [id, t]);
+  const query = useQuery({
+    queryKey: orderDetailKey(id ?? ''),
+    queryFn: () => api.getProductById(id!),
+    enabled: Boolean(id),
+  });
 
   return {
-    product,
-    loading,
-    error,
+    product: query.data ?? null,
+    loading: query.isPending && Boolean(id),
+    error: query.isError ? t('failedToLoadOrderDetails') : '',
     user,
     t,
-    setProduct,
   };
 }
-
