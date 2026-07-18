@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { api, UserProfile, ConnectionRequest } from '../services/apiClient';
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
+import { api, ConnectionRequest } from '../services/apiClient';
 import { useProductsQuery } from './useProductsData';
 import useCredits from './useCredits';
 import { connectionKeys, useConnectionsQuery, useSentRequestsQuery } from './useConnectionsData';
@@ -21,12 +21,6 @@ export default function useSearchMfr() {
   const { plan } = useCredits();
   const { showToast } = useToast();
   const { t, language } = useSettings();
-
-  const [manufacturers, setManufacturers] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [page, setPage] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
 
   // İsim araması (debounce'lu) + sıralama
   const [searchName, setSearchName] = useState('');
@@ -76,41 +70,44 @@ export default function useSearchMfr() {
     [selectedCities, selectedCategories, debouncedName, sortOption],
   );
 
-  const fetchManufacturers = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await api.searchManufacturers(buildQuery(0));
-      setManufacturers(data.items);
-      setPage(0);
-      setHasMore(data.hasMore);
-    } catch (err: unknown) {
-      setError(extractErrorMessage(err) || t('mfrLoadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [buildQuery, t]);
+  // Sunucu-sayfalı dizin: filtre/sıralama anahtarın parçası olduğundan değiştiğinde
+  // sorgu baştan başlar; "daha fazla" sayfaları RQ tarafından biriktirilir.
+  const directoryQuery = useInfiniteQuery({
+    queryKey: [
+      'manufacturerDirectory',
+      selectedCities,
+      selectedCategories,
+      debouncedName,
+      sortOption,
+    ] as const,
+    queryFn: ({ pageParam }) => api.searchManufacturers(buildQuery(pageParam)),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length : undefined),
+  });
+
+  const manufacturers = useMemo(
+    () => directoryQuery.data?.pages.flatMap((p) => p.items) ?? [],
+    [directoryQuery.data],
+  );
+
+  const hasMore = directoryQuery.hasNextPage;
+  const loading = directoryQuery.isPending || directoryQuery.isFetchingNextPage;
+  const error = directoryQuery.isError
+    ? extractErrorMessage(directoryQuery.error) || t('mfrLoadError')
+    : '';
+
+  const fetchManufacturers = useCallback(() => {
+    directoryQuery.refetch();
+  }, [directoryQuery]);
 
   const loadMore = useCallback(async () => {
-    if (!hasMore || loading) return;
+    if (!directoryQuery.hasNextPage || directoryQuery.isFetchingNextPage) return;
     try {
-      setLoading(true);
-      const nextPage = page + 1;
-      const data = await api.searchManufacturers(buildQuery(nextPage));
-      setManufacturers((prev) => [...prev, ...data.items]);
-      setPage(nextPage);
-      setHasMore(data.hasMore);
+      await directoryQuery.fetchNextPage({ throwOnError: true });
     } catch (err: unknown) {
       showToast(extractErrorMessage(err) || t('mfrLoadMoreError'));
-    } finally {
-      setLoading(false);
     }
-  }, [hasMore, loading, page, buildQuery, showToast, t]);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchManufacturers();
-  }, [fetchManufacturers]);
+  }, [directoryQuery, showToast, t]);
 
   const handleToggleCity = useCallback((city: string) => {
     setSelectedCities((prev) =>
