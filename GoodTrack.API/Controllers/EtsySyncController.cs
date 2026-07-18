@@ -25,20 +25,17 @@ namespace GoodTrack.API.Controllers;
 [EnableRateLimiting("api-general")]
 public class EtsySyncController : BaseApiController
 {
-    private readonly AppDbContext _context;
     private readonly IEtsyService _etsyService;
     private readonly IProductService _productService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EtsySyncController> _logger;
 
     public EtsySyncController(
-        AppDbContext context,
         IEtsyService etsyService,
         IProductService productService,
         IConfiguration configuration,
         ILogger<EtsySyncController> logger)
     {
-        _context = context;
         _etsyService = etsyService;
         _productService = productService;
         _configuration = configuration;
@@ -88,14 +85,13 @@ public class EtsySyncController : BaseApiController
             return BadRequest(ApiResponse.Fail("Mağaza bilgisi eksik."));
         }
 
-        var connection = await _etsyService.GetConnectionAsync(userId, dto.EtsyShopId, cancellationToken);
-        if (connection == null)
+        var updated = await _etsyService.UpdateWebhookSecretAsync(
+            userId, dto.EtsyShopId, dto.WebhookSigningSecret, cancellationToken);
+
+        if (!updated)
         {
             return BadRequest(ApiResponse.Fail("Belirtilen mağaza için aktif bir Etsy bağlantısı bulunamadı."));
         }
-
-        connection.WebhookSigningSecret = dto.WebhookSigningSecret;
-        await _context.SaveChangesAsync(cancellationToken);
 
         return Ok(ApiResponse.Ok("Bildirim imza anahtarı başarıyla güncellendi."));
     }
@@ -110,14 +106,7 @@ public class EtsySyncController : BaseApiController
             return BadRequest(ApiResponse.Fail("Mağaza bilgisi eksik."));
         }
 
-        var connection = await _context.EtsyConnections
-            .FirstOrDefaultAsync(c => c.UserId == userId && c.EtsyShopId == dto.EtsyShopId, cancellationToken);
-
-        if (connection != null)
-        {
-            _context.EtsyConnections.Remove(connection);
-            await _context.SaveChangesAsync(cancellationToken);
-        }
+        await _etsyService.DisconnectShopAsync(userId, dto.EtsyShopId, cancellationToken);
 
         return Ok(ApiResponse.Ok("Etsy mağaza bağlantısı başarıyla kesildi."));
     }

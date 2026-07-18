@@ -39,6 +39,12 @@ public interface IProductRepository
     /// </summary>
     Task<(List<ProductResponseDto> Items, int TotalCount)> GetArchivedSummariesPageAsync(
         string userId, bool asSeller, int page, int pageSize, CancellationToken cancellationToken = default);
+    /// <summary>Aynı Etsy transaction'ı için sipariş zaten oluşturulmuş mu (duplicate önleme)?</summary>
+    Task<bool> ExistsByEtsyTransactionAsync(string sellerId, long transactionKey, CancellationToken cancellationToken = default);
+
+    /// <summary>Bir Etsy receipt'inden oluşturulmuş siparişlerin id'lerini döner (harici iptal akışı).</summary>
+    Task<List<string>> GetIdsByEtsyReceiptAsync(string sellerId, long receiptId, CancellationToken cancellationToken = default);
+
     Task SaveAsync(Product product, CancellationToken cancellationToken = default);
     Task DeleteAsync(string id, CancellationToken cancellationToken = default);
     Task MarkProductsAsReadAsync(string userId, string role, string status, CancellationToken cancellationToken = default);

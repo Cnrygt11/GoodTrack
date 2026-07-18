@@ -40,7 +40,6 @@ public class EtsyConnectionsSecretTests : IDisposable
         _context.Database.EnsureCreated();
 
         _controller = new EtsySyncController(
-            _context,
             _etsyServiceMock.Object,
             Mock.Of<IProductService>(),
             new ConfigurationBuilder().Build(),

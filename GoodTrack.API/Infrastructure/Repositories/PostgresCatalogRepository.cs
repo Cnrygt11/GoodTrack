@@ -80,6 +80,33 @@ public sealed class PostgresCatalogRepository : ICatalogRepository
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public Task<List<CatalogProduct>> GetAllBySellerAsync(string sellerId, CancellationToken cancellationToken = default)
+    {
+        return _context.CatalogProducts
+            .Where(c => c.SellerId == sellerId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public Task<CatalogProduct?> FindBySkuOrEtsyListingAsync(string sellerId, string? sku, long listingId, CancellationToken cancellationToken = default)
+    {
+        var etsyFallbackCode = $"etsy-{listingId}";
+        return _context.CatalogProducts
+            .FirstOrDefaultAsync(p => p.SellerId == sellerId && (
+                (!string.IsNullOrEmpty(sku) && p.ProductCode == sku) ||
+                p.ProductCode == etsyFallbackCode
+            ), cancellationToken);
+    }
+
+    public async Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default)
+    {
+        await _context.CatalogProducts.AddAsync(product, cancellationToken);
+    }
+
+    public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        return _context.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task DeleteAsync(string id, CancellationToken cancellationToken = default)
     {
         var product = await _context.CatalogProducts.FindAsync(new object?[] { id }, cancellationToken);

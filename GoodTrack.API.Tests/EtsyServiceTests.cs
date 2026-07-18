@@ -13,6 +13,7 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Etsy;
 using GoodTrack.API.DTOs.Product;
 using GoodTrack.API.Infrastructure;
+using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Models;
 using GoodTrack.API.Services;
 
@@ -39,10 +40,12 @@ public class EtsyServiceTests : IDisposable
         _context.Database.EnsureCreated();
 
         _service = new EtsyService(
-            _context,
             _apiClientMock.Object,
             _oauthServiceMock.Object,
             _connectionRepositoryMock.Object,
+            new PostgresCatalogRepository(_context),
+            new PostgresProductRepository(_context),
+            new PostgresUserRepository(_context),
             _productServiceMock.Object,
             _orderWorkflowMock.Object,
             Mock.Of<ILogger<EtsyService>>());

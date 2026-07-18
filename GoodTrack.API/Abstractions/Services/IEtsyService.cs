@@ -23,4 +23,10 @@ public interface IEtsyService
 
     /// <summary>Tüm aktif mağazaların son siparişlerini tarar; toplam sonuç sayaçlarını döner.</summary>
     Task<EtsyOrderSyncResult> SyncRecentOrdersAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>Mağaza-başı webhook imza anahtarını günceller; bağlantı yoksa false döner.</summary>
+    Task<bool> UpdateWebhookSecretAsync(string userId, string shopId, string? webhookSigningSecret, CancellationToken cancellationToken = default);
+
+    /// <summary>Mağaza bağlantısını siler (yoksa sessizce geçer — idempotent).</summary>
+    Task DisconnectShopAsync(string userId, string shopId, CancellationToken cancellationToken = default);
 }

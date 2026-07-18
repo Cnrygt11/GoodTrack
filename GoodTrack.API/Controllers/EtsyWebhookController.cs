@@ -8,12 +8,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Configuration;
-using GoodTrack.API.Infrastructure;
 using GoodTrack.API.DTOs.Common;
 
 namespace GoodTrack.API.Controllers;
@@ -21,18 +20,18 @@ namespace GoodTrack.API.Controllers;
 [AllowAnonymous]
 public class EtsyWebhookController : BaseApiController
 {
-    private readonly AppDbContext _context;
+    private readonly IEtsyConnectionRepository _connectionRepository;
     private readonly IEtsyService _etsyService;
     private readonly IConfiguration _configuration;
     private readonly ILogger<EtsyWebhookController> _logger;
 
     public EtsyWebhookController(
-        AppDbContext context,
+        IEtsyConnectionRepository connectionRepository,
         IEtsyService etsyService,
         IConfiguration configuration,
         ILogger<EtsyWebhookController> logger)
     {
-        _context = context;
+        _connectionRepository = connectionRepository;
         _etsyService = etsyService;
         _configuration = configuration;
         _logger = logger;
@@ -108,8 +107,7 @@ public class EtsyWebhookController : BaseApiController
         }
 
         // 5. Bu ShopId'ye sahip aktif bağlantısı olan satıcıyı veri tabanından bul
-        var etsyConnection = await _context.EtsyConnections
-            .FirstOrDefaultAsync(c => c.EtsyShopId == payload.ShopId && c.IsActive, cancellationToken);
+        var etsyConnection = await _connectionRepository.GetActiveByShopIdAsync(payload.ShopId, cancellationToken);
 
         if (etsyConnection == null)
         {

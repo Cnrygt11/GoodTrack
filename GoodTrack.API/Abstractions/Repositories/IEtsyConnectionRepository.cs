@@ -15,6 +15,12 @@ public interface IEtsyConnectionRepository
     Task<List<EtsyConnection>> GetAllForUserAsync(string userId, CancellationToken cancellationToken = default);
     Task<List<EtsyConnection>> GetActiveForUserAsync(string userId, CancellationToken cancellationToken = default);
 
+    /// <summary>Shop id'ye sahip AKTİF bağlantıyı döner (webhook'un satıcıyı bulması için).</summary>
+    Task<EtsyConnection?> GetActiveByShopIdAsync(string shopId, CancellationToken cancellationToken = default);
+
+    /// <summary>Bağlantıyı silinmek üzere işaretler (SaveChangesAsync çağrılana kadar kalıcı olmaz).</summary>
+    void Remove(EtsyConnection connection);
+
     /// <summary>Yeni bir bağlantıyı context'e ekler (SaveChangesAsync çağrılana kadar kalıcı olmaz).</summary>
     Task AddAsync(EtsyConnection connection, CancellationToken cancellationToken = default);
 

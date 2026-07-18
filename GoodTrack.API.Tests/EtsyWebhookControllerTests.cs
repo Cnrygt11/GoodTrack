@@ -18,6 +18,7 @@ using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Controllers;
 using GoodTrack.API.Infrastructure;
+using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Models;
 using GoodTrack.API.Services;
 
@@ -38,9 +39,9 @@ public class EtsyWebhookControllerTests : IDisposable
     private readonly AppDbContext _context;
     private readonly Mock<IEtsyApiClient> _apiClientMock = new();
     private readonly Mock<IEtsyOAuthService> _oauthServiceMock = new();
-    private readonly Mock<IEtsyConnectionRepository> _connectionRepositoryMock = new();
     private readonly Mock<IProductService> _productServiceMock = new();
     private readonly Mock<IOrderWorkflowService> _orderWorkflowMock = new();
+    private readonly IEtsyConnectionRepository _connectionRepository;
     private readonly EtsyService _etsyService;
     private EtsyWebhookController _controller;
 
@@ -53,11 +54,14 @@ public class EtsyWebhookControllerTests : IDisposable
         _context = new AppDbContext(options, httpContextAccessorMock.Object);
         _context.Database.EnsureCreated();
 
+        _connectionRepository = new PostgresEtsyConnectionRepository(_context);
         _etsyService = new EtsyService(
-            _context,
             _apiClientMock.Object,
             _oauthServiceMock.Object,
-            _connectionRepositoryMock.Object,
+            _connectionRepository,
+            new PostgresCatalogRepository(_context),
+            new PostgresProductRepository(_context),
+            new PostgresUserRepository(_context),
             _productServiceMock.Object,
             _orderWorkflowMock.Object,
             Mock.Of<ILogger<EtsyService>>());
@@ -74,7 +78,7 @@ public class EtsyWebhookControllerTests : IDisposable
             settings["Etsy:WebhookSigningSecret"] = platformSecret;
         }
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-        return new EtsyWebhookController(_context, _etsyService, configuration, Mock.Of<ILogger<EtsyWebhookController>>());
+        return new EtsyWebhookController(_connectionRepository, _etsyService, configuration, Mock.Of<ILogger<EtsyWebhookController>>());
     }
 
     public void Dispose()

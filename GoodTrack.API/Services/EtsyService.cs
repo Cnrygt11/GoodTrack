@@ -3,13 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using GoodTrack.API.Abstractions.Repositories;
 using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.DTOs.Etsy;
 using GoodTrack.API.DTOs.Product;
-using GoodTrack.API.Infrastructure;
 using GoodTrack.API.Models;
 
 namespace GoodTrack.API.Services;
@@ -22,27 +20,33 @@ namespace GoodTrack.API.Services;
 /// </summary>
 public sealed class EtsyService : IEtsyService
 {
-    private readonly AppDbContext _context;
     private readonly IEtsyApiClient _apiClient;
     private readonly IEtsyOAuthService _oauthService;
     private readonly IEtsyConnectionRepository _connectionRepository;
+    private readonly ICatalogRepository _catalogRepository;
+    private readonly IProductRepository _productRepository;
+    private readonly IUserRepository _userRepository;
     private readonly IProductService _productService;
     private readonly IOrderWorkflowService _orderWorkflowService;
     private readonly ILogger<EtsyService> _logger;
 
     public EtsyService(
-        AppDbContext context,
         IEtsyApiClient apiClient,
         IEtsyOAuthService oauthService,
         IEtsyConnectionRepository connectionRepository,
+        ICatalogRepository catalogRepository,
+        IProductRepository productRepository,
+        IUserRepository userRepository,
         IProductService productService,
         IOrderWorkflowService orderWorkflowService,
         ILogger<EtsyService> logger)
     {
-        _context = context;
         _apiClient = apiClient;
         _oauthService = oauthService;
         _connectionRepository = connectionRepository;
+        _catalogRepository = catalogRepository;
+        _productRepository = productRepository;
+        _userRepository = userRepository;
         _productService = productService;
         _orderWorkflowService = orderWorkflowService;
         _logger = logger;
@@ -147,6 +151,32 @@ public sealed class EtsyService : IEtsyService
         return _connectionRepository.GetAsync(userId, shopId, cancellationToken);
     }
 
+    public async Task<bool> UpdateWebhookSecretAsync(string userId, string shopId, string? webhookSigningSecret, CancellationToken cancellationToken = default)
+    {
+        var connection = await _connectionRepository.GetAsync(userId, shopId, cancellationToken);
+        if (connection == null)
+        {
+            return false;
+        }
+
+        connection.WebhookSigningSecret = webhookSigningSecret;
+        await _connectionRepository.SaveChangesAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task DisconnectShopAsync(string userId, string shopId, CancellationToken cancellationToken = default)
+    {
+        var connection = await _connectionRepository.GetAsync(userId, shopId, cancellationToken);
+        if (connection == null)
+        {
+            // İdempotent: bağlantı zaten yoksa istek başarılı sayılır.
+            return;
+        }
+
+        _connectionRepository.Remove(connection);
+        await _connectionRepository.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<List<CatalogProduct>> FetchAndImportEtsyListingsAsync(string userId, CancellationToken cancellationToken = default)
     {
         var connections = await _connectionRepository.GetActiveForUserAsync(userId, cancellationToken);
@@ -178,9 +208,7 @@ public sealed class EtsyService : IEtsyService
                         }
                     }
 
-                    var existingProducts = await _context.CatalogProducts
-                        .Where(p => p.SellerId == userId)
-                        .ToListAsync(cancellationToken);
+                    var existingProducts = await _catalogRepository.GetAllBySellerAsync(userId, cancellationToken);
 
                     foreach (var etsyListing in detailedListings)
                     {
@@ -217,7 +245,7 @@ public sealed class EtsyService : IEtsyService
                                 Value = etsyListing.ListingId.ToString()
                             };
 
-                            _context.CatalogProducts.Update(existingProduct);
+                            // Entity izlenen sorgudan geldi; mutasyonlar SaveChangesAsync ile kalıcılaşır.
                             importedProducts.Add(existingProduct);
                             continue;
                         }
@@ -237,7 +265,7 @@ public sealed class EtsyService : IEtsyService
                             }
                         };
 
-                        _context.CatalogProducts.Add(newProduct);
+                        await _catalogRepository.AddAsync(newProduct, cancellationToken);
                         importedProducts.Add(newProduct);
                     }
                 }
@@ -248,7 +276,7 @@ public sealed class EtsyService : IEtsyService
             }
         }
 
-        await _context.SaveChangesAsync(cancellationToken);
+        await _catalogRepository.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Imported/Updated {Count} Etsy active listings into Catalog for User {UserId}", importedProducts.Count, userId);
 
         return importedProducts;
@@ -270,17 +298,14 @@ public sealed class EtsyService : IEtsyService
             return result;
         }
 
-        var sellerUser = await _context.Users.FindAsync(new object[] { userId }, cancellationToken);
+        var sellerUser = await _userRepository.GetByIdAsync(userId, cancellationToken);
         var sellerUsername = sellerUser?.Username ?? "Etsy Satıcı";
 
         foreach (var transaction in receipt.Transactions)
         {
             // Kataloğumuzda bu ürünü bul (SKU veya listing_id fallback ile)
-            var catalogProduct = await _context.CatalogProducts
-                .FirstOrDefaultAsync(p => p.SellerId == userId && (
-                    (!string.IsNullOrEmpty(transaction.Sku) && p.ProductCode == transaction.Sku) ||
-                    p.ProductCode == $"etsy-{transaction.ListingId}"
-                ), cancellationToken);
+            var catalogProduct = await _catalogRepository.FindBySkuOrEtsyListingAsync(
+                userId, transaction.Sku, transaction.ListingId, cancellationToken);
 
             if (catalogProduct == null)
             {
@@ -304,9 +329,7 @@ public sealed class EtsyService : IEtsyService
             // özelliklerle alınması Etsy'de ayrı transaction'lara bölünür → ayrı siparişler oluşur.
             // (transaction_id yoksa geriye dönük uyum için listing_id'ye düşülür.)
             var transactionKey = transaction.TransactionId != 0 ? transaction.TransactionId : transaction.ListingId;
-            var existingOrder = await _context.Products.FirstOrDefaultAsync(
-                p => p.SellerId == userId && p.EtsyTransactionId == transactionKey, cancellationToken);
-            if (existingOrder != null)
+            if (await _productRepository.ExistsByEtsyTransactionAsync(userId, transactionKey, cancellationToken))
             {
                 _logger.LogInformation("Order for Etsy transaction {TransactionId} already exists. Skipping.", transactionKey);
                 continue;
@@ -420,10 +443,7 @@ public sealed class EtsyService : IEtsyService
             return;
         }
 
-        var orderIds = await _context.Products
-            .Where(p => p.SellerId == userId && p.EtsyReceiptId == receiptIdValue)
-            .Select(p => p.Id)
-            .ToListAsync(cancellationToken);
+        var orderIds = await _productRepository.GetIdsByEtsyReceiptAsync(userId, receiptIdValue, cancellationToken);
 
         if (orderIds.Count == 0)
         {

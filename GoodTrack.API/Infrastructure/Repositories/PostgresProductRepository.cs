@@ -102,6 +102,22 @@ public sealed class PostgresProductRepository : IProductRepository
         return (items, totalCount);
     }
 
+    public Task<bool> ExistsByEtsyTransactionAsync(string sellerId, long transactionKey, CancellationToken cancellationToken = default)
+    {
+        return _context.Products
+            .AsNoTracking()
+            .AnyAsync(p => p.SellerId == sellerId && p.EtsyTransactionId == transactionKey, cancellationToken);
+    }
+
+    public Task<List<string>> GetIdsByEtsyReceiptAsync(string sellerId, long receiptId, CancellationToken cancellationToken = default)
+    {
+        return _context.Products
+            .AsNoTracking()
+            .Where(p => p.SellerId == sellerId && p.EtsyReceiptId == receiptId)
+            .Select(p => p.Id)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task SaveAsync(Product product, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(product.Id))

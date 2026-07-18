@@ -17,7 +17,9 @@ using GoodTrack.API.Abstractions.Services;
 using GoodTrack.API.Controllers;
 using GoodTrack.API.DTOs.Etsy;
 using GoodTrack.API.Infrastructure;
+using GoodTrack.API.Infrastructure.Repositories;
 using GoodTrack.API.Models;
+using GoodTrack.API.Services;
 
 namespace GoodTrack.API.Tests;
 
@@ -40,13 +42,23 @@ public class EtsyDisconnectTests : IDisposable
         _context = new AppDbContext(options, Mock.Of<IHttpContextAccessor>());
         _context.Database.EnsureCreated();
 
-        _controller = new EtsySyncController(
-            _context,
-            Mock.Of<IEtsyService>(),
-            Mock.Of<IProductService>(),
-            new ConfigurationBuilder().Build(),
-            Mock.Of<ILogger<EtsySyncController>>());
+        _controller = BuildController(platformSecret: null);
     }
+
+    /// <summary>
+    /// Gerçek EtsyService + repository ile controller kurar: disconnect'in satırı
+    /// gerçekten sildiğini uçtan uca doğrulayabilmek için (mock servis yeterli olmazdı).
+    /// </summary>
+    private EtsyService BuildEtsyService() => new(
+        Mock.Of<IEtsyApiClient>(),
+        Mock.Of<IEtsyOAuthService>(),
+        new PostgresEtsyConnectionRepository(_context),
+        new PostgresCatalogRepository(_context),
+        new PostgresProductRepository(_context),
+        new PostgresUserRepository(_context),
+        Mock.Of<IProductService>(),
+        Mock.Of<IOrderWorkflowService>(),
+        Mock.Of<ILogger<EtsyService>>());
 
     public void Dispose()
     {
@@ -101,7 +113,7 @@ public class EtsyDisconnectTests : IDisposable
         var settings = new Dictionary<string, string?>();
         if (platformSecret != null) settings["Etsy:WebhookSigningSecret"] = platformSecret;
         var config = new ConfigurationBuilder().AddInMemoryCollection(settings).Build();
-        return new EtsySyncController(_context, Mock.Of<IEtsyService>(), Mock.Of<IProductService>(), config, Mock.Of<ILogger<EtsySyncController>>());
+        return new EtsySyncController(BuildEtsyService(), Mock.Of<IProductService>(), config, Mock.Of<ILogger<EtsySyncController>>());
     }
 
     [Fact]

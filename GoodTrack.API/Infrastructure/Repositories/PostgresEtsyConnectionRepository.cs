@@ -36,6 +36,17 @@ public sealed class PostgresEtsyConnectionRepository : IEtsyConnectionRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<EtsyConnection?> GetActiveByShopIdAsync(string shopId, CancellationToken cancellationToken = default)
+    {
+        return _context.EtsyConnections
+            .FirstOrDefaultAsync(c => c.EtsyShopId == shopId && c.IsActive, cancellationToken);
+    }
+
+    public void Remove(EtsyConnection connection)
+    {
+        _context.EtsyConnections.Remove(connection);
+    }
+
     public async Task AddAsync(EtsyConnection connection, CancellationToken cancellationToken = default)
     {
         await _context.EtsyConnections.AddAsync(connection, cancellationToken);

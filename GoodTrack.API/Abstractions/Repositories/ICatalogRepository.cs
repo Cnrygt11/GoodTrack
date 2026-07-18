@@ -27,4 +27,19 @@ public interface ICatalogRepository
     Task<bool> IsImageUsedBySellerAsync(string sellerId, string imageUrl, string? excludeCatalogProductId, CancellationToken cancellationToken = default);
     Task SaveAsync(CatalogProduct product, CancellationToken cancellationToken = default);
     Task DeleteAsync(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Satıcının tüm katalog ürünlerini İZLENEN (tracked) entity olarak döner; Etsy içe
+    /// aktarımı bunların üzerinde değişiklik yapıp <see cref="SaveChangesAsync"/> ile toplu kaydeder.
+    /// </summary>
+    Task<List<CatalogProduct>> GetAllBySellerAsync(string sellerId, CancellationToken cancellationToken = default);
+
+    /// <summary>SKU (ProductCode) veya "etsy-{listingId}" fallback koduna göre katalog ürünü bulur.</summary>
+    Task<CatalogProduct?> FindBySkuOrEtsyListingAsync(string sellerId, string? sku, long listingId, CancellationToken cancellationToken = default);
+
+    /// <summary>Yeni ürünü context'e ekler (SaveChangesAsync çağrılana kadar kalıcı olmaz).</summary>
+    Task AddAsync(CatalogProduct product, CancellationToken cancellationToken = default);
+
+    /// <summary>Bekleyen değişiklikleri (toplu Etsy içe aktarımı) kalıcı hale getirir.</summary>
+    Task SaveChangesAsync(CancellationToken cancellationToken = default);
 }
