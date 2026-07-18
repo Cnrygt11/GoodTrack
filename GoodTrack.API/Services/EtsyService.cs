@@ -209,6 +209,7 @@ public sealed class EtsyService : IEtsyService
                     }
 
                     var existingProducts = await _catalogRepository.GetAllBySellerAsync(userId, cancellationToken);
+                    var index = CatalogMatchIndex.Build(existingProducts);
 
                     foreach (var etsyListing in detailedListings)
                     {
@@ -216,10 +217,7 @@ public sealed class EtsyService : IEtsyService
                         var targetProductCode = !string.IsNullOrEmpty(sku) ? sku : $"etsy-{etsyListing.ListingId}";
                         var imageUrl = etsyListing.Images?.FirstOrDefault()?.Url570xN;
 
-                        var existingProduct = existingProducts.FirstOrDefault(p =>
-                            (p.Extras != null && p.Extras.TryGetValue("etsy_listing_id", out var val) && val.Value == etsyListing.ListingId.ToString()) ||
-                            p.ProductCode == $"etsy-{etsyListing.ListingId}" ||
-                            p.ProductCode == targetProductCode);
+                        var existingProduct = index.Find(etsyListing.ListingId, targetProductCode);
 
                         if (existingProduct != null)
                         {

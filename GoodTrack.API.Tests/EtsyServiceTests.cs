@@ -553,6 +553,60 @@ public class EtsyServiceTests : IDisposable
         _context.CatalogProducts.Single(p => p.ProductCode == "SKU-A").Image.Should().Be("https://img/1.jpg");
     }
 
+    private void SeedCatalogProduct(string id, string productCode, string? etsyListingId)
+    {
+        var product = new CatalogProduct
+        {
+            Id = id,
+            SellerId = "u1",
+            ProductCode = productCode,
+            Image = string.Empty,
+            CreatedAt = DateTime.UtcNow.ToString("o"),
+        };
+
+        if (etsyListingId != null)
+        {
+            product.Extras = new Dictionary<string, ExtraValue>
+            {
+                { "etsy_listing_id", new ExtraValue { Name = "Etsy Listing ID", Type = "text", Value = etsyListingId } }
+            };
+        }
+
+        _context.CatalogProducts.Add(product);
+        _context.SaveChanges();
+    }
+
+    [Fact]
+    public async Task FetchAndImportListings_MatchesExistingByEtsyFallbackCode_WithoutExtras()
+    {
+        // Etiket (extras) taşımayan eski kayıt "etsy-{listingId}" kodundan bulunmalı;
+        // yeni ürün oluşturulmamalı, kod SKU'ya güncellenmeli.
+        SeedCatalogProduct("cat-1", productCode: "etsy-111", etsyListingId: null);
+        SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
+
+        await _service.FetchAndImportEtsyListingsAsync("u1");
+
+        var products = _context.CatalogProducts.Where(p => p.SellerId == "u1").ToList();
+        products.Should().HaveCount(1, "mevcut kayıt eşleşmeli, yenisi oluşturulmamalı");
+        products[0].Id.Should().Be("cat-1");
+        products[0].ProductCode.Should().Be("SKU-A");
+    }
+
+    [Fact]
+    public async Task FetchAndImportListings_MatchesExistingBySku_WithoutExtras()
+    {
+        // Etiketsiz kayıt SKU (ProductCode) üzerinden de bulunmalı.
+        SeedCatalogProduct("cat-1", productCode: "SKU-A", etsyListingId: null);
+        SetupSingleListingSync(sku: "SKU-A", imageUrl: "https://img/1.jpg");
+
+        await _service.FetchAndImportEtsyListingsAsync("u1");
+
+        var products = _context.CatalogProducts.Where(p => p.SellerId == "u1").ToList();
+        products.Should().HaveCount(1);
+        products[0].Id.Should().Be("cat-1");
+        products[0].Image.Should().Be("https://img/1.jpg");
+    }
+
     [Fact]
     public async Task GetConnectionsAsync_DelegatesToRepository()
     {
