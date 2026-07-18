@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { api, Product } from '../services/apiClient';
+import { deriveStatus } from '../utils/orderStatus';
 
 /**
  * React Query anahtarı — siparişler (products) domain'i.
@@ -64,15 +65,7 @@ export function useProductActions() {
     (status: string, role: string) =>
       setProducts((old) =>
         old.map((p) => {
-          const currentStatus =
-            p.status ||
-            (p.isDefective
-              ? 'defective'
-              : p.completed
-                ? 'completed'
-                : p.isPendingApproval
-                  ? 'awaiting'
-                  : 'production');
+          const currentStatus = deriveStatus(p);
 
           let match: boolean;
           const lowerStatus = status.toLowerCase();

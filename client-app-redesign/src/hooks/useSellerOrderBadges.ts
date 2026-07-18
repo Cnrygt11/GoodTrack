@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Product, api } from '../services/apiClient';
 import { ListFilter, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
+import { deriveStatus } from '../utils/orderStatus';
 import { useProductActions } from './useProductsData';
 
 interface UseSellerOrderBadgesReturn {
@@ -12,9 +13,7 @@ interface UseSellerOrderBadgesReturn {
 
 /** Maps a product to its display-tab bucket. */
 function resolveProductTab(p: Product): ListFilter {
-  const status =
-    p.status ||
-    (p.isDefective ? ORDER_STATUS.DEFECTIVE : p.completed ? ORDER_STATUS.COMPLETED : p.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION);
+  const status = deriveStatus(p);
 
   if (status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED) return 'awaiting';
   if (status === ORDER_STATUS.BROKEN) return 'broken';

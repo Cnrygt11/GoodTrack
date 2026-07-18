@@ -17,6 +17,7 @@ import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
 import { ORDER_STATUS } from '../../utils/constants';
+import { deriveStatus } from '../../utils/orderStatus';
 
 const ACTION_BAR_STATUSES = [
   ORDER_STATUS.AWAITING as string,
@@ -87,15 +88,7 @@ export default function MfrOrderCard({
     });
   }, [p.createdAt, t]);
 
-  const status =
-    p.status ||
-    (p.isDefective
-      ? ORDER_STATUS.DEFECTIVE
-      : p.completed
-        ? ORDER_STATUS.COMPLETED
-        : p.isPendingApproval
-          ? ORDER_STATUS.AWAITING
-          : ORDER_STATUS.PRODUCTION);
+  const status = deriveStatus(p);
   const sc = getStatusConfig(status, t, {
     iconSize: 11,
     role: 'mfr',

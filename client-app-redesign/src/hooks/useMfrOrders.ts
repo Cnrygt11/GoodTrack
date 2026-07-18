@@ -6,6 +6,7 @@ import { useSettings } from '../context/SettingsContext';
 import { api, Product } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { ORDER_STATUS } from '../utils/constants';
+import { deriveStatus } from '../utils/orderStatus';
 
 export type MfrTab =
   'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective';
@@ -274,15 +275,7 @@ export default function useMfrOrders() {
       [p.code, p.text, p.mfrName, p.sellerName].some((f) => (f || '').toLowerCase().includes(q));
 
     return sortedProducts.filter((p) => {
-      const status =
-        p.status ||
-        (p.isDefective
-          ? ORDER_STATUS.DEFECTIVE
-          : p.completed
-            ? ORDER_STATUS.COMPLETED
-            : p.isPendingApproval
-              ? ORDER_STATUS.AWAITING
-              : ORDER_STATUS.PRODUCTION);
+      const status = deriveStatus(p);
       let statusMatch: boolean;
       if (activeTab === ORDER_STATUS.AWAITING) statusMatch = status === ORDER_STATUS.AWAITING;
       else if (activeTab === ORDER_STATUS.CORRECTED)

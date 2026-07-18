@@ -5,6 +5,7 @@ import { getStatusConfig } from '../../utils/statusConfig';
 import { useSettings } from '../../context/SettingsContext';
 import Lightbox from '../ui/Lightbox';
 import { ORDER_STATUS } from '../../utils/constants';
+import { deriveStatus } from '../../utils/orderStatus';
 import { Package, MoreVertical } from 'lucide-react';
 import OrderDetailsPreview from './OrderDetailsPreview';
 import OrderActionsBar from './OrderActionsBar';
@@ -76,15 +77,7 @@ export default function SellerOrderCard({
       })
     : '';
 
-  const status =
-    p.status ||
-    (p.isDefective
-      ? ORDER_STATUS.DEFECTIVE
-      : p.completed
-        ? ORDER_STATUS.COMPLETED
-        : p.isPendingApproval
-          ? ORDER_STATUS.AWAITING
-          : ORDER_STATUS.PRODUCTION);
+  const status = deriveStatus(p);
   const isEditable =
     status === ORDER_STATUS.AWAITING ||
     status === ORDER_STATUS.CORRECTED ||

@@ -4,6 +4,7 @@ import useOrderDetail from '../../hooks/useOrderDetail';
 import { getStatusConfig } from '../../utils/statusConfig';
 import BrokenDetailsModal from '../seller/BrokenDetailsModal';
 import { ORDER_STATUS } from '../../utils/constants';
+import { deriveStatus } from '../../utils/orderStatus';
 import { useSettings } from '../../context/SettingsContext';
 import { translateLogMessage } from '../../services/translations';
 import {
@@ -67,15 +68,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  const status =
-    product.status ||
-    (product.isDefective
-      ? ORDER_STATUS.DEFECTIVE
-      : product.completed
-        ? ORDER_STATUS.COMPLETED
-        : product.isPendingApproval
-          ? ORDER_STATUS.AWAITING
-          : ORDER_STATUS.PRODUCTION);
+  const status = deriveStatus(product);
   const sc = getStatusConfig(status, t, {
     iconSize: 12,
     role: user?.role === 'mfr' ? 'mfr' : 'seller',

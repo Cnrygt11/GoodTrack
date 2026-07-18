@@ -7,6 +7,7 @@ import { useSettings } from '../context/SettingsContext';
 import { Product } from '../services/apiClient';
 import { ListFilter, SellerTabId, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
+import { deriveStatus } from '../utils/orderStatus';
 import useSellerOrderBadges from './useSellerOrderBadges';
 import useSellerOrderForm from './useSellerOrderForm';
 import useSellerOrderActions from './useSellerOrderActions';
@@ -127,15 +128,7 @@ export default function useSellerOrders() {
       );
 
     return sortedProducts.filter((p) => {
-      const status =
-        p.status ||
-        (p.isDefective
-          ? ORDER_STATUS.DEFECTIVE
-          : p.completed
-            ? ORDER_STATUS.COMPLETED
-            : p.isPendingApproval
-              ? ORDER_STATUS.AWAITING
-              : ORDER_STATUS.PRODUCTION);
+      const status = deriveStatus(p);
       let statusMatch: boolean;
       if (listFilter === ORDER_STATUS.AWAITING)
         statusMatch = status === ORDER_STATUS.AWAITING || status === ORDER_STATUS.CORRECTED;
