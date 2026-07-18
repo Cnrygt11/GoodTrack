@@ -148,12 +148,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
             }
 
             var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogInformation("Etsy listings/active response (offset {Offset}): {Length} chars, first 500: {Preview}",
-                offset, json.Length, json.Length > 500 ? json[..500] : json);
-
             var pageContainer = JsonSerializer.Deserialize<EtsyListingsContainer>(json, EtsyJsonOptions);
-            _logger.LogInformation("Parsed listings container: Count={Count}, Results={ResultCount}",
-                pageContainer?.Count ?? -1, pageContainer?.Results?.Count ?? -1);
 
             var pageResults = pageContainer?.Results;
             if (pageResults == null || pageResults.Count == 0)
