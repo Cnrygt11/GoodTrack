@@ -2,22 +2,16 @@ import React from 'react';
 import { Product } from '../../services/apiClient';
 import { Send, Info } from 'lucide-react';
 import { useSettings } from '../../context/SettingsContext';
+import { SellerOrderCardActions } from '../../types/orders';
 
 interface OrderActionsBarProps {
   product: Product;
   status: string;
-  onVerify: (productId: string, action: 'correct' | 'defective' | 'missing') => void;
-  onShip: (productId: string) => Promise<void>;
-  onViewTimeline: (product: Product) => void;
+  actions: SellerOrderCardActions;
 }
 
-export default function OrderActionsBar({
-  product: p,
-  status,
-  onVerify,
-  onShip,
-  onViewTimeline,
-}: OrderActionsBarProps) {
+export default function OrderActionsBar({ product: p, status, actions }: OrderActionsBarProps) {
+  const { onVerify, onShip, onViewTimeline } = actions;
   const { t } = useSettings();
 
   return (

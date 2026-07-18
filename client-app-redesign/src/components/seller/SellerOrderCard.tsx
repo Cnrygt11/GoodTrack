@@ -1,5 +1,5 @@
 import { Product } from '../../services/apiClient';
-import { ListFilter } from '../../types/orders';
+import { ListFilter, SellerOrderCardActions } from '../../types/orders';
 import { getStatusConfig } from '../../utils/statusConfig';
 import { formatOrderDate, formatOrderTime } from '../../utils/dateFormat';
 import { useOrderLightbox } from '../../hooks/useOrderLightbox';
@@ -18,15 +18,7 @@ interface SellerOrderCardProps {
   isUnseen: boolean;
   isDropdownOpen: boolean;
   onDropdownToggle: (id: string | null) => void;
-  onEdit: (product: Product) => void;
-  onDelete: (product: Product) => Promise<void>;
-  onCancel: (productId: string) => Promise<void>;
-  onVerify: (productId: string, action: 'correct' | 'defective' | 'missing') => void;
-  onShip: (productId: string) => Promise<void>;
-  onViewTimeline: (product: Product) => void;
-  onMarkSeen: (productId: string, tab: ListFilter) => void;
-  onViewBrokenNote?: (product: Product) => void;
-  onRequestCancel?: (productId: string) => Promise<void>;
+  actions: SellerOrderCardActions;
 }
 
 export default function SellerOrderCard({
@@ -35,15 +27,7 @@ export default function SellerOrderCard({
   isUnseen,
   isDropdownOpen,
   onDropdownToggle,
-  onEdit,
-  onDelete,
-  onCancel,
-  onVerify,
-  onShip,
-  onViewTimeline,
-  onMarkSeen,
-  onViewBrokenNote,
-  onRequestCancel,
+  actions,
 }: SellerOrderCardProps) {
   const { t } = useSettings();
   const { isLightboxOpen, setIsLightboxOpen, fullImage, thumb, openLightbox } = useOrderLightbox(p);
@@ -80,7 +64,7 @@ export default function SellerOrderCard({
           title={t('unseenDotTitle')}
           onClick={(e) => {
             e.stopPropagation();
-            onMarkSeen(p.id, listFilter);
+            actions.onMarkSeen(p.id, listFilter);
           }}
         />
       )}
@@ -103,8 +87,8 @@ export default function SellerOrderCard({
           dateStr={dateStr}
           timeStr={timeStr}
           sc={sc}
-          onViewTimeline={onViewTimeline}
-          onViewBrokenNote={onViewBrokenNote}
+          onViewTimeline={actions.onViewTimeline}
+          onViewBrokenNote={actions.onViewBrokenNote}
         />
 
         {/* Right: three-dot menu */}
@@ -126,26 +110,14 @@ export default function SellerOrderCard({
               status={status}
               isEditable={isEditable}
               onDropdownToggle={onDropdownToggle}
-              onEdit={onEdit}
-              onViewTimeline={onViewTimeline}
-              onCancel={onCancel}
-              onDelete={onDelete}
-              onRequestCancel={onRequestCancel}
+              actions={actions}
             />
           )}
         </div>
       </div>
 
       {/* Action Bar */}
-      {hasActionBar && (
-        <OrderActionsBar
-          product={p}
-          status={status}
-          onVerify={onVerify}
-          onShip={onShip}
-          onViewTimeline={onViewTimeline}
-        />
-      )}
+      {hasActionBar && <OrderActionsBar product={p} status={status} actions={actions} />}
 
       {thumb && (
         <Lightbox

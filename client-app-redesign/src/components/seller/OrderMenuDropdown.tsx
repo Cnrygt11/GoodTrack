@@ -3,17 +3,14 @@ import { Product } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { Edit2, Info, Ban, Trash2 } from 'lucide-react';
 import { ORDER_STATUS } from '../../utils/constants';
+import { SellerOrderCardActions } from '../../types/orders';
 
 interface OrderMenuDropdownProps {
   product: Product;
   status: string;
   isEditable: boolean;
   onDropdownToggle: (id: string | null) => void;
-  onEdit: (product: Product) => void;
-  onViewTimeline: (product: Product) => void;
-  onCancel: (productId: string) => Promise<void>;
-  onDelete: (product: Product) => Promise<void>;
-  onRequestCancel?: (productId: string) => Promise<void>;
+  actions: SellerOrderCardActions;
 }
 
 export default function OrderMenuDropdown({
@@ -21,12 +18,9 @@ export default function OrderMenuDropdown({
   status,
   isEditable,
   onDropdownToggle,
-  onEdit,
-  onViewTimeline,
-  onCancel,
-  onDelete,
-  onRequestCancel,
+  actions,
 }: OrderMenuDropdownProps) {
+  const { onEdit, onViewTimeline, onCancel, onDelete, onRequestCancel } = actions;
   const { t } = useSettings();
 
   return (

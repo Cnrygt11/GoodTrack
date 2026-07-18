@@ -28,3 +28,19 @@ export const LIST_FILTER_TABS: ListFilter[] = [
 
 /** Active sub-page tab on the SellerPage. */
 export type SellerTabId = 'list' | 'create' | 'catalog';
+
+/**
+ * Satıcı sipariş kartının aksiyon callback'leri tek pakette — kart, dropdown ve
+ * action-bar bileşenlerine tek prop olarak geçer (12 ayrı prop yerine).
+ */
+export interface SellerOrderCardActions {
+  onEdit: (product: import('../services/apiClient').Product) => void;
+  onDelete: (product: import('../services/apiClient').Product) => Promise<void>;
+  onCancel: (productId: string) => Promise<void>;
+  onVerify: (productId: string, action: 'correct' | 'defective' | 'missing') => void;
+  onShip: (productId: string) => Promise<void>;
+  onViewTimeline: (product: import('../services/apiClient').Product) => void;
+  onMarkSeen: (productId: string, tab: ListFilter) => void;
+  onViewBrokenNote?: (product: import('../services/apiClient').Product) => void;
+  onRequestCancel?: (productId: string) => Promise<void>;
+}

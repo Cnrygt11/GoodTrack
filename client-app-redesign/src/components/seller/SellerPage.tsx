@@ -18,7 +18,7 @@ import AddFieldModal from './AddFieldModal';
 import DefectReportModal from './DefectReportModal';
 import BrokenDetailsModal from './BrokenDetailsModal';
 import CatalogPage from '../catalog/CatalogPage';
-import { ListFilter } from '../../types/orders';
+import { ListFilter, SellerOrderCardActions } from '../../types/orders';
 import { ORDER_STATUS } from '../../utils/constants';
 import styles from './SellerPage.module.css';
 
@@ -111,6 +111,32 @@ export default function SellerPage() {
     openBrokenDetails,
     closeBrokenDetails,
   } = useSellerOrders();
+
+  // Kart aksiyonları tek pakette geçer (bkz. SellerOrderCardActions).
+  const cardActions: SellerOrderCardActions = React.useMemo(
+    () => ({
+      onEdit: handleEditClick,
+      onDelete: handleDeleteClick,
+      onCancel: handleCancelOrder,
+      onRequestCancel: handleRequestCancel,
+      onVerify: handleVerifyOrder,
+      onShip: handleShipOrder,
+      onViewTimeline: openTimeline,
+      onMarkSeen: handleMarkSingleAsSeen,
+      onViewBrokenNote: openBrokenDetails,
+    }),
+    [
+      handleEditClick,
+      handleDeleteClick,
+      handleCancelOrder,
+      handleRequestCancel,
+      handleVerifyOrder,
+      handleShipOrder,
+      openTimeline,
+      handleMarkSingleAsSeen,
+      openBrokenDetails,
+    ],
+  );
 
   // Aktif durum sekmesindeki siparişleri 20'şerlik sayfalara böl.
   // Sekme veya sıralama değişince 1. sayfaya döner (resetKey).
@@ -323,15 +349,7 @@ export default function SellerPage() {
                   isUnseen={unseenIds[listFilter]?.includes(p.id) ?? false}
                   isDropdownOpen={activeDropdownId === p.id}
                   onDropdownToggle={setActiveDropdownId}
-                  onEdit={handleEditClick}
-                  onDelete={handleDeleteClick}
-                  onCancel={handleCancelOrder}
-                  onRequestCancel={handleRequestCancel}
-                  onVerify={handleVerifyOrder}
-                  onShip={handleShipOrder}
-                  onViewTimeline={openTimeline}
-                  onMarkSeen={handleMarkSingleAsSeen}
-                  onViewBrokenNote={openBrokenDetails}
+                  actions={cardActions}
                 />
               ))
             )}
