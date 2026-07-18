@@ -220,6 +220,51 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
     setExtraValues((prev) => ({ ...prev, [fieldId]: val }));
   }, []);
 
+  /** 402 kredi hatasında yönlendirme diyaloğu, diğer hatalarda standart hata toast'ı. */
+  const notifySubmitError = useCallback(
+    (err: unknown) => {
+      if (err instanceof ApiError && err.status === 402) {
+        showToast(t('creditWarnToast'), true);
+        confirm({
+          title: t('creditsLowWarning'),
+          message: t('insufficientCredits'),
+          confirmText: t('goToBilling'),
+        }).then((go) => {
+          if (go) navigate(ROUTES.sellerCredits);
+        });
+      } else {
+        showToast(extractErrorMessage(err));
+      }
+    },
+    [confirm, navigate, showToast, t],
+  );
+
+  /** Hata sonrası formu verilen değerlerle geri doldurur (rollback'in form ayağı). */
+  const restoreFormState = useCallback(
+    (s: {
+      editing: Product | null;
+      code: string;
+      text: string;
+      mfrId: string;
+      image: string | null;
+      thumbnail: string | null;
+      catalogProductId: string | null;
+      imageLabel: string;
+      extras: Record<string, string>;
+    }) => {
+      setEditingProduct(s.editing);
+      setProductCode(s.code);
+      setOrderText(s.text);
+      setMfrId(s.mfrId);
+      setOrderImage(s.image);
+      setOrderThumbnail(s.thumbnail);
+      setCatalogProductId(s.catalogProductId);
+      setImageFileName(s.image ? s.imageLabel : '');
+      setExtraValues(s.extras);
+    },
+    [],
+  );
+
   const handleSubmit = useCallback(
     async (e: FormEvent, setActiveTab: (tab: SellerTabId) => void) => {
       e.preventDefault();
@@ -247,66 +292,24 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       });
 
       const prevProducts = [...products];
+      const isEdit = Boolean(editingProduct);
+      const tempId = `temp_${Date.now()}`;
 
+      // İyimser güncelleme: kart hemen listede görünür/güncellenir, form kapanır.
       if (editingProduct) {
-        // Katalog referanslıysa base64 gönderilmez; backend görseli katalogtan çözer.
-        const payload: Product = {
+        optimisticUpdateProduct({
           ...editingProduct,
           code,
-          image: catalogProductId ? null : orderImage,
+          image: orderImage,
           thumbnailImage: orderThumbnail,
           catalogProductId,
           text: orderText,
           extras: formattedExtras,
           mfrId,
           mfrName,
-        };
-        optimisticUpdateProduct({ ...payload, image: orderImage });
-        setActiveTab('list');
-        handleClearForm();
-
-        try {
-          isActionLoadingRef.current = true;
-          setActionLoading(true);
-          const { message, ...updated } = await api.updateProduct(editingProduct.id, payload);
-          showToast(message || t('orderUpdatedSuccess'));
-          optimisticUpdateProduct(updated as Product);
-          await loadProducts();
-        } catch (err: unknown) {
-          rollbackProducts(prevProducts);
-          if (err instanceof ApiError && err.status === 402) {
-            showToast(t('creditWarnToast'), true);
-            confirm({
-              title: t('creditsLowWarning'),
-              message: t('insufficientCredits'),
-              confirmText: t('goToBilling'),
-            }).then((go) => {
-              if (go) navigate(ROUTES.sellerCredits);
-            });
-          } else {
-            showToast(extractErrorMessage(err));
-          }
-          setEditingProduct(editingProduct);
-          setProductCode(code);
-          setOrderText(orderText || '');
-          setMfrId(mfrId);
-          setOrderImage(orderImage);
-          setOrderThumbnail(orderThumbnail);
-          setCatalogProductId(catalogProductId);
-          setImageFileName(orderImage ? t('currentImageLabel') : '');
-          const initialExtras: Record<string, string> = {};
-          extraFieldDefs.forEach((def) => {
-            initialExtras[def.id] = formattedExtras[def.id]?.value || '';
-          });
-          setExtraValues(initialExtras);
-          setActiveTab('create');
-        } finally {
-          isActionLoadingRef.current = false;
-          setActionLoading(false);
-        }
+        });
       } else {
-        const tempId = `temp_${Date.now()}`;
-        const tempProduct: Product = {
+        optimisticAddProduct({
           id: tempId,
           code,
           image: orderImage,
@@ -324,19 +327,36 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           createdAt: new Date().toISOString(),
           isReadBySeller: true,
           isReadByMfr: false,
-        };
+        });
+      }
+      setActiveTab('list');
+      handleClearForm();
 
-        optimisticAddProduct(tempProduct);
-        setActiveTab('list');
-        handleClearForm();
-
-        try {
-          isActionLoadingRef.current = true;
-          setActionLoading(true);
-          // Katalog referanslıysa base64 gönderilmez; backend görseli katalogtan çözer.
+      try {
+        isActionLoadingRef.current = true;
+        setActionLoading(true);
+        // Katalog referanslıysa base64 gönderilmez; backend görseli katalogtan çözer.
+        const imagePayload = catalogProductId ? null : orderImage;
+        if (editingProduct) {
+          const payload: Product = {
+            ...editingProduct,
+            code,
+            image: imagePayload,
+            thumbnailImage: orderThumbnail,
+            catalogProductId,
+            text: orderText,
+            extras: formattedExtras,
+            mfrId,
+            mfrName,
+          };
+          const { message, ...updated } = await api.updateProduct(editingProduct.id, payload);
+          showToast(message || t('orderUpdatedSuccess'));
+          optimisticUpdateProduct(updated as Product);
+          await loadProducts();
+        } else {
           const payload: CreateProductPayload = {
             code,
-            image: catalogProductId ? null : orderImage,
+            image: imagePayload,
             thumbnailImage: orderThumbnail,
             catalogProductId,
             text: orderText,
@@ -351,37 +371,29 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
           optimisticAddProduct(created as Product);
           await loadProducts();
           await fetchCredits();
-        } catch (err: unknown) {
-          rollbackProducts(prevProducts);
-          if (err instanceof ApiError && err.status === 402) {
-            showToast(t('creditWarnToast'), true);
-            confirm({
-              title: t('creditsLowWarning'),
-              message: t('insufficientCredits'),
-              confirmText: t('goToBilling'),
-            }).then((go) => {
-              if (go) navigate(ROUTES.sellerCredits);
-            });
-          } else {
-            showToast(extractErrorMessage(err));
-          }
-          setProductCode(code);
-          setOrderText(orderText || '');
-          setMfrId(mfrId);
-          setOrderImage(orderImage);
-          setOrderThumbnail(orderThumbnail);
-          setCatalogProductId(catalogProductId);
-          setImageFileName(orderImage ? t('catalogImageLabel') : '');
-          const initialExtras: Record<string, string> = {};
-          extraFieldDefs.forEach((def) => {
-            initialExtras[def.id] = formattedExtras[def.id]?.value || '';
-          });
-          setExtraValues(initialExtras);
-          setActiveTab('create');
-        } finally {
-          isActionLoadingRef.current = false;
-          setActionLoading(false);
         }
+      } catch (err: unknown) {
+        rollbackProducts(prevProducts);
+        notifySubmitError(err);
+        const initialExtras: Record<string, string> = {};
+        extraFieldDefs.forEach((def) => {
+          initialExtras[def.id] = formattedExtras[def.id]?.value || '';
+        });
+        restoreFormState({
+          editing: editingProduct,
+          code,
+          text: orderText || '',
+          mfrId,
+          image: orderImage,
+          thumbnail: orderThumbnail,
+          catalogProductId,
+          imageLabel: t(isEdit ? 'currentImageLabel' : 'catalogImageLabel'),
+          extras: initialExtras,
+        });
+        setActiveTab('create');
+      } finally {
+        isActionLoadingRef.current = false;
+        setActionLoading(false);
       }
     },
     [
@@ -404,9 +416,9 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       showToast,
       t,
       handleClearForm,
-      confirm,
-      navigate,
       fetchCredits,
+      notifySubmitError,
+      restoreFormState,
     ],
   );
 
@@ -490,19 +502,21 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
         rollbackProducts(prevProducts);
         showToast(extractErrorMessage(err));
         if (editingProduct?.id === product.id) {
-          setEditingProduct(product);
-          setProductCode(product.code);
-          setOrderText(product.text || '');
-          setMfrId(product.mfrId);
-          setOrderImage(product.image);
-          setOrderThumbnail(product.thumbnailImage ?? null);
-          setCatalogProductId(product.catalogProductId ?? null);
-          setImageFileName(product.image ? t('currentImageLabel') : '');
           const initialExtras: Record<string, string> = {};
           extraFieldDefs.forEach((def) => {
             initialExtras[def.id] = product.extras?.[def.id]?.value || '';
           });
-          setExtraValues(initialExtras);
+          restoreFormState({
+            editing: product,
+            code: product.code,
+            text: product.text || '',
+            mfrId: product.mfrId,
+            image: product.image,
+            thumbnail: product.thumbnailImage ?? null,
+            catalogProductId: product.catalogProductId ?? null,
+            imageLabel: t('currentImageLabel'),
+            extras: initialExtras,
+          });
         }
       }
     },
@@ -516,6 +530,7 @@ export default function useSellerOrderForm(): UseSellerOrderFormReturn {
       showToast,
       t,
       handleClearForm,
+      restoreFormState,
     ],
   );
 
