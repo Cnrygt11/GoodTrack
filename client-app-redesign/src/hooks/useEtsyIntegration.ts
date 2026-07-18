@@ -1,9 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, BASE_URL } from '../services/apiClient';
 import { EtsyConnectionInfo } from '../types/api';
 import { extractErrorMessage } from '../utils/errorUtils';
 
 export type { EtsyConnectionInfo };
+
+/** React Query anahtarı — Etsy bağlantıları + platform webhook yapılandırması. */
+export const etsyKeys = {
+  integration: ['etsyIntegration'] as const,
+};
 
 /**
  * Etsy entegrasyon durumunu yöneten hook. Sipariş aktarımı Etsy Open API üzerinden
@@ -11,37 +17,41 @@ export type { EtsyConnectionInfo };
  * bulunmadığından arayüzde webhook/imza-anahtarı yapılandırması sunulmaz.
  */
 export function useEtsyIntegration() {
-  const [loading, setLoading] = useState(true);
-  const [connections, setConnections] = useState<EtsyConnectionInfo[]>([]);
+  const queryClient = useQueryClient();
   const [error, setError] = useState<string | null>(null);
 
   const [connectLoading, setConnectLoading] = useState(false);
-  const [platformWebhookConfigured, setPlatformWebhookConfigured] = useState(false);
   const [syncListingsLoading, setSyncListingsLoading] = useState(false);
   const [syncOrdersLoading, setSyncOrdersLoading] = useState(false);
   const [actionSuccessMessage, setActionSuccessMessage] = useState<string | null>(null);
 
-  const fetchConnectionInfo = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [data, config] = await Promise.all([
+  const integrationQuery = useQuery({
+    queryKey: etsyKeys.integration,
+    queryFn: async () => {
+      const [connections, config] = await Promise.all([
         api.getEtsyConnections(),
         api.getEtsyWebhookConfig(),
       ]);
-      setConnections(data || []);
-      setPlatformWebhookConfigured(config?.platformConfigured ?? false);
-      setError(null);
-    } catch (err: unknown) {
-      console.error(err);
-      setError('Bağlantı bilgileri yüklenirken hata oluştu: ' + extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return { connections: connections ?? [], platformConfigured: config?.platformConfigured ?? false };
+    },
+  });
+
+  const connections = integrationQuery.data?.connections ?? [];
+  const platformWebhookConfigured = integrationQuery.data?.platformConfigured ?? false;
+  const loading = integrationQuery.isPending;
+
+  // Sorgu hatası, aksiyon hatalarıyla aynı banner'da gösterilir.
+  const displayError = error
+    ?? (integrationQuery.isError
+      ? 'Bağlantı bilgileri yüklenirken hata oluştu: ' + extractErrorMessage(integrationQuery.error)
+      : null);
+
+  const fetchConnectionInfo = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: etsyKeys.integration }).then(() => {}),
+    [queryClient],
+  );
 
   useEffect(() => {
-    fetchConnectionInfo();
-
     // Check URL parameters for OAuth result
     const params = new URLSearchParams(window.location.search);
     const hasError = params.get('etsy_connected') === 'false';
@@ -66,7 +76,7 @@ export function useEtsyIntegration() {
         window.location.pathname + '?tab=integrations',
       );
     }
-  }, [fetchConnectionInfo]);
+  }, []);
 
   const connectEtsy = useCallback(async () => {
     setConnectLoading(true);
@@ -92,14 +102,14 @@ export function useEtsyIntegration() {
     if (window.confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
       try {
         await api.disconnectEtsyShop(shopId);
-        setConnections((prev) => prev.filter((c) => c.shopId !== shopId));
+        await fetchConnectionInfo();
         setActionSuccessMessage('Etsy mağaza bağlantısı başarıyla kesildi.');
         setTimeout(() => setActionSuccessMessage(null), 3000);
       } catch (err: unknown) {
         setError('Bağlantı kesilirken hata oluştu: ' + extractErrorMessage(err));
       }
     }
-  }, []);
+  }, [fetchConnectionInfo]);
 
   const syncListings = useCallback(async () => {
     setSyncListingsLoading(true);
@@ -135,7 +145,7 @@ export function useEtsyIntegration() {
   return {
     loading,
     connections,
-    error,
+    error: displayError,
     setError,
     connectLoading,
     platformWebhookConfigured,
