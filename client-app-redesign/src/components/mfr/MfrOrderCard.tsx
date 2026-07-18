@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
   Package,
   CheckCircle2,
@@ -11,9 +11,11 @@ import {
   Layers,
   ShoppingBag,
 } from 'lucide-react';
-import { api, Product } from '../../services/apiClient';
+import { Product } from '../../services/apiClient';
 import { MfrTab } from '../../hooks/useMfrOrders';
 import { getStatusConfig, getMfrCardAccentColor } from '../../utils/statusConfig';
+import { formatOrderDate, formatOrderTime } from '../../utils/dateFormat';
+import { useOrderLightbox } from '../../hooks/useOrderLightbox';
 import Lightbox from '../ui/Lightbox';
 import { useSettings } from '../../context/SettingsContext';
 import { ORDER_STATUS } from '../../utils/constants';
@@ -53,40 +55,10 @@ export default function MfrOrderCard({
   onRespondCancel,
 }: MfrOrderCardProps) {
   const { t } = useSettings();
-  const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
-  const [fullImage, setFullImage] = React.useState<string | null>(p.image);
+  const { isLightboxOpen, setIsLightboxOpen, fullImage, thumb, openLightbox } = useOrderLightbox(p);
 
-  // Liste yanıtı yalnız thumbnail taşır; kart onu gösterir, "büyüt"te tam görsel talep üzerine çekilir.
-  const thumb = p.thumbnailImage ?? p.image;
-
-  const openLightbox = () => {
-    setIsLightboxOpen(true);
-    if (!fullImage && p.id) {
-      api
-        .getProductById(p.id)
-        .then((f) => setFullImage(f.image))
-        .catch(() => {
-          /* thumbnail yeterli */
-        });
-    }
-  };
-
-  const dateStr = useMemo(() => {
-    if (!p.createdAt) return '—';
-    return new Date(p.createdAt).toLocaleDateString(t('dateLocale'), {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
-  }, [p.createdAt, t]);
-
-  const timeStr = useMemo(() => {
-    if (!p.createdAt) return '';
-    return new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }, [p.createdAt, t]);
+  const dateStr = formatOrderDate(p.createdAt, t('dateLocale'));
+  const timeStr = formatOrderTime(p.createdAt, t('dateLocale'));
 
   const status = deriveStatus(p);
   const sc = getStatusConfig(status, t, {

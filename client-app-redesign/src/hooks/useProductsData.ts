@@ -93,6 +93,17 @@ export function useProductActions() {
     [setProducts],
   );
 
+  /** Sekmedeki okunmamışları önce lokalde, ardından backend'de okundu işaretler (best-effort). */
+  const markTabAsRead = useCallback(
+    (tab: string, role: 'seller' | 'mfr') => {
+      markStatusAsReadLocally(tab, role);
+      api.markStatusAsRead(tab).catch((err) => {
+        console.error(`Failed to mark status ${tab} as read:`, err);
+      });
+    },
+    [markStatusAsReadLocally],
+  );
+
   return {
     loadProducts,
     optimisticAddProduct,
@@ -100,5 +111,6 @@ export function useProductActions() {
     optimisticRemoveProduct,
     rollbackProducts,
     markStatusAsReadLocally,
+    markTabAsRead,
   };
 }

@@ -13,7 +13,7 @@ export type MfrTab =
 
 export default function useMfrOrders() {
   const { products } = useProductsQuery();
-  const { loadProducts, optimisticUpdateProduct, rollbackProducts, markStatusAsReadLocally } =
+  const { loadProducts, optimisticUpdateProduct, rollbackProducts, markTabAsRead } =
     useProductActions();
   const { showToast } = useToast();
   const { language, t } = useSettings();
@@ -112,12 +112,9 @@ export default function useMfrOrders() {
     // If there are unseen products on the current tab, mark them all as read on the backend
     const currentUnseen = nextUnseen[activeTab] || [];
     if (currentUnseen.length > 0) {
-      markStatusAsReadLocally(activeTab, 'mfr');
-      api.markStatusAsRead(activeTab).catch((err) => {
-        console.error(`Failed to mark status ${activeTab} as read:`, err);
-      });
+      markTabAsRead(activeTab, 'mfr');
     }
-  }, [products, activeTab, markStatusAsReadLocally]);
+  }, [products, activeTab, markTabAsRead]);
 
   const handleMarkSingleAsSeen = useCallback((productId: string, tab: MfrTab) => {
     setUnseenIds((prev) => ({

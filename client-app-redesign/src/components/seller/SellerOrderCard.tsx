@@ -1,7 +1,8 @@
-import React from 'react';
-import { api, Product } from '../../services/apiClient';
+import { Product } from '../../services/apiClient';
 import { ListFilter } from '../../types/orders';
 import { getStatusConfig } from '../../utils/statusConfig';
+import { formatOrderDate, formatOrderTime } from '../../utils/dateFormat';
+import { useOrderLightbox } from '../../hooks/useOrderLightbox';
 import { useSettings } from '../../context/SettingsContext';
 import Lightbox from '../ui/Lightbox';
 import { ORDER_STATUS } from '../../utils/constants';
@@ -45,37 +46,10 @@ export default function SellerOrderCard({
   onRequestCancel,
 }: SellerOrderCardProps) {
   const { t } = useSettings();
-  const [isLightboxOpen, setIsLightboxOpen] = React.useState(false);
-  const [fullImage, setFullImage] = React.useState<string | null>(p.image);
+  const { isLightboxOpen, setIsLightboxOpen, fullImage, thumb, openLightbox } = useOrderLightbox(p);
 
-  // Liste yanıtı yalnız thumbnail taşır; kart onu gösterir, "büyüt"te tam görsel talep üzerine çekilir.
-  const thumb = p.thumbnailImage ?? p.image;
-
-  const openLightbox = () => {
-    setIsLightboxOpen(true);
-    if (!fullImage && p.id) {
-      api
-        .getProductById(p.id)
-        .then((f) => setFullImage(f.image))
-        .catch(() => {
-          /* thumbnail yeterli */
-        });
-    }
-  };
-
-  const dateStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleDateString(t('dateLocale'), {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric',
-      })
-    : '—';
-  const timeStr = p.createdAt
-    ? new Date(p.createdAt).toLocaleTimeString(t('dateLocale'), {
-        hour: '2-digit',
-        minute: '2-digit',
-      })
-    : '';
+  const dateStr = formatOrderDate(p.createdAt, t('dateLocale'));
+  const timeStr = formatOrderTime(p.createdAt, t('dateLocale'));
 
   const status = deriveStatus(p);
   const isEditable =

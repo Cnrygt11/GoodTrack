@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Product, api } from '../services/apiClient';
+import { Product } from '../services/apiClient';
 import { ListFilter, LIST_FILTER_TABS } from '../types/orders';
 import { ORDER_STATUS } from '../utils/constants';
 import { deriveStatus } from '../utils/orderStatus';
@@ -42,7 +42,7 @@ export default function useSellerOrderBadges(
 ): UseSellerOrderBadgesReturn {
   const [unseenIds, setUnseenIds] = useState<Record<string, string[]>>(EMPTY_RECORD);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>(ZERO_RECORD);
-  const { markStatusAsReadLocally } = useProductActions();
+  const { markTabAsRead } = useProductActions();
 
   useEffect(() => {
     const nextUnseen: Record<string, string[]> = EMPTY_RECORD();
@@ -63,12 +63,9 @@ export default function useSellerOrderBadges(
     // If there are unseen products on the current tab, mark them all as read on the backend
     const currentUnseen = nextUnseen[listFilter] || [];
     if (currentUnseen.length > 0) {
-      markStatusAsReadLocally(listFilter, 'seller');
-      api.markStatusAsRead(listFilter).catch((err) => {
-        console.error(`Failed to mark status ${listFilter} as read:`, err);
-      });
+      markTabAsRead(listFilter, 'seller');
     }
-  }, [products, listFilter, markStatusAsReadLocally]);
+  }, [products, listFilter, markTabAsRead]);
 
   const handleMarkSingleAsSeen = useCallback((productId: string, tab: ListFilter) => {
     setUnseenIds((prev) => ({
