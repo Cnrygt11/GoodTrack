@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../context/ToastContext';
 import { extractErrorMessage } from '../utils/errorUtils';
 
@@ -39,8 +39,12 @@ export function useOptimisticMutation<TSnapshot>(env: MutationEnv<TSnapshot>) {
   const isRunning = useRef(false);
 
   // Env her render'da yeni nesne olabilir; run'ın kimliğini sabit tutmak için ref'te taşınır.
+  // Yazma render sırasında değil commit sonrası yapılır; run yalnız olay işleyicilerinden
+  // (yani commit'ten sonra) çağrıldığından hep en güncel env'i görür.
   const envRef = useRef(env);
-  envRef.current = env;
+  useEffect(() => {
+    envRef.current = env;
+  });
 
   const run = useCallback(
     async <TData extends { message?: string }>(opts: RunOptions<TData>): Promise<boolean> => {
