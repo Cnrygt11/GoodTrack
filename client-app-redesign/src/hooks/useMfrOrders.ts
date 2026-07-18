@@ -7,6 +7,7 @@ import { api, Product } from '../services/apiClient';
 import { extractErrorMessage } from '../utils/errorUtils';
 import { ORDER_STATUS } from '../utils/constants';
 import { deriveStatus } from '../utils/orderStatus';
+import { useOptimisticMutation } from './useOptimisticMutation';
 
 export type MfrTab =
   'awaiting' | 'corrected' | 'production' | 'completed' | 'delivered' | 'defective';
@@ -33,7 +34,21 @@ export default function useMfrOrders() {
   const [orderSearch, setOrderSearch] = useState('');
   const [selectedDefectProduct, setSelectedDefectProduct] = useState<Product | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
-  const [actionLoading, setActionLoading] = useState(false);
+
+  const { run, actionLoading } = useOptimisticMutation<Product[]>({
+    snapshot: () => [...products],
+    rollback: rollbackProducts,
+    refresh: loadProducts,
+  });
+
+  /** Cache'teki siparişe iyimser yama uygular (sipariş yoksa sessizce geçer). */
+  const patchProduct = useCallback(
+    (productId: string, patch: Partial<Product>) => {
+      const target = products.find((p) => p.id === productId);
+      if (target) optimisticUpdateProduct({ ...target, ...patch });
+    },
+    [products, optimisticUpdateProduct],
+  );
 
   // Broken order report modal state
   const [brokenProductId, setBrokenProductId] = useState<string | null>(null);
@@ -135,97 +150,52 @@ export default function useMfrOrders() {
         return;
       }
 
-      const prevProducts = [...products];
       const target = products.find((p) => p.id === productId);
-      if (target) {
-        optimisticUpdateProduct({
-          ...target,
-          status: status,
-          defectNote: defectNote || target.defectNote,
-        });
-      }
-
-      try {
-        setActionLoading(true);
-        const data = await api.updateOrderStatus(productId, status, defectNote);
-        showToast(data.message || t('statusUpdatedSuccess'));
-        await loadProducts();
-      } catch (err: unknown) {
-        rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
-      } finally {
-        setActionLoading(false);
-      }
+      await run({
+        optimistic: () =>
+          patchProduct(productId, { status, defectNote: defectNote || target?.defectNote }),
+        action: () => api.updateOrderStatus(productId, status, defectNote),
+        successToast: (data) => data.message || t('statusUpdatedSuccess'),
+      });
     },
-    [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t],
+    [products, run, patchProduct, t],
   );
 
   const handleBrokenSubmit = useCallback(
     async (note: string) => {
       if (!brokenProductId) return;
-      const prevProducts = [...products];
-      const target = products.find((p) => p.id === brokenProductId);
-      if (target) {
-        optimisticUpdateProduct({
-          ...target,
-          status: 'broken',
-          defectNote: note,
-        });
-      }
       setIsBrokenModalOpen(false);
       const savedProductId = brokenProductId;
       setBrokenProductId(null);
 
-      try {
-        setActionLoading(true);
-        const data = await api.updateOrderStatus(savedProductId, 'broken', note);
-        showToast(data.message || t('statusUpdatedSuccess'));
-        await loadProducts();
-      } catch (err: unknown) {
-        rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
-        setIsBrokenModalOpen(true);
-        setBrokenProductId(savedProductId);
-      } finally {
-        setActionLoading(false);
-      }
+      await run({
+        optimistic: () => patchProduct(savedProductId, { status: 'broken', defectNote: note }),
+        action: () => api.updateOrderStatus(savedProductId, 'broken', note),
+        successToast: (data) => data.message || t('statusUpdatedSuccess'),
+        onError: (err) => {
+          showToast(extractErrorMessage(err));
+          setIsBrokenModalOpen(true);
+          setBrokenProductId(savedProductId);
+        },
+      });
     },
-    [
-      brokenProductId,
-      products,
-      optimisticUpdateProduct,
-      rollbackProducts,
-      loadProducts,
-      showToast,
-      t,
-    ],
+    [brokenProductId, run, patchProduct, showToast, t],
   );
 
   const handleRespondCancel = useCallback(
     async (productId: string, approve: boolean) => {
-      const prevProducts = [...products];
       const target = products.find((p) => p.id === productId);
-      if (target) {
-        optimisticUpdateProduct({
-          ...target,
-          status: approve ? 'cancelled' : target.status,
-          cancelRequested: false,
-        });
-      }
-
-      try {
-        setActionLoading(true);
-        const data = await api.respondToOrderCancellation(productId, approve);
-        showToast(data.message || t('statusUpdatedSuccess'));
-        await loadProducts();
-      } catch (err: unknown) {
-        rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
-      } finally {
-        setActionLoading(false);
-      }
+      await run({
+        optimistic: () =>
+          patchProduct(productId, {
+            status: approve ? 'cancelled' : target?.status,
+            cancelRequested: false,
+          }),
+        action: () => api.respondToOrderCancellation(productId, approve),
+        successToast: (data) => data.message || t('statusUpdatedSuccess'),
+      });
     },
-    [products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t],
+    [products, run, patchProduct, t],
   );
 
   const openDefectDetails = useCallback((product: Product) => {

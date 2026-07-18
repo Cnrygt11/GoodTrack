@@ -144,35 +144,21 @@ export default function useCatalog() {
       try {
         isActionLoading.current = true;
         setActionLoading(true);
-        if (editingProduct) {
-          // Edit mode — image null ise sunucu "görsel değişmedi" sayar ve mevcut görseli korur.
-          const data = await api.updateCatalogProduct(editingProduct.id, {
-            productCode: code,
-            image: catalogImage,
-            thumbnailImage: catalogThumbnail,
-            mfrId,
-            mfrName,
-            extras: formattedExtras,
-          });
+        // Düzenlemede image null ise sunucu "görsel değişmedi" sayar ve mevcut görseli korur.
+        const payload = {
+          productCode: code,
+          thumbnailImage: catalogThumbnail,
+          mfrId,
+          mfrName,
+          extras: formattedExtras,
+        };
+        const data = editingProduct
+          ? await api.updateCatalogProduct(editingProduct.id, { ...payload, image: catalogImage })
+          : await api.addCatalogProduct({ ...payload, image: catalogImage || '' });
 
-          showToast(data.message || t('catalogUpdateSuccess'));
-          await loadCatalog();
-          handleClearForm();
-        } else {
-          // Add mode
-          const data = await api.addCatalogProduct({
-            productCode: code,
-            image: catalogImage || '',
-            thumbnailImage: catalogThumbnail,
-            mfrId,
-            mfrName,
-            extras: formattedExtras,
-          });
-
-          showToast(data.message || t('catalogAddSuccess'));
-          await loadCatalog();
-          handleClearForm();
-        }
+        showToast(data.message || t(editingProduct ? 'catalogUpdateSuccess' : 'catalogAddSuccess'));
+        await loadCatalog();
+        handleClearForm();
       } catch (err: unknown) {
         showToast(extractErrorMessage(err));
       } finally {

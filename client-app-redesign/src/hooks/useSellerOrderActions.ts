@@ -1,5 +1,6 @@
-import { useState, useRef, useCallback, FormEvent } from 'react';
+import { useState, useCallback, FormEvent } from 'react';
 import { useProductsQuery, useProductActions } from './useProductsData';
+import { useOptimisticMutation } from './useOptimisticMutation';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
 import { useConfirm } from '../context/ConfirmContext';
@@ -49,6 +50,12 @@ export default function useSellerOrderActions(
   const { t } = useSettings();
   const confirm = useConfirm();
 
+  const { run, actionLoading, isRunning } = useOptimisticMutation<Product[]>({
+    snapshot: () => [...products],
+    rollback: rollbackProducts,
+    refresh: loadProducts,
+  });
+
   // --- Defect Modal State ---
   const [isDefectModalOpen, setIsDefectModalOpen] = useState(false);
   const [defectType, setDefectType] = useState<'defective' | 'missing'>('defective');
@@ -56,13 +63,20 @@ export default function useSellerOrderActions(
   const [defectNote, setDefectNote] = useState('');
   const [defectImage, setDefectImage] = useState<string | null>(null);
   const [defectImageFileName, setDefectImageFileName] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
-  const isLoading = useRef(false);
+
+  /** Cache'teki siparişe iyimser yama uygular (sipariş yoksa sessizce geçer). */
+  const patchProduct = useCallback(
+    (productId: string, patch: Partial<Product>) => {
+      const target = products.find((p) => p.id === productId);
+      if (target) optimisticUpdateProduct({ ...target, ...patch });
+    },
+    [products, optimisticUpdateProduct],
+  );
 
   // --- Handlers ---
 
   const handleCancelOrder = useCallback(async (productId: string) => {
-    if (isLoading.current) return;
+    if (isRunning.current) return;
     const accepted = await confirm({
       title: t('cancelOrderTitle'),
       message: t('cancelOrderConfirm'),
@@ -71,32 +85,15 @@ export default function useSellerOrderActions(
     });
     if (!accepted) return;
 
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === productId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: 'cancelled'
-      });
-    }
-
-    try {
-      isLoading.current = true;
-      setActionLoading(true);
-      const data = await api.updateOrderStatus(productId, 'cancelled');
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-    } finally {
-      isLoading.current = false;
-      setActionLoading(false);
-    }
-  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+    await run({
+      optimistic: () => patchProduct(productId, { status: 'cancelled' }),
+      action: () => api.updateOrderStatus(productId, 'cancelled'),
+      successToast: (data) => data.message || t('statusUpdatedSuccess'),
+    });
+  }, [confirm, isRunning, run, patchProduct, t]);
 
   const handleRequestCancel = useCallback(async (productId: string) => {
-    if (isLoading.current) return;
+    if (isRunning.current) return;
     const accepted = await confirm({
       title: t('requestCancelTitle'),
       message: t('requestCancelConfirm'),
@@ -105,29 +102,12 @@ export default function useSellerOrderActions(
     });
     if (!accepted) return;
 
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === productId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        cancelRequested: true
-      });
-    }
-
-    try {
-      isLoading.current = true;
-      setActionLoading(true);
-      const data = await api.requestOrderCancellation(productId);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-    } finally {
-      isLoading.current = false;
-      setActionLoading(false);
-    }
-  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+    await run({
+      optimistic: () => patchProduct(productId, { cancelRequested: true }),
+      action: () => api.requestOrderCancellation(productId),
+      successToast: (data) => data.message || t('statusUpdatedSuccess'),
+    });
+  }, [confirm, isRunning, run, patchProduct, t]);
 
   const handleVerifyOrder = useCallback(async (
     productId: string,
@@ -135,7 +115,7 @@ export default function useSellerOrderActions(
     note?: string | null,
     image?: string | null,
   ) => {
-    if (isLoading.current) return;
+    if (isRunning.current) return;
     if (action === 'correct') {
       const accepted = await confirm({
         title: t('verifyOrderTitle'),
@@ -145,28 +125,11 @@ export default function useSellerOrderActions(
       });
       if (!accepted) return;
 
-      const prevProducts = [...products];
-      const target = products.find(p => p.id === productId);
-      if (target) {
-        optimisticUpdateProduct({
-          ...target,
-          status: 'to_ship'
-        });
-      }
-
-      try {
-        isLoading.current = true;
-        setActionLoading(true);
-        const data = await api.updateOrderStatus(productId, 'to_ship');
-        showToast(data.message || t('statusUpdatedSuccess'));
-        await loadProducts();
-      } catch (err: unknown) {
-        rollbackProducts(prevProducts);
-        showToast(extractErrorMessage(err));
-      } finally {
-        isLoading.current = false;
-        setActionLoading(false);
-      }
+      await run({
+        optimistic: () => patchProduct(productId, { status: 'to_ship' }),
+        action: () => api.updateOrderStatus(productId, 'to_ship'),
+        successToast: (data) => data.message || t('statusUpdatedSuccess'),
+      });
     } else {
       // Open defect modal pre-filled
       setDefectType(action === 'defective' ? 'defective' : 'missing');
@@ -176,10 +139,10 @@ export default function useSellerOrderActions(
       setDefectImageFileName(image ? t('currentImageLabel') : '');
       setIsDefectModalOpen(true);
     }
-  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+  }, [confirm, isRunning, run, patchProduct, t]);
 
   const handleShipOrder = useCallback(async (productId: string) => {
-    if (isLoading.current) return;
+    if (isRunning.current) return;
     const accepted = await confirm({
       title: t('shipOrderTitle'),
       message: t('shipOrderConfirm'),
@@ -188,29 +151,12 @@ export default function useSellerOrderActions(
     });
     if (!accepted) return;
 
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === productId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: 'shipped'
-      });
-    }
-
-    try {
-      isLoading.current = true;
-      setActionLoading(true);
-      const data = await api.updateOrderStatus(productId, 'shipped');
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-    } finally {
-      isLoading.current = false;
-      setActionLoading(false);
-    }
-  }, [confirm, products, optimisticUpdateProduct, rollbackProducts, loadProducts, showToast, t]);
+    await run({
+      optimistic: () => patchProduct(productId, { status: 'shipped' }),
+      action: () => api.updateOrderStatus(productId, 'shipped'),
+      successToast: (data) => data.message || t('statusUpdatedSuccess'),
+    });
+  }, [confirm, isRunning, run, patchProduct, t]);
 
   const handleDefectClick = useCallback((product: Product, type: 'defective' | 'missing') => {
     setDefectType(type);
@@ -236,46 +182,33 @@ export default function useSellerOrderActions(
 
   const handleDefectReportSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    if (!defectProductId || isLoading.current) return;
+    if (!defectProductId || isRunning.current) return;
 
-    const prevProducts = [...products];
-    const target = products.find(p => p.id === defectProductId);
-    if (target) {
-      optimisticUpdateProduct({
-        ...target,
-        status: defectType,
-        defectNote: defectNote || undefined,
-        defectImage: defectImage || null
-      });
-    }
     setIsDefectModalOpen(false);
-
-    try {
-      isLoading.current = true;
-      setActionLoading(true);
-      externalLoading.set(true);
-      const data = await api.updateOrderStatus(defectProductId, defectType, defectNote, defectImage);
-      showToast(data.message || t('statusUpdatedSuccess'));
-      await loadProducts();
-    } catch (err: unknown) {
-      rollbackProducts(prevProducts);
-      showToast(extractErrorMessage(err));
-      setIsDefectModalOpen(true);
-    } finally {
-      isLoading.current = false;
-      setActionLoading(false);
-      externalLoading.set(false);
-    }
+    await run({
+      optimistic: () =>
+        patchProduct(defectProductId, {
+          status: defectType,
+          defectNote: defectNote || undefined,
+          defectImage: defectImage || null,
+        }),
+      action: () => api.updateOrderStatus(defectProductId, defectType, defectNote, defectImage),
+      successToast: (data) => data.message || t('statusUpdatedSuccess'),
+      onError: (err) => {
+        showToast(extractErrorMessage(err));
+        setIsDefectModalOpen(true);
+      },
+      extraLoading: externalLoading.set,
+    });
   }, [
     defectProductId,
     defectType,
     defectNote,
     defectImage,
     externalLoading,
-    products,
-    optimisticUpdateProduct,
-    rollbackProducts,
-    loadProducts,
+    isRunning,
+    run,
+    patchProduct,
     showToast,
     t,
   ]);
@@ -290,4 +223,3 @@ export default function useSellerOrderActions(
     handleDefectClick, handleDefectImageChange, handleDefectReportSubmit,
   };
 }
-
