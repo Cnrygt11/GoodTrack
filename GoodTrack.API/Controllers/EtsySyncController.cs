@@ -61,11 +61,7 @@ public class EtsySyncController : BaseApiController
     [HttpGet("connections")]
     public async Task<IActionResult> GetConnections(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var connections = await _etsyService.GetConnectionsAsync(userId, cancellationToken);
         // Secret istemciye asla geri dönmez (yazılabilir, okunamaz — standart secret semantiği);
@@ -85,11 +81,7 @@ public class EtsySyncController : BaseApiController
     [HttpPost("connection/webhook-secret")]
     public async Task<IActionResult> UpdateWebhookSecret([FromBody] UpdateWebhookSecretDto dto, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
         {
@@ -111,11 +103,7 @@ public class EtsySyncController : BaseApiController
     [HttpPost("connection/disconnect")]
     public async Task<IActionResult> DisconnectShop([FromBody] DisconnectShopDto dto, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrEmpty(dto.EtsyShopId))
         {
@@ -138,11 +126,7 @@ public class EtsySyncController : BaseApiController
     [EnableRateLimiting("etsy-sync")]
     public async Task<IActionResult> SyncListings(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} requested Etsy listings synchronization.", userId);
 
@@ -164,11 +148,7 @@ public class EtsySyncController : BaseApiController
     [EnableRateLimiting("etsy-sync")]
     public async Task<IActionResult> SyncOrders(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} requested Etsy orders synchronization.", userId);
 

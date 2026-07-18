@@ -72,11 +72,7 @@ public class EtsyAuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> Connect([FromBody] ConnectRequestDto dto, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId == null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var (keystring, sharedSecret) = GetPlatformCredentials();
         if (string.IsNullOrEmpty(keystring) || string.IsNullOrEmpty(sharedSecret))

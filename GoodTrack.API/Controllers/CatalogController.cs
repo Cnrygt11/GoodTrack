@@ -33,11 +33,7 @@ public class CatalogController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCatalog()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("Fetching catalog products for Seller user: {UserId}", userId);
         var response = await _catalogService.GetSellerCatalogAsync(userId);
@@ -54,11 +50,7 @@ public class CatalogController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCatalogProduct(string id)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -79,11 +71,7 @@ public class CatalogController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AddCatalogProduct([FromBody] CreateCatalogProductDto dto)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("Seller user {UserId} is adding catalog product: {Code}", userId, dto.ProductCode);
         var response = await _catalogService.AddCatalogProductAsync(userId, dto);
@@ -100,11 +88,7 @@ public class CatalogController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateCatalogProduct(string id, [FromBody] CreateCatalogProductDto dto)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -126,11 +110,7 @@ public class CatalogController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeleteCatalogProduct(string id)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {

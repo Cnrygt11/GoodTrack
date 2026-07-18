@@ -29,11 +29,7 @@ public class ConnectionsController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetConnections()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} is retrieving active connections list", userId);
         var connections = await _connectionService.GetConnectionsAsync(userId);
@@ -66,11 +62,7 @@ public class ConnectionsController : BaseApiController
     [HttpGet("requests/incoming")]
     public async Task<IActionResult> GetIncomingRequests()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} is fetching pending incoming connection requests", userId);
         var requests = await _connectionService.GetIncomingRequestsAsync(userId);
@@ -80,11 +72,7 @@ public class ConnectionsController : BaseApiController
     [HttpGet("requests/sent")]
     public async Task<IActionResult> GetSentRequests()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} is fetching sent connection requests history", userId);
         var requests = await _connectionService.GetSentRequestsAsync(userId);
@@ -94,11 +82,7 @@ public class ConnectionsController : BaseApiController
     [HttpPatch("requests/{requestId}")]
     public async Task<IActionResult> UpdateRequest(string requestId, [FromBody] UpdateConnectionRequestDto dto)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (dto == null)
         {
@@ -124,11 +108,7 @@ public class ConnectionsController : BaseApiController
     [HttpDelete("requests/{requestId}")]
     public async Task<IActionResult> DeleteRequest(string requestId)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} is clearing connection request log: {RequestId}", userId, requestId);
         await _connectionService.DeleteConnectionRequestAsync(userId, requestId);
@@ -138,11 +118,7 @@ public class ConnectionsController : BaseApiController
     [HttpDelete("{targetId}")]
     public async Task<IActionResult> RemoveConnection(string targetId)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         _logger.LogInformation("User {UserId} is removing active connection with user: {TargetId}", userId, targetId);
         await _connectionService.RemoveConnectionAsync(userId, targetId);

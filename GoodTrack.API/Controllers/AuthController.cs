@@ -70,11 +70,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> VerifyPassword([FromBody] VerifyPasswordRequest request)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (request == null || string.IsNullOrWhiteSpace(request.Password))
         {
@@ -101,11 +97,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (request == null)
         {
@@ -159,11 +151,7 @@ public class AuthController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Logout()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         await _authService.LogoutAsync(userId);
         return Ok(ApiResponse.Ok("Başarıyla çıkış yapıldı."));

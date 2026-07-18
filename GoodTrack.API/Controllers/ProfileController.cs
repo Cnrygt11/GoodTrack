@@ -39,11 +39,7 @@ public class ProfileController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetProfile()
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var profile = await _profileService.GetProfileAsync(userId);
         return Ok(new ApiResponse<UserProfileDto>(profile));
@@ -92,11 +88,7 @@ public class ProfileController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateProfile([FromBody] UserProfileDto dto)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         await _profileService.UpdateProfileAsync(userId, dto);
         return Ok(ApiResponse.Ok("Profil başarıyla güncellendi."));
@@ -111,11 +103,7 @@ public class ProfileController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> DeactivateAccount([FromBody] DeactivateAccountDto dto)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         try
         {

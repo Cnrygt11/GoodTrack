@@ -31,11 +31,7 @@ public class FeedbackController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> SubmitFeedback([FromBody] FeedbackInputDto input, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var message = await _feedbackService.SubmitFeedbackAsync(userId, input.Title, input.Message, input.BrowserInfo, cancellationToken);
         return Ok(ApiResponse<string>.Ok(message));

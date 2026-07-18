@@ -51,13 +51,7 @@ public class ProductsController : BaseApiController
     [HttpGet]
     public async Task<IActionResult> GetAll(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        if (userId is null || string.IsNullOrEmpty(role))
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUser(out var userId, out var role, out var authError)) return authError;
 
         var products = await _productService.GetUserProductsAsync(userId, role, cancellationToken);
         return Ok(new ApiResponse<List<ProductResponseDto>>(products));
@@ -72,13 +66,7 @@ public class ProductsController : BaseApiController
     public async Task<IActionResult> GetArchived(
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken cancellationToken = default)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        if (userId is null || string.IsNullOrEmpty(role))
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUser(out var userId, out var role, out var authError)) return authError;
 
         var result = await _productService.GetArchivedProductsAsync(userId, role, page, pageSize, cancellationToken);
         return Ok(new ApiResponse<DTOs.Auth.PagedResultDto<ProductResponseDto>>(result));
@@ -114,13 +102,7 @@ public class ProductsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateStatusRequest request)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        if (userId is null || string.IsNullOrEmpty(role))
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUser(out var userId, out var role, out var authError)) return authError;
 
         if (request == null || string.IsNullOrWhiteSpace(request.Status))
         {
@@ -141,11 +123,7 @@ public class ProductsController : BaseApiController
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> Update(string id, [FromBody] UpdateProductDto dto, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (dto == null)
         {
@@ -166,13 +144,7 @@ public class ProductsController : BaseApiController
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        if (userId is null || string.IsNullOrEmpty(role))
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUser(out var userId, out var role, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -196,11 +168,7 @@ public class ProductsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Delete(string id)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -215,13 +183,7 @@ public class ProductsController : BaseApiController
     [HttpPost("read-status")]
     public async Task<IActionResult> MarkStatusAsRead([FromBody] MarkStatusReadRequest request)
     {
-        var userId = GetCurrentUserId();
-        var role = GetCurrentUserRole();
-
-        if (userId is null || string.IsNullOrEmpty(role))
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUser(out var userId, out var role, out var authError)) return authError;
 
         if (request == null || string.IsNullOrWhiteSpace(request.Status))
         {
@@ -237,8 +199,7 @@ public class ProductsController : BaseApiController
     [Authorize(Roles = Roles.Seller)]
     public async Task<IActionResult> RequestCancellation(string id)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null) return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {
@@ -254,8 +215,7 @@ public class ProductsController : BaseApiController
     [Authorize(Roles = Roles.Mfr)]
     public async Task<IActionResult> RespondToCancellation(string id, [FromBody] RespondToCancellationRequest request)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null) return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (string.IsNullOrWhiteSpace(id))
         {

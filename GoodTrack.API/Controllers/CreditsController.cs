@@ -31,11 +31,7 @@ public class CreditsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetCredits(CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var credits = await _creditsService.GetOrCreateCreditsAsync(userId, cancellationToken);
         return Ok(ApiResponse<UserCredit>.Ok(credits));
@@ -50,11 +46,7 @@ public class CreditsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UpgradePlan([FromBody] UpgradePlanRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         var updatedCredits = await _creditsService.UpgradePlanAsync(userId, request.Plan, cancellationToken);
         return Ok(ApiResponse<UserCredit>.Ok(updatedCredits));
@@ -89,11 +81,7 @@ public class CreditsController : BaseApiController
     [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> TopUp([FromBody] TopUpRequest request, CancellationToken cancellationToken)
     {
-        var userId = GetCurrentUserId();
-        if (userId is null)
-        {
-            return Unauthorized(ApiResponse.Fail(Messages.Auth.Unauthorized));
-        }
+        if (!TryGetCurrentUserId(out var userId, out var authError)) return authError;
 
         if (request == null || string.IsNullOrWhiteSpace(request.PackageId))
         {
