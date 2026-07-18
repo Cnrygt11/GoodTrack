@@ -248,7 +248,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
         }
         await _productRepository.SaveAsync(product);
-        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
     }
 
     public async Task RequestOrderCancellationAsync(string sellerId, string orderId)
@@ -272,7 +272,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadByMfr = false;
         AppendLog(product, sellerId, product.SellerName, "Sipariş için satıcı tarafından iptal talebi gönderildi.");
         await _productRepository.SaveAsync(product);
-        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
     }
 
     public async Task RespondToOrderCancellationAsync(string mfrId, string orderId, bool approve)
@@ -308,7 +308,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadByMfr = true;
         product.IsReadBySeller = false;
         await _productRepository.SaveAsync(product);
-        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
     }
 
     public async Task<ExternalCancellationOutcome> ApplyExternalCancellationAsync(string sellerId, string orderId, string reason)
@@ -344,7 +344,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
             product.IsReadByMfr = false;
             await _productRepository.SaveAsync(product);
-            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
             return ExternalCancellationOutcome.Cancelled;
         }
 
@@ -362,7 +362,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             product.IsReadBySeller = false;
             product.IsReadByMfr = false;
             await _productRepository.SaveAsync(product);
-            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+            await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
             return ExternalCancellationOutcome.CancellationRequested;
         }
 
@@ -373,7 +373,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
         product.IsReadBySeller = false;
         product.IsReadByMfr = false;
         await _productRepository.SaveAsync(product);
-        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, "ReceiveOrderUpdate", product.Id);
+        await _notificationService.NotifyUsersAsync(new[] { product.ManufacturerId, product.SellerId }, SignalRMethods.ReceiveOrderUpdate, product.Id);
         return ExternalCancellationOutcome.RequiresManualReview;
     }
 

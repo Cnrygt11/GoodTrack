@@ -69,8 +69,10 @@ public class EtsyWebhookController : BaseApiController
             return BadRequest("Geçersiz webhook zaman damgası.");
         }
 
+        // Replay saldırısı önleme: en fazla 5 dakikalık sapma kabul edilir.
+        const int timestampToleranceSeconds = 300;
         var currentUnixTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        if (Math.Abs(currentUnixTime - webhookTimestamp) > 300)
+        if (Math.Abs(currentUnixTime - webhookTimestamp) > timestampToleranceSeconds)
         {
             _logger.LogWarning("Webhook timestamp is stale. Diff: {Diff}s", currentUnixTime - webhookTimestamp);
             return BadRequest("Zaman aşımına uğramış istek (Stale timestamp).");

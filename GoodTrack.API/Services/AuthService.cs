@@ -85,7 +85,7 @@ public sealed class AuthService : IAuthService
         var refreshToken = GenerateRefreshToken();
 
         user.RefreshToken = HashToken(refreshToken);
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.Add(AuthTokenDefaults.RefreshTokenLifetime);
         await _userRepository.SaveAsync(user);
 
         return new LoginResponse
@@ -277,7 +277,7 @@ public sealed class AuthService : IAuthService
         var newRefreshToken = GenerateRefreshToken();
 
         user.RefreshToken = HashToken(newRefreshToken);
-        user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(7);
+        user.RefreshTokenExpiryTime = DateTime.UtcNow.Add(AuthTokenDefaults.RefreshTokenLifetime);
         await _userRepository.SaveAsync(user);
 
         return new LoginResponse
@@ -320,7 +320,7 @@ public sealed class AuthService : IAuthService
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role)
             }),
-            Expires = DateTime.UtcNow.AddHours(3),
+            Expires = DateTime.UtcNow.Add(AuthTokenDefaults.AccessTokenLifetime),
             Issuer = issuer,
             Audience = audience,
             SigningCredentials = new SigningCredentials(

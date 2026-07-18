@@ -36,12 +36,12 @@ public sealed class CreditsService : ICreditsService
             return record;
         }
 
-        // Lazy initialize with Free plan details (5 credits default)
+        // Lazy initialize with Free plan details (kredi sayısı plan kataloğundan gelir)
         record = new UserCredit
         {
             UserId = userId,
             Plan = SubscriptionPlan.Free,
-            Credits = 5,
+            Credits = SubscriptionPlanCatalog.ResolveOrFree(SubscriptionPlan.Free).MonthlyCredits,
             PlanStartedAt = DateTime.UtcNow,
             RenewsAt = DateTime.UtcNow.AddMonths(1)
         };

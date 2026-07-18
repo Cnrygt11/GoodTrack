@@ -61,7 +61,7 @@ public sealed class ConnectionService : IConnectionService
         await _userConnectionRepository.DeleteAsync(userId, targetId);
 
         // Real-time notification: connection removed
-        await _notificationService.NotifyUsersAsync(new[] { userId, targetId }, "ReceiveConnectionUpdate");
+        await _notificationService.NotifyUsersAsync(new[] { userId, targetId }, SignalRMethods.ReceiveConnectionUpdate);
     }
 
     public async Task<List<UserDto>> GetAvailableManufacturersAsync()
@@ -131,7 +131,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(connectionRequest);
 
         // Real-time notification: connection request sent
-        await _notificationService.NotifyUsersAsync(new[] { receiver.Id, senderId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiver.Id, senderId }, SignalRMethods.ReceiveConnectionRequest);
     }
 
     public async Task<List<ConnectionRequestDto>> GetIncomingRequestsAsync(string receiverId)
@@ -205,8 +205,8 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request accepted (update both connections list and requests list)
-        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionUpdate");
-        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, SignalRMethods.ReceiveConnectionUpdate);
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, SignalRMethods.ReceiveConnectionRequest);
     }
 
     public async Task RejectConnectionRequestAsync(string receiverId, string requestId)
@@ -231,7 +231,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.SaveAsync(request);
 
         // Real-time notification: connection request rejected
-        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { receiverId, request.SenderId }, SignalRMethods.ReceiveConnectionRequest);
     }
 
     public async Task DeleteConnectionRequestAsync(string userId, string requestId)
@@ -250,7 +250,7 @@ public sealed class ConnectionService : IConnectionService
         await _connectionRequestRepository.DeleteAsync(requestId);
 
         // Real-time notification: connection request log deleted
-        await _notificationService.NotifyUsersAsync(new[] { userId }, "ReceiveConnectionRequest");
+        await _notificationService.NotifyUsersAsync(new[] { userId }, SignalRMethods.ReceiveConnectionRequest);
     }
 
     private static ConnectionRequestDto MapToConnectionRequestDto(ConnectionRequest r) => new()

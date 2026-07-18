@@ -245,7 +245,7 @@ public sealed class ProductService : IProductService
             }
         });
 
-        await _notificationService.NotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, "ReceiveOrderUpdate", order.Id);
+        await _notificationService.NotifyUsersAsync(new[] { order.ManufacturerId, sellerId }, SignalRMethods.ReceiveOrderUpdate, order.Id);
 
         return MapToResponseDto(order);
     }
@@ -370,7 +370,7 @@ public sealed class ProductService : IProductService
         {
             usersToNotify.Add(oldMfrId);
         }
-        await _notificationService.NotifyUsersAsync(usersToNotify, "ReceiveOrderUpdate", existing.Id);
+        await _notificationService.NotifyUsersAsync(usersToNotify, SignalRMethods.ReceiveOrderUpdate, existing.Id);
 
         return MapToResponseDto(existing);
     }
@@ -418,7 +418,7 @@ public sealed class ProductService : IProductService
         await _imageCleanupService.DeleteDefectImageIfUnusedAsync(defectImage, sellerId, orderId);
 
         // Silme: id gönderilir; istemci getProductById 404 alıp kaydı cache'ten çıkarır.
-        await _notificationService.NotifyUsersAsync(new[] { mfrId, sellerId }, "ReceiveOrderUpdate", orderId);
+        await _notificationService.NotifyUsersAsync(new[] { mfrId, sellerId }, SignalRMethods.ReceiveOrderUpdate, orderId);
     }
 
     public async Task<ProductResponseDto?> GetProductByIdAsync(string userId, string role, string orderId, CancellationToken cancellationToken = default)
