@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSettings } from '../context/SettingsContext';
@@ -17,15 +18,17 @@ function toCanonicalKeywords(stored: string[]): string[] {
   return stored.map((k) => MANUFACTURER_CATEGORIES.find((c) => trLower(c) === trLower(k)) ?? k);
 }
 
+/** React Query anahtarı — oturum sahibinin kendi profili. */
+export const profileKeys = {
+  me: ['profile', 'me'] as const,
+};
+
 export default function useProfile() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const { language, t } = useSettings();
 
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
+  const queryClient = useQueryClient();
   const [actionLoading, setActionLoading] = useState(false);
 
   // Profile Edit States
@@ -42,23 +45,23 @@ export default function useProfile() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isVisibleToSellers, setIsVisibleToSellers] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const data = await api.getProfile();
-      setProfile(data);
-    } catch (err: unknown) {
-      setError(extractErrorMessage(err) || 'Profil yüklenemedi.');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const profileQuery = useQuery({
+    queryKey: profileKeys.me,
+    queryFn: () => api.getProfile(),
+  });
 
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+  const profile = profileQuery.data ?? null;
+  const loading = profileQuery.isPending;
+  const error = profileQuery.isError
+    ? extractErrorMessage(profileQuery.error) || t('profileLoadError')
+    : '';
 
+  const fetchProfile = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: profileKeys.me }).then(() => {}),
+    [queryClient],
+  );
+
+  // Sunucudan gelen profil forma yansıtılır (kullanıcı düzenlemeleri lokal state'te tutulur).
   useEffect(() => {
     if (profile) {
       setProfilePicture(profile.profilePicture || '');
@@ -171,11 +174,7 @@ export default function useProfile() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!firstName.trim() || !lastName.trim()) {
-        showToast(
-          language === 'tr'
-            ? 'Ad ve soyadı boş bırakılamaz!'
-            : 'First name and last name cannot be empty!',
-        );
+        showToast(t('nameRequiredError'));
         return;
       }
 
@@ -236,7 +235,6 @@ export default function useProfile() {
       keywords,
       isVisibleToSellers,
       profileRole,
-      language,
       t,
       showToast,
       fetchProfile,
