@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using GoodTrack.API.Models;
 using GoodTrack.API.Constants;
+using GoodTrack.API.Infrastructure.Auditing;
 using GoodTrack.API.Infrastructure.Configurations;
 
 using Microsoft.AspNetCore.DataProtection;
@@ -109,20 +110,23 @@ public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
     public override int SaveChanges()
     {
         StampArchivedAt();
-        var auditEntries = OnBeforeSaveChanges();
+        var auditEntries = AuditTrail.Collect(ChangeTracker);
         var result = base.SaveChanges();
-        OnAfterSaveChanges(auditEntries);
+        AuditTrail.Persist(this, auditEntries, GetCurrentUserId());
         return result;
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         StampArchivedAt();
-        var auditEntries = OnBeforeSaveChanges();
+        var auditEntries = AuditTrail.Collect(ChangeTracker);
         var result = await base.SaveChangesAsync(cancellationToken);
-        await OnAfterSaveChangesAsync(auditEntries);
+        await AuditTrail.PersistAsync(this, auditEntries, GetCurrentUserId());
         return result;
     }
+
+    private string? GetCurrentUserId()
+        => _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
     /// <summary>
     /// Sipariş terminal ("arşiv") duruma (kargolandı/iptal) geçtiğinde <see cref="Product.ArchivedAt"/>
@@ -150,169 +154,5 @@ public sealed class AppDbContext : DbContext, IDataProtectionKeyContext
         }
     }
 
-    /// <summary>
-    /// Audit'e tam değeri yazılmayacak ağır (base64 görsel) alanlar. İçerik yerine "[omitted]" işaretçisi
-    /// yazılır: "alan değişti" bilgisi korunur ama MB'lık base64, audit_logs'a kopyalanmaz.
-    /// </summary>
-    private static readonly HashSet<string> HeavyAuditColumns = new()
-    {
-        nameof(Product.Image),
-        nameof(Product.DefectImage),
-        nameof(User.ProfilePicture),
-        nameof(User.ProductImages),
-    };
-
-    /// <summary>Ağır alan listesinde olmayan ama yine de büyük olan değerler için güvenlik eşiği.</summary>
-    private const int MaxAuditValueLength = 2048;
-
-    private const string OmittedAuditValue = "[omitted]";
-
-    /// <summary>
-    /// Audit'e yazılacak değeri sanitize eder: ağır sütunlar ve eşiği aşan uzun string'ler için
-    /// gerçek içerik yerine <see cref="OmittedAuditValue"/> döner.
-    /// </summary>
-    private static object SanitizeAuditValue(string propertyName, object? value)
-    {
-        if (value is null) return "NULL";
-        if (HeavyAuditColumns.Contains(propertyName)) return OmittedAuditValue;
-        if (value is string s && s.Length > MaxAuditValueLength) return OmittedAuditValue;
-        return value;
-    }
-
-    private List<AuditEntry> OnBeforeSaveChanges()
-    {
-        ChangeTracker.DetectChanges();
-        var auditEntries = new List<AuditEntry>();
-
-        foreach (var entry in ChangeTracker.Entries())
-        {
-            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
-                continue;
-
-            var auditEntry = new AuditEntry(entry)
-            {
-                TableName = entry.Metadata.GetTableName() ?? entry.Metadata.Name,
-                Action = entry.State.ToString()
-            };
-
-            auditEntries.Add(auditEntry);
-
-            foreach (var property in entry.Properties)
-            {
-                string propertyName = property.Metadata.Name;
-                if (property.Metadata.IsPrimaryKey())
-                {
-                    auditEntry.KeyValues[propertyName] = property.CurrentValue ?? "NULL";
-                    continue;
-                }
-
-                switch (entry.State)
-                {
-                    case EntityState.Added:
-                        auditEntry.NewValues[propertyName] = SanitizeAuditValue(propertyName, property.CurrentValue);
-                        break;
-
-                    case EntityState.Deleted:
-                        auditEntry.OldValues[propertyName] = SanitizeAuditValue(propertyName, property.OriginalValue);
-                        break;
-
-                    case EntityState.Modified:
-                        if (property.IsModified)
-                        {
-                            auditEntry.OldValues[propertyName] = SanitizeAuditValue(propertyName, property.OriginalValue);
-                            auditEntry.NewValues[propertyName] = SanitizeAuditValue(propertyName, property.CurrentValue);
-                        }
-                        break;
-                }
-            }
-        }
-
-        return auditEntries.Where(_ => _.HasAuditData).ToList();
-    }
-
-    private void OnAfterSaveChanges(List<AuditEntry> auditEntries)
-    {
-        if (auditEntries == null || auditEntries.Count == 0) return;
-
-        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var logs = auditEntries.Select(a => a.ToAuditLog(userId)).ToList();
-
-        try
-        {
-            AuditLogs.AddRange(logs);
-            base.SaveChanges();
-        }
-        catch (Exception ex)
-        {
-            // Audit is best-effort: an audit-log failure must never break the business operation.
-            DetachAuditLogs(logs);
-            Serilog.Log.Warning(ex, "Audit log persistence failed; continuing without audit for this operation.");
-        }
-    }
-
-    private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries)
-    {
-        if (auditEntries == null || auditEntries.Count == 0) return;
-
-        var userId = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var logs = auditEntries.Select(a => a.ToAuditLog(userId)).ToList();
-
-        try
-        {
-            await AuditLogs.AddRangeAsync(logs);
-            await base.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            // Audit is best-effort: an audit-log failure must never break the business operation.
-            DetachAuditLogs(logs);
-            Serilog.Log.Warning(ex, "Audit log persistence failed; continuing without audit for this operation.");
-        }
-    }
-
-    private void DetachAuditLogs(List<AuditLog> logs)
-    {
-        foreach (var log in logs)
-        {
-            var entry = Entry(log);
-            if (entry.State != EntityState.Detached)
-            {
-                entry.State = EntityState.Detached;
-            }
-        }
-    }
-
-    // Değişiklikleri geçici tutan yardımcı iç sınıf
-    private class AuditEntry
-    {
-        public Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry { get; }
-        public string TableName { get; set; } = string.Empty;
-        public string Action { get; set; } = string.Empty;
-        public Dictionary<string, object> KeyValues { get; } = new();
-        public Dictionary<string, object> OldValues { get; } = new();
-        public Dictionary<string, object> NewValues { get; } = new();
-        public bool HasAuditData => KeyValues.Any() || OldValues.Any() || NewValues.Any();
-
-        public AuditEntry(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
-        {
-            Entry = entry;
-        }
-
-        public AuditLog ToAuditLog(string? userId)
-        {
-            var options = new JsonSerializerOptions { WriteIndented = false };
-            return new AuditLog
-            {
-                Id = Guid.NewGuid().ToString(),
-                UserId = userId,
-                EntityName = TableName,
-                Action = Action,
-                Timestamp = DateTime.UtcNow,
-                KeyValues = JsonSerializer.Serialize(KeyValues, options),
-                OldValues = OldValues.Any() ? JsonSerializer.Serialize(OldValues, options) : null,
-                NewValues = NewValues.Any() ? JsonSerializer.Serialize(NewValues, options) : null
-            };
-        }
-    }
 }
 
