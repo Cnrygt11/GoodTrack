@@ -90,32 +90,11 @@ export default function MyAccountPage() {
   return (
     <div className="profile-page">
       {!isMfr && (
-        <div
-          style={{
-            display: 'flex',
-            gap: '12px',
-            marginBottom: '24px',
-            borderBottom: '1px solid var(--border)',
-            paddingBottom: '12px',
-          }}
-        >
+        <div className="profile-tabs">
           <button
             type="button"
             className={`btn-tab ${activeTab === 'profile' ? 'active' : ''}`}
             onClick={() => setSearchParams({ tab: 'profile' })}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'profile' ? 'rgba(241, 100, 30, 0.1)' : 'transparent',
-              color: activeTab === 'profile' ? '#F1641E' : 'var(--text)',
-              fontWeight: 600,
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-            }}
           >
             <User size={14} />
             Profil Bilgileri
@@ -124,20 +103,6 @@ export default function MyAccountPage() {
             type="button"
             className={`btn-tab ${activeTab === 'integrations' ? 'active' : ''}`}
             onClick={() => setSearchParams({ tab: 'integrations' })}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              backgroundColor:
-                activeTab === 'integrations' ? 'rgba(241, 100, 30, 0.1)' : 'transparent',
-              color: activeTab === 'integrations' ? '#F1641E' : 'var(--text)',
-              fontWeight: 600,
-              fontSize: '14px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-            }}
           >
             <Store size={14} />
             Etsy Entegrasyonu
@@ -202,10 +167,8 @@ export default function MyAccountPage() {
                   {/* Visibility Toggle */}
                   <div className="profile-visibility-row">
                     <div>
-                      <strong style={{ fontSize: '14px', display: 'block' }}>
-                        {t('visibilityLabel')}
-                      </strong>
-                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                      <strong className="profile-visibility-label">{t('visibilityLabel')}</strong>
+                      <span className="profile-visibility-sublabel">
                         {t('mfrVisibilitySubLabel')}
                       </span>
                     </div>
@@ -248,7 +211,7 @@ export default function MyAccountPage() {
             <DeactivateAccountSection />
           </>
         ) : (
-          <div className="card" style={{ padding: '24px' }}>
+          <div className="card profile-integrations-card">
             <EtsyIntegration />
           </div>
         )

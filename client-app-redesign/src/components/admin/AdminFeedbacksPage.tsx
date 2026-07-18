@@ -1,5 +1,16 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Terminal, User, Clock, Bug, Lightbulb, MessageSquare, Loader2, RefreshCw } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Terminal,
+  User,
+  Clock,
+  Bug,
+  Lightbulb,
+  MessageSquare,
+  Loader2,
+  RefreshCw,
+} from 'lucide-react';
 import { api, Feedback } from '../../services/apiClient';
 import { useSettings } from '../../context/SettingsContext';
 import { extractErrorMessage } from '../../utils/errorUtils';
@@ -31,16 +42,16 @@ export default function AdminFeedbacksPage() {
   }, [fetchFeedbacks]);
 
   const toggleExpand = useCallback((id: string) => {
-    setExpandedFeedbacks(prev => ({
+    setExpandedFeedbacks((prev) => ({
       ...prev,
-      [id]: !prev[id]
+      [id]: !prev[id],
     }));
   }, []);
 
   // Filter feedbacks
   const filteredFeedbacks = useMemo(() => {
     if (filter === 'all') return feedbacks;
-    return feedbacks.filter(f => {
+    return feedbacks.filter((f) => {
       const titleLower = f.title.toLowerCase();
       if (filter === 'bug') return titleLower.includes('[bug]');
       if (filter === 'suggestion') return titleLower.includes('[suggestion]');
@@ -74,51 +85,44 @@ export default function AdminFeedbacksPage() {
 
   if (loading) {
     return (
-      <div className="profile-loading-container" style={{ minHeight: '60vh' }}>
+      <div className="profile-loading-container profile-loading-container--full">
         <Loader2 className="spinner" size={40} />
       </div>
     );
   }
 
   return (
-    <div className="admin-feedbacks-container" style={{ padding: '24px', maxWidth: '800px', margin: '0 auto' }}>
-      
+    <div className="admin-feedbacks-container">
       {/* Page Header and Filtering Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-          {t('tabFeedbacks')}
-        </h2>
+      <div className="admin-feedbacks-header">
+        <h2 className="admin-feedbacks-heading">{t('tabFeedbacks')}</h2>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div className="admin-feedbacks-filters">
           <button
             type="button"
-            className={`btn-secondary ${filter === 'all' ? 'active' : ''}`}
+            className={`btn-secondary admin-feedbacks-filter admin-feedbacks-filter--all ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
-            style={filter === 'all' ? { background: 'var(--accent-admin-gradient)', color: '#fff', borderColor: 'transparent' } : {}}
           >
             Tümü
           </button>
           <button
             type="button"
-            className={`btn-secondary ${filter === 'bug' ? 'active' : ''}`}
+            className={`btn-secondary admin-feedbacks-filter admin-feedbacks-filter--bug ${filter === 'bug' ? 'active' : ''}`}
             onClick={() => setFilter('bug')}
-            style={filter === 'bug' ? { background: 'var(--accent-seller-gradient)', color: '#fff', borderColor: 'transparent' } : {}}
           >
             {t('feedbackTypeBug')}
           </button>
           <button
             type="button"
-            className={`btn-secondary ${filter === 'suggestion' ? 'active' : ''}`}
+            className={`btn-secondary admin-feedbacks-filter admin-feedbacks-filter--suggestion ${filter === 'suggestion' ? 'active' : ''}`}
             onClick={() => setFilter('suggestion')}
-            style={filter === 'suggestion' ? { background: 'var(--accent-admin-gradient)', color: '#fff', borderColor: 'transparent' } : {}}
           >
             {t('feedbackTypeSuggestion')}
           </button>
           <button
             type="button"
-            className={`btn-secondary ${filter === 'other' ? 'active' : ''}`}
+            className={`btn-secondary admin-feedbacks-filter admin-feedbacks-filter--other ${filter === 'other' ? 'active' : ''}`}
             onClick={() => setFilter('other')}
-            style={filter === 'other' ? { background: 'rgba(0, 242, 254, 0.2)', color: '#a5f3fc', borderColor: 'rgba(0, 242, 254, 0.3)' } : {}}
           >
             {t('feedbackTypeOther')}
           </button>
@@ -135,9 +139,13 @@ export default function AdminFeedbacksPage() {
       </div>
 
       {error && (
-        <div className="feedback-error-alert" style={{ marginBottom: '20px' }}>
+        <div className="feedback-error-alert admin-feedbacks-error">
           <span>{error}</span>
-          <button type="button" className="btn-secondary" onClick={fetchFeedbacks} style={{ padding: '4px 8px', fontSize: '0.8rem', marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <button
+            type="button"
+            className="btn-secondary admin-feedbacks-retry"
+            onClick={fetchFeedbacks}
+          >
             <RefreshCw size={12} />
             <span>Yeniden Dene</span>
           </button>
@@ -147,11 +155,9 @@ export default function AdminFeedbacksPage() {
       {/* Feedbacks Listing */}
       <div className="admin-feedbacks-list">
         {filteredFeedbacks.length === 0 ? (
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '60px 20px', textAlign: 'center', color: 'var(--muted)' }}>
-            {t('noFeedbacksFound')}
-          </div>
+          <div className="admin-feedbacks-empty">{t('noFeedbacksFound')}</div>
         ) : (
-          filteredFeedbacks.map(f => {
+          filteredFeedbacks.map((f) => {
             const { cleanSubject, icon, badgeClass } = getFeedbackDetails(f);
             const isExpanded = !!expandedFeedbacks[f.id];
 
@@ -161,37 +167,45 @@ export default function AdminFeedbacksPage() {
                 <div className="admin-feedback-meta">
                   <div className="admin-feedback-user">
                     <User size={14} />
-                    <span style={{ fontWeight: 600, color: 'var(--text)' }}>{f.username}</span>
-                    <span style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-                      ({f.role === 'admin' ? t('roleAdminLabel') : (f.role === 'mfr' ? t('roleMfrLabel') : t('roleSellerLabel'))})
+                    <span className="admin-feedback-username">{f.username}</span>
+                    <span className="admin-feedback-user-role">
+                      (
+                      {f.role === 'admin'
+                        ? t('roleAdminLabel')
+                        : f.role === 'mfr'
+                          ? t('roleMfrLabel')
+                          : t('roleSellerLabel')}
+                      )
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div className="admin-feedback-date">
                     <Clock size={14} />
                     <span>{f.createdAt ? new Date(f.createdAt).toLocaleString() : '-'}</span>
                   </div>
                 </div>
 
                 {/* Title / Subject */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <span className={badgeClass} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <div className="admin-feedback-title-row">
+                  <span className={badgeClass}>
                     {icon}
                     <span>
-                      {f.title.startsWith('[BUG]') ? 'Hata' : (f.title.startsWith('[SUGGESTION]') ? 'Öneri' : 'Diğer')}
+                      {f.title.startsWith('[BUG]')
+                        ? 'Hata'
+                        : f.title.startsWith('[SUGGESTION]')
+                          ? 'Öneri'
+                          : 'Diğer'}
                     </span>
                   </span>
                   <span className="admin-feedback-title">{cleanSubject}</span>
                 </div>
 
                 {/* Message Body */}
-                <div className="admin-feedback-message">
-                  {f.message}
-                </div>
+                <div className="admin-feedback-message">{f.message}</div>
 
                 {/* Browser Metadata section */}
                 {f.browserInfo && (
-                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div className="admin-feedback-sys">
                     <button
                       type="button"
                       className="admin-feedback-sys-toggle"
@@ -202,11 +216,7 @@ export default function AdminFeedbacksPage() {
                       {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                     </button>
 
-                    {isExpanded && (
-                      <pre className="admin-feedback-sys-info">
-                        {f.browserInfo}
-                      </pre>
-                    )}
+                    {isExpanded && <pre className="admin-feedback-sys-info">{f.browserInfo}</pre>}
                   </div>
                 )}
               </div>
@@ -214,8 +224,6 @@ export default function AdminFeedbacksPage() {
           })
         )}
       </div>
-
     </div>
   );
 }
-

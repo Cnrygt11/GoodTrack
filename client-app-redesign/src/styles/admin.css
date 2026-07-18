@@ -150,6 +150,7 @@
 .admin-role-badge {
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 4px 10px;
   border-radius: 20px;
   font-size: 0.75rem;
@@ -257,4 +258,108 @@
   color: #a78bfa;
   white-space: pre-wrap;
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Feedbacks page layout */
+.admin-feedbacks-container {
+  padding: 24px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.admin-feedbacks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.admin-feedbacks-heading {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.admin-feedbacks-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.admin-feedbacks-filter.active {
+  color: #fff;
+  border-color: transparent;
+}
+
+.admin-feedbacks-filter--all.active,
+.admin-feedbacks-filter--suggestion.active {
+  background: var(--accent-admin-gradient);
+}
+
+.admin-feedbacks-filter--bug.active {
+  background: var(--accent-seller-gradient);
+}
+
+.admin-feedbacks-filter--other.active {
+  background: rgba(0, 242, 254, 0.2);
+  color: #a5f3fc;
+  border-color: rgba(0, 242, 254, 0.3);
+}
+
+.admin-feedbacks-error {
+  margin-bottom: 20px;
+}
+
+.admin-feedbacks-retry {
+  padding: 4px 8px;
+  font-size: 0.8rem;
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.admin-feedbacks-empty {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.admin-feedback-username {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.admin-feedback-user-role {
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.admin-feedback-date {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-feedback-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-feedback-sys {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Dashboard stat total icon */
+.admin-stat-total-icon {
+  opacity: 0.5;
 }

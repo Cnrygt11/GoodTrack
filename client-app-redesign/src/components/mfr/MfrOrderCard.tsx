@@ -131,11 +131,7 @@ export default function MfrOrderCard({
           onClick={thumb ? openLightbox : undefined}
           title={thumb ? t('clickToInspectDetails') : undefined}
         >
-          {thumb ? (
-            <img src={thumb} alt="ürün" />
-          ) : (
-            <Package size={28} style={{ color: 'var(--muted)', opacity: 0.5 }} />
-          )}
+          {thumb ? <img src={thumb} alt="ürün" /> : <Package size={28} />}
         </div>
 
         {/* Info column */}
@@ -166,14 +162,7 @@ export default function MfrOrderCard({
               {sc.icon} {sc.label}
             </span>
             {p.cancelRequested && (
-              <span
-                className="moc-status-badge"
-                style={{
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444',
-                }}
-              >
+              <span className="moc-status-badge moc-status-badge--cancel">
                 {t('cancelRequestPending')}
               </span>
             )}
@@ -184,14 +173,13 @@ export default function MfrOrderCard({
             {p.text && (
               <span className="order-chip">
                 <Tag size={10} style={{ color: 'var(--accent-mfr)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('textLabel')}:</strong> {p.text}
+                <strong>{t('textLabel')}:</strong> {p.text}
               </span>
             )}
             {p.length && (
               <span className="order-chip">
                 <Ruler size={10} style={{ color: 'var(--accent-mfr)' }} />
-                <strong style={{ color: 'var(--text)' }}>{t('lengthLabel')}:</strong> {p.length}{' '}
-                {t('inchSuffix')}
+                <strong>{t('lengthLabel')}:</strong> {p.length} {t('inchSuffix')}
               </span>
             )}
             {p.sellerName && (
@@ -204,7 +192,7 @@ export default function MfrOrderCard({
               if (!item.value) return null;
               return (
                 <span key={key} className="order-chip">
-                  <strong style={{ color: 'var(--text)' }}>{item.name}:</strong> {item.value}
+                  <strong>{item.name}:</strong> {item.value}
                 </span>
               );
             })}
@@ -215,7 +203,7 @@ export default function MfrOrderCard({
             <span className="moc-date-span">
               <Calendar size={11} style={{ opacity: 0.7 }} />
               {t('sentDateLabel')}:{' '}
-              <strong style={{ color: 'var(--text)' }}>
+              <strong>
                 {dateStr} {timeStr}
               </strong>
             </span>
@@ -249,22 +237,12 @@ export default function MfrOrderCard({
       {hasActionBar && (
         <div className="order-action-bar">
           {p.cancelRequested ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-              <div
-                style={{
-                  color: 'var(--danger)',
-                  fontSize: '12.5px',
-                  fontWeight: 700,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  marginBottom: '4px',
-                }}
-              >
+            <div className="moc-cancel-actions">
+              <div className="moc-cancel-warning">
                 <AlertTriangle size={14} />
                 {t('sellerRequestedCancellation')}
               </div>
-              <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+              <div className="moc-cancel-buttons">
                 <MfrBtn color="#22c55e" onClick={() => onRespondCancel?.(p.id, true)}>
                   {t('cancelReqApprove')}
                 </MfrBtn>

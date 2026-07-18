@@ -58,29 +58,24 @@ export default function ArchivePage() {
   };
 
   return (
-    <div
-      className="page-container"
-      style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}
-    >
-      <h2 style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+    <div className="page-container archive-page">
+      <h2 className="archive-title">
         <Archive size={22} />
         <span>{t('archiveTitle')}</span>
         {totalCount > 0 && (
-          <span style={{ fontSize: 13, fontWeight: 400, color: 'var(--muted)' }}>
+          <span className="archive-title-count">
             ({totalCount} {t('archiveTotalCount')})
           </span>
         )}
       </h2>
-      <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 20 }}>
-        {t('archiveDescription')}
-      </p>
+      <p className="archive-description">{t('archiveDescription')}</p>
 
       {loading ? (
         <div className="order-detail-loading-wrapper">
           <p className="order-detail-loading-text">…</p>
         </div>
       ) : items.length === 0 ? (
-        <div style={{ textAlign: 'center', color: 'var(--muted)', padding: '48px 0' }}>
+        <div className="archive-empty">
           <Package size={36} />
           <p>{t('archiveEmpty')}</p>
         </div>
@@ -99,8 +94,7 @@ export default function ArchivePage() {
             return (
               <div
                 key={p.id}
-                className="product-card"
-                style={{ cursor: 'pointer' }}
+                className="product-card product-card--clickable"
                 onClick={() => openTimeline(p)}
                 title={t('btnViewTimeline')}
               >
@@ -111,15 +105,8 @@ export default function ArchivePage() {
                   <div className="product-code">{p.code}</div>
                   <div className="product-fields">
                     <span
-                      className="product-field-chip"
-                      style={{
-                        color: sc.color,
-                        background: sc.bg,
-                        borderColor: sc.border,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
+                      className="product-field-chip product-field-chip--status"
+                      style={{ color: sc.color, background: sc.bg, borderColor: sc.border }}
                     >
                       {sc.icon} {sc.label}
                     </span>

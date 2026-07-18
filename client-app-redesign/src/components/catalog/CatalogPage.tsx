@@ -52,15 +52,8 @@ export default function CatalogPage({
 
   return (
     <div id="catalog-screen">
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '24px',
-        }}
-      >
-        <h2 style={{ marginBottom: 0 }}>
+      <div className="catalog-header">
+        <h2>
           {t('productCatalogTitlePart1')}{' '}
           <span className="seller-accent">{t('productCatalogTitlePart2')}</span>
         </h2>
@@ -111,20 +104,11 @@ export default function CatalogPage({
 
       <div className="product-list">
         {catalogProducts.length === 0 ? (
-          <div
-            className="empty-state"
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '40px 0',
-            }}
-          >
+          <div className="empty-state catalog-empty">
             <div className="empty-icon">
               <Package size={36} style={{ color: 'var(--muted)' }} />
             </div>
-            <p style={{ margin: 0, color: 'var(--muted)' }}>{t('noCatalogProducts')}</p>
+            <p>{t('noCatalogProducts')}</p>
           </div>
         ) : (
           pageItems.map((p) => (

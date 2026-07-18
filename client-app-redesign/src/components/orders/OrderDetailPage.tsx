@@ -7,8 +7,17 @@ import { ORDER_STATUS } from '../../utils/constants';
 import { useSettings } from '../../context/SettingsContext';
 import { translateLogMessage } from '../../services/translations';
 import {
-  ArrowLeft, Package, CheckCircle2, AlertTriangle,
-  Calendar, Factory, Tag, Ruler, Info, Loader2, User
+  ArrowLeft,
+  Package,
+  CheckCircle2,
+  AlertTriangle,
+  Calendar,
+  Factory,
+  Tag,
+  Ruler,
+  Info,
+  Loader2,
+  User,
 } from 'lucide-react';
 
 export default function OrderDetailPage() {
@@ -20,9 +29,9 @@ export default function OrderDetailPage() {
   const [expandedLogs, setExpandedLogs] = useState<Record<number, boolean>>({});
 
   const toggleExplanation = (index: number) => {
-    setExpandedLogs(prev => ({
+    setExpandedLogs((prev) => ({
       ...prev,
-      [index]: !prev[index]
+      [index]: !prev[index],
     }));
   };
 
@@ -58,20 +67,43 @@ export default function OrderDetailPage() {
     );
   }
 
-  const status = product.status || (product.isDefective ? ORDER_STATUS.DEFECTIVE : (product.completed ? ORDER_STATUS.COMPLETED : (product.isPendingApproval ? ORDER_STATUS.AWAITING : ORDER_STATUS.PRODUCTION)));
-  const sc = getStatusConfig(status, t, { iconSize: 12, role: user?.role === 'mfr' ? 'mfr' : 'seller', isReproduction: product.isReproduction });
+  const status =
+    product.status ||
+    (product.isDefective
+      ? ORDER_STATUS.DEFECTIVE
+      : product.completed
+        ? ORDER_STATUS.COMPLETED
+        : product.isPendingApproval
+          ? ORDER_STATUS.AWAITING
+          : ORDER_STATUS.PRODUCTION);
+  const sc = getStatusConfig(status, t, {
+    iconSize: 12,
+    role: user?.role === 'mfr' ? 'mfr' : 'seller',
+    isReproduction: product.isReproduction,
+  });
 
   // Mfr timeline logs filtering: only show up to and including 'to_ship' status
   const allLogs = product.logs || [];
-  const toShipIndex = allLogs.findIndex(log => log.status === ORDER_STATUS.TO_SHIP);
-  const visibleLogs = (user?.role === 'mfr' && toShipIndex !== -1) ? allLogs.slice(0, toShipIndex + 1) : allLogs;
+  const toShipIndex = allLogs.findIndex((log) => log.status === ORDER_STATUS.TO_SHIP);
+  const visibleLogs =
+    user?.role === 'mfr' && toShipIndex !== -1 ? allLogs.slice(0, toShipIndex + 1) : allLogs;
 
-  const dateStr = product.createdAt ? new Date(product.createdAt).toLocaleDateString(t('dateLocale'), { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
-  const timeStr = product.createdAt ? new Date(product.createdAt).toLocaleTimeString(t('dateLocale'), { hour: '2-digit', minute: '2-digit' }) : '';
+  const dateStr = product.createdAt
+    ? new Date(product.createdAt).toLocaleDateString(t('dateLocale'), {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    : '—';
+  const timeStr = product.createdAt
+    ? new Date(product.createdAt).toLocaleTimeString(t('dateLocale'), {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '';
 
   return (
     <div className="order-detail-container">
-      
       {/* Header breadcrumb */}
       <div className="order-detail-breadcrumb">
         <button onClick={handleBack} className="btn-back">
@@ -84,26 +116,22 @@ export default function OrderDetailPage() {
       </div>
 
       <div className="order-detail-grid">
-        
         {/* Left Column: Product Info Card */}
         <div className="card order-detail-left-col">
           <div className="order-detail-header-row">
-            <h2 className="order-detail-code-title">
-              {product.code}
-            </h2>
-            <span 
+            <h2 className="order-detail-code-title">{product.code}</h2>
+            <span
               className="order-detail-status-badge"
               style={{
-                background: sc.bg, border: `1px solid ${sc.border}`,
-                color: sc.color
+                background: sc.bg,
+                border: `1px solid ${sc.border}`,
+                color: sc.color,
               }}
             >
               {sc.icon} {sc.label}
             </span>
             {product.cancelRequested && (
-              <span className="order-detail-cancel-pending-badge">
-                {t('cancelRequestPending')}
-              </span>
+              <span className="order-detail-cancel-pending-badge">{t('cancelRequestPending')}</span>
             )}
             {status === 'broken' && product.defectNote && user?.role === 'seller' && (
               <button
@@ -128,10 +156,8 @@ export default function OrderDetailPage() {
 
           {/* Details Specifications */}
           <div className="order-detail-specs-stack">
-            <h4>
-              {t('orderSpecifications')}
-            </h4>
-            
+            <h4>{t('orderSpecifications')}</h4>
+
             {product.text && (
               <div className="order-detail-spec-row">
                 <span className="order-detail-spec-label">
@@ -148,7 +174,9 @@ export default function OrderDetailPage() {
                   <Ruler size={13} />
                   {t('lengthLabel')}
                 </span>
-                <span className="order-detail-spec-val">{product.length} {t('inchSuffix')}</span>
+                <span className="order-detail-spec-val">
+                  {product.length} {t('inchSuffix')}
+                </span>
               </div>
             )}
 
@@ -176,24 +204,24 @@ export default function OrderDetailPage() {
               if (!item.value) return null;
               return (
                 <div key={key} className="order-detail-spec-row">
-                  <span style={{ color: 'var(--muted)' }}>{item.name}</span>
+                  <span className="order-detail-spec-muted">{item.name}</span>
                   <span className="order-detail-spec-val">{item.value}</span>
                 </div>
               );
             })}
 
-            <div style={{ height: '8px' }} />
+            <div className="order-detail-spacer" />
 
-            <h4>
-              {t('orderChronology')}
-            </h4>
+            <h4>{t('orderChronology')}</h4>
 
             <div className="order-detail-spec-row">
               <span className="order-detail-spec-label">
                 <Calendar size={13} />
                 {t('sentDateLabel')}
               </span>
-              <span className="order-detail-spec-val">{dateStr} {timeStr}</span>
+              <span className="order-detail-spec-val">
+                {dateStr} {timeStr}
+              </span>
             </div>
 
             {product.completedAt && (
@@ -202,7 +230,9 @@ export default function OrderDetailPage() {
                   <CheckCircle2 size={13} />
                   {t('completedDateLabel')}
                 </span>
-                <span className="order-detail-spec-val">{new Date(product.completedAt).toLocaleDateString(t('dateLocale'))}</span>
+                <span className="order-detail-spec-val">
+                  {new Date(product.completedAt).toLocaleDateString(t('dateLocale'))}
+                </span>
               </div>
             )}
           </div>
@@ -226,15 +256,13 @@ export default function OrderDetailPage() {
 
         {/* Right Column: Time-Travel Event Log List */}
         <div className="card order-detail-right-col">
-          <h3>
-            {t('timelineTitle')}
-          </h3>
+          <h3>{t('timelineTitle')}</h3>
 
           <div className="order-detail-timeline-container">
             {/* Timeline Vertical line */}
             <div className="order-detail-timeline-line" />
 
-             {visibleLogs.map((log, index) => {
+            {visibleLogs.map((log, index) => {
               const dateStr = new Date(log.timestamp).toLocaleString(t('dateLocale'));
               const isActive = index === visibleLogs.length - 1;
               const explanation = extractExplanation(log.message);
@@ -266,7 +294,9 @@ export default function OrderDetailPage() {
                     )}
                     <span className="order-detail-log-time">{dateStr}</span>
                     <div className="order-detail-log-user">
-                      <span><strong>{t('byLabel')}</strong> {log.userName}</span>
+                      <span>
+                        <strong>{t('byLabel')}</strong> {log.userName}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -274,13 +304,10 @@ export default function OrderDetailPage() {
             })}
 
             {visibleLogs.length === 0 && (
-              <p className="order-detail-timeline-empty">
-                {t('noTimelineLogs')}
-              </p>
+              <p className="order-detail-timeline-empty">{t('noTimelineLogs')}</p>
             )}
           </div>
         </div>
-
       </div>
 
       <BrokenDetailsModal

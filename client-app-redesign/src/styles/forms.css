@@ -5,6 +5,16 @@
   display: block;
 }
 
+/* Utility: muted form label */
+.label-muted {
+  color: var(--muted);
+}
+
+/* Utility: visually hidden file input */
+.hidden-file-input {
+  display: none;
+}
+
 h2 {
   font-family: var(--font-heading);
   font-weight: 800;

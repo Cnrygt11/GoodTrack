@@ -29,22 +29,17 @@ export default function BrokenReportModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="modal-header">
-        <h3 style={{ margin: 0, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 className="modal-header-danger">
           <AlertTriangle size={20} />
           {t('reportBrokenTitle')}
         </h3>
-        <button
-          onClick={onClose}
-          className="modal-close-btn"
-        >
+        <button onClick={onClose} className="modal-close-btn">
           <X size={18} />
         </button>
       </div>
       <form onSubmit={handleSubmit}>
         <div className="form-group">
-          <label className="modal-label">
-            {t('brokenExplanation')}
-          </label>
+          <label className="modal-label">{t('brokenExplanation')}</label>
           <textarea
             placeholder={t('brokenPlaceholder')}
             value={note}
@@ -63,12 +58,12 @@ export default function BrokenReportModal({
           >
             {t('cancelBtn')}
           </button>
-          <button
-            type="submit"
-            className="btn-danger btn-flex-inline"
-            disabled={actionLoading}
-          >
-            {actionLoading ? <Loader2 className="animate-spin" size={16} /> : <AlertTriangle size={16} />}
+          <button type="submit" className="btn-danger btn-flex-inline" disabled={actionLoading}>
+            {actionLoading ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
+              <AlertTriangle size={16} />
+            )}
             {t('btnMarkBroken')}
           </button>
         </div>

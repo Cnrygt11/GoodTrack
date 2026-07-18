@@ -225,33 +225,33 @@ export default function LandingPage() {
                     <span className="lp-line w40" />
                     <span className="lp-num seller" />
                     <div className="lp-spark">
-                      <i style={{ height: '40%' }} />
-                      <i style={{ height: '65%' }} />
-                      <i style={{ height: '50%' }} />
-                      <i style={{ height: '80%' }} />
-                      <i style={{ height: '100%' }} />
+                      <i className="h40" />
+                      <i className="h65" />
+                      <i className="h50" />
+                      <i className="h80" />
+                      <i className="h100" />
                     </div>
                   </div>
                   <div className="lp-stat">
                     <span className="lp-line w40" />
                     <span className="lp-num mfr" />
                     <div className="lp-spark mfr">
-                      <i style={{ height: '30%' }} />
-                      <i style={{ height: '55%' }} />
-                      <i style={{ height: '90%' }} />
-                      <i style={{ height: '60%' }} />
-                      <i style={{ height: '75%' }} />
+                      <i className="h30" />
+                      <i className="h55" />
+                      <i className="h90" />
+                      <i className="h60" />
+                      <i className="h75" />
                     </div>
                   </div>
                   <div className="lp-stat">
                     <span className="lp-line w40" />
                     <span className="lp-num success" />
                     <div className="lp-spark success">
-                      <i style={{ height: '50%' }} />
-                      <i style={{ height: '45%' }} />
-                      <i style={{ height: '70%' }} />
-                      <i style={{ height: '85%' }} />
-                      <i style={{ height: '95%' }} />
+                      <i className="h50" />
+                      <i className="h45" />
+                      <i className="h70" />
+                      <i className="h85" />
+                      <i className="h95" />
                     </div>
                   </div>
                 </div>
@@ -260,7 +260,7 @@ export default function LandingPage() {
                     <span className="lp-dot" />
                     <span className="lp-line w30" />
                     <span className="lp-progress">
-                      <i style={{ width: '55%' }} className="prod" />
+                      <i className="prod w55" />
                     </span>
                     <span className="lp-pill prod">{t('landingPvInProd')}</span>
                   </div>
@@ -268,7 +268,7 @@ export default function LandingPage() {
                     <span className="lp-dot" />
                     <span className="lp-line w35" />
                     <span className="lp-progress">
-                      <i style={{ width: '80%' }} className="ship" />
+                      <i className="ship w80" />
                     </span>
                     <span className="lp-pill ship">{t('landingPvShipped')}</span>
                   </div>
@@ -276,7 +276,7 @@ export default function LandingPage() {
                     <span className="lp-dot" />
                     <span className="lp-line w25" />
                     <span className="lp-progress">
-                      <i style={{ width: '100%' }} className="done" />
+                      <i className="done w100" />
                     </span>
                     <span className="lp-pill done">{t('landingPvDelivered')}</span>
                   </div>
@@ -284,7 +284,7 @@ export default function LandingPage() {
                     <span className="lp-dot" />
                     <span className="lp-line w32" />
                     <span className="lp-progress">
-                      <i style={{ width: '35%' }} className="prod" />
+                      <i className="prod w35" />
                     </span>
                     <span className="lp-pill prod">{t('landingPvInProd')}</span>
                   </div>

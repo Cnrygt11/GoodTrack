@@ -30,13 +30,9 @@ export default function GeneralProfileFields({
     <div className="profile-fields-stack">
       {/* Username display (non-editable) */}
       <div className="form-group">
-        <label style={{ color: 'var(--muted)' }}>{t('username')}</label>
+        <label className="label-muted">{t('username')}</label>
         <div className="form-group-with-icon">
-          <input 
-            type="text" 
-            value={`@${username}`} 
-            disabled 
-          />
+          <input type="text" value={`@${username}`} disabled />
         </div>
       </div>
 
@@ -44,18 +40,18 @@ export default function GeneralProfileFields({
       <div className="profile-names-row">
         <div className="form-group">
           <label>{t('firstName')}</label>
-          <input 
-            type="text" 
-            required 
+          <input
+            type="text"
+            required
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
           />
         </div>
         <div className="form-group">
           <label>{t('lastName')}</label>
-          <input 
-            type="text" 
-            required 
+          <input
+            type="text"
+            required
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
           />
@@ -68,20 +64,15 @@ export default function GeneralProfileFields({
           <label>E-posta</label>
           <div className="form-group-with-icon">
             <Mail size={14} />
-            <input 
-              type="email" 
-              required 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
         </div>
         <div className="form-group">
           <label>{t('phone')}</label>
           <div className="form-group-with-icon">
             <Phone size={14} />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               placeholder="+90 555 555 5555"

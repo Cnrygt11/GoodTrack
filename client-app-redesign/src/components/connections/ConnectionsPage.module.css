@@ -330,6 +330,27 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.connections-error-container {
+  text-align: center;
+  padding: 40px;
+}
+
+.connections-error-icon {
+  color: var(--danger);
+  margin-bottom: 16px;
+}
+
+.connections-error-text {
+  color: var(--muted);
+  margin-bottom: 24px;
 }

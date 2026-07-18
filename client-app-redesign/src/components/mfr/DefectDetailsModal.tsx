@@ -14,15 +14,7 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <div className="modal-header">
-        <h3
-          style={{
-            margin: 0,
-            color: 'var(--danger)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
+        <h3 className="modal-header-danger">
           <Info size={20} />
           {t('defectDetailsTitle')}
         </h3>
@@ -59,7 +51,7 @@ export default function DefectDetailsModal({ isOpen, onClose, product }: DefectD
             </div>
           )}
 
-          <div className="modal-actions" style={{ marginTop: '8px' }}>
+          <div className="modal-actions modal-actions--tight">
             <button type="button" className="btn-primary mfr" onClick={onClose}>
               {t('closeBtn')}
             </button>

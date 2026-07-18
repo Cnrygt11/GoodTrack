@@ -79,7 +79,7 @@ export default function MfrPage() {
   return (
     <div id="mfr-screen" className="mfr-theme mfr-screen">
       {/* Dashboard Title */}
-      <h2 style={{ marginTop: 0, marginBottom: '16px' }}>
+      <h2 className="mfr-dashboard-title">
         {t('productionDashboardTitlePart1')}{' '}
         <span className="mfr-accent">{t('productionDashboardTitlePart2')}</span>
       </h2>
@@ -107,7 +107,7 @@ export default function MfrPage() {
       <div className="mfr-list-header">
         <h3>
           {t('orderListLabel')}{' '}
-          <span style={{ color: 'var(--accent-mfr)', fontWeight: 600 }}>
+          <span className="mfr-list-active-label">
             {tabs.find((t) => t.key === activeTab)?.label}
           </span>
         </h3>

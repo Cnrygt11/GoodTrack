@@ -70,7 +70,7 @@ export default function ProductShowcaseGallery({
               ref={(el) => registerReplaceInput(index, el)}
               onChange={(e) => handleReplaceProductImage(index, e)}
               accept="image/*"
-              style={{ display: 'none' }}
+              className="hidden-file-input"
             />
           </div>
         ))}
@@ -94,7 +94,7 @@ export default function ProductShowcaseGallery({
         onChange={handleAddProductImage}
         accept="image/*"
         multiple
-        style={{ display: 'none' }}
+        className="hidden-file-input"
       />
 
       {productImages.length < 3 && (

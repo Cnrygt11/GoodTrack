@@ -38,80 +38,60 @@ export default function PasswordChangeForm({
   return (
     <>
       {flowStep === 'verify-password' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '18px' }}>
-            <div style={{ 
-              width: '48px', 
-              height: '48px', 
-              borderRadius: '10px', 
-              background: glowBg, 
-              color: accentColor, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: `1px solid ${accentColor}`
-            }}>
+        <div className="card password-card">
+          <div className="password-card-header">
+            <div
+              className="password-icon-box"
+              style={{ background: glowBg, color: accentColor, border: `1px solid ${accentColor}` }}
+            >
               <ShieldCheck size={24} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '20px', letterSpacing: '0.5px' }}>{t('passwordChangeTitle')}</h2>
-              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                {t('passwordStep1')}
-              </span>
+              <h2 className="password-card-title">{t('passwordChangeTitle')}</h2>
+              <span className="password-card-subtitle">{t('passwordStep1')}</span>
             </div>
           </div>
 
-          <p style={{ fontSize: '13.5px', color: 'var(--muted)', lineHeight: '1.6', margin: 0 }}>
-            {t('enterOldPassword')}
-          </p>
+          <p className="password-card-desc">{t('enterOldPassword')}</p>
 
-          <form onSubmit={handleVerifyPassword} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <form onSubmit={handleVerifyPassword} className="password-form">
             <div className="form-group">
               <label>{t('oldPassword')}</label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type={showOld ? 'text' : 'password'} 
-                  required 
-                  placeholder={t('oldPassword')} 
+              <div className="password-input-wrap">
+                <input
+                  type={showOld ? 'text' : 'password'}
+                  required
+                  placeholder={t('oldPassword')}
                   value={oldPassword}
                   onChange={(e) => setOldPassword(e.target.value)}
-                  style={{ paddingRight: '40px', width: '100%' }}
+                  className="password-input"
                 />
                 <button
                   type="button"
                   onClick={() => setShowOld(!showOld)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className="password-toggle"
                 >
                   {showOld ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
-              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
+            <div className="password-actions">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleCancelFlow}
+                disabled={passwordLoading}
+              >
                 {t('cancelBtn')}
               </button>
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                style={{ 
-                  background: accentColor, 
+              <button
+                type="submit"
+                className="btn-primary password-submit-btn"
+                style={{
+                  background: accentColor,
                   color: '#0b0f19',
                   boxShadow: `0 4px 12px ${glowBg}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
                 }}
                 disabled={passwordLoading}
               >
@@ -124,60 +104,38 @@ export default function PasswordChangeForm({
       )}
 
       {flowStep === 'new-password' && (
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid var(--border)', paddingBottom: '18px' }}>
-            <div style={{ 
-              width: '48px', 
-              height: '48px', 
-              borderRadius: '10px', 
-              background: glowBg, 
-              color: accentColor, 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center',
-              border: `1px solid ${accentColor}`
-            }}>
+        <div className="card password-card">
+          <div className="password-card-header">
+            <div
+              className="password-icon-box"
+              style={{ background: glowBg, color: accentColor, border: `1px solid ${accentColor}` }}
+            >
               <Key size={24} />
             </div>
             <div>
-              <h2 style={{ margin: 0, fontSize: '20px', letterSpacing: '0.5px' }}>{t('passwordChangeTitle')}</h2>
-              <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                {t('passwordStep2')}
-              </span>
+              <h2 className="password-card-title">{t('passwordChangeTitle')}</h2>
+              <span className="password-card-subtitle">{t('passwordStep2')}</span>
             </div>
           </div>
 
-          <p style={{ fontSize: '13.5px', color: 'var(--muted)', lineHeight: '1.6', margin: 0 }}>
-            {t('enterNewPassword')}
-          </p>
+          <p className="password-card-desc">{t('enterNewPassword')}</p>
 
-          <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <form onSubmit={handleChangePassword} className="password-form password-form--compact">
             <div className="form-group">
               <label>{t('newPassword')}</label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type={showNew ? 'text' : 'password'} 
-                  required 
-                  placeholder={t('newPassword')} 
+              <div className="password-input-wrap">
+                <input
+                  type={showNew ? 'text' : 'password'}
+                  required
+                  placeholder={t('newPassword')}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ paddingRight: '40px', width: '100%' }}
+                  className="password-input"
                 />
                 <button
                   type="button"
                   onClick={() => setShowNew(!showNew)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className="password-toggle"
                 >
                   {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -186,50 +144,41 @@ export default function PasswordChangeForm({
 
             <div className="form-group">
               <label>{t('confirmNewPassword')}</label>
-              <div style={{ position: 'relative' }}>
-                <input 
-                  type={showConfirm ? 'text' : 'password'} 
-                  required 
-                  placeholder={t('confirmNewPassword')} 
+              <div className="password-input-wrap">
+                <input
+                  type={showConfirm ? 'text' : 'password'}
+                  required
+                  placeholder={t('confirmNewPassword')}
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  style={{ paddingRight: '40px', width: '100%' }}
+                  className="password-input"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirm(!showConfirm)}
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--muted)',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className="password-toggle"
                 >
                   {showConfirm ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
-              <button type="button" className="btn-secondary" onClick={handleCancelFlow} disabled={passwordLoading}>
+            <div className="password-actions password-actions--lg">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleCancelFlow}
+                disabled={passwordLoading}
+              >
                 {t('btnBackToProfile')}
               </button>
-              <button 
-                type="submit" 
-                className="btn-primary" 
-                style={{ 
-                  background: accentColor, 
+              <button
+                type="submit"
+                className="btn-primary password-submit-btn"
+                style={{
+                  background: accentColor,
                   color: '#0b0f19',
                   boxShadow: `0 4px 12px ${glowBg}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
                 }}
                 disabled={passwordLoading}
               >

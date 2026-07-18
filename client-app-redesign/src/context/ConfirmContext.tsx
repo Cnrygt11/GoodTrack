@@ -18,13 +18,17 @@ const ConfirmContext = createContext<ConfirmContextType | null>(null);
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
   const { t } = useSettings();
   const [isOpen, setIsOpen] = useState(false);
-  const [options, setOptions] = useState<ConfirmOptions>({ title: '', message: '', isDestructive: true });
+  const [options, setOptions] = useState<ConfirmOptions>({
+    title: '',
+    message: '',
+    isDestructive: true,
+  });
   const resolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const confirm = useCallback((opts: ConfirmOptions) => {
     setOptions({
       isDestructive: true, // Default to true if not specified
-      ...opts
+      ...opts,
     });
     setIsOpen(true);
     return new Promise<boolean>((resolve) => {
@@ -52,35 +56,24 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
     <ConfirmContext.Provider value={{ confirm }}>
       {children}
       {isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 9999 }}>
-          <div className="modal" style={{ maxWidth: '420px' }} onClick={(e) => e.stopPropagation()}>
-            <h3 style={{ marginTop: 0, marginBottom: '14px', color: 'var(--text)' }}>
-              {options.title}
-            </h3>
-            <p style={{ color: 'var(--muted)', fontSize: '13.5px', lineHeight: '1.6', marginBottom: '24px' }}>
-              {options.message}
-            </p>
+        <div className="modal-overlay modal-overlay--top">
+          <div className="modal confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <h3 className="confirm-modal-title">{options.title}</h3>
+            <p className="confirm-modal-message">{options.message}</p>
             <div className="modal-actions">
-              <button 
-                type="button" 
-                className="btn-secondary" 
+              <button
+                type="button"
+                className="btn-secondary confirm-modal-btn"
                 onClick={handleCancel}
-                style={{ padding: '8px 16px', borderRadius: '7px', fontSize: '13px' }}
               >
                 {options.cancelText || t('cancelDefaultBtn')}
               </button>
-              <button 
-                type="button" 
-                className="btn-primary" 
+              <button
+                type="button"
+                className="btn-primary confirm-modal-btn confirm-modal-btn--primary"
                 onClick={handleConfirm}
-                style={{ 
-                  padding: '8px 16px', 
-                  borderRadius: '7px', 
-                  fontSize: '13px',
+                style={{
                   background: options.isDestructive ? 'var(--danger)' : 'var(--accent-seller)',
-                  color: '#fff',
-                  border: 'none',
-                  boxShadow: 'none'
                 }}
               >
                 {options.confirmText || t('confirmDefaultBtn')}

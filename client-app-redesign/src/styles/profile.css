@@ -248,6 +248,16 @@
   font-family: var(--font-heading);
 }
 
+.mfr-dashboard-title {
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.mfr-list-active-label {
+  color: var(--accent-mfr);
+  font-weight: 600;
+}
+
 .mfr-list-header {
   display: flex;
   justify-content: space-between;
@@ -332,6 +342,10 @@
   justify-content: center;
   padding: 60px 0;
   gap: 16px;
+}
+
+.profile-loading-container--full {
+  min-height: 60vh;
 }
 
 .profile-loading-container span {
@@ -962,4 +976,173 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+
+/* ===== ACCOUNT PAGE TABS ===== */
+.profile-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.btn-tab {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.btn-tab.active {
+  background-color: rgba(241, 100, 30, 0.1);
+  color: #f1641e;
+}
+
+.profile-integrations-card {
+  padding: 24px;
+}
+
+.profile-visibility-label {
+  font-size: 14px;
+  display: block;
+}
+
+.profile-visibility-sublabel {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ===== ETSY STORE SKELETON ===== */
+.etsy-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+.etsy-skeleton-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.etsy-skeleton-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.etsy-skeleton-card {
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background-color: var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.etsy-skeleton-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ===== PASSWORD CHANGE FLOW ===== */
+.password-card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.password-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 18px;
+}
+
+.password-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-card-title {
+  margin: 0;
+  font-size: 20px;
+  letter-spacing: 0.5px;
+}
+
+.password-card-subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.password-card-desc {
+  font-size: 13.5px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.password-form--compact {
+  gap: 16px;
+}
+
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input {
+  padding-right: 40px;
+  width: 100%;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.password-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.password-actions--lg {
+  margin-top: 12px;
+}
+
+.password-submit-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }

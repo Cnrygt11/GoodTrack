@@ -540,6 +540,50 @@ html {
   background: var(--success);
 }
 
+/* Sparkline bar heights */
+.lp-spark i.h30 {
+  height: 30%;
+}
+.lp-spark i.h40 {
+  height: 40%;
+}
+.lp-spark i.h45 {
+  height: 45%;
+}
+.lp-spark i.h50 {
+  height: 50%;
+}
+.lp-spark i.h55 {
+  height: 55%;
+}
+.lp-spark i.h60 {
+  height: 60%;
+}
+.lp-spark i.h65 {
+  height: 65%;
+}
+.lp-spark i.h70 {
+  height: 70%;
+}
+.lp-spark i.h75 {
+  height: 75%;
+}
+.lp-spark i.h80 {
+  height: 80%;
+}
+.lp-spark i.h85 {
+  height: 85%;
+}
+.lp-spark i.h90 {
+  height: 90%;
+}
+.lp-spark i.h95 {
+  height: 95%;
+}
+.lp-spark i.h100 {
+  height: 100%;
+}
+
 .lp-rows {
   display: flex;
   flex-direction: column;
@@ -591,6 +635,20 @@ html {
 }
 .lp-progress i.done {
   background: var(--success);
+}
+
+/* Progress bar fill widths */
+.lp-progress i.w35 {
+  width: 35%;
+}
+.lp-progress i.w55 {
+  width: 55%;
+}
+.lp-progress i.w80 {
+  width: 80%;
+}
+.lp-progress i.w100 {
+  width: 100%;
 }
 
 .lp-pill {

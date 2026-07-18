@@ -13,7 +13,7 @@ interface State {
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
     hasError: false,
-    error: null
+    error: null,
   };
 
   public static getDerivedStateFromError(error: Error): State {
@@ -32,43 +32,24 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          backgroundColor: 'var(--bg)',
-          color: 'var(--text)',
-          padding: '20px',
-          textAlign: 'center'
-        }}>
-          <div style={{
-            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-            padding: '20px',
-            borderRadius: '50%',
-            marginBottom: '20px'
-          }}>
+        <div className="error-boundary">
+          <div className="error-boundary-icon">
             <AlertTriangle size={48} style={{ color: 'var(--danger)' }} />
           </div>
-          <h2 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '10px' }}>Bir Şeyler Yanlış Gitti</h2>
-          <p style={{ fontSize: '14px', color: 'var(--muted)', maxWidth: '400px', lineHeight: 1.6, marginBottom: '24px' }}>
-            Arayüz render edilirken beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin veya ana sayfaya dönün.
+          <h2 className="error-boundary-title">Bir Şeyler Yanlış Gitti</h2>
+          <p className="error-boundary-text">
+            Arayüz render edilirken beklenmeyen bir hata oluştu. Lütfen sayfayı yenileyin veya ana
+            sayfaya dönün.
           </p>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            <button 
-              className="btn-secondary" 
+          <div className="error-boundary-actions">
+            <button
+              className="btn-secondary error-boundary-retry"
               onClick={() => window.location.reload()}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
             >
               <RefreshCw size={14} />
               Yeniden Dene
             </button>
-            <button 
-              className="btn-primary" 
-              onClick={this.handleReset}
-              style={{ fontSize: '13px' }}
-            >
+            <button className="btn-primary error-boundary-home" onClick={this.handleReset}>
               Ana Sayfaya Dön
             </button>
           </div>

@@ -117,6 +117,24 @@
   filter: brightness(1.1);
 }
 
+.disconnectBtn {
+  font-size: 13px;
+}
+
+.syncListingsBtn {
+  width: 100%;
+  justify-content: center;
+}
+
+.syncOrdersBtn {
+  width: 100%;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 /* Connection List */
 .connectionList {
   display: flex;

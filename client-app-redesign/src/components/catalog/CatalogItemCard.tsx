@@ -45,28 +45,14 @@ export default function CatalogItemCard({
     <div className="product-card catalog-card">
       {cardImage ? (
         <div
-          className="product-thumb"
+          className="product-thumb product-thumb--clickable"
           onClick={openLightbox}
-          style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.85';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '1';
-          }}
           title={t('clickToInspectDetails')}
         >
-          <img
-            src={cardImage}
-            alt="ürün"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
+          <img src={cardImage} alt="ürün" />
         </div>
       ) : (
-        <div
-          className="product-thumb"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        >
+        <div className="product-thumb product-thumb--placeholder">
           <Package size={24} style={{ color: 'var(--muted)' }} />
         </div>
       )}
@@ -76,32 +62,13 @@ export default function CatalogItemCard({
 
         {/* Warning Badge for Unassigned Manufacturer */}
         {isUnassigned && (
-          <div
-            className="mfr-warning-badge"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              color: '#EF4444',
-              padding: '6px 10px',
-              borderRadius: '6px',
-              fontSize: '12px',
-              fontWeight: 500,
-              marginTop: '4px',
-              marginBottom: '8px',
-            }}
-          >
+          <div className="mfr-warning-badge">
             <AlertCircle size={14} />
             {t('mfrNotAssigned') || 'Üretici atanmadı'}
           </div>
         )}
 
-        <div
-          className="product-fields"
-          style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}
-        >
+        <div className="product-fields">
           {product.extras &&
             Object.values(product.extras).map((val, idx) => {
               if (!val.value) return null;
@@ -115,20 +82,8 @@ export default function CatalogItemCard({
       </div>
 
       {/* Bottom Dropdown & Action Area */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '8px',
-          width: '100%',
-          marginTop: 'auto',
-          alignItems: 'center',
-        }}
-      >
-        <span
-          style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500, whiteSpace: 'nowrap' }}
-        >
-          {t('assignedManufacturerLabel') || 'Üretici'}:
-        </span>
+      <div className="catalog-card-actions">
+        <span className="catalog-assign-label">{t('assignedManufacturerLabel') || 'Üretici'}:</span>
         <select
           value={product.mfrId || ''}
           onChange={async (e) => {
@@ -155,14 +110,7 @@ export default function CatalogItemCard({
 
         {/* Action Status Micro-animation Icon */}
         {saveStatus !== 'idle' && (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minWidth: '16px',
-            }}
-          >
+          <div className="catalog-save-status">
             {saveStatus === 'saving' && (
               <Loader2
                 size={16}
@@ -179,19 +127,7 @@ export default function CatalogItemCard({
         {/* Delete Button */}
         <button
           type="button"
-          className="btn-secondary"
-          style={{
-            borderColor: 'var(--danger)',
-            color: 'var(--danger)',
-            fontSize: '12px',
-            padding: '6px',
-            borderRadius: '6px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '28px',
-          }}
+          className="btn-secondary catalog-delete-btn"
           onClick={() => onDelete(product.id)}
           title={t('deleteBtn')}
         >

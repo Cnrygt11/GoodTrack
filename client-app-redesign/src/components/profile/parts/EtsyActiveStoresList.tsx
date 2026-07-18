@@ -50,9 +50,8 @@ export function EtsyActiveStoresList({
               </div>
             </div>
             <button
-              className="btn-secondary"
+              className={`btn-secondary ${styles.disconnectBtn}`}
               onClick={() => handleDisconnect(conn.shopId)}
-              style={{ fontSize: '13px' }}
             >
               Bağlantıyı Kes
             </button>
@@ -76,10 +75,9 @@ export function EtsyActiveStoresList({
         <div className={styles.syncCard}>
           <h5 className={styles.syncTitle}>Kataloğu Eşitle</h5>
           <button
-            className={`btn-primary ${styles.etsyButton}`}
+            className={`btn-primary ${styles.etsyButton} ${styles.syncListingsBtn}`}
             onClick={handleSyncListings}
             disabled={syncListingsLoading}
-            style={{ width: '100%', justifyContent: 'center' }}
           >
             {syncListingsLoading ? (
               <Loader2 className="animate-spin" size={14} />
@@ -93,17 +91,9 @@ export function EtsyActiveStoresList({
         <div className={styles.syncCard}>
           <h5 className={styles.syncTitle}>Siparişleri Tara</h5>
           <button
-            className="btn-secondary"
+            className={`btn-secondary ${styles.syncOrdersBtn}`}
             onClick={handleSyncOrders}
             disabled={syncOrdersLoading}
-            style={{
-              width: '100%',
-              fontSize: '13px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px',
-            }}
           >
             {syncOrdersLoading ? (
               <Loader2 className="animate-spin" size={14} />
