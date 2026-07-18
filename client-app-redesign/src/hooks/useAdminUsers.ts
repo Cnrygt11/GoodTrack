@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { adminApi } from '../services/adminApi';
+import { api } from '../services/apiClient';
 import { useSettings } from '../context/SettingsContext';
 import { useToast } from '../context/ToastContext';
 import { extractErrorMessage } from '../utils/errorUtils';
@@ -12,7 +12,7 @@ export function useAdminUsers() {
   // 1. Veri Çekme (Otomatik Caching ve Refresh)
   const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['adminUsers'],
-    queryFn: adminApi.getUsers,
+    queryFn: api.getAdminUsers,
     select: (data) => [...data].sort((a, b) => {
       if (a.createdAt && b.createdAt) {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -23,7 +23,7 @@ export function useAdminUsers() {
 
   // 2. Kullanıcı Silme Mutasyonu
   const deleteMutation = useMutation({
-    mutationFn: (userId: string) => adminApi.deleteUser(userId),
+    mutationFn: (userId: string) => api.deleteUser(userId),
     onSuccess: (res) => {
       showToast(res.message || t('deleteSuccess'));
       // Listeyi otomatik yenile

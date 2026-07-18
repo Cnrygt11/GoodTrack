@@ -1,16 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { etsyApi } from '../services/etsyApi';
-import { BASE_URL } from '../services/apiClient';
+import { api, BASE_URL } from '../services/apiClient';
+import { EtsyConnectionInfo } from '../types/api';
 import { extractErrorMessage } from '../utils/errorUtils';
 
-export interface EtsyConnectionInfo {
-  shopId: string;
-  shopName: string;
-  isActive: boolean;
-  tokenExpiresAt: string;
-  /** Secret istemciye asla dönmez; yalnız kayıtlı olup olmadığı bildirilir. */
-  hasWebhookSecret: boolean;
-}
+export type { EtsyConnectionInfo };
 
 /**
  * Etsy entegrasyon durumunu yöneten hook. Sipariş aktarımı Etsy Open API üzerinden
@@ -32,8 +25,8 @@ export function useEtsyIntegration() {
     setLoading(true);
     try {
       const [data, config] = await Promise.all([
-        etsyApi.getConnections(),
-        etsyApi.getWebhookConfig(),
+        api.getEtsyConnections(),
+        api.getEtsyWebhookConfig(),
       ]);
       setConnections(data || []);
       setPlatformWebhookConfigured(config?.platformConfigured ?? false);
@@ -82,7 +75,7 @@ export function useEtsyIntegration() {
       const callbackUrl = `${BASE_URL}/etsyauth/callback`; // must match Etsy developer dashboard's registered redirect_uri
       const frontendUrl = `${window.location.origin}/seller/profile?tab=integrations`;
 
-      const result = await etsyApi.connect({ callbackUrl, frontendUrl });
+      const result = await api.connectEtsy({ callbackUrl, frontendUrl });
 
       if (result && result.oauthUrl) {
         window.location.href = result.oauthUrl;
@@ -98,7 +91,7 @@ export function useEtsyIntegration() {
   const disconnectShop = useCallback(async (shopId: string) => {
     if (window.confirm('Etsy mağaza bağlantısını kesmek istediğinize emin misiniz?')) {
       try {
-        await etsyApi.disconnect(shopId);
+        await api.disconnectEtsyShop(shopId);
         setConnections((prev) => prev.filter((c) => c.shopId !== shopId));
         setActionSuccessMessage('Etsy mağaza bağlantısı başarıyla kesildi.');
         setTimeout(() => setActionSuccessMessage(null), 3000);
@@ -114,7 +107,7 @@ export function useEtsyIntegration() {
     setError(null);
 
     try {
-      const res = await etsyApi.syncListings();
+      const res = await api.syncEtsyListings();
       setActionSuccessMessage(res.message);
       await fetchConnectionInfo();
     } catch (err: unknown) {
@@ -130,7 +123,7 @@ export function useEtsyIntegration() {
     setError(null);
 
     try {
-      const res = await etsyApi.syncOrders();
+      const res = await api.syncEtsyOrders();
       setActionSuccessMessage(res.message || 'Sipariş tarama tamamlandı.');
     } catch (err: unknown) {
       setError('Sipariş eşitleme başarısız: ' + extractErrorMessage(err));

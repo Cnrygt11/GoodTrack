@@ -1,4 +1,4 @@
-import { User, RegisterPayload, Product } from '../services/apiClient';
+import { User, RegisterPayload } from './api';
 
 export type LoginRequest = {
   username: string;
@@ -9,8 +9,7 @@ export type LoginResponse = User;
 
 export type RegisterRequest = RegisterPayload;
 
-export type { Product };
-
+export * from './api';
 export * from './orders';
 
 
