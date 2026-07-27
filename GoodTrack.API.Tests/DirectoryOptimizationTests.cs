@@ -82,7 +82,7 @@ public class DirectoryOptimizationTests : IDisposable
         _context.Users.Add(NewMfr("m1", "mfr_one"));
         await _context.SaveChangesAsync();
 
-        var (items, total) = await _repository.SearchManufacturersAsync(null, null, null, null, 0, 10);
+        var (items, total) = await _repository.SearchManufacturersAsync(null, null, null, null, 1, 10);
 
         var item = items.Single();
         item.Id.Should().Be("m1");
@@ -99,7 +99,7 @@ public class DirectoryOptimizationTests : IDisposable
         _context.Users.Add(NewMfr("m1", "mfr_one")); // City = "Bursa"
         await _context.SaveChangesAsync();
 
-        var (items, _) = await _repository.SearchManufacturersAsync("bursa", null, null, null, 0, 10);
+        var (items, _) = await _repository.SearchManufacturersAsync("bursa", null, null, null, 1, 10);
 
         items.Should().ContainSingle(i => i.Id == "m1");
     }
@@ -115,11 +115,11 @@ public class DirectoryOptimizationTests : IDisposable
         await _context.SaveChangesAsync();
 
         // İsim parçası (kasa-duyarsız)
-        var (byName, _) = await _repository.SearchManufacturersAsync(null, null, "ahm", null, 0, 10);
+        var (byName, _) = await _repository.SearchManufacturersAsync(null, null, "ahm", null, 1, 10);
         byName.Should().ContainSingle(i => i.Id == "m1");
 
         // Kullanıcı adı parçası
-        var (byUsername, _) = await _repository.SearchManufacturersAsync(null, null, "acme", null, 0, 10);
+        var (byUsername, _) = await _repository.SearchManufacturersAsync(null, null, "acme", null, 1, 10);
         byUsername.Should().ContainSingle(i => i.Id == "m1");
     }
 
@@ -132,13 +132,14 @@ public class DirectoryOptimizationTests : IDisposable
         }
         await _context.SaveChangesAsync();
 
-        var (page0, total) = await _repository.SearchManufacturersAsync(null, null, null, "name", 0, 2);
-        var (page1, _) = await _repository.SearchManufacturersAsync(null, null, null, "name", 1, 2);
+        // Sayfalama 1-tabanlı: page 1 ilk sayfa, page 2 ikinci sayfa (çakışmasız).
+        var (page1, total) = await _repository.SearchManufacturersAsync(null, null, null, "name", 1, 2);
+        var (page2, _) = await _repository.SearchManufacturersAsync(null, null, null, "name", 2, 2);
 
         total.Should().Be(5);
-        page0.Should().HaveCount(2);
         page1.Should().HaveCount(2);
-        page0.Select(i => i.Id).Should().NotIntersectWith(page1.Select(i => i.Id));
+        page2.Should().HaveCount(2);
+        page1.Select(i => i.Id).Should().NotIntersectWith(page2.Select(i => i.Id));
     }
 
     [Fact]

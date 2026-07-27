@@ -49,4 +49,27 @@ public sealed class Base64ImageStorageService : IImageStorageService
     {
         return Task.CompletedTask;
     }
+
+    public async Task<string?> ResolveUpdatedImageAsync(string? oldImage, string? newImage, string fieldName, Func<string?, Task> cleanupOldIfUnused)
+    {
+        // Yeni base64 görsel: boyut doğrulanır, saklanır; eski temizlenir.
+        if (!string.IsNullOrEmpty(newImage) && newImage.StartsWith("data:image"))
+        {
+            ImageLimits.ValidateImageSize(newImage, fieldName);
+            var stored = await StoreImageAsync(newImage);
+            await cleanupOldIfUnused(oldImage);
+            return stored;
+        }
+
+        // Görsel kaldırıldı: alan null'lanır; eski temizlenir.
+        if (string.IsNullOrEmpty(newImage))
+        {
+            await cleanupOldIfUnused(oldImage);
+            return null;
+        }
+
+        // Yeni değer URL (örn. Etsy CDN): olduğu gibi tutulur; eski temizlenir.
+        await cleanupOldIfUnused(oldImage);
+        return newImage;
+    }
 }

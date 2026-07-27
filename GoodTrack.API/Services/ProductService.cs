@@ -300,25 +300,9 @@ public sealed class ProductService : IProductService
 
             if (newImage != oldImage)
             {
-                if (!string.IsNullOrEmpty(newImage) && newImage.StartsWith("data:image"))
-                {
-                    ValidateImageSize(newImage, "Sipariş görseli");
-                    existing.Image = await _imageStorageService.StoreImageAsync(newImage);
-                    await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
-                }
-                else if (string.IsNullOrEmpty(newImage))
-                {
-                    existing.Image = null;
-                    await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
-                }
-                else
-                {
-                    existing.Image = newImage;
-                    if (oldImage != newImage)
-                    {
-                        await _imageCleanupService.DeleteOrderImageIfUnusedAsync(oldImage, sellerId, orderId);
-                    }
-                }
+                existing.Image = await _imageStorageService.ResolveUpdatedImageAsync(
+                    oldImage, newImage, "Sipariş görseli",
+                    old => _imageCleanupService.DeleteOrderImageIfUnusedAsync(old, sellerId, orderId));
 
                 // Görsel değiştiğinde thumbnail'i de senkronize et: görsel silindiyse thumbnail de temizlenir.
                 existing.ThumbnailImage = string.IsNullOrEmpty(newImage) ? null : dto.ThumbnailImage;
@@ -390,7 +374,7 @@ public sealed class ProductService : IProductService
 
         if (existing.Status != OrderStatus.Awaiting)
         {
-            throw new InvalidOperationException("Sadece bekleyen listesindeki siparişleri silebilirsiniz!");
+            throw new BusinessRuleException("Sadece bekleyen listesindeki siparişleri silebilirsiniz!");
         }
 
         string mfrId = existing.ManufacturerId;

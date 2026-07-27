@@ -103,6 +103,9 @@ public sealed class PostgresUserRepository : IUserRepository
         {
             // İsim/kullanıcı-adı araması: kasa-duyarsız kısmi eşleşme. .ToLower().Contains her iki
             // sağlayıcıda da çevrilir (Postgres lower()+position, SQLite lower()+instr).
+            // ÖLÇEK NOTU: Bu kalıp indekslenemez → sequential scan. Yüzlerce üretici ölçeğinde sorun
+            // değil; binlerce kayda çıkılırsa pg_trgm extension + GIN indeksi (Postgres-only, ayrı
+            // migration) değerlendirilmeli.
             var term = name.Trim().ToLower();
             query = query.Where(u =>
                 (u.FirstName + " " + u.LastName).ToLower().Contains(term) ||
@@ -135,7 +138,7 @@ public sealed class PostgresUserRepository : IUserRepository
         // Projeksiyon: ağır ProductImages galerisi SEÇİLMEZ (yalnız .Count = cardinality hesaplanır),
         // böylece base64 dizi DB'den okunmaz. Avatar thumbnail'e düşer.
         var items = await query
-            .Skip(page * pageSize)
+            .Skip((page - 1) * pageSize) // 1-tabanlı sayfalama (arşivle tutarlı): ilk sayfa page=1.
             .Take(pageSize)
             .Select(u => new UserProfileDto
             {

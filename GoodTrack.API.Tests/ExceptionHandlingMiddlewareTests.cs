@@ -77,16 +77,13 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_BusinessInvalidOperationException_ShouldReturn400AndCustomMessage()
+    public async Task InvokeAsync_BusinessRuleException_ShouldReturn400AndCustomMessage()
     {
         // Arrange
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
 
-        var ex = new InvalidOperationException("İş kuralı hatası");
-        ex.Source = "GoodTrack.API";
-
-        RequestDelegate next = (ctx) => throw ex;
+        RequestDelegate next = (ctx) => throw new GoodTrack.API.Models.BusinessRuleException("İş kuralı hatası");
         var middleware = new ExceptionHandlingMiddleware(next, _loggerMock.Object);
 
         // Act
@@ -102,5 +99,29 @@ public class ExceptionHandlingMiddlewareTests
         var responseJson = JsonSerializer.Deserialize<JsonElement>(responseText);
 
         responseJson.GetProperty("message").GetString().Should().Be("İş kuralı hatası");
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UnclassifiedGoodTrackInvalidOperationException_ShouldReturn500AndGenericMessage()
+    {
+        // Sınıflandırılmamış (iş kuralı olmayan) InvalidOperationException artık — kaynağı GoodTrack
+        // olsa bile — 500'e düşer ve ham mesajı istemciye sızmaz. İş kuralları BusinessRuleException'a
+        // taşındığından eski "Source.Contains(GoodTrack)" heuristic'i kaldırıldı.
+        var context = new DefaultHttpContext();
+        context.Response.Body = new MemoryStream();
+
+        var ex = new InvalidOperationException("İç invariant ihlali - sızmamalı");
+        ex.Source = "GoodTrack.API";
+
+        RequestDelegate next = (ctx) => throw ex;
+        var middleware = new ExceptionHandlingMiddleware(next, _loggerMock.Object);
+
+        await middleware.InvokeAsync(context);
+
+        context.Response.StatusCode.Should().Be(500);
+        context.Response.Body.Seek(0, SeekOrigin.Begin);
+        using var reader = new StreamReader(context.Response.Body);
+        var responseJson = JsonSerializer.Deserialize<JsonElement>(await reader.ReadToEndAsync());
+        responseJson.GetProperty("message").GetString().Should().Be("Sunucuda beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.");
     }
 }

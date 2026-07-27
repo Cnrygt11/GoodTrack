@@ -170,7 +170,7 @@ public class CreditsServiceTests
             .ReturnsAsync(existingRecord);
 
         var act = () => _creditsService.UpgradePlanAsync(userId, SubscriptionPlan.Pro);
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Alt plana geçiş yapılamaz.");
+        await act.Should().ThrowAsync<GoodTrack.API.Models.BusinessRuleException>().WithMessage("Alt plana geçiş yapılamaz.");
 
         _creditsRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<UserCredit>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -262,7 +262,7 @@ public class CreditsServiceTests
 
         // Act & Assert
         var act = () => _creditsService.UpgradePlanAsync(userId, SubscriptionPlan.Pro);
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await act.Should().ThrowAsync<GoodTrack.API.Models.BusinessRuleException>()
             .WithMessage("Zaten 'Pro' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
 
         _creditsRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<UserCredit>(), It.IsAny<CancellationToken>()), Times.Never);

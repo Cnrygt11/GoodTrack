@@ -86,14 +86,15 @@ public class ManufacturersController : BaseApiController
         [FromQuery] string? sort,
         [FromQuery] bool mustHaveGallery,
         [FromQuery] bool mustHaveAvatar,
-        [FromQuery] int page = 0,
+        [FromQuery] int page = 1,
         [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
         bool isFreePlan = await IsCallerFreePlanSellerAsync(cancellationToken);
 
         limit = Math.Clamp(limit, 1, 50);
-        if (page < 0) page = 0;
+        // Sayfalama 1-tabanlıdır (arşivle tutarlı): ilk sayfa page=1.
+        if (page < 1) page = 1;
         var results = await _profileService.SearchManufacturersAsync(city, keyword, name, sort, page, limit, mustHaveGallery, mustHaveAvatar);
 
         // Apply enterprise obfuscation if user is on Free plan

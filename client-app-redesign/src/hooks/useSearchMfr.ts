@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ConnectionRequest } from '../services/apiClient';
-import { useProductsQuery } from './useProductsData';
 import useCredits from './useCredits';
 import { connectionKeys, useConnectionsQuery, useSentRequestsQuery } from './useConnectionsData';
 import { useToast } from '../context/ToastContext';
@@ -14,7 +13,6 @@ import { extractErrorMessage } from '../utils/errorUtils';
 const PAGE_SIZE = 9;
 
 export default function useSearchMfr() {
-  const { products } = useProductsQuery();
   const { connections } = useConnectionsQuery();
   const { sentRequests } = useSentRequestsQuery();
   const queryClient = useQueryClient();
@@ -32,11 +30,6 @@ export default function useSearchMfr() {
     return () => clearTimeout(id);
   }, [searchName]);
 
-  const completedCount = useMemo(
-    () => products.filter((p) => p.status === 'delivered').length,
-    [products],
-  );
-
   const isLocked = useMemo(() => {
     const planName = (plan || 'Free').toLowerCase();
     if (planName === 'free') {
@@ -45,7 +38,7 @@ export default function useSearchMfr() {
     return false;
   }, [plan]);
 
-  const lockReason = useMemo<'upgrade' | 'orders' | null>(() => {
+  const lockReason = useMemo<'upgrade' | null>(() => {
     const planName = (plan || 'Free').toLowerCase();
     if (planName === 'free') {
       return 'upgrade';
@@ -81,8 +74,9 @@ export default function useSearchMfr() {
       sortOption,
     ] as const,
     queryFn: ({ pageParam }) => api.searchManufacturers(buildQuery(pageParam)),
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length : undefined),
+    // Sayfalama 1-tabanlıdır (backend + arşivle tutarlı): ilk sayfa 1, sonraki = yüklenen sayfa sayısı + 1.
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => (lastPage.hasMore ? allPages.length + 1 : undefined),
   });
 
   const manufacturers = useMemo(
@@ -210,6 +204,5 @@ export default function useSearchMfr() {
     t,
     isLocked,
     lockReason,
-    completedCount,
   };
 }

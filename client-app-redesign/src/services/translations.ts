@@ -64,7 +64,6 @@ export const translations = {
     topUpSuccess: 'Kredi paketi hesabınıza eklendi!',
     goToBilling: 'Faturalandırmaya Git',
     findMfrLocked: 'Bu Özelliği Açmak İçin En Az 20 Sipariş Tamamlanmalı',
-    currentCompletedCount: 'Mevcut İlerleme: {count} / 20 Sipariş',
     findMfrUpgradeToUnlock: 'Bu özelliğe erişmek için planınızı yükseltin',
 
     // Mock Payment Simulation
@@ -730,7 +729,6 @@ export const translations = {
     topUpSuccess: 'Credit package added to your account!',
     goToBilling: 'Go to Billing',
     findMfrLocked: 'At Least 20 Orders Must Be Completed to Unlock This Feature',
-    currentCompletedCount: 'Current Progress: {count} / 20 Orders',
     findMfrUpgradeToUnlock: 'Please upgrade your plan to access this feature',
 
     // Mock Payment Simulation

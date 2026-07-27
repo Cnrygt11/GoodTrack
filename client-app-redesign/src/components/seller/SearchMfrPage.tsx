@@ -108,7 +108,6 @@ export default function SearchMfrPage() {
     loadMore,
     isLocked,
     lockReason,
-    completedCount,
     t,
   } = useSearchMfr();
 
@@ -385,11 +384,6 @@ export default function SearchMfrPage() {
             <h2 className="smfr-lock-title">
               {isUpgradeLock ? t('findMfrUpgradeToUnlock') : t('findMfrLocked')}
             </h2>
-            {!isUpgradeLock && (
-              <div className="smfr-lock-progress">
-                {t('currentCompletedCount').replace('{count}', String(completedCount))}
-              </div>
-            )}
           </div>
         </div>
       </div>

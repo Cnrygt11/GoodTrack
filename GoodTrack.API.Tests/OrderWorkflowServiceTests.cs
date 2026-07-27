@@ -188,7 +188,7 @@ public class OrderWorkflowServiceTests
 
         // Act & Assert
         var act = () => _workflowService.UpdateOrderStatusAsync(userId, Roles.Seller, orderId, OrderStatus.Cancelled);
-        await act.Should().ThrowAsync<InvalidOperationException>()
+        await act.Should().ThrowAsync<GoodTrack.API.Models.BusinessRuleException>()
             .WithMessage("Üretime başlanmış olan siparişler iptal edilemez.");
 
         _productRepositoryMock.Verify(r => r.SaveAsync(It.IsAny<Product>(), It.IsAny<CancellationToken>()), Times.Never);

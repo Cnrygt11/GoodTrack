@@ -232,7 +232,7 @@ public sealed class ProfileService : IProfileService
         {
             Items = items,
             TotalCount = totalCount,
-            HasMore = (page + 1) * pageSize < totalCount,
+            HasMore = page * pageSize < totalCount, // 1-tabanlı: page. sayfaya kadar gösterilen kayıt = page*pageSize.
         };
     }
 

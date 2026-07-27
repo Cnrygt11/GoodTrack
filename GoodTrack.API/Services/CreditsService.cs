@@ -101,14 +101,14 @@ public sealed class CreditsService : ICreditsService
 
         if (record.Plan.Equals(targetPlan.Plan, StringComparison.OrdinalIgnoreCase))
         {
-            throw new InvalidOperationException($"Zaten '{plan}' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
+            throw new BusinessRuleException($"Zaten '{plan}' planına sahipsiniz! Aynı plana tekrar yükseltme yapamazsınız.");
         }
 
         // Alt plana geçiş yok: bakiye/özellik kaybına yol açar ve iade akışı bulunmuyor.
         var currentPlan = SubscriptionPlanCatalog.ResolveOrFree(record.Plan);
         if (targetPlan.Rank < currentPlan.Rank)
         {
-            throw new InvalidOperationException("Alt plana geçiş yapılamaz.");
+            throw new BusinessRuleException("Alt plana geçiş yapılamaz.");
         }
 
         // Yükseltmede bakiye asla azalmaz: satın alınmış paket kredileri korunur,
@@ -161,9 +161,30 @@ public sealed class CreditsService : ICreditsService
     /// <inheritdoc />
     public async Task RefundCreditAsync(string userId, int amount = 1, CancellationToken cancellationToken = default)
     {
+        // Bakiye xmin ile optimistic-lock'lu; eşzamanlı sipariş düşümüyle çakışırsa güncel değeri
+        // yükleyip sınırlı sayıda tekrar dene (DeductForOrderAsync/TopUpAsync ile aynı desen).
+        // Retry olmadan çakışma DbUpdateConcurrencyException fırlatır ve iade sessizce kaybolurdu.
+        const int maxAttempts = 3;
         var record = await GetOrCreateCreditsAsync(userId, cancellationToken);
-        record.Credits += amount;
-        await _creditsRepository.SaveAsync(record, cancellationToken);
+
+        for (int attempt = 1; ; attempt++)
+        {
+            record.Credits += amount;
+
+            try
+            {
+                await _creditsRepository.SaveAsync(record, cancellationToken);
+                return;
+            }
+            catch (DbUpdateConcurrencyException ex) when (attempt < maxAttempts)
+            {
+                // Reload eski bakiyeyi geri yükler; artış döngü başında yeniden uygulanır.
+                foreach (var entry in ex.Entries)
+                {
+                    await entry.ReloadAsync(cancellationToken);
+                }
+            }
+        }
     }
 
     /// <inheritdoc />

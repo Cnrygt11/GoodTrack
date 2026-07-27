@@ -31,7 +31,7 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            if (ex is UnauthorizedAccessException || ex is ArgumentException || ex is KeyNotFoundException)
+            if (ex is UnauthorizedAccessException || ex is ArgumentException || ex is KeyNotFoundException || ex is BusinessRuleException || ex is InsufficientCreditsException)
             {
                 _logger.LogWarning("Client request error at {Path}: {Message}", context.Request.Path, ex.Message);
             }
@@ -64,7 +64,7 @@ public class ExceptionHandlingMiddleware
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
                 break;
-            case InvalidOperationException when exception.Source != null && exception.Source.Contains("GoodTrack"):
+            case BusinessRuleException:
                 statusCode = HttpStatusCode.BadRequest;
                 message = exception.Message;
                 break;

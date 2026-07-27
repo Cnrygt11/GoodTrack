@@ -79,7 +79,7 @@ public sealed class EtsyService : IEtsyService
         var shop = await _apiClient.GetShopByEtsyUserAsync(etsyUserId, credentials, cancellationToken);
         if (shop == null || shop.ShopId == 0)
         {
-            throw new InvalidOperationException("Kullanıcıya ait Etsy mağazası bulunamadı.");
+            throw new BusinessRuleException("Kullanıcıya ait Etsy mağazası bulunamadı.");
         }
 
         var shopId = shop.ShopId.ToString();

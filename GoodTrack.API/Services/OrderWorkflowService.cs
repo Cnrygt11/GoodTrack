@@ -214,9 +214,6 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             }
         };
 
-    private static void ValidateImageSize(string? base64Image, string fieldName = "Görsel")
-        => ImageLimits.ValidateImageSize(base64Image, fieldName);
-
     public async Task UpdateOrderStatusAsync(string userId, string role, string orderId, string newStatus, string? defectNote = null, string? defectImage = null)
     {
         var product = await _productRepository.GetByIdAsync(orderId);
@@ -262,10 +259,10 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
 
         string currentStatus = ResolveCurrentStatus(product);
         if (currentStatus != OrderStatus.Production)
-            throw new InvalidOperationException("Yalnızca üretimdeki siparişler için iptal talebi oluşturulabilir.");
+            throw new BusinessRuleException("Yalnızca üretimdeki siparişler için iptal talebi oluşturulabilir.");
 
         if (product.CancelRequested)
-            throw new InvalidOperationException("Bu sipariş için zaten aktif bir iptal talebi bulunuyor.");
+            throw new BusinessRuleException("Bu sipariş için zaten aktif bir iptal talebi bulunuyor.");
 
         product.CancelRequested = true;
         product.IsReadBySeller = true;
@@ -285,7 +282,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
             throw new UnauthorizedAccessException(Messages.Order.NoPermission);
 
         if (!product.CancelRequested)
-            throw new InvalidOperationException("Bu sipariş için aktif bir iptal talebi bulunmuyor.");
+            throw new BusinessRuleException("Bu sipariş için aktif bir iptal talebi bulunmuyor.");
 
         product.CancelRequested = false;
 
@@ -421,7 +418,7 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
 
         if (!rule.AllowedSourceStatuses.Contains(oldStatus))
         {
-            throw new InvalidOperationException(rule.ErrorMessage);
+            throw new BusinessRuleException(rule.ErrorMessage);
         }
 
         return await rule.TransitionAction(this, product, oldStatus, defectNote, defectImage);
@@ -431,24 +428,9 @@ public sealed class OrderWorkflowService : IOrderWorkflowService
     {
         if (newDefectImage == p.DefectImage) return;
 
-        string? oldDefectImage = p.DefectImage;
-        if (!string.IsNullOrEmpty(newDefectImage) && newDefectImage.StartsWith("data:image"))
-        {
-            ValidateImageSize(newDefectImage, "Hata görseli");
-            p.DefectImage = await _imageStorageService.StoreImageAsync(newDefectImage);
-            await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
-        }
-        else if (string.IsNullOrEmpty(newDefectImage))
-        {
-            p.DefectImage = null;
-            await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
-        }
-        else
-        {
-            p.DefectImage = newDefectImage;
-            if (oldDefectImage != newDefectImage)
-                await _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldDefectImage, p.SellerId, p.Id);
-        }
+        p.DefectImage = await _imageStorageService.ResolveUpdatedImageAsync(
+            p.DefectImage, newDefectImage, "Hata görseli",
+            oldImage => _imageCleanupService.DeleteDefectImageIfUnusedAsync(oldImage, p.SellerId, p.Id));
     }
 
     private static void AppendLog(Product product, string userId, string userName, string message)
