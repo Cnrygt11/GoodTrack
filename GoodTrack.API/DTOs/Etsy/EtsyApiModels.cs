@@ -48,14 +48,13 @@ public sealed class EtsyListingResult
     [JsonPropertyName("title")]
     public string Title { get; set; } = string.Empty;
 
-    // listings/batch?includes=Images,Inventory ile gömülü gelen ilişkiler
+    // listings/batch?includes=Images ile gömülü gelen görsel ilişkisi
     // (listings/active bunları döndürmez; N+1'i önlemek için batch kullanılır).
+    // Inventory artık includes enum'ında desteklenmiyor; SKU bilgisi
+    // GET /v3/application/listings/batch/inventory ile ayrıca çekilir.
 
     [JsonPropertyName("images")]
     public List<EtsyListingImageResult>? Images { get; set; }
-
-    [JsonPropertyName("inventory")]
-    public EtsyInventoryContainer? Inventory { get; set; }
 }
 
 public sealed class EtsyListingImagesContainer
@@ -158,4 +157,24 @@ public sealed class EtsyInventoryProduct
 {
     [JsonPropertyName("sku")]
     public string? Sku { get; set; }
+}
+
+/// <summary>
+/// GET /v3/application/listings/batch/inventory yanıtındaki tek listing kaydı.
+/// Etsy, Inventory'yi includes enum'ından kaldırdığı için SKU bilgisi
+/// artık bu ayrık endpoint üzerinden çekilir.
+/// </summary>
+public sealed class EtsyBatchInventoryResult
+{
+    [JsonPropertyName("listing_id")]
+    public long ListingId { get; set; }
+
+    [JsonPropertyName("products")]
+    public List<EtsyInventoryProduct>? Products { get; set; }
+}
+
+public sealed class EtsyBatchInventoryContainer
+{
+    [JsonPropertyName("results")]
+    public List<EtsyBatchInventoryResult>? Results { get; set; }
 }

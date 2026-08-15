@@ -433,7 +433,7 @@ public class EtsyServiceTests : IDisposable
                 }
             });
 
-        // batch → görsel + SKU gömülü
+        // batch → görsel gömülü (Inventory artık ayrı endpoint'ten çekilir)
         _apiClientMock
             .Setup(c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new EtsyListingsContainer
@@ -443,15 +443,25 @@ public class EtsyServiceTests : IDisposable
                     new()
                     {
                         ListingId = 111, Title = "A",
-                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/1.jpg" } },
-                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = "SKU-A" } } }
+                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/1.jpg" } }
                     },
                     new()
                     {
                         ListingId = 222, Title = "B",
-                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/2.jpg" } },
-                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = "SKU-B" } } }
+                        Images = new() { new EtsyListingImageResult { Url570xN = "https://img/2.jpg" } }
                     },
+                }
+            });
+
+        // inventory batch → SKU bilgisi ayrı endpoint'ten
+        _apiClientMock
+            .Setup(c => c.GetListingsInventoryBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyBatchInventoryContainer
+            {
+                Results = new List<EtsyBatchInventoryResult>
+                {
+                    new() { ListingId = 111, Products = new() { new EtsyInventoryProduct { Sku = "SKU-A" } } },
+                    new() { ListingId = 222, Products = new() { new EtsyInventoryProduct { Sku = "SKU-B" } } },
                 }
             });
 
@@ -462,6 +472,11 @@ public class EtsyServiceTests : IDisposable
         // Tüm listing'ler için TEK batch çağrısı (100'lük tek chunk) — N+1 yok
         _apiClientMock.Verify(
             c => c.GetListingsBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        // Inventory de ayrı batch çağrısıyla çekildi
+        _apiClientMock.Verify(
+            c => c.GetListingsInventoryBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         // SKU'lar batch envanterinden geldi; görseller base64 indirilmek yerine CDN URL olarak saklandı
@@ -496,9 +511,17 @@ public class EtsyServiceTests : IDisposable
                     new()
                     {
                         ListingId = 111, Title = "A",
-                        Images = new() { new EtsyListingImageResult { Url570xN = imageUrl } },
-                        Inventory = new EtsyInventoryContainer { Products = new() { new EtsyInventoryProduct { Sku = sku } } }
+                        Images = new() { new EtsyListingImageResult { Url570xN = imageUrl } }
                     }
+                }
+            });
+        _apiClientMock
+            .Setup(c => c.GetListingsInventoryBatchAsync(It.IsAny<IEnumerable<long>>(), It.IsAny<EtsyCredentials>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new EtsyBatchInventoryContainer
+            {
+                Results = new List<EtsyBatchInventoryResult>
+                {
+                    new() { ListingId = 111, Products = new() { new EtsyInventoryProduct { Sku = sku } } }
                 }
             });
         _apiClientMock

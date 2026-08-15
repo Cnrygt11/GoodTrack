@@ -186,13 +186,12 @@ public class EtsyApiClientTests
     }
 
     [Fact]
-    public async Task GetListingsBatch_CallsBatchEndpointWithIncludes_AndParsesImagesInventory()
+    public async Task GetListingsBatch_CallsBatchEndpointWithImages_ParsesImagesOnly()
     {
         var json = """
         {"count":1,"results":[
           {"listing_id":111,"title":"Necklace",
-           "images":[{"url_570xN":"https://i.etsystatic.com/1.jpg"}],
-           "inventory":{"products":[{"sku":"NECK-01"}]}}
+           "images":[{"url_570xN":"https://i.etsystatic.com/1.jpg"}]}
         ]}
         """;
         var handler = new StubHandler(new Func<HttpRequestMessage, HttpResponseMessage>[] { _ => Json(json) });
@@ -202,7 +201,6 @@ public class EtsyApiClientTests
 
         result.Should().NotBeNull();
         var listing = result!.Results!.Single();
-        listing.Inventory!.Products!.Single().Sku.Should().Be("NECK-01");
         listing.Images!.Single().Url570xN.Should().Be("https://i.etsystatic.com/1.jpg");
 
         var reqUri = handler.Requests.Single();
@@ -210,6 +208,7 @@ public class EtsyApiClientTests
         reqUri.PathAndQuery.Should().Contain("111");
         reqUri.PathAndQuery.Should().Contain("222");
         reqUri.PathAndQuery.Should().Contain("includes=Images");
+        reqUri.PathAndQuery.Should().NotContain("Inventory");
     }
 
     [Fact]
@@ -222,6 +221,63 @@ public class EtsyApiClientTests
 
         result!.Results.Should().BeEmpty();
         handler.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetListingsInventoryBatch_FetchesSkuFromDedicatedEndpoint()
+    {
+        var json = """
+        {"results":[
+          {"listing_id":111,"products":[{"sku":"NECK-01"}]},
+          {"listing_id":222,"products":[{"sku":"RING-02"}]}
+        ]}
+        """;
+        var handler = new StubHandler(new Func<HttpRequestMessage, HttpResponseMessage>[] { _ => Json(json) });
+        var client = BuildClient(handler);
+
+        var result = await client.GetListingsInventoryBatchAsync(new long[] { 111, 222 }, Credentials);
+
+        result.Should().NotBeNull();
+        result!.Results.Should().HaveCount(2);
+        result.Results![0].ListingId.Should().Be(111);
+        result.Results[0].Products!.Single().Sku.Should().Be("NECK-01");
+        result.Results[1].ListingId.Should().Be(222);
+        result.Results[1].Products!.Single().Sku.Should().Be("RING-02");
+
+        var reqUri = handler.Requests.Single();
+        reqUri.PathAndQuery.Should().Contain("listings/batch/inventory");
+        reqUri.PathAndQuery.Should().Contain("111");
+        reqUri.PathAndQuery.Should().Contain("222");
+    }
+
+    [Fact]
+    public async Task GetListingsInventoryBatch_EmptyIds_MakesNoRequest()
+    {
+        var handler = new StubHandler(Array.Empty<Func<HttpRequestMessage, HttpResponseMessage>>());
+        var client = BuildClient(handler);
+
+        var result = await client.GetListingsInventoryBatchAsync(Array.Empty<long>(), Credentials);
+
+        result.Should().NotBeNull();
+        result!.Results.Should().BeEmpty();
+        handler.Requests.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetListingsInventoryBatch_OnError_ReturnsNull()
+    {
+        var handler = new StubHandler(new Func<HttpRequestMessage, HttpResponseMessage>[]
+        {
+            _ => new HttpResponseMessage(System.Net.HttpStatusCode.NotFound)
+            {
+                Content = new StringContent("{\"error\":\"Not Found\"}")
+            }
+        });
+        var client = BuildClient(handler);
+
+        var result = await client.GetListingsInventoryBatchAsync(new long[] { 999 }, Credentials);
+
+        result.Should().BeNull();
     }
 
     private static string Offset(Uri uri) => HttpUtility.ParseQueryString(uri.Query)["offset"] ?? "";

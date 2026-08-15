@@ -178,7 +178,7 @@ public sealed class EtsyApiClient : IEtsyApiClient
             return new EtsyListingsContainer { Count = 0, Results = new List<EtsyListingResult>() };
         }
 
-        var url = $"v3/application/listings/batch?listing_ids={ids}&includes=Images,Inventory";
+        var url = $"v3/application/listings/batch?listing_ids={ids}&includes=Images";
         var request = BuildAuthorizedRequest(HttpMethod.Get, url, credentials);
 
         var response = await _httpClient.SendAsync(request, cancellationToken);
@@ -191,6 +191,29 @@ public sealed class EtsyApiClient : IEtsyApiClient
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken);
         return JsonSerializer.Deserialize<EtsyListingsContainer>(json, EtsyJsonOptions);
+    }
+
+    public async Task<EtsyBatchInventoryContainer?> GetListingsInventoryBatchAsync(IEnumerable<long> listingIds, EtsyCredentials credentials, CancellationToken cancellationToken = default)
+    {
+        var ids = string.Join(",", listingIds);
+        if (string.IsNullOrEmpty(ids))
+        {
+            return new EtsyBatchInventoryContainer { Results = new List<EtsyBatchInventoryResult>() };
+        }
+
+        var url = $"v3/application/listings/batch/inventory?listing_ids={ids}";
+        var request = BuildAuthorizedRequest(HttpMethod.Get, url, credentials);
+
+        var response = await _httpClient.SendAsync(request, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            var err = await response.Content.ReadAsStringAsync(cancellationToken);
+            _logger.LogWarning("Failed to fetch listings batch inventory. Status: {Status}, Error: {Error}", response.StatusCode, err);
+            return null;
+        }
+
+        var json = await response.Content.ReadAsStringAsync(cancellationToken);
+        return JsonSerializer.Deserialize<EtsyBatchInventoryContainer>(json, EtsyJsonOptions);
     }
 
     public async Task<string> DownloadImageAsBase64Async(string imageUrl, CancellationToken cancellationToken = default)

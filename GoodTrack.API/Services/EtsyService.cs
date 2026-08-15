@@ -196,15 +196,31 @@ public sealed class EtsyService : IEtsyService
                 var activeIds = listingsContainer?.Results?.Select(r => r.ListingId).ToList();
                 if (activeIds != null && activeIds.Count > 0)
                 {
-                    // Görsel + SKU'yu listing başına ayrı ayrı çekmek yerine (N+1), 100'erlik
-                    // gruplar halinde tek batch çağrısıyla gömülü (Images + Inventory) getir.
+                    // Görselleri listing başına ayrı ayrı çekmek yerine (N+1), 100'erlik
+                    // gruplar halinde tek batch çağrısıyla gömülü (Images) getir.
+                    // Inventory artık includes enum'ında desteklenmediğinden SKU bilgisi
+                    // ayrı GET /listings/batch/inventory çağrısıyla çekilir.
                     var detailedListings = new List<DTOs.Etsy.EtsyListingResult>();
+                    var skuLookup = new Dictionary<long, string?>();
+
                     foreach (var chunk in activeIds.Chunk(100))
                     {
                         var batch = await _apiClient.GetListingsBatchAsync(chunk, credentials, cancellationToken);
                         if (batch?.Results != null)
                         {
                             detailedListings.AddRange(batch.Results);
+                        }
+
+                        // SKU bilgisini ayrık inventory endpoint'inden çek.
+                        // Başarısız olursa (404, ağ hatası vb.) graceful fallback:
+                        // SKU bulunamazsa etsy-{listingId} kullanılır.
+                        var inventoryBatch = await _apiClient.GetListingsInventoryBatchAsync(chunk, credentials, cancellationToken);
+                        if (inventoryBatch?.Results != null)
+                        {
+                            foreach (var inv in inventoryBatch.Results)
+                            {
+                                skuLookup[inv.ListingId] = inv.Products?.FirstOrDefault()?.Sku;
+                            }
                         }
                     }
 
@@ -213,7 +229,7 @@ public sealed class EtsyService : IEtsyService
 
                     foreach (var etsyListing in detailedListings)
                     {
-                        var sku = etsyListing.Inventory?.Products?.FirstOrDefault()?.Sku;
+                        skuLookup.TryGetValue(etsyListing.ListingId, out var sku);
                         var targetProductCode = !string.IsNullOrEmpty(sku) ? sku : $"etsy-{etsyListing.ListingId}";
                         var imageUrl = etsyListing.Images?.FirstOrDefault()?.Url570xN;
 

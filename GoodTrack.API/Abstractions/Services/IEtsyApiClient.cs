@@ -20,11 +20,20 @@ public interface IEtsyApiClient
     Task<EtsyListingsContainer?> GetActiveListingsAsync(string shopId, EtsyCredentials credentials, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Birden çok listing'i tek çağrıda, gömülü görsel ve envanter (SKU) ile getirir
-    /// (GET /v3/application/listings/batch?includes=Images,Inventory). listing_ids max 100.
-    /// N+1 çağrıyı (listing başına ayrı SKU + görsel isteği) önler.
+    /// Birden çok listing'i tek çağrıda, gömülü görsel ile getirir
+    /// (GET /v3/application/listings/batch?includes=Images). listing_ids max 100.
+    /// N+1 çağrıyı (listing başına ayrı görsel isteği) önler.
+    /// SKU bilgisi artık ayrı batch inventory endpoint'inden çekilir.
     /// </summary>
     Task<EtsyListingsContainer?> GetListingsBatchAsync(IEnumerable<long> listingIds, EtsyCredentials credentials, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Birden çok listing'in envanter (SKU) bilgisini tek çağrıda getirir
+    /// (GET /v3/application/listings/batch/inventory?listing_ids=...).
+    /// Etsy, Inventory'yi listings/batch includes'ından kaldırdığı için
+    /// SKU bilgisi artık bu ayrık endpoint üzerinden çekilir.
+    /// </summary>
+    Task<EtsyBatchInventoryContainer?> GetListingsInventoryBatchAsync(IEnumerable<long> listingIds, EtsyCredentials credentials, CancellationToken cancellationToken = default);
 
     /// <summary>Verilen (Etsy CDN) görsel URL'sini indirip data:image base64 döndürür.</summary>
     Task<string> DownloadImageAsBase64Async(string imageUrl, CancellationToken cancellationToken = default);
